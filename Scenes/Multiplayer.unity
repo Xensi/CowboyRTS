@@ -465,6 +465,7 @@ GameObject:
   - component: {fileID: 1873259845}
   - component: {fileID: 1873259844}
   - component: {fileID: 1873259843}
+  - component: {fileID: 1873259846}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -496,9 +497,9 @@ MonoBehaviour:
     Port: 7777
     ServerListenAddress: 127.0.0.1
   DebugSimulator:
-    PacketDelayMS: 0
-    PacketJitterMS: 0
-    PacketDropRate: 0
+    PacketDelayMS: 50
+    PacketJitterMS: 5
+    PacketDropRate: 3
 --- !u!114 &1873259844
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -551,3 +552,15 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1873259846
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1873259842}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7a01b70b0bd13949baf2cbf10c6ecac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
