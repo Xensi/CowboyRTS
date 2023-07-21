@@ -321,7 +321,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &940775862
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -496,8 +496,8 @@ RectTransform:
   m_GameObject: {fileID: 1033573585}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 6.1, y: 6.1, z: 6.1}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 1106438711}
   m_Father: {fileID: 1346697946}
@@ -982,7 +982,7 @@ MonoBehaviour:
     Port: 7777
     ServerListenAddress: 127.0.0.1
   DebugSimulator:
-    PacketDelayMS: 50
+    PacketDelayMS: 20
     PacketJitterMS: 5
     PacketDropRate: 3
 --- !u!114 &1873259844
@@ -1049,3 +1049,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7a01b70b0bd13949baf2cbf10c6ecac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enable: 1

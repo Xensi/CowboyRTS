@@ -42,7 +42,7 @@ public class RTSPlayer : NetworkBehaviour
                 SimpleSpawnMinion(hit.point);
             }
             else
-            {
+            { //client sends information to server
                 SpawnMinionServerRPC(hit.point);
             }
         }
