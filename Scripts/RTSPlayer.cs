@@ -37,22 +37,9 @@ public class RTSPlayer : NetworkBehaviour
 
         if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
         {
-            if (IsServer)
-            {
-                SimpleSpawnMinion(hit.point);
-            }
-            else
-            { //client sends information to server
-                SpawnMinionServerRPC(hit.point);
-            }
+            SpawnMinionServerRPC(hit.point); 
         }
-    }
-    private void SimpleSpawnMinion(Vector3 pos)
-    { 
-        GameObject guy = Instantiate(minion, pos, Quaternion.identity);
-        guy.GetComponent<NetworkObject>().Spawn();  
-    }
-
+    } 
     [ServerRpc]
     private void SpawnMinionServerRPC(Vector3 pos, ServerRpcParams serverRpcParams = default)
     {

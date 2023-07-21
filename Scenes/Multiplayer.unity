@@ -123,6 +123,93 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &240914375
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 240914377}
+  - component: {fileID: 240914376}
+  m_Layer: 0
+  m_Name: A*
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &240914376
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 240914375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78396926cbbfc4ac3b48fc5fc34a87d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 1
+  data:
+    dataString: UEsDBBQAAAgIAABAIexJzWGJlQIAAJ8FAAALACQAZ3JhcGgwLmpzb24KACAAAAAAAAEAGAAAgD7V3rGdAQCAPtXesZ0BAIA+1d6xnQFtVNtu2kAQ/RW0zyUCcoO+tUBIKyVBoVUeSh42u2O8Yr1r7SVAIv69M2uDHRKEZOvM7Zy5+J0p40sQwbqZU/LOSmDfO4ze2bdOY7yFLV9Zs1BvcPB5UjLk5MSTzyMPyiLepzBvCwhOiR9mpcm5h2A0KrOumMoVjK0PHuGMaw9ocjZQtEHovcO2dcCufr7Rs7PHNwEmgGu8ur2z/rCHv+GX7tEIzYsSJNFuogYXtffgPLkZFFR7EHlhtVa+ZsPCrkxqF2UODkiuVBzFJRrknoNa5YGytWMfssxDqBk5vpsohz2qkrKftmpcwf26ovXKdYQj7yrl3Sdrt5/MmbPF7aFqv0cVQq7E+pHvBPeh1dc2PPlIO5oN12v+ouEpB3NvZ85GI9EYXKTQ6GEwaaU6KhvnINaNX8X1BIzl50n2m9Hsk/btWKvihZCziwpYaJuaPaIYcDiWX0g4bYavMyFKJP56+MNX7RWqDTfK+YCmuqAhdi82OnJl09QzEhPD2DoDCa45l2C4Drs5pgmnAzyxtcqeWG44HUtdvLYdbuAkJMGNf693YprbTTMsD79jUc6tMmEB3Im8lc/ndnMHPn+IQSsDjSIy3GMTx9aYavn8F2GL6DIuWmEBtiE6mPDA0wUgJ9wS2Q7FhqYIE7WmhUwqKPk/VEH/Z2pyzrGuTjC7tyYdz4fnMy3CKir5cc3Z5ehiCJk8H4nLqwx6110hhgORjUZX/cGIy2vB0h0ogz3nel41rR4VbpBptBjc+cP3rDNzvEx3Jx3fzNRbYVvjVyazC+EAzEOV4SgWHBbBz4OcSoUyFxCCMmn32PuSaSvWIJfHRMvU2Ok2OL5ssixZqV5tIGTJxukrtmQEH89q7uBVwYaKH5Lt2f4/UEsDBBQAAAgIAABAIeyPWBoFbQAAAHgAAAAJACQAbWV0YS5qc29uCgAgAAAAAAABABgAAIA+1d6xnQEAgD7V3rGdAQCAPtXesZ0Bq1YqSy0qzszPU7JSMNEz0jO00FFQSi9KLMgoBooYgjilmSkgdrSSqaWJRWpairFlsqlZWqqBuW5ysoVRcpqlpZmhkWViinmyUixQfUllQapfYm4qRE9AYklGWmZeSmZeup57UWaKO8hopdhaAFBLAQItABQAAAgIAABAIexJzWGJlQIAAJ8FAAALACQAAAAAAAAAAAAAAAAAAABncmFwaDAuanNvbgoAIAAAAAAAAQAYAACAPtXesZ0BAIA+1d6xnQEAgD7V3rGdAVBLAQItABQAAAgIAABAIeyPWBoFbQAAAHgAAAAJACQAAAAAAAAAAAAAAOICAABtZXRhLmpzb24KACAAAAAAAAEAGAAAgD7V3rGdAQCAPtXesZ0BAIA+1d6xnQFQSwUGAAAAAAIAAgC4AAAAmgMAAAAA
+    upgradeData: 
+    file_cachedStartup: {fileID: 0}
+    data_cachedStartup: 
+    cacheStartup: 0
+  showNavGraphs: 1
+  showUnwalkableNodes: 1
+  debugMode: 0
+  debugFloor: 0
+  debugRoof: 1
+  manualDebugFloorRoof: 0
+  showSearchTree: 0
+  unwalkableNodeDebugSize: 0.3
+  logPathResults: 0
+  maxNearestNodeDistance: 100
+  scanOnStartup: 0
+  fullGetNearestSearch: 0
+  prioritizeGraphs: 0
+  prioritizeGraphsLimit: 1
+  colorSettings:
+    _SolidColor: {r: 0.11764706, g: 0.4, b: 0.7882353, a: 0.9}
+    _UnwalkableNode: {r: 1, g: 0, b: 0, a: 0.5}
+    _BoundsHandles: {r: 0.29, g: 0.454, b: 0.741, a: 0.9}
+    _ConnectionLowLerp: {r: 0, g: 1, b: 0, a: 0.5}
+    _ConnectionHighLerp: {r: 1, g: 0, b: 0, a: 0.5}
+    _MeshEdgeColor: {r: 0, g: 0, b: 0, a: 0.5}
+    _AreaColors:
+    - {r: 0, g: 0, b: 0, a: 0}
+  tagNames: []
+  heuristic: 2
+  heuristicScale: 1
+  threadCount: -2
+  maxFrameTime: 10
+  batchGraphUpdates: 0
+  graphUpdateBatchingInterval: 0.2
+  euclideanEmbedding:
+    mode: 0
+    seed: 0
+    pivotPointRoot: {fileID: 0}
+    spreadOutCount: 1
+  showGraphs: 1
+--- !u!4 &240914377
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 240914375}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 7
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &498276288
 GameObject:
   m_ObjectHideFlags: 0
@@ -933,8 +1020,8 @@ Transform:
   m_GameObject: {fileID: 1490790411}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 4
@@ -982,7 +1069,7 @@ MonoBehaviour:
     Port: 7777
     ServerListenAddress: 127.0.0.1
   DebugSimulator:
-    PacketDelayMS: 20
+    PacketDelayMS: 10
     PacketJitterMS: 5
     PacketDropRate: 3
 --- !u!114 &1873259844
