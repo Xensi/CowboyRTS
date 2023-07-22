@@ -34,10 +34,14 @@ public class MinionController : NetworkBehaviour
     {
         cam = Camera.main;
 
-        anim = GetComponentInChildren<Animator>();
         if (anim != null)
         {
             animsEnabled = true;
+        }
+        else
+        {
+
+            anim = GetComponentInChildren<Animator>();
         }
     }
 
