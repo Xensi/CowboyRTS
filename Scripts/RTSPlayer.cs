@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Netcode;
+using Unity.Netcode; 
 
 public class RTSPlayer : NetworkBehaviour
 {
@@ -9,11 +9,16 @@ public class RTSPlayer : NetworkBehaviour
     [SerializeField] private Vector3 destination;
     public float speed = 4;
     public float rotSpeed = 10;
-    public GameObject minion; 
+    public GameObject minion;
+    public GameObject building;
+    [SerializeField] private Grid grid;
+    public Vector3Int gridPosition;
+    [SerializeField] private List<SelectableEntity> ownedEntities;
+    [SerializeField] private List<SelectableEntity> selectedEntities; 
 
     void Start()
     {
-        cam = Camera.main;
+        cam = Camera.main; 
     }
     public override void OnNetworkSpawn()
     {
@@ -21,31 +26,175 @@ public class RTSPlayer : NetworkBehaviour
     }
     void Update()
     {
-        /*if (Input.GetMouseButtonDown(1))
+        GetMouseWorldPosition();
+        if (Input.GetMouseButtonDown(2))
         {
-            SetDestination();
-        }*/
+            if (IsServer)
+            {
+                SpawnMinion(worldPosition);
+            }
+            else
+            { 
+                SpawnMinionServerRPC(worldPosition);
+            } 
+        }
         if (Input.GetMouseButtonDown(0))
         {
-            TryToSpawnMinion();
+            TryToSelectOne();
         }
     }
-    private void TryToSpawnMinion()
+    private void SpawnMinion(Vector3 pos)
+    {
+        pos.y = 0;
+        GameObject guy = Instantiate(building, pos, Quaternion.identity); //spawn locally
+        SelectableEntity select = guy.GetComponent<SelectableEntity>();
+        select.teamColor.material = ColorReference.Instance.colors[System.Convert.ToInt32(OwnerClientId)];
+        ownedEntities.Add(select);
+        //now, tell the server about this
+        NetworkObject net = guy.GetComponent<NetworkObject>();
+        net.Spawn(); //spawn on network, syncing the game state for everyone 
+        UpdateColorClientRpc(guy, 0);
+    }
+    [ClientRpc]
+    private void UpdateColorClientRpc(NetworkObjectReference guy, int index)
+    {
+        GameObject obj = guy;
+        if (obj != null)
+        {
+            SelectableEntity select = obj.GetComponent<SelectableEntity>();
+            select.teamColor.material = ColorReference.Instance.colors[index]; //server is always 0
+        }
+    }
+    [ServerRpc] //client tells server to spawn the object
+    private void SpawnMinionServerRPC(Vector3 pos, ServerRpcParams serverRpcParams = default)
+    {
+        pos.y = 0;
+        GameObject guy = Instantiate(building, pos, Quaternion.identity);
+        NetworkObject net = guy.GetComponent<NetworkObject>();
+
+        var clientId = serverRpcParams.Receive.SenderClientId;
+        net.SpawnWithOwnership(clientId); 
+        //update team color for server
+        SelectableEntity select = guy.GetComponent<SelectableEntity>();
+        select.teamColor.material = ColorReference.Instance.colors[System.Convert.ToInt32(clientId)]; 
+        //send this to client that requested it
+        ClientRpcParams clientRpcParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new ulong[] { clientId }
+            }
+        };
+        TestClientRpc(guy, clientRpcParams); 
+        UpdateColorClientRpc(guy, System.Convert.ToInt32(clientId));
+    } 
+    [ClientRpc]
+    private void TestClientRpc(NetworkObjectReference guy, ClientRpcParams clientRpcParams)
+    {
+        GameObject obj = guy;
+        if (obj != null)
+        { 
+            SelectableEntity select = obj.GetComponent<SelectableEntity>();
+            ownedEntities.Add(select); 
+        }
+    } 
+    bool doubleSelect = false;
+    private void DoNotDoubleSelect()
+    {
+        doubleSelect = false;
+    }
+    private void TryToSelectOne()
+    { 
+        if (!doubleSelect)
+        {
+            doubleSelect = true;
+            Invoke("DoNotDoubleSelect", .2f);
+            SingleSelect();
+        }
+        else
+        {
+            doubleSelect = false;
+            DoubleSelectDetected();
+        }
+
+
+    }
+    private void SingleSelect()
+    { 
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
+        if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
+        {
+            DeselectAll();
+        }
+        if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
+        {
+            SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
+            if (entity != null && ownedEntities.Contains(entity))
+            {
+                selectedEntities.Add(entity);
+                entity.Select(!entity.selected);
+            }
+        }
+    }
+    private void DoubleSelectDetected()
+    {
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
+        if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
+        {
+            DeselectAll();
+        }
+        if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
+        {
+            SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
+            if (entity != null && ownedEntities.Contains(entity))
+            { 
+                SelectAllSameType(entity.type);
+            }
+        }
+    }
+    private void SelectAllSameType(SelectableEntity.EntityTypes type)
+    {
+        foreach (SelectableEntity item in ownedEntities)
+        {
+            if (item.type == type)
+            { 
+                item.Select(true);
+                selectedEntities.Add(item);
+            }
+        }
+    }
+    private void DeselectAll()
+    { 
+        foreach (SelectableEntity item in selectedEntities)
+        {
+            item.Select(false);
+        }
+        selectedEntities.Clear();
+    }
+    public Vector3 mousePosition;
+    private Vector3 offset = new Vector3(0.5f, 0, .5f);
+    private void GetMouseWorldPosition()
     {
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
 
         if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
         {
-            SpawnMinionServerRPC(hit.point); 
+            mousePosition = hit.point;
+            gridPosition = grid.WorldToCell(mousePosition);
+            worldPosition = grid.CellToWorld(gridPosition) + offset;
         }
-    } 
-    [ServerRpc]
-    private void SpawnMinionServerRPC(Vector3 pos, ServerRpcParams serverRpcParams = default)
+    }
+    private Vector3 worldPosition;
+    private void OnDrawGizmos()
     {
-        var id = serverRpcParams.Receive.SenderClientId;
-        GameObject guy = Instantiate(minion, pos, Quaternion.identity);
-        guy.GetComponent<NetworkObject>().SpawnWithOwnership(id);
+        if (IsOwner)
+        {
+            Gizmos.DrawWireSphere(mousePosition, .1f);
+            Gizmos.DrawSphere(worldPosition, .1f);
+        }
     }
 
     private void SetDestination()
@@ -67,9 +216,5 @@ public class RTSPlayer : NetworkBehaviour
         transform.position = Vector3.MoveTowards(transform.position, destination, Time.deltaTime * speed);
         transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, destination - transform.position, Time.deltaTime * rotSpeed, 0));
         //transform.rotation = Quaternion.LookRotation(destination - transform.position);
-    }
-    private void OnDrawGizmos()
-    {
-        if (IsOwner) Gizmos.DrawSphere(destination, .1f);
     }
 }

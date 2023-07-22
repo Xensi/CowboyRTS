@@ -2,8 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
-using Pathfinding;
-
+using Pathfinding; 
 public class MinionController : NetworkBehaviour
 {
     private Camera cam;
@@ -14,7 +13,8 @@ public class MinionController : NetworkBehaviour
     [SerializeField] private Animator anim;
     bool animsEnabled = false;
     IAstarAI ai;
-
+    [SerializeField] private SelectableEntity selector;
+    public NetworkVariable<Material> teamColor;
     void OnEnable()
     {
         ai = GetComponent<IAstarAI>();
@@ -32,6 +32,8 @@ public class MinionController : NetworkBehaviour
      
     void Start()
     {
+        destination = transform.position;
+        oldPosition = transform.position;
         cam = Camera.main;
 
         if (anim != null)
@@ -51,18 +53,19 @@ public class MinionController : NetworkBehaviour
     }
     void Update()
     { 
-        if (Input.GetMouseButtonDown(1))
+        if (Input.GetMouseButtonDown(1) && selector.selected)
         {
             SetDestination();
         }
         if (animsEnabled) UpdateAnimations();
     }
     private void FixedUpdate()
-    {
+    { 
+        change = GetActualPositionChange();
+        //Debug.Log(change);
         if (ai != null) ai.destination = destination;
         //HandleMovement();
     }
-    private float walkAnimThreshold = 0.1f;
     private enum AnimStates
     {
         Idle,
@@ -70,16 +73,21 @@ public class MinionController : NetworkBehaviour
         Attack
     }
     private AnimStates state = AnimStates.Idle;
+    private float change;
+    private float walkAnimThreshold = 0.01f;
     private void UpdateAnimations()
     {
-        float dist = 0;
         switch (state)
         {
             case AnimStates.Idle:
                 anim.Play("Idle");
 
-                dist = Vector3.SqrMagnitude(destination - transform.position);
-                if (dist > walkAnimThreshold)
+                //dist = Vector3.SqrMagnitude(destination - transform.position);
+                /*if (dist > walkAnimThreshold)
+                {
+                    state = AnimStates.Walk;
+                }*/ 
+                if (change > walkAnimThreshold)
                 {
                     state = AnimStates.Walk;
                 }
@@ -87,8 +95,12 @@ public class MinionController : NetworkBehaviour
             case AnimStates.Walk:
                 anim.Play("Walk");
 
-                dist = Vector3.SqrMagnitude(destination - transform.position);
+                /*dist = Vector3.SqrMagnitude(destination - transform.position);
                 if (dist <= walkAnimThreshold)
+                {
+                    state = AnimStates.Idle;
+                }*/
+                if (change <= walkAnimThreshold)
                 {
                     state = AnimStates.Idle;
                 }
@@ -100,6 +112,13 @@ public class MinionController : NetworkBehaviour
                 break;
         }
     }
+    private Vector3 oldPosition;
+    private float GetActualPositionChange()
+    {
+        float dist = Vector3.SqrMagnitude(transform.position - oldPosition);
+        oldPosition = transform.position;
+        return dist/Time.deltaTime;
+    }
     private void SetDestination()
     {
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
@@ -109,11 +128,12 @@ public class MinionController : NetworkBehaviour
         {
             destination = hit.point;
         }
-    }
-    private void HandleMovement()
+        state = AnimStates.Walk;
+    } 
+    /*private void HandleMovement()
     {
         transform.position = Vector3.MoveTowards(transform.position, destination, Time.deltaTime * speed);
         transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, destination - transform.position, Time.deltaTime * rotSpeed, 0));
         //transform.rotation = Quaternion.LookRotation(destination - transform.position);
-    } 
+    } */
 }

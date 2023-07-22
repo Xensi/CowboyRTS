@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blockbench user</author>
+      <authoring_tool>Blockbench</authoring_tool>
+    </contributor>
+    <created>2023-07-22T15:48:18.800Z</created>
+    <modified>2023-07-22T15:48:18.800Z</modified>
+    <unit name="meter" meter="1.0"/>
+    <up_axis>Y_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="Material_0-effect">
+      <profile_COMMON>
+        <newparam sid="Image_0-surface">
+          <surface type="2D">
+            <init_from>Image_0</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="Image_0-sampler">
+          <sampler2D>
+            <source>Image_0-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="Image_0-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="Image_0" name="Image_0">
+      <init_from>a.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="Material_0-material" name="Material_0">
+      <instance_effect url="#Material_0-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh" name="plane">
+      <mesh>
+        <source id="abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-positions">
+          <float_array id="abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-positions-array" count="12">0.5 0 0.5 0.5 0 -0.5 -0.5 0 0.5 -0.5 0 -0.5</float_array>
+          <technique_common>
+            <accessor source="#abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-positions-array" count="4" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-normals">
+          <float_array id="abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-normals-array" count="3">0 1 0</float_array>
+          <technique_common>
+            <accessor source="#abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-normals-array" count="1" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-map-0">
+          <float_array id="abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-map-0-array" count="8">1 0 1 1 0 1 0 0</float_array>
+          <technique_common>
+            <accessor source="#abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-map-0-array" count="4" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-vertices">
+          <input semantic="POSITION" source="#abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-positions"/>
+        </vertices>
+        <polylist material="Material_0-material" count="6">
+          <input semantic="VERTEX" source="#abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh-map-0" offset="2" set="0"/>
+          <vcount>4</vcount>
+          <p>0 0 0 1 0 1 3 0 2 2 0 3</p>
+        </polylist>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="abe81839-9d54-7e70-f4bf-ba1c1aa0910d" name="plane" type="NODE">
+        <scale sid="scale">1 1 1</scale>
+        <translate sid="location">0 0 0</translate>
+        <rotate sid="rotationX">1 0 0 0</rotate>
+        <rotate sid="rotationY">0 1 0 0</rotate>
+        <rotate sid="rotationZ">0 0 1 0</rotate>
+        <instance_geometry url="#abe81839-9d54-7e70-f4bf-ba1c1aa0910d-mesh" name="plane">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="Material_0-material" target="#Material_0-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>
