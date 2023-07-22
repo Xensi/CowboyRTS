@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 
-public class SelectableEntity : MonoBehaviour
+public class SelectableEntity : NetworkBehaviour
 {
     public bool selected = false;
     [SerializeField] private GameObject indicator;
-    //public NetworkObject net;
+    public NetworkObject net;
+     
+    public MeshRenderer teamRenderer;
+    
     public enum EntityTypes
     {
         Melee,
@@ -15,7 +18,13 @@ public class SelectableEntity : MonoBehaviour
         ProductionStructure
     }
     public EntityTypes type = EntityTypes.Melee;
-    public MeshRenderer teamColor;
+    public override void OnNetworkSpawn()
+    {
+        if (teamRenderer != null)
+        { 
+            teamRenderer.material = ColorReference.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
+        }
+    } 
     private void UpdateIndicator()
     {
         if (indicator != null) indicator.SetActive(selected);

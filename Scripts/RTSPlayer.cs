@@ -14,7 +14,10 @@ public class RTSPlayer : NetworkBehaviour
     [SerializeField] private Grid grid;
     public Vector3Int gridPosition;
     [SerializeField] private List<SelectableEntity> ownedEntities;
-    [SerializeField] private List<SelectableEntity> selectedEntities; 
+    [SerializeField] private List<SelectableEntity> selectedEntities;
+
+    public FactionScriptableObject faction;
+    public int entitiesIndex = 0;
 
     void Start()
     {
@@ -22,61 +25,62 @@ public class RTSPlayer : NetworkBehaviour
     }
     public override void OnNetworkSpawn()
     {
-        if (!IsOwner) this.enabled = false;
+        if (!IsOwner)
+        {
+            enabled = false;
+        }
+        else
+        { 
+            SimpleSpawnMinion(ColorReference.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position);
+        }
     }
     void Update()
     {
         GetMouseWorldPosition();
         if (Input.GetMouseButtonDown(2))
         {
-            if (IsServer)
-            {
-                SpawnMinion(worldPosition);
-            }
-            else
-            { 
-                SpawnMinionServerRPC(worldPosition);
-            } 
+            SimpleSpawnMinion(worldPosition);
         }
         if (Input.GetMouseButtonDown(0))
         {
             TryToSelectOne();
         }
     }
+    private void SimpleSpawnMinion(Vector3 pos)
+    { 
+        if (IsServer)
+        {
+            SpawnMinion(pos);
+        }
+        else
+        {
+            SpawnMinionServerRPC(pos);
+        }
+    }
     private void SpawnMinion(Vector3 pos)
     {
         pos.y = 0;
-        GameObject guy = Instantiate(building, pos, Quaternion.identity); //spawn locally
-        SelectableEntity select = guy.GetComponent<SelectableEntity>();
-        select.teamColor.material = ColorReference.Instance.colors[System.Convert.ToInt32(OwnerClientId)];
+        GameObject guy = Instantiate(faction.entities[entitiesIndex].prefabToSpawn, pos, Quaternion.identity); //spawn locally
+        SelectableEntity select = guy.GetComponent<SelectableEntity>(); 
+        //select.teamColor.material = ColorReference.Instance.colors[System.Convert.ToInt32(OwnerClientId)];
         ownedEntities.Add(select);
         //now, tell the server about this
         NetworkObject net = guy.GetComponent<NetworkObject>();
         net.Spawn(); //spawn on network, syncing the game state for everyone 
-        UpdateColorClientRpc(guy, 0);
-    }
-    [ClientRpc]
-    private void UpdateColorClientRpc(NetworkObjectReference guy, int index)
-    {
-        GameObject obj = guy;
-        if (obj != null)
-        {
-            SelectableEntity select = obj.GetComponent<SelectableEntity>();
-            select.teamColor.material = ColorReference.Instance.colors[index]; //server is always 0
-        }
-    }
+        //UpdateColorClientRpc(guy, 0);
+    } 
     [ServerRpc] //client tells server to spawn the object
     private void SpawnMinionServerRPC(Vector3 pos, ServerRpcParams serverRpcParams = default)
-    {
+    { 
         pos.y = 0;
-        GameObject guy = Instantiate(building, pos, Quaternion.identity);
+        GameObject guy = Instantiate(faction.entities[entitiesIndex].prefabToSpawn, pos, Quaternion.identity);
         NetworkObject net = guy.GetComponent<NetworkObject>();
 
         var clientId = serverRpcParams.Receive.SenderClientId;
         net.SpawnWithOwnership(clientId); 
         //update team color for server
         SelectableEntity select = guy.GetComponent<SelectableEntity>();
-        select.teamColor.material = ColorReference.Instance.colors[System.Convert.ToInt32(clientId)]; 
+        //select.teamColor.material = ColorReference.Instance.colors[System.Convert.ToInt32(clientId)]; 
         //send this to client that requested it
         ClientRpcParams clientRpcParams = new ClientRpcParams
         {
@@ -85,11 +89,10 @@ public class RTSPlayer : NetworkBehaviour
                 TargetClientIds = new ulong[] { clientId }
             }
         };
-        TestClientRpc(guy, clientRpcParams); 
-        UpdateColorClientRpc(guy, System.Convert.ToInt32(clientId));
+        UpdateOwnedEntitiesClientRpc(guy, clientRpcParams);  
     } 
     [ClientRpc]
-    private void TestClientRpc(NetworkObjectReference guy, ClientRpcParams clientRpcParams)
+    private void UpdateOwnedEntitiesClientRpc(NetworkObjectReference guy, ClientRpcParams clientRpcParams)
     {
         GameObject obj = guy;
         if (obj != null)

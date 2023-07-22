@@ -49,17 +49,14 @@ MonoBehaviour:
   destination: {x: 0, y: 0, z: 0}
   speed: 4
   rotSpeed: 10
-  minion: {fileID: 2545681379473208697, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
-  building: {fileID: 2545681379473208697, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+  minion: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
+  building: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
   grid: {fileID: 2084301759269820934}
   gridPosition: {x: 0, y: 0, z: 0}
   ownedEntities: []
   selectedEntities: []
-  teamColors:
-  - {fileID: 2100000, guid: f6e72cb4d0f2f0a47895a02988eaae88, type: 2}
-  - {fileID: 2100000, guid: 033e61aa610b4284994579605aa4be18, type: 2}
-  - {fileID: 2100000, guid: e8e33508c270ace47a4845c6cde1e8d2, type: 2}
-  ourColor: {fileID: 0}
+  faction: {fileID: 11400000, guid: 66749da4c40495e4780f36062d3a4f8b, type: 2}
+  entitiesIndex: 0
   mousePosition: {x: 0, y: 0, z: 0}
 --- !u!114 &1888051484682193116
 MonoBehaviour:

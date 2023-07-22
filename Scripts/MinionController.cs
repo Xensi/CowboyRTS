@@ -13,8 +13,8 @@ public class MinionController : NetworkBehaviour
     [SerializeField] private Animator anim;
     bool animsEnabled = false;
     IAstarAI ai;
-    [SerializeField] private SelectableEntity selector;
-    public NetworkVariable<Material> teamColor;
+    [SerializeField] private SelectableEntity selector; 
+
     void OnEnable()
     {
         ai = GetComponent<IAstarAI>();

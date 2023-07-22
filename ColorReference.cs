@@ -6,6 +6,7 @@ public class ColorReference : MonoBehaviour
 {
     public static ColorReference Instance { get; private set; }
     public List<Material> colors;
+    public List<Transform> playerSpawn;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.
