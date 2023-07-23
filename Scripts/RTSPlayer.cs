@@ -115,7 +115,7 @@ public class RTSPlayer : NetworkBehaviour
     private MeshRenderer[] meshes;
     private void HoverBuildWithID(int id = 0)
     {
-        Debug.Log("ready to place");
+        placementBlocked = false; 
         buildState = BuildStates.ReadyToPlace;
         GameObject build = _faction.entities[id].prefabToSpawn;
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.identity); //spawn locally 
@@ -166,7 +166,7 @@ public class RTSPlayer : NetworkBehaviour
         GameObject guy = Instantiate(_faction.entities[_entitiesIndex].prefabToSpawn, pos, Quaternion.identity); //spawn locally
         SelectableEntity select = guy.GetComponent<SelectableEntity>();
         NetworkObject net = guy.GetComponent<NetworkObject>();
-        _ownedEntities.Add(select);
+        ownedEntities.Add(select);
 
         net.SpawnWithOwnership(OwnerClientId); //spawn on network, syncing the game state for everyone  
     } 
@@ -199,7 +199,7 @@ public class RTSPlayer : NetworkBehaviour
         if (obj != null)
         { 
             SelectableEntity select = obj.GetComponent<SelectableEntity>();
-            _ownedEntities.Add(select); 
+            ownedEntities.Add(select); 
         }
     }
     #endregion
@@ -250,7 +250,7 @@ public class RTSPlayer : NetworkBehaviour
             TMP_Text text = button.GetComponentInChildren<TMP_Text>();
             text.text = _faction.entities[indices[i]].productionName; 
             int j = indices[i];
-            button.onClick.RemoveAllListeners();
+            button.onClick.RemoveAllListeners(); 
             button.onClick.AddListener(delegate { HoverBuildWithID(j) ; }); 
         }
         for (; i < Global.Instance.productionButtons.Count; i++)
@@ -269,7 +269,7 @@ public class RTSPlayer : NetworkBehaviour
         if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
         {
             SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
-            if (entity != null && _ownedEntities.Contains(entity))
+            if (entity != null && ownedEntities.Contains(entity))
             {
                 _selectedEntities.Add(entity);
                 entity.Select(!entity.selected);
@@ -287,7 +287,7 @@ public class RTSPlayer : NetworkBehaviour
         if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
         {
             SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
-            if (entity != null && _ownedEntities.Contains(entity))
+            if (entity != null && ownedEntities.Contains(entity))
             { 
                 SelectAllSameType(entity.type);
             }
@@ -295,7 +295,7 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void SelectAllSameType(SelectableEntity.EntityTypes type)
     {
-        foreach (SelectableEntity item in _ownedEntities)
+        foreach (SelectableEntity item in ownedEntities)
         {
             if (item.type == type)
             { 

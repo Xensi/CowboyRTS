@@ -16,7 +16,6 @@ public class MinionController : NetworkBehaviour
     private float walkAnimThreshold = 0.01f;
     private Vector3 oldPosition;
 
-
     [SerializeField] private float attackRange = 1;
 
     public SelectableEntity targetEnemy;
@@ -32,7 +31,6 @@ public class MinionController : NetworkBehaviour
         {
             SetDestination();
         }
-        if (animsEnabled) UpdateAnimations();
     }
     private void CheckTargetEnemy()
     { 
@@ -41,16 +39,21 @@ public class MinionController : NetworkBehaviour
             enemyInRange = false;
             //do a spherecast to get one
             Vector3 center = transform.position;
-
-            int maxColliders = Mathf.RoundToInt(20 * attackRange);
+            float detectionRange = attackRange * 2;
+            int maxColliders = Mathf.RoundToInt(20 * detectionRange);
             Collider[] hitColliders = new Collider[maxColliders];
-            int numColliders = Physics.OverlapSphereNonAlloc(center, attackRange, hitColliders);
+            int numColliders = Physics.OverlapSphereNonAlloc(center, detectionRange, hitColliders, enemyMask);
             //get closest collider 
             Collider closest = null;
             float distance = Mathf.Infinity;
             for (int i = 0; i < numColliders; i++)
             {
-                if (hitColliders[i].gameObject == gameObject) //skip self
+                if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self
+                {
+                    continue;
+                }
+                SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
+                if (Global.Instance.localPlayer.ownedEntities.Contains(select))
                 {
                     continue;
                 }
@@ -60,9 +63,21 @@ public class MinionController : NetworkBehaviour
                     closest = hitColliders[i];
                 }
             }
-            if (closest != null)
+            if (closest != null )
             {
-                targetEnemy = closest.GetComponent<SelectableEntity>();
+                float dist = Vector3.Distance(transform.position, closest.transform.position);
+                if (dist <= attackRange)
+                { 
+                    targetEnemy = closest.GetComponent<SelectableEntity>();
+                    enemyInRange = true;
+                    chasingEnemy = false;
+                }
+                else
+                { 
+                    destination = closest.transform.position;
+                    enemyInRange = false;
+                    chasingEnemy = true;
+                }
             }
         }
         else
@@ -70,11 +85,14 @@ public class MinionController : NetworkBehaviour
             float dist = Vector3.Distance(transform.position, targetEnemy.transform.position);
             if (dist > attackRange)
             {
+                chasingEnemy = false;
                 targetEnemy = null;
                 enemyInRange = false;
+                CancelAttack();
             }
             else
             {
+                chasingEnemy = false;
                 enemyInRange = true;
             }
         }
@@ -122,10 +140,22 @@ public class MinionController : NetworkBehaviour
         if (ai != null) ai.destination = destination;
         //HandleMovement();
         DetectIfShouldStopFollowingMoveOrder();
-        CheckTargetEnemy();
+
+        if (delay > 60)
+        {
+            delay = 0;
+            CheckTargetEnemy();
+        }
+        else
+        {
+            delay++;
+        }
+        if (animsEnabled) UpdateAnimations();
     }
+    //60 fps, 
+    private int delay = 0;
     private int basicallyIdleInstances = 0;
-    private int idleThreshold = 60;
+    private int idleThreshold = 30;
     private void DetectIfShouldStopFollowingMoveOrder()
     {
         if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
@@ -152,6 +182,7 @@ public class MinionController : NetworkBehaviour
         Melee, Ranged
     }
     public AttackType attackType = AttackType.Melee;
+    private bool chasingEnemy = false;
     private void UpdateAnimations()
     {
         switch (state)
@@ -162,7 +193,7 @@ public class MinionController : NetworkBehaviour
                 {
                     StartAttack();
                 }
-                else if (followingMoveOrder)
+                else if (followingMoveOrder || chasingEnemy)
                 {
                     state = AnimStates.Walk;
                 } 
@@ -174,7 +205,7 @@ public class MinionController : NetworkBehaviour
                 {
                     StartAttack();
                 }
-                else if (!followingMoveOrder)
+                else if (!followingMoveOrder && !chasingEnemy)
                 {
                     state = AnimStates.Idle;
                 }
@@ -211,6 +242,11 @@ public class MinionController : NetworkBehaviour
         Invoke("DamageEnemy", impactTime);
         Invoke("ReturnState", attackDuration);
     }
+    private void CancelAttack()
+    { 
+        state = AnimStates.Idle;
+        CancelInvoke();
+    }
     private float attackDuration = 1;
     private float impactTime = .5f;
     private void ReturnState()
@@ -225,6 +261,8 @@ public class MinionController : NetworkBehaviour
     }
     private void SetDestination()
     {
+        targetEnemy = null;
+        enemyInRange = false;
         basicallyIdleInstances = 0;
         followingMoveOrder = true; 
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
