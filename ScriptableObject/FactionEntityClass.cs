@@ -5,6 +5,7 @@ using UnityEngine;
 public class FactionEntityClass
 {
     public string productionName = "not produced";
+    public bool needsConstructing = true;
     public GameObject prefabToSpawn;
     public int goldCost = 0;
 }

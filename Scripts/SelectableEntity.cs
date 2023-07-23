@@ -19,7 +19,7 @@ public class SelectableEntity : NetworkBehaviour
         Builder
     }
     public EntityTypes type = EntityTypes.Melee;
-    public List<int> builderEntityIndices; //list of indices that can be built with this builder.   
+    public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
 
     public NetworkVariable<int> hitPoints = new NetworkVariable<int>();
     [SerializeField] private int startingHP = 10;

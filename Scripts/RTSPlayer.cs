@@ -8,6 +8,7 @@ using TMPro;
 
 public class RTSPlayer : NetworkBehaviour
 {
+    public int gold = 0;
     private Camera _cam;   
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
@@ -43,7 +44,7 @@ public class RTSPlayer : NetworkBehaviour
         { //spawn initial minions/buildings 
             Global.Instance.localPlayer = this;
             //SimpleSpawnMinion(Vector3.zero);
-            SimpleSpawnMinion(Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position);
+            SimpleSpawnMinion(Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position, 0);
         }
     }
     private bool MouseOverUI()
@@ -57,7 +58,7 @@ public class RTSPlayer : NetworkBehaviour
             GetMouseWorldPosition();
             if (Input.GetMouseButtonDown(2))
             {
-                SimpleSpawnMinion(_worldPosition);
+                SimpleSpawnMinion(_worldPosition, _entitiesIndex);
             }
             if (Input.GetMouseButtonDown(0))
             {
@@ -81,8 +82,8 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void PlaceBuilding(int id = 0)
     {
-        _entitiesIndex = id;
-        SimpleSpawnMinion(_worldPosition); 
+        Debug.Log(id); 
+        SimpleSpawnMinion(_worldPosition, id); 
         StopPlacingBuilding();
     }  
     private void StopPlacingBuilding()
@@ -113,25 +114,6 @@ public class RTSPlayer : NetworkBehaviour
     private GameObject followCursorObject;
     private int buildingPlacingID = 0;
     private MeshRenderer[] meshes;
-    private void HoverBuildWithID(int id = 0)
-    {
-        placementBlocked = false; 
-        buildState = BuildStates.ReadyToPlace;
-        GameObject build = _faction.entities[id].prefabToSpawn;
-        GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.identity); //spawn locally 
-        followCursorObject = spawn;
-        meshes = spawn.GetComponentsInChildren<MeshRenderer>(); 
-        for (int i = 0; i < meshes.Length; i++)
-        {
-            meshes[i].material = Global.Instance.transparent;
-        }
-        Collider[] colliders = spawn.GetComponentsInChildren<Collider>(); 
-        for (int i = 0; i < colliders.Length; i++)
-        {
-            colliders[i].isTrigger = true;
-        }
-        buildingPlacingID = id;
-    }
     private void GetMouseWorldPosition()
     {
         Ray ray = _cam.ScreenPointToRay(Input.mousePosition);
@@ -149,21 +131,21 @@ public class RTSPlayer : NetworkBehaviour
         }
     }
     #region SpawnMinion
-    private void SimpleSpawnMinion(Vector3 pos)
+    private void SimpleSpawnMinion(Vector3 pos, int id)
     { 
         if (IsServer)
         {
-            SpawnMinion(pos);
+            SpawnMinion(pos, id);
         }
         else
         {
-            SpawnMinionServerRPC(pos);
+            SpawnMinionServerRPC(pos, id);
         }
     }
-    private void SpawnMinion(Vector3 pos)
+    private void SpawnMinion(Vector3 pos, int id)
     {
         pos.y = 0;
-        GameObject guy = Instantiate(_faction.entities[_entitiesIndex].prefabToSpawn, pos, Quaternion.identity); //spawn locally
+        GameObject guy = Instantiate(_faction.entities[id].prefabToSpawn, pos, Quaternion.identity); //spawn locally
         SelectableEntity select = guy.GetComponent<SelectableEntity>();
         NetworkObject net = guy.GetComponent<NetworkObject>();
         ownedEntities.Add(select);
@@ -171,10 +153,10 @@ public class RTSPlayer : NetworkBehaviour
         net.SpawnWithOwnership(OwnerClientId); //spawn on network, syncing the game state for everyone  
     } 
     [ServerRpc] //client tells server to spawn the object
-    private void SpawnMinionServerRPC(Vector3 pos, ServerRpcParams serverRpcParams = default)
+    private void SpawnMinionServerRPC(Vector3 pos, int id, ServerRpcParams serverRpcParams = default)
     { 
         pos.y = 0;
-        GameObject guy = Instantiate(_faction.entities[_entitiesIndex].prefabToSpawn, pos, Quaternion.identity);
+        GameObject guy = Instantiate(_faction.entities[id].prefabToSpawn, pos, Quaternion.identity);
         //SelectableEntity select = guy.GetComponent<SelectableEntity>();
         NetworkObject net = guy.GetComponent<NetworkObject>();
 
@@ -224,8 +206,8 @@ public class RTSPlayer : NetworkBehaviour
         UpdateGUIFromSelections();
     }
     private void UpdateGUIFromSelections()
-    { 
-        List<int> indices = new List<int>();
+    {
+        indices.Clear();
 
         if (_selectedEntities.Count > 0) //at least one unit selected
         { 
@@ -250,14 +232,49 @@ public class RTSPlayer : NetworkBehaviour
             TMP_Text text = button.GetComponentInChildren<TMP_Text>();
             text.text = _faction.entities[indices[i]].productionName; 
             int j = indices[i];
+            Debug.Log(j);
             button.onClick.RemoveAllListeners(); 
-            button.onClick.AddListener(delegate { HoverBuildWithID(j) ; }); 
+            if (_faction.entities[indices[i]].needsConstructing)
+            { 
+                button.onClick.AddListener(delegate { HoverBuildWithID(j); });
+            }
+            else
+            { 
+                button.onClick.AddListener(delegate { SpawnFromBuilding(j); });
+            }
         }
         for (; i < Global.Instance.productionButtons.Count; i++)
         { 
             Global.Instance.productionButtons[i].gameObject.SetActive(false);
-        } 
-    } 
+        }
+    }
+    private void SpawnFromBuilding(int id = 0)
+    {
+        //first pick a building from those selected that is able to spawn
+        SelectableEntity select = _selectedEntities[0];
+        SpawnMinion(select.transform.position, id);
+    }
+    private void HoverBuildWithID(int id = 0)
+    {
+        Debug.Log(id);
+        placementBlocked = false;
+        buildState = BuildStates.ReadyToPlace;
+        GameObject build = _faction.entities[id].prefabToSpawn;
+        GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.identity); //spawn locally 
+        followCursorObject = spawn;
+        meshes = spawn.GetComponentsInChildren<MeshRenderer>();
+        for (int i = 0; i < meshes.Length; i++)
+        {
+            meshes[i].material = Global.Instance.transparent;
+        }
+        Collider[] colliders = spawn.GetComponentsInChildren<Collider>();
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            colliders[i].isTrigger = true;
+        }
+        buildingPlacingID = id;
+    }
+    public List<int> indices;
     private void SingleSelect()
     { 
         Ray ray = _cam.ScreenPointToRay(Input.mousePosition);

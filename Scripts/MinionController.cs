@@ -9,7 +9,7 @@ public class MinionController : NetworkBehaviour
     [SerializeField] private Vector3 destination;  
     [SerializeField] private Animator anim;
     bool animsEnabled = false;
-    IAstarAI ai;
+    AIPath ai;
     [SerializeField] private SelectableEntity selector;
     private AnimStates state = AnimStates.Idle;
     private float change;
@@ -79,6 +79,11 @@ public class MinionController : NetworkBehaviour
                     chasingEnemy = true;
                 }
             }
+            else
+            {
+                enemyInRange = false;
+                chasingEnemy = false;
+            }
         }
         else
         {
@@ -100,7 +105,7 @@ public class MinionController : NetworkBehaviour
     public bool enemyInRange = false;
     void OnEnable()
     {
-        ai = GetComponent<IAstarAI>();
+        ai = GetComponent<AIPath>();
         // Update the destination right before searching for a path as well.
         // This is enough in theory, but this script will also update the destination every
         // frame as the destination is used for debugging and may be used for other things by other
@@ -141,10 +146,13 @@ public class MinionController : NetworkBehaviour
         //HandleMovement();
         DetectIfShouldStopFollowingMoveOrder();
 
-        if (delay > 60)
+        if (delay > 30)
         {
             delay = 0;
-            CheckTargetEnemy();
+            if (!followingMoveOrder)
+            { 
+                CheckTargetEnemy();
+            }
         }
         else
         {
@@ -211,7 +219,8 @@ public class MinionController : NetworkBehaviour
                 }
                 break;
             case AnimStates.Attack:
-                anim.Play("Attack"); 
+                anim.Play("Attack");
+                transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, targetEnemy.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
                 break;
             default:
                 break;
