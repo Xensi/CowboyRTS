@@ -15,14 +15,16 @@ public class SelectableEntity : NetworkBehaviour
     {
         Melee,
         Ranged,
-        ProductionStructure
+        ProductionStructure,
+        Builder
     }
     public EntityTypes type = EntityTypes.Melee;
+    public List<int> builderEntityIndices; //list of indices that can be built with this builder. 
     public override void OnNetworkSpawn()
     {
         if (teamRenderer != null)
         { 
-            teamRenderer.material = ColorReference.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
+            teamRenderer.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
         }
     } 
     private void UpdateIndicator()

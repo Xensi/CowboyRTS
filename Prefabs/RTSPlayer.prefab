@@ -46,18 +46,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71c860c2c52a0fe4abb2551a872b5d92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  destination: {x: 0, y: 0, z: 0}
-  speed: 4
-  rotSpeed: 10
-  minion: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
-  building: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
   grid: {fileID: 2084301759269820934}
-  gridPosition: {x: 0, y: 0, z: 0}
-  ownedEntities: []
-  selectedEntities: []
-  faction: {fileID: 11400000, guid: 66749da4c40495e4780f36062d3a4f8b, type: 2}
-  entitiesIndex: 0
-  mousePosition: {x: 0, y: 0, z: 0}
+  _faction: {fileID: 11400000, guid: 66749da4c40495e4780f36062d3a4f8b, type: 2}
 --- !u!114 &1888051484682193116
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -88,7 +78,7 @@ GameObject:
   - component: {fileID: 6834473751763134392}
   - component: {fileID: 2084301759269820934}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: Grid
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

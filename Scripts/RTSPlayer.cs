@@ -1,27 +1,36 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Netcode; 
+using Unity.Netcode;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;// Required when using Event data.
+using TMPro;
 
 public class RTSPlayer : NetworkBehaviour
 {
-    private Camera cam;
-    [SerializeField] private Vector3 destination;
-    public float speed = 4;
-    public float rotSpeed = 10;
-    public GameObject minion;
-    public GameObject building;
+    private Camera _cam;   
     [SerializeField] private Grid grid;
-    public Vector3Int gridPosition;
-    [SerializeField] private List<SelectableEntity> ownedEntities;
-    [SerializeField] private List<SelectableEntity> selectedEntities;
+    private Vector3Int _gridPosition;
+    [SerializeField] private List<SelectableEntity> _ownedEntities; //must be serialized or public
+    [SerializeField] private List<SelectableEntity> _selectedEntities;
 
-    public FactionScriptableObject faction;
-    public int entitiesIndex = 0;
-
+    [SerializeField] private FactionScriptableObject _faction;
+    [SerializeField] private int _entitiesIndex = 0; //used to pick a prefab from faction list
+    private Vector3 _mousePosition;
+    private Vector3 _offset = new Vector3(0.5f, 0, .5f);
+    private Vector3 _worldPosition;
+    bool _doubleSelect = false; 
+    public enum BuildStates
+    {
+        Waiting,
+        ReadyToPlace
+    }
+    public BuildStates buildState = BuildStates.Waiting;
+    LayerMask groundLayer;
     void Start()
     {
-        cam = Camera.main; 
+        groundLayer = LayerMask.GetMask("Ground");
+        _cam = Camera.main; 
     }
     public override void OnNetworkSpawn()
     {
@@ -30,22 +39,78 @@ public class RTSPlayer : NetworkBehaviour
             enabled = false;
         }
         else
-        { 
-            SimpleSpawnMinion(ColorReference.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position);
+        { //spawn initial minions/buildings 
+            Global.Instance.localPlayer = this;
+            //SimpleSpawnMinion(Vector3.zero);
+            SimpleSpawnMinion(Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position);
         }
+    }
+    private bool MouseOverUI()
+    {
+        return EventSystem.current.IsPointerOverGameObject();
     }
     void Update()
     {
-        GetMouseWorldPosition();
-        if (Input.GetMouseButtonDown(2))
+        if (!MouseOverUI())
         {
-            SimpleSpawnMinion(worldPosition);
+            GetMouseWorldPosition();
+            if (Input.GetMouseButtonDown(2))
+            {
+                SimpleSpawnMinion(_worldPosition);
+            }
+            if (Input.GetMouseButtonDown(0))
+            {
+                if (buildState == BuildStates.ReadyToPlace)
+                {
+                    PlaceBuilding(buildingPlacingID);
+                }
+                else
+                {
+                    TryToSelectOne();
+                }
+            }
+        } 
+    }
+    private void PlaceBuilding(int id = 0)
+    {
+        _entitiesIndex = id;
+        SimpleSpawnMinion(_worldPosition);
+        Destroy(followCursorObject);
+        followCursorObject = null;
+    }  
+    private GameObject followCursorObject;
+    private int buildingPlacingID = 0;
+    private void HoverBuildWithID(int id = 0)
+    {
+        Debug.Log("ready to place");
+        buildState = BuildStates.ReadyToPlace;
+        GameObject build = _faction.entities[id].prefabToSpawn;
+        GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.identity); //spawn locally 
+        followCursorObject = spawn;
+        MeshRenderer[] meshes = spawn.GetComponentsInChildren<MeshRenderer>(); 
+        for (int i = 0; i < meshes.Length; i++)
+        {
+            meshes[i].material = Global.Instance.transparent;
         }
-        if (Input.GetMouseButtonDown(0))
+        buildingPlacingID = id;
+    }
+    private void GetMouseWorldPosition()
+    {
+        Ray ray = _cam.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
+
+        if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity, groundLayer))
         {
-            TryToSelectOne();
+            _mousePosition = hit.point;
+            _gridPosition = grid.WorldToCell(_mousePosition);
+            _worldPosition = grid.CellToWorld(_gridPosition) + _offset;
+            if (followCursorObject != null)
+            {
+                followCursorObject.transform.position = _worldPosition;
+            }
         }
     }
+    #region SpawnMinion
     private void SimpleSpawnMinion(Vector3 pos)
     { 
         if (IsServer)
@@ -60,26 +125,24 @@ public class RTSPlayer : NetworkBehaviour
     private void SpawnMinion(Vector3 pos)
     {
         pos.y = 0;
-        GameObject guy = Instantiate(faction.entities[entitiesIndex].prefabToSpawn, pos, Quaternion.identity); //spawn locally
-        SelectableEntity select = guy.GetComponent<SelectableEntity>(); 
-        //select.teamColor.material = ColorReference.Instance.colors[System.Convert.ToInt32(OwnerClientId)];
-        ownedEntities.Add(select);
-        //now, tell the server about this
+        GameObject guy = Instantiate(_faction.entities[_entitiesIndex].prefabToSpawn, pos, Quaternion.identity); //spawn locally
+        SelectableEntity select = guy.GetComponent<SelectableEntity>();
         NetworkObject net = guy.GetComponent<NetworkObject>();
-        net.Spawn(); //spawn on network, syncing the game state for everyone 
-        //UpdateColorClientRpc(guy, 0);
+        _ownedEntities.Add(select);
+
+        net.SpawnWithOwnership(OwnerClientId); //spawn on network, syncing the game state for everyone  
     } 
     [ServerRpc] //client tells server to spawn the object
     private void SpawnMinionServerRPC(Vector3 pos, ServerRpcParams serverRpcParams = default)
     { 
         pos.y = 0;
-        GameObject guy = Instantiate(faction.entities[entitiesIndex].prefabToSpawn, pos, Quaternion.identity);
+        GameObject guy = Instantiate(_faction.entities[_entitiesIndex].prefabToSpawn, pos, Quaternion.identity);
+        //SelectableEntity select = guy.GetComponent<SelectableEntity>();
         NetworkObject net = guy.GetComponent<NetworkObject>();
 
         var clientId = serverRpcParams.Receive.SenderClientId;
         net.SpawnWithOwnership(clientId); 
         //update team color for server
-        SelectableEntity select = guy.GetComponent<SelectableEntity>();
         //select.teamColor.material = ColorReference.Instance.colors[System.Convert.ToInt32(clientId)]; 
         //send this to client that requested it
         ClientRpcParams clientRpcParams = new ClientRpcParams
@@ -98,33 +161,68 @@ public class RTSPlayer : NetworkBehaviour
         if (obj != null)
         { 
             SelectableEntity select = obj.GetComponent<SelectableEntity>();
-            ownedEntities.Add(select); 
+            _ownedEntities.Add(select); 
         }
-    } 
-    bool doubleSelect = false;
+    }
+    #endregion
+    #region Selection
     private void DoNotDoubleSelect()
     {
-        doubleSelect = false;
+        _doubleSelect = false;
     }
     private void TryToSelectOne()
     { 
-        if (!doubleSelect)
+        if (!_doubleSelect)
         {
-            doubleSelect = true;
+            _doubleSelect = true;
             Invoke("DoNotDoubleSelect", .2f);
             SingleSelect();
         }
         else
         {
-            doubleSelect = false;
+            _doubleSelect = false;
             DoubleSelectDetected();
         }
-
-
+        UpdateGUIFromSelections();
     }
+    private void UpdateGUIFromSelections()
+    { 
+        List<int> indices = new List<int>();
+
+        if (_selectedEntities.Count > 0) //at least one unit selected
+        { 
+            //show gui elements based on unit type selected
+            foreach (SelectableEntity item in _selectedEntities)
+            { 
+                foreach (int num in item.builderEntityIndices)
+                {
+                    if (!indices.Contains(num))
+                    {
+                        indices.Add(num);
+                    }
+                }
+            }
+        } 
+        int i = 0;
+        //enable a button for each indices
+        for (; i < indices.Count; i++)
+        {
+            Button button = Global.Instance.productionButtons[i];
+            button.gameObject.SetActive(true);
+            TMP_Text text = button.GetComponentInChildren<TMP_Text>();
+            text.text = _faction.entities[indices[i]].productionName; 
+            int j = indices[i];
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(delegate { HoverBuildWithID(j) ; }); 
+        }
+        for (; i < Global.Instance.productionButtons.Count; i++)
+        { 
+            Global.Instance.productionButtons[i].gameObject.SetActive(false);
+        } 
+    } 
     private void SingleSelect()
     { 
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        Ray ray = _cam.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
         if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
         {
@@ -133,16 +231,16 @@ public class RTSPlayer : NetworkBehaviour
         if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
         {
             SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
-            if (entity != null && ownedEntities.Contains(entity))
+            if (entity != null && _ownedEntities.Contains(entity))
             {
-                selectedEntities.Add(entity);
+                _selectedEntities.Add(entity);
                 entity.Select(!entity.selected);
             }
         }
     }
     private void DoubleSelectDetected()
     {
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        Ray ray = _cam.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
         if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
         {
@@ -151,7 +249,7 @@ public class RTSPlayer : NetworkBehaviour
         if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
         {
             SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
-            if (entity != null && ownedEntities.Contains(entity))
+            if (entity != null && _ownedEntities.Contains(entity))
             { 
                 SelectAllSameType(entity.type);
             }
@@ -159,65 +257,30 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void SelectAllSameType(SelectableEntity.EntityTypes type)
     {
-        foreach (SelectableEntity item in ownedEntities)
+        foreach (SelectableEntity item in _ownedEntities)
         {
             if (item.type == type)
             { 
                 item.Select(true);
-                selectedEntities.Add(item);
+                _selectedEntities.Add(item);
             }
         }
     }
     private void DeselectAll()
     { 
-        foreach (SelectableEntity item in selectedEntities)
+        foreach (SelectableEntity item in _selectedEntities)
         {
             item.Select(false);
         }
-        selectedEntities.Clear();
+        _selectedEntities.Clear();
     }
-    public Vector3 mousePosition;
-    private Vector3 offset = new Vector3(0.5f, 0, .5f);
-    private void GetMouseWorldPosition()
-    {
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-
-        if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
-        {
-            mousePosition = hit.point;
-            gridPosition = grid.WorldToCell(mousePosition);
-            worldPosition = grid.CellToWorld(gridPosition) + offset;
-        }
-    }
-    private Vector3 worldPosition;
+    #endregion
     private void OnDrawGizmos()
     {
         if (IsOwner)
         {
-            Gizmos.DrawWireSphere(mousePosition, .1f);
-            Gizmos.DrawSphere(worldPosition, .1f);
+            Gizmos.DrawWireSphere(_mousePosition, .1f);
+            Gizmos.DrawSphere(_worldPosition, .1f);
         }
-    }
-
-    private void SetDestination()
-    {
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-
-        if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
-        {
-            destination = hit.point;
-        }
-    }
-    private void FixedUpdate()
-    {
-        HandleMovement();
-    }
-    private void HandleMovement()
-    {
-        transform.position = Vector3.MoveTowards(transform.position, destination, Time.deltaTime * speed);
-        transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, destination - transform.position, Time.deltaTime * rotSpeed, 0));
-        //transform.rotation = Quaternion.LookRotation(destination - transform.position);
-    }
+    } 
 }

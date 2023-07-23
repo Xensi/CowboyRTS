@@ -4,6 +4,7 @@ using UnityEngine;
 [System.Serializable]
 public class FactionEntityClass
 {
-    public string displayName = "NAME";
+    public string productionName = "not produced";
     public GameObject prefabToSpawn;
+    public int goldCost = 0;
 }

@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: BoneBoys
   m_EditorClassIdentifier: 
   entities:
-  - displayName: Gravedigger
+  - productionName: Raise Dead
     prefabToSpawn: {fileID: 2545681379473208697, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
-  - displayName: Grave
+    goldCost: 0
+  - productionName: Dig Grave
     prefabToSpawn: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
+    goldCost: 0

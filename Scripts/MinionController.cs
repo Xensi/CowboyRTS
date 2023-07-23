@@ -6,14 +6,15 @@ using Pathfinding;
 public class MinionController : NetworkBehaviour
 {
     private Camera cam;
-    [SerializeField] private Vector3 destination;
-    public float speed = 4;
-    public float rotSpeed = 10;
-
+    [SerializeField] private Vector3 destination;  
     [SerializeField] private Animator anim;
     bool animsEnabled = false;
     IAstarAI ai;
-    [SerializeField] private SelectableEntity selector; 
+    [SerializeField] private SelectableEntity selector;
+    private AnimStates state = AnimStates.Idle;
+    private float change;
+    private float walkAnimThreshold = 0.01f;
+    private Vector3 oldPosition;
 
     void OnEnable()
     {
@@ -45,11 +46,10 @@ public class MinionController : NetworkBehaviour
 
             anim = GetComponentInChildren<Animator>();
         }
-    }
-
+    } 
     public override void OnNetworkSpawn()
     {
-        if (!IsOwner) this.enabled = false;
+        if (!IsOwner) enabled = false;
     }
     void Update()
     { 
@@ -72,34 +72,19 @@ public class MinionController : NetworkBehaviour
         Walk,
         Attack
     }
-    private AnimStates state = AnimStates.Idle;
-    private float change;
-    private float walkAnimThreshold = 0.01f;
     private void UpdateAnimations()
     {
         switch (state)
         {
             case AnimStates.Idle:
-                anim.Play("Idle");
-
-                //dist = Vector3.SqrMagnitude(destination - transform.position);
-                /*if (dist > walkAnimThreshold)
-                {
-                    state = AnimStates.Walk;
-                }*/ 
+                anim.Play("Idle"); 
                 if (change > walkAnimThreshold)
                 {
                     state = AnimStates.Walk;
                 }
                 break;
             case AnimStates.Walk:
-                anim.Play("Walk");
-
-                /*dist = Vector3.SqrMagnitude(destination - transform.position);
-                if (dist <= walkAnimThreshold)
-                {
-                    state = AnimStates.Idle;
-                }*/
+                anim.Play("Walk"); 
                 if (change <= walkAnimThreshold)
                 {
                     state = AnimStates.Idle;
@@ -112,7 +97,6 @@ public class MinionController : NetworkBehaviour
                 break;
         }
     }
-    private Vector3 oldPosition;
     private float GetActualPositionChange()
     {
         float dist = Vector3.SqrMagnitude(transform.position - oldPosition);

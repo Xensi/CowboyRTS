@@ -1,12 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class ColorReference : MonoBehaviour
+public class Global : MonoBehaviour
 {
-    public static ColorReference Instance { get; private set; }
+    public static Global Instance { get; private set; }
     public List<Material> colors;
     public List<Transform> playerSpawn;
+    public List<Button> productionButtons;
+    public Material transparent;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.
@@ -19,5 +22,11 @@ public class ColorReference : MonoBehaviour
         {
             Instance = this;
         }
+
+        foreach (Button item in productionButtons)
+        {
+            item.gameObject.SetActive(false);
+        }
     }
+    public RTSPlayer localPlayer;  
 }
