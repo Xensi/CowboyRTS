@@ -11,13 +11,13 @@ public class RTSPlayer : NetworkBehaviour
     private Camera _cam;   
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
-    [SerializeField] private List<SelectableEntity> _ownedEntities; //must be serialized or public
+    public List<SelectableEntity> ownedEntities; //must be serialized or public
     [SerializeField] private List<SelectableEntity> _selectedEntities;
 
     [SerializeField] private FactionScriptableObject _faction;
     [SerializeField] private int _entitiesIndex = 0; //used to pick a prefab from faction list
     private Vector3 _mousePosition;
-    private Vector3 _offset = new Vector3(0.5f, 0, .5f);
+    private Vector3 _offset;
     private Vector3 _worldPosition;
     bool _doubleSelect = false; 
     public enum BuildStates
@@ -30,6 +30,7 @@ public class RTSPlayer : NetworkBehaviour
     void Start()
     {
         groundLayer = LayerMask.GetMask("Ground");
+        _offset = new Vector3(0.5f, 0, .5f);
         _cam = Camera.main; 
     }
     public override void OnNetworkSpawn()
@@ -60,7 +61,7 @@ public class RTSPlayer : NetworkBehaviour
             }
             if (Input.GetMouseButtonDown(0))
             {
-                if (buildState == BuildStates.ReadyToPlace)
+                if (buildState == BuildStates.ReadyToPlace && !placementBlocked)
                 {
                     PlaceBuilding(buildingPlacingID);
                 }
@@ -69,17 +70,49 @@ public class RTSPlayer : NetworkBehaviour
                     TryToSelectOne();
                 }
             }
+            if (Input.GetMouseButtonDown(1))
+            {
+                if (buildState == BuildStates.ReadyToPlace)
+                {
+                    StopPlacingBuilding();
+                }
+            }
         } 
     }
     private void PlaceBuilding(int id = 0)
     {
         _entitiesIndex = id;
-        SimpleSpawnMinion(_worldPosition);
-        Destroy(followCursorObject);
-        followCursorObject = null;
+        SimpleSpawnMinion(_worldPosition); 
+        StopPlacingBuilding();
     }  
+    private void StopPlacingBuilding()
+    {
+        Destroy(followCursorObject);
+        followCursorObject = null; 
+        buildState = BuildStates.Waiting;
+
+    }
+    public void UpdatePlacement()
+    {
+        if (placementBlocked)
+        { 
+            for (int i = 0; i < meshes.Length; i++)
+            {
+                meshes[i].material = Global.Instance.blocked;
+            }
+        }
+        else
+        { 
+            for (int i = 0; i < meshes.Length; i++)
+            {
+                meshes[i].material = Global.Instance.transparent;
+            }
+        }
+    }
+    public bool placementBlocked = false;
     private GameObject followCursorObject;
     private int buildingPlacingID = 0;
+    private MeshRenderer[] meshes;
     private void HoverBuildWithID(int id = 0)
     {
         Debug.Log("ready to place");
@@ -87,10 +120,15 @@ public class RTSPlayer : NetworkBehaviour
         GameObject build = _faction.entities[id].prefabToSpawn;
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.identity); //spawn locally 
         followCursorObject = spawn;
-        MeshRenderer[] meshes = spawn.GetComponentsInChildren<MeshRenderer>(); 
+        meshes = spawn.GetComponentsInChildren<MeshRenderer>(); 
         for (int i = 0; i < meshes.Length; i++)
         {
             meshes[i].material = Global.Instance.transparent;
+        }
+        Collider[] colliders = spawn.GetComponentsInChildren<Collider>(); 
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            colliders[i].isTrigger = true;
         }
         buildingPlacingID = id;
     }

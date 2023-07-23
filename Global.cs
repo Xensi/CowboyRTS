@@ -10,6 +10,8 @@ public class Global : MonoBehaviour
     public List<Transform> playerSpawn;
     public List<Button> productionButtons;
     public Material transparent;
+    public Material blocked;
+    public RTSPlayer localPlayer;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.
@@ -28,5 +30,4 @@ public class Global : MonoBehaviour
             item.gameObject.SetActive(false);
         }
     }
-    public RTSPlayer localPlayer;  
 }
