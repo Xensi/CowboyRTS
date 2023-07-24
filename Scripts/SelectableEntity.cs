@@ -23,6 +23,8 @@ public class SelectableEntity : NetworkBehaviour
 
     public NetworkVariable<int> hitPoints = new NetworkVariable<int>();
     [SerializeField] private int startingHP = 10;
+    public int maxHP = 10;
+    public bool fullyBuilt = true;
     public override void OnNetworkSpawn()
     {
         if (teamRenderer != null)

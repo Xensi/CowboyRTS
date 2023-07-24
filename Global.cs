@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class Global : MonoBehaviour
 {
@@ -12,6 +13,7 @@ public class Global : MonoBehaviour
     public Material transparent;
     public Material blocked;
     public RTSPlayer localPlayer;
+    public TMP_Text goldText;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.

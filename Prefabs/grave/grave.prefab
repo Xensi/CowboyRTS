@@ -214,7 +214,8 @@ MonoBehaviour:
   builderEntityIndices: 00000000
   hitPoints:
     m_InternalValue: 0
-  startingHP: 10
+  startingHP: 0
+  maxHP: 10
 --- !u!114 &3728683629940428650
 MonoBehaviour:
   m_ObjectHideFlags: 0

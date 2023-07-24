@@ -8,7 +8,7 @@ using TMPro;
 
 public class RTSPlayer : NetworkBehaviour
 {
-    public int gold = 0;
+    public int gold = 100;
     private Camera _cam;   
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
@@ -32,7 +32,8 @@ public class RTSPlayer : NetworkBehaviour
     {
         groundLayer = LayerMask.GetMask("Ground");
         _offset = new Vector3(0.5f, 0, .5f);
-        _cam = Camera.main; 
+        _cam = Camera.main;
+        camParent = _cam.transform.parent.transform;
     }
     public override void OnNetworkSpawn()
     {
@@ -44,16 +45,26 @@ public class RTSPlayer : NetworkBehaviour
         { //spawn initial minions/buildings 
             Global.Instance.localPlayer = this;
             //SimpleSpawnMinion(Vector3.zero);
-            SimpleSpawnMinion(Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position, 0);
+            Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
+            SimpleSpawnMinion(spawn, 0);
+            camParent.position = spawn;
         }
     }
+    private Transform camParent;
     private bool MouseOverUI()
     {
         return EventSystem.current.IsPointerOverGameObject();
     }
+    private float camSpeed = 10;
+    private void CameraMove()
+    {
+        Vector3 motion = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
+        camParent.Translate(motion * camSpeed * Time.deltaTime);
+    }
     void Update()
     {
-        if (!MouseOverUI())
+        CameraMove();
+        if (!MouseOverUI()) 
         {
             GetMouseWorldPosition();
             if (Input.GetMouseButtonDown(2))
@@ -78,11 +89,25 @@ public class RTSPlayer : NetworkBehaviour
                     StopPlacingBuilding();
                 }
             }
-        } 
+        }
+        Global.Instance.goldText.text = "Gold: " + gold; 
+    }
+    private int goldDelay = 10; //in seconds
+    private int count = 0;
+    private void FixedUpdate()
+    {
+        if (count < goldDelay * 50)
+        {
+            count++;
+        }
+        else
+        {
+            count = 0;
+            gold += 100;
+        }
     }
     private void PlaceBuilding(int id = 0)
-    {
-        Debug.Log(id); 
+    { 
         SimpleSpawnMinion(_worldPosition, id); 
         StopPlacingBuilding();
     }  
@@ -132,25 +157,44 @@ public class RTSPlayer : NetworkBehaviour
     }
     #region SpawnMinion
     private void SimpleSpawnMinion(Vector3 pos, int id)
-    { 
+    {
+        FactionEntityClass fac = _faction.entities[id];
+        gold -= fac.goldCost;
+        UpdateButtons(); 
         if (IsServer)
         {
-            SpawnMinion(pos, id);
+            SpawnMinion(pos, id); 
         }
         else
         {
             SpawnMinionServerRPC(pos, id);
         }
-    }
+    } 
+    public SelectableEntity lastPlaced;
     private void SpawnMinion(Vector3 pos, int id)
     {
+        FactionEntityClass fac = _faction.entities[id];
         pos.y = 0;
-        GameObject guy = Instantiate(_faction.entities[id].prefabToSpawn, pos, Quaternion.identity); //spawn locally
+        GameObject guy = Instantiate(fac.prefabToSpawn, pos, Quaternion.identity); //spawn locally
         SelectableEntity select = guy.GetComponent<SelectableEntity>();
+        select.fullyBuilt = !fac.needsConstructing;
         NetworkObject net = guy.GetComponent<NetworkObject>();
         ownedEntities.Add(select);
 
         net.SpawnWithOwnership(OwnerClientId); //spawn on network, syncing the game state for everyone  
+
+        lastPlaced = select;
+        if (fac.needsConstructing)
+        {
+            foreach (SelectableEntity item in _selectedEntities)
+            {
+                if (item.type == SelectableEntity.EntityTypes.Builder)
+                {
+                    MinionController minion = item.GetComponent<MinionController>();
+                    minion.SetBuildDestination(pos, lastPlaced);
+                }
+            }
+        }
     } 
     [ServerRpc] //client tells server to spawn the object
     private void SpawnMinionServerRPC(Vector3 pos, int id, ServerRpcParams serverRpcParams = default)
@@ -172,16 +216,31 @@ public class RTSPlayer : NetworkBehaviour
                 TargetClientIds = new ulong[] { clientId }
             }
         };
-        UpdateOwnedEntitiesClientRpc(guy, clientRpcParams);  
+        UpdateOwnedEntitiesClientRpc(guy, id, clientRpcParams); 
     } 
     [ClientRpc]
-    private void UpdateOwnedEntitiesClientRpc(NetworkObjectReference guy, ClientRpcParams clientRpcParams)
+    private void UpdateOwnedEntitiesClientRpc(NetworkObjectReference guy, int id, ClientRpcParams clientRpcParams)
     {
         GameObject obj = guy;
         if (obj != null)
-        { 
+        {
+            FactionEntityClass fac = _faction.entities[id];
             SelectableEntity select = obj.GetComponent<SelectableEntity>();
-            ownedEntities.Add(select); 
+            select.fullyBuilt = !fac.needsConstructing;
+            ownedEntities.Add(select);
+            lastPlaced = select;
+
+            if (fac.needsConstructing)
+            {
+                foreach (SelectableEntity item in _selectedEntities)
+                {
+                    if (item.type == SelectableEntity.EntityTypes.Builder)
+                    {
+                        MinionController minion = item.GetComponent<MinionController>();
+                        minion.SetBuildDestination(select.transform.position, lastPlaced);
+                    }
+                }
+            }
         }
     }
     #endregion
@@ -205,7 +264,7 @@ public class RTSPlayer : NetworkBehaviour
         }
         UpdateGUIFromSelections();
     }
-    private void UpdateGUIFromSelections()
+    public void UpdateGUIFromSelections()
     {
         indices.Clear();
 
@@ -214,6 +273,10 @@ public class RTSPlayer : NetworkBehaviour
             //show gui elements based on unit type selected
             foreach (SelectableEntity item in _selectedEntities)
             { 
+                if (!item.fullyBuilt)
+                {
+                    continue;
+                }
                 foreach (int num in item.builderEntityIndices)
                 {
                     if (!indices.Contains(num))
@@ -230,7 +293,8 @@ public class RTSPlayer : NetworkBehaviour
             Button button = Global.Instance.productionButtons[i];
             button.gameObject.SetActive(true);
             TMP_Text text = button.GetComponentInChildren<TMP_Text>();
-            text.text = _faction.entities[indices[i]].productionName; 
+            FactionEntityClass fac = _faction.entities[indices[i]];
+            text.text = fac.productionName; 
             int j = indices[i];
             Debug.Log(j);
             button.onClick.RemoveAllListeners(); 
@@ -242,17 +306,27 @@ public class RTSPlayer : NetworkBehaviour
             { 
                 button.onClick.AddListener(delegate { SpawnFromBuilding(j); });
             }
+            button.interactable = gold >= fac.goldCost;
         }
         for (; i < Global.Instance.productionButtons.Count; i++)
         { 
             Global.Instance.productionButtons[i].gameObject.SetActive(false);
         }
     }
+    public void UpdateButtons()
+    {
+        for (int i = 0; i < indices.Count; i++)
+        {
+            Button button = Global.Instance.productionButtons[i];  
+            FactionEntityClass fac = _faction.entities[indices[i]];  
+            button.interactable = gold >= fac.goldCost;
+        }
+    }
     private void SpawnFromBuilding(int id = 0)
     {
         //first pick a building from those selected that is able to spawn
         SelectableEntity select = _selectedEntities[0];
-        SpawnMinion(select.transform.position, id);
+        SimpleSpawnMinion(select.transform.position, id);
     }
     private void HoverBuildWithID(int id = 0)
     {
