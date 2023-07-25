@@ -429,13 +429,13 @@ PrefabInstance:
       propertyPath: attackRange
       value: 1.25
       objectReference: {fileID: 0}
+    - target: {fileID: 2794094538110024962, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4126868118260038068, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 951099334
-      objectReference: {fileID: 0}
-    - target: {fileID: 4126868118260038068, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
-      propertyPath: AutoObjectParentSync
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Name
@@ -487,6 +487,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6541845058422189605, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6883782947868696822, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6883782947868696822, guid: f64a2c01c851079439b715bc7354cf81, type: 3}

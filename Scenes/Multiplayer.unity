@@ -2112,8 +2112,8 @@ MonoBehaviour:
     ServerListenAddress: 127.0.0.1
   DebugSimulator:
     PacketDelayMS: 10
-    PacketJitterMS: 5
-    PacketDropRate: 3
+    PacketJitterMS: 3
+    PacketDropRate: 5
 --- !u!114 &1873259844
 MonoBehaviour:
   m_ObjectHideFlags: 0

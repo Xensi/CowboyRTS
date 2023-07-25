@@ -154,7 +154,7 @@ public class RTSPlayer : NetworkBehaviour
     {
         RectTransform SelectionBox = Global.Instance.selectionRect;
         Bounds bounds = new Bounds(SelectionBox.anchoredPosition, SelectionBox.sizeDelta);
-        Debug.Log(bounds.size.magnitude);
+        //Debug.Log(bounds.size.magnitude);
         if (bounds.size.magnitude > 20f)
         {
             if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
@@ -473,7 +473,7 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void HoverBuildWithID(byte id = 0)
     {
-        Debug.Log(id);
+        //Debug.Log(id);
         placementBlocked = false;
         buildState = BuildStates.ReadyToPlace;
         GameObject build = _faction.entities[id].prefabToSpawn;
