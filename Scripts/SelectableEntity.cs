@@ -6,8 +6,8 @@ using Unity.Netcode;
 public class SelectableEntity : NetworkBehaviour
 {
     public MinionController controller;
-    public NetworkVariable<byte> hitPoints = new NetworkVariable<byte>();
-
+    //public NetworkVariable<byte> hitPoints = new NetworkVariable<byte>();
+    public byte hitPoints;
 
     public bool selected = false;
     [SerializeField] private GameObject indicator;
@@ -108,10 +108,11 @@ public class SelectableEntity : NetworkBehaviour
             teamRenderer.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
         }
 
-        if (IsServer)
+        hitPoints = startingHP;
+        /*if (IsServer)
         {
             hitPoints.Value = startingHP;
-        }
+        }*/
         rallyPoint = transform.position;
         SimplePlaySound(0);
         //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
@@ -120,13 +121,14 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private MeshRenderer[] meshes;
     public void TakeDamage(byte damage)
     {
-        hitPoints.Value -= damage;
-        if (hitPoints.Value <= 0)
+        hitPoints -= damage;
+        //hitPoints.Value -= damage;
+        if (hitPoints <= 0)
         {
             Global.Instance.localPlayer.ownedEntities.Remove(this);
             Destroy(gameObject);
         }
-        if (hitPoints.Value <= maxHP / 2 && !damaged)
+        if (hitPoints <= maxHP / 2 && !damaged)
         {
             damaged = true;
 
@@ -135,6 +137,10 @@ public class SelectableEntity : NetworkBehaviour
                 meshes[i].material = damagedState;
             } 
         }
+    }
+    public void BuildThis(byte delta)
+    {
+        hitPoints += delta;
     }
     public void OnTriggerEnter(Collider other)
     {

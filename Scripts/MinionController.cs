@@ -336,38 +336,42 @@ public class MinionController : NetworkBehaviour
     {
         state = AnimStates.Build;
         destination = transform.position;
-        Invoke("BuildTarget", impactTime);
+        Invoke("SimpleBuildTarget", impactTime);
         Invoke("ReturnState", attackDuration);
     }
     private void StartAttack()
     {
         state = AnimStates.Attack;
         destination = transform.position;
-        Invoke("DamageEnemy", impactTime);
+        Invoke("SimpleDamageEnemy", impactTime);
         Invoke("ReturnState", attackDuration);
     }
     public SelectableEntity buildTarget;
-    [SerializeField] private byte damage = 1;
-    private void DamageEnemy()
+    [SerializeField] private byte damage = 1; 
+    public void SimpleDamageEnemy()
     {
-        selector.SimplePlaySound(1);
-        //AudioSource.PlayClipAtPoint(selector.attackSound, transform.position);
-        if (IsServer)
-        { 
-            targetEnemy.TakeDamage(damage);
-        }
-        else //client needs to tell server to do this
-        {
-            DamageEnemyServerRpc(damage, targetEnemy.gameObject);
-        }
+        //fire locally
+        selector.SimplePlaySound(1); 
+        //request server to send to other clients
+        RequestDamageServerRpc(damage, targetEnemy.gameObject);
     }
     [ServerRpc]
-    private void DamageEnemyServerRpc(byte damage, NetworkObjectReference enemy)
+    private void RequestDamageServerRpc(byte damage, NetworkObjectReference enemy)
     {
-        GameObject actual = enemy;
-        actual.GetComponent<SelectableEntity>().TakeDamage(damage); 
+        DamageClientRpc(damage, enemy);
     }
-
+    [ClientRpc]
+    private void DamageClientRpc(byte damage, NetworkObjectReference enemy)
+    { 
+        if (!IsOwner)
+        {
+            selector.SimplePlaySound(1);
+        }
+        //server must handle damage!
+        GameObject actual = enemy;
+        actual.GetComponent<SelectableEntity>().TakeDamage(damage);
+    }
+    /*
     private void BuildTarget()
     {
         selector.SimplePlaySound(1);
@@ -379,7 +383,7 @@ public class MinionController : NetworkBehaviour
         else
         {
             BuildFromClientServerRpc(buildTarget.gameObject);
-            if (buildTarget.hitPoints.Value >= buildTarget.maxHP - 1)
+            if (buildTarget.hitPoints >= buildTarget.maxHP - 1)
             {
                 buildTarget.fullyBuilt = true;
                 buildTarget = null;
@@ -389,8 +393,8 @@ public class MinionController : NetworkBehaviour
     }
     private void BuildFromServer()
     {
-        buildTarget.hitPoints.Value += buildDelta;
-        if (buildTarget.hitPoints.Value >= buildTarget.maxHP)
+        buildTarget.hitPoints += buildDelta;
+        if (buildTarget.hitPoints >= buildTarget.maxHP)
         {
             buildTarget.fullyBuilt = true;
             buildTarget = null;
@@ -402,8 +406,44 @@ public class MinionController : NetworkBehaviour
     {
         GameObject act = obj;
         SelectableEntity buildTarget = act.GetComponent<SelectableEntity>();
-        buildTarget.hitPoints.Value += buildDelta;
+        buildTarget.hitPoints += buildDelta;
     }
+*/
+    public void SimpleBuildTarget()
+    {
+        selector.SimplePlaySound(1);
+
+        RequestBuildServerRpc(buildDelta, buildTarget.gameObject);
+        
+    }
+    [ServerRpc]
+    private void RequestBuildServerRpc(byte delta, NetworkObjectReference structure)
+    {
+        BuildClientRpc(delta, structure);
+    }
+    [ClientRpc]
+    private void BuildClientRpc(byte delta, NetworkObjectReference structure)
+    {
+        if (!IsOwner)
+        {
+            selector.SimplePlaySound(1);
+        }
+        //server must handle delta!
+        GameObject actual = structure;
+        actual.GetComponent<SelectableEntity>().BuildThis(delta);
+
+        if (IsOwner) //only the owner really cares if it's fully built 
+        { 
+            if (buildTarget.hitPoints >= buildTarget.maxHP)
+            {
+                buildTarget.fullyBuilt = true;
+                buildTarget = null;
+                Global.Instance.localPlayer.UpdateGUIFromSelections();
+            }
+        }
+    }
+
+
     private float attackDuration = 1;
     private float impactTime = .5f;
     private void ReturnState()
