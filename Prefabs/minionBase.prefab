@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6541845058422189605}
+  - component: {fileID: 4579057423376307924}
   - component: {fileID: 1556607826778985850}
   - component: {fileID: 4126868118260038068}
   - component: {fileID: 6883782947868696822}
@@ -39,6 +40,19 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4579057423376307924
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5353858407141398554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04c7fbd3e68a4c24c97a55fa97bf039c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotSpeed: 10
 --- !u!114 &1556607826778985850
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -52,10 +66,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   destination: {x: 0, y: 0, z: 0}
-  speed: 4
-  rotSpeed: 10
   anim: {fileID: 0}
   selector: {fileID: 0}
+  attackType: 0
+  attackRange: 1
+  targetEnemy: {fileID: 0}
+  localRotate: {fileID: 4579057423376307924}
+  enemyInRange: 0
+  rigid: {fileID: 7586105387906439370}
+  buildTarget: {fileID: 0}
+  damage: 1
 --- !u!114 &4126868118260038068
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -91,7 +111,7 @@ MonoBehaviour:
   SyncPositionY: 0
   SyncPositionZ: 1
   SyncRotAngleX: 0
-  SyncRotAngleY: 1
+  SyncRotAngleY: 0
   SyncRotAngleZ: 0
   SyncScaleX: 0
   SyncScaleY: 0
@@ -183,9 +203,9 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5353858407141398554}
   serializedVersion: 2
-  m_Mass: 1
-  m_Drag: 1
-  m_AngularDrag: 1
+  m_Mass: 10
+  m_Drag: 10
+  m_AngularDrag: 10
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0

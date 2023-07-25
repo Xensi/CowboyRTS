@@ -6,6 +6,7 @@ using TMPro;
 
 public class Global : MonoBehaviour
 {
+    public RectTransform selectionRect;
     public static Global Instance { get; private set; }
     public List<Material> colors;
     public List<Transform> playerSpawn;

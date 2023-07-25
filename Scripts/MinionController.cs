@@ -2,7 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
-using Pathfinding; 
+using Pathfinding;
+
+[RequireComponent(typeof(LocalRotation))]
 public class MinionController : NetworkBehaviour
 {
     private Camera cam;
@@ -11,7 +13,21 @@ public class MinionController : NetworkBehaviour
     bool animsEnabled = false;
     AIPath ai;
     [SerializeField] private SelectableEntity selector;
-    private AnimStates state = AnimStates.Idle;
+    private AnimStates state = AnimStates.Spawn;
+    private enum AnimStates
+    {
+        Idle,
+        Walk,
+        Attack,
+        Build,
+        Spawn
+    }
+    public enum AttackType
+    {
+        Melee, Ranged
+    }
+    public AttackType attackType = AttackType.Melee;
+    private bool chasingEnemy = false;
     private float change;
     private float walkAnimThreshold = 0.01f;
     private Vector3 oldPosition;
@@ -19,32 +35,77 @@ public class MinionController : NetworkBehaviour
     [SerializeField] private float attackRange = 1;
 
     public SelectableEntity targetEnemy;
-    private bool followingMoveOrder = false; 
+    public bool followingMoveOrder = false;
+    [SerializeField] private LocalRotation localRotate;
+
+    void OnEnable()
+    {
+        ai = GetComponent<AIPath>();
+        // Update the destination right before searching for a path as well.
+        // This is enough in theory, but this script will also update the destination every
+        // frame as the destination is used for debugging and may be used for other things by other
+        // scripts as well. So it makes sense that it is up to date every frame.
+        if (ai != null) ai.onSearchPath += Update;
+    }
+
+    void OnDisable()
+    {
+        if (ai != null) ai.onSearchPath -= Update;
+    }
+    private void Update()
+    {
+        
+    }
+    private void Awake()
+    {
+        enemyMask = LayerMask.GetMask("Entity", "Obstacle");
+        cam = Camera.main;
+
+        if (anim != null)
+        {
+            animsEnabled = true;
+        }
+        else
+        {
+            anim = GetComponentInChildren<Animator>();
+        }
+        if (anim != null)
+        {
+            anim.Play("Spawn");
+        } 
+        Invoke("FinishSpawning", spawnDuration);
+        //rigid.isKinematic = true;
+    } 
+    public override void OnNetworkSpawn()
+    {
+        //localRotate.rotSpeed = ai.rotationSpeed;
+        //localRotate.enabled = !IsOwner; //if isOwner, localRotate is disabled
+        enabled = IsOwner;
+        destination = transform.position;
+        oldPosition = transform.position;
+    }
     private void OnDrawGizmos()
     {
         Gizmos.DrawWireSphere(transform.position, attackRange);
     }
-    LayerMask enemyMask;
-    void Update()
-    {
-        if (Input.GetMouseButtonDown(1) && selector.selected)
-        {
-            SetDestination();
-        }
-    }
+    LayerMask enemyMask; 
     public void SetBuildDestination(Vector3 pos, SelectableEntity ent)
     { 
         destination = pos;
         buildTarget = ent; 
-    }
-    private void CheckTargetEnemy()
+    } 
+    private void CheckTargetEnemy() //use spherecast to get an enemy. if in attack range they become our target
     { 
         if (targetEnemy == null)
         {
             enemyInRange = false;
             //do a spherecast to get one
             Vector3 center = transform.position;
-            float detectionRange = attackRange * 2;
+            float detectionRange = attackRange;
+            if (attackMoving)
+            {
+                detectionRange = attackRange * 1.25f;
+            }
             int maxColliders = Mathf.RoundToInt(20 * detectionRange);
             Collider[] hitColliders = new Collider[maxColliders];
             int numColliders = Physics.OverlapSphereNonAlloc(center, detectionRange, hitColliders, enemyMask);
@@ -108,40 +169,12 @@ public class MinionController : NetworkBehaviour
         }
     }
     public bool enemyInRange = false;
-    void OnEnable()
+    [SerializeField] private Rigidbody rigid;
+    private float spawnDuration = .5f;
+    private void FinishSpawning()
     {
-        ai = GetComponent<AIPath>();
-        // Update the destination right before searching for a path as well.
-        // This is enough in theory, but this script will also update the destination every
-        // frame as the destination is used for debugging and may be used for other things by other
-        // scripts as well. So it makes sense that it is up to date every frame.
-        if (ai != null) ai.onSearchPath += Update;
-    }
-
-    void OnDisable()
-    {
-        if (ai != null) ai.onSearchPath -= Update;
-    }
-    void Start()
-    {
-        enemyMask = LayerMask.GetMask("Entity", "Obstacle");
-        destination = transform.position;
-        oldPosition = transform.position;
-        cam = Camera.main;
-
-        if (anim != null)
-        {
-            animsEnabled = true;
-        }
-        else
-        {
-
-            anim = GetComponentInChildren<Animator>();
-        }
-    } 
-    public override void OnNetworkSpawn()
-    {
-        if (!IsOwner) enabled = false;
+        //rigid.isKinematic = false;
+        state = AnimStates.Idle; 
     }
     private void FixedUpdate()
     { 
@@ -154,7 +187,7 @@ public class MinionController : NetworkBehaviour
         if (delay > 30)
         {
             delay = 0;
-            if (!followingMoveOrder && state != AnimStates.Build)
+            if ((!followingMoveOrder || attackMoving) && state != AnimStates.Build)
             { 
                 CheckTargetEnemy();
             }
@@ -162,11 +195,11 @@ public class MinionController : NetworkBehaviour
         else
         {
             delay++;
-        }
+        }  
         if (animsEnabled) UpdateAnimations();
     }
     //60 fps, 
-    private int delay = 0;
+    private int delay = 0; 
     private int basicallyIdleInstances = 0;
     private int idleThreshold = 30;
     private void DetectIfShouldStopFollowingMoveOrder()
@@ -184,23 +217,12 @@ public class MinionController : NetworkBehaviour
             followingMoveOrder = false;
         }
     }
-    private enum AnimStates
-    {
-        Idle,
-        Walk,
-        Attack,
-        Build
-    }
-    public enum AttackType
-    {
-        Melee, Ranged
-    }
-    public AttackType attackType = AttackType.Melee;
-    private bool chasingEnemy = false;
     private void UpdateAnimations()
     {
         switch (state)
         {
+            case AnimStates.Spawn:
+                break;
             case AnimStates.Idle:
                 anim.Play("Idle"); 
                 if (enemyInRange && !followingMoveOrder)
@@ -223,7 +245,7 @@ public class MinionController : NetworkBehaviour
                 break;
             case AnimStates.Walk:
                 anim.Play("Walk");
-                if (enemyInRange && !followingMoveOrder)
+                if (enemyInRange && (!followingMoveOrder || attackMoving))
                 {
                     StartAttack();
                 }
@@ -231,7 +253,7 @@ public class MinionController : NetworkBehaviour
                 {
                     StartBuild();
                 } 
-                else if (!followingMoveOrder && !chasingEnemy && buildTarget == null)
+                else if (!followingMoveOrder && !chasingEnemy && (buildTarget == null || buildTarget.fullyBuilt))
                 {
                     state = AnimStates.Idle;
                 }
@@ -243,18 +265,69 @@ public class MinionController : NetworkBehaviour
             case AnimStates.Build:
                 anim.Play("Attack");
                 transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, buildTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
-                if (Vector3.Distance(transform.position, buildTarget.transform.position) > attackRange)
+                //
+                if (buildTarget.fullyBuilt)
                 {
                     CancelAttack();
                 }
+                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) > attackRange)
+                {
+                    state = AnimStates.Walk;
+                }
+                
                 break;
             default:
                 break;
         }
     }
-    private int buildDelta = 1;
+    private void CancelAttack()
+    {
+        targetEnemy = null;
+        buildTarget = null;
+        state = AnimStates.Idle;
+        CancelInvoke();
+    }
+    private byte buildDelta = 1;
+    private void StartBuild()
+    {
+        state = AnimStates.Build;
+        destination = transform.position;
+        Invoke("BuildTarget", impactTime);
+        Invoke("ReturnState", attackDuration);
+    }
+    private void StartAttack()
+    {
+        state = AnimStates.Attack;
+        destination = transform.position;
+        Invoke("DamageEnemy", impactTime);
+        Invoke("ReturnState", attackDuration);
+    }
+    public SelectableEntity buildTarget;
+    [SerializeField] private byte damage = 1;
+    private void DamageEnemy()
+    {
+        selector.SimplePlaySound(1);
+        //AudioSource.PlayClipAtPoint(selector.attackSound, transform.position);
+        if (IsServer)
+        { 
+            targetEnemy.TakeDamage(damage);
+        }
+        else //client needs to tell server to do this
+        {
+            DamageEnemyServerRpc(damage, targetEnemy.gameObject);
+        }
+    }
+    [ServerRpc]
+    private void DamageEnemyServerRpc(byte damage, NetworkObjectReference enemy)
+    {
+        GameObject actual = enemy;
+        actual.GetComponent<SelectableEntity>().TakeDamage(damage); 
+    }
+
     private void BuildTarget()
     {
+        selector.SimplePlaySound(1);
+        //AudioSource.PlayClipAtPoint(selector.attackSound, transform.position);
         if (IsServer)
         {
             BuildFromServer();
@@ -262,7 +335,7 @@ public class MinionController : NetworkBehaviour
         else
         {
             BuildFromClientServerRpc(buildTarget.gameObject);
-            if (buildTarget.hitPoints.Value >= buildTarget.maxHP-1)
+            if (buildTarget.hitPoints.Value >= buildTarget.maxHP - 1)
             {
                 buildTarget.fullyBuilt = true;
                 buildTarget = null;
@@ -278,7 +351,7 @@ public class MinionController : NetworkBehaviour
             buildTarget.fullyBuilt = true;
             buildTarget = null;
             Global.Instance.localPlayer.UpdateGUIFromSelections();
-        } 
+        }
     }
     [ServerRpc]
     private void BuildFromClientServerRpc(NetworkObjectReference obj)
@@ -286,46 +359,6 @@ public class MinionController : NetworkBehaviour
         GameObject act = obj;
         SelectableEntity buildTarget = act.GetComponent<SelectableEntity>();
         buildTarget.hitPoints.Value += buildDelta;
-    }
-    private void StartBuild()
-    {
-        state = AnimStates.Build;
-        destination = transform.position;
-        Invoke("BuildTarget", impactTime);
-        Invoke("ReturnState", attackDuration);
-    }
-    private void StartAttack()
-    {
-        state = AnimStates.Attack;
-        destination = transform.position;
-        Invoke("DamageEnemy", impactTime);
-        Invoke("ReturnState", attackDuration);
-    }
-    private void CancelAttack()
-    {
-        targetEnemy = null;
-        buildTarget = null;
-        state = AnimStates.Idle;
-        CancelInvoke();
-    }
-    public SelectableEntity buildTarget;
-    [SerializeField] private int damage = 1;
-    private void DamageEnemy()
-    {
-        if (IsServer)
-        { 
-            targetEnemy.TakeDamage(damage);
-        }
-        else //client needs to tell server to do this
-        {
-            DamageEnemyServerRpc(damage, targetEnemy.gameObject);
-        }
-    }
-    [ServerRpc]
-    private void DamageEnemyServerRpc(int damage, NetworkObjectReference enemy)
-    {
-        GameObject actual = enemy;
-        actual.GetComponent<SelectableEntity>().TakeDamage(damage); 
     }
     private float attackDuration = 1;
     private float impactTime = .5f;
@@ -338,35 +371,41 @@ public class MinionController : NetworkBehaviour
         float dist = Vector3.SqrMagnitude(transform.position - oldPosition);
         oldPosition = transform.position;
         return dist/Time.deltaTime;
-    }  
-    private void SetDestination()
-    {
-        targetEnemy = null;
-        buildTarget = null;
-        enemyInRange = false;
-        basicallyIdleInstances = 0;
-        followingMoveOrder = true; 
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
+    }
 
-        if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
+    public bool attackMoving = false;
+    public void SetDestination(bool attackMove = false)
+    {
+        if (state != AnimStates.Spawn)
         {
-            SelectableEntity select = hit.collider.GetComponent<SelectableEntity>();
-            if (select != null)
+            targetEnemy = null;
+            buildTarget = null;
+            enemyInRange = false;
+            basicallyIdleInstances = 0;
+            followingMoveOrder = true;
+            attackMoving = attackMove;
+            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+
+            if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
             {
-                if (select.net.OwnerClientId == selector.net.OwnerClientId && !select.fullyBuilt) //same team
+                SelectableEntity select = hit.collider.GetComponent<SelectableEntity>();
+                if (select != null)
                 {
-                    if (selector.type == SelectableEntity.EntityTypes.Builder)
+                    if (select.net.OwnerClientId == selector.net.OwnerClientId && !select.fullyBuilt) //same team
                     {
-                        buildTarget = select;
+                        if (selector.type == SelectableEntity.EntityTypes.Builder)
+                        {
+                            buildTarget = select;
+                        }
                     }
                 }
-            }
 
-            destination = hit.point;
-        }
-        state = AnimStates.Walk;
-        CancelInvoke();
+                destination = hit.point;
+            }
+            state = AnimStates.Walk;
+            CancelInvoke();
+        } 
     } 
     /*private void HandleMovement()
     {

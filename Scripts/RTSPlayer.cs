@@ -9,7 +9,7 @@ using TMPro;
 public class RTSPlayer : NetworkBehaviour
 {
     public int gold = 100;
-    private Camera _cam;   
+    public Camera cam;   
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
     public List<SelectableEntity> ownedEntities; //must be serialized or public
@@ -32,22 +32,23 @@ public class RTSPlayer : NetworkBehaviour
     {
         groundLayer = LayerMask.GetMask("Ground");
         _offset = new Vector3(0.5f, 0, .5f);
-        _cam = Camera.main;
-        camParent = _cam.transform.parent.transform;
+        cam = Camera.main;
+        camParent = cam.transform.parent.transform;
+        Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
+        camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
     }
     public override void OnNetworkSpawn()
     {
         if (!IsOwner)
-        {
+        { 
             enabled = false;
         }
         else
         { //spawn initial minions/buildings 
             Global.Instance.localPlayer = this;
             //SimpleSpawnMinion(Vector3.zero);
-            Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
-            SimpleSpawnMinion(spawn, 0);
-            camParent.position = spawn;
+            Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position; 
+            SimpleSpawnMinion(spawn, 0, spawn);
         }
     }
     private Transform camParent;
@@ -59,7 +60,31 @@ public class RTSPlayer : NetworkBehaviour
     private void CameraMove()
     {
         Vector3 motion = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
-        camParent.Translate(motion * camSpeed * Time.deltaTime);
+        camParent.transform.Translate(motion * camSpeed * Time.deltaTime);
+    } 
+    private void SelectedAttackMove()
+    { 
+        foreach (SelectableEntity item in _selectedEntities)
+        {
+            if (item.controller != null) //minion
+            {
+                item.controller.SetDestination(true); 
+            } 
+        }
+    }
+    private void SelectedSetDestination()
+    {
+        foreach (SelectableEntity item in _selectedEntities)
+        {
+            if (item.controller != null) //minion
+            {
+                item.controller.SetDestination();
+            }
+            else //structure
+            {
+                item.SetRally();
+            }
+        }
     }
     void Update()
     {
@@ -67,12 +92,19 @@ public class RTSPlayer : NetworkBehaviour
         if (!MouseOverUI()) 
         {
             GetMouseWorldPosition();
-            if (Input.GetMouseButtonDown(2))
+
+#if UNITY_EDITOR
+            if (Input.GetKey(KeyCode.RightShift))
             {
-                SimpleSpawnMinion(_worldPosition, _entitiesIndex);
+                SimpleSpawnMinion(_worldPosition, 0, _worldPosition);
             }
+#endif
             if (Input.GetMouseButtonDown(0))
             {
+                StartMousePosition = Input.mousePosition;
+                ResizeSelection();
+                Global.Instance.selectionRect.gameObject.SetActive(true);
+
                 if (buildState == BuildStates.ReadyToPlace && !placementBlocked)
                 {
                     PlaceBuilding(buildingPlacingID);
@@ -84,13 +116,80 @@ public class RTSPlayer : NetworkBehaviour
             }
             if (Input.GetMouseButtonDown(1))
             {
+                SelectedSetDestination();
+            }
+            if (Input.GetMouseButtonDown(2))
+            {
+                SelectedAttackMove();
+            }
+
+
+            if (Input.GetMouseButtonDown(1))
+            {
                 if (buildState == BuildStates.ReadyToPlace)
                 {
                     StopPlacingBuilding();
                 }
             }
         }
-        Global.Instance.goldText.text = "Gold: " + gold; 
+        if (Global.Instance.selectionRect.gameObject.activeSelf)
+        {
+            if (Input.GetMouseButton(0))
+            {
+                ResizeSelection();
+            }
+            if (Input.GetMouseButtonUp(0))
+            {
+                SelectWithinBounds();
+            }
+        }
+        if (Input.GetMouseButtonUp(0))
+        { 
+            Global.Instance.selectionRect.gameObject.SetActive(false);
+        }
+            Global.Instance.goldText.text = "Gold: " + gold; 
+    }
+    private void SelectWithinBounds()
+    {
+        RectTransform SelectionBox = Global.Instance.selectionRect;
+        Bounds bounds = new Bounds(SelectionBox.anchoredPosition, SelectionBox.sizeDelta);
+        Debug.Log(bounds.size.magnitude);
+        if (bounds.size.magnitude > 20f)
+        {
+            if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
+            {
+                _selectedEntities.Clear();
+            }
+            foreach (SelectableEntity item in ownedEntities)
+            {
+                if (UnitIsInSelectionBox(cam.WorldToScreenPoint(item.transform.position), bounds))
+                {
+                    _selectedEntities.Add(item);
+                    item.Select(true);
+                }
+                else
+                {
+                    item.Select(false);
+                }
+            }
+            UpdateGUIFromSelections();
+        }
+        Global.Instance.selectionRect.gameObject.SetActive(false);
+    }
+    private bool UnitIsInSelectionBox(Vector2 Position, Bounds Bounds)
+    {
+        return Position.x > Bounds.min.x && Position.x < Bounds.max.x
+            && Position.y > Bounds.min.y && Position.y < Bounds.max.y;
+    }
+    Vector2 StartMousePosition;
+    private void ResizeSelection()
+    {
+        RectTransform SelectionBox = Global.Instance.selectionRect;
+        float width = Input.mousePosition.x - StartMousePosition.x;
+        float height = Input.mousePosition.y - StartMousePosition.y;
+
+        SelectionBox.anchoredPosition = StartMousePosition + new Vector2(width / 2, height / 2);
+        SelectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
     }
     private int goldDelay = 10; //in seconds
     private int count = 0;
@@ -106,9 +205,11 @@ public class RTSPlayer : NetworkBehaviour
             gold += 100;
         }
     }
-    private void PlaceBuilding(int id = 0)
-    { 
-        SimpleSpawnMinion(_worldPosition, id); 
+    private void PlaceBuilding(byte id = 0)
+    {
+        FactionEntityClass fac = _faction.entities[id];
+        gold -= fac.goldCost;
+        SimpleSpawnMinion(_worldPosition, id, _worldPosition); 
         StopPlacingBuilding();
     }  
     private void StopPlacingBuilding()
@@ -137,11 +238,11 @@ public class RTSPlayer : NetworkBehaviour
     }
     public bool placementBlocked = false;
     private GameObject followCursorObject;
-    private int buildingPlacingID = 0;
+    private byte buildingPlacingID = 0;
     private MeshRenderer[] meshes;
     private void GetMouseWorldPosition()
     {
-        Ray ray = _cam.ScreenPointToRay(Input.mousePosition);
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
 
         if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity, groundLayer))
@@ -156,26 +257,26 @@ public class RTSPlayer : NetworkBehaviour
         }
     }
     #region SpawnMinion
-    private void SimpleSpawnMinion(Vector3 pos, int id)
+    private void SimpleSpawnMinion(Vector3 pos, byte id, Vector3 rally)
     {
-        FactionEntityClass fac = _faction.entities[id];
-        gold -= fac.goldCost;
         UpdateButtons(); 
         if (IsServer)
         {
-            SpawnMinion(pos, id); 
+            SpawnMinion(pos, id, rally); 
         }
         else
         {
-            SpawnMinionServerRPC(pos, id);
+            Vector2 pos2D = new Vector2(pos.x, pos.z);
+            Vector2 rally2D = new Vector2(rally.x, rally.z);
+            SpawnMinionServerRPC(pos2D, rally2D, id);
         }
     } 
     public SelectableEntity lastPlaced;
-    private void SpawnMinion(Vector3 pos, int id)
+    private void SpawnMinion(Vector3 pos, byte id, Vector3 rally)
     {
         FactionEntityClass fac = _faction.entities[id];
         pos.y = 0;
-        GameObject guy = Instantiate(fac.prefabToSpawn, pos, Quaternion.identity); //spawn locally
+        GameObject guy = Instantiate(fac.prefabToSpawn, pos, Quaternion.Euler(0, 180, 0)); //spawn locally
         SelectableEntity select = guy.GetComponent<SelectableEntity>();
         select.fullyBuilt = !fac.needsConstructing;
         NetworkObject net = guy.GetComponent<NetworkObject>();
@@ -183,6 +284,11 @@ public class RTSPlayer : NetworkBehaviour
 
         net.SpawnWithOwnership(OwnerClientId); //spawn on network, syncing the game state for everyone  
 
+        if (select.controller != null)
+        { 
+            select.controller.destination = rally;
+            select.controller.followingMoveOrder = true;
+        }
         lastPlaced = select;
         if (fac.needsConstructing)
         {
@@ -194,14 +300,13 @@ public class RTSPlayer : NetworkBehaviour
                     minion.SetBuildDestination(pos, lastPlaced);
                 }
             }
-        }
+        } 
     } 
     [ServerRpc] //client tells server to spawn the object
-    private void SpawnMinionServerRPC(Vector3 pos, int id, ServerRpcParams serverRpcParams = default)
-    { 
-        pos.y = 0;
-        GameObject guy = Instantiate(_faction.entities[id].prefabToSpawn, pos, Quaternion.identity);
-        //SelectableEntity select = guy.GetComponent<SelectableEntity>();
+    private void SpawnMinionServerRPC(Vector2 pos2D, Vector2 rally2D, byte id, ServerRpcParams serverRpcParams = default)
+    {
+        Vector3 pos = new Vector3(pos2D.x, 0, pos2D.y); 
+        GameObject guy = Instantiate(_faction.entities[id].prefabToSpawn, pos, Quaternion.Euler(0, 180, 0)); 
         NetworkObject net = guy.GetComponent<NetworkObject>();
 
         var clientId = serverRpcParams.Receive.SenderClientId;
@@ -216,10 +321,10 @@ public class RTSPlayer : NetworkBehaviour
                 TargetClientIds = new ulong[] { clientId }
             }
         };
-        UpdateOwnedEntitiesClientRpc(guy, id, clientRpcParams); 
+        UpdateOwnedEntitiesClientRpc(guy, rally2D, id, clientRpcParams); 
     } 
     [ClientRpc]
-    private void UpdateOwnedEntitiesClientRpc(NetworkObjectReference guy, int id, ClientRpcParams clientRpcParams)
+    private void UpdateOwnedEntitiesClientRpc(NetworkObjectReference guy, Vector2 rally2D, byte id, ClientRpcParams clientRpcParams)
     {
         GameObject obj = guy;
         if (obj != null)
@@ -230,6 +335,11 @@ public class RTSPlayer : NetworkBehaviour
             ownedEntities.Add(select);
             lastPlaced = select;
 
+            if (select.controller != null)
+            {
+                Vector3 rally = new Vector3(rally2D.x, 0, rally2D.y);
+                select.controller.destination = rally;
+            }
             if (fac.needsConstructing)
             {
                 foreach (SelectableEntity item in _selectedEntities)
@@ -240,7 +350,7 @@ public class RTSPlayer : NetworkBehaviour
                         minion.SetBuildDestination(select.transform.position, lastPlaced);
                     }
                 }
-            }
+            } 
         }
     }
     #endregion
@@ -277,7 +387,7 @@ public class RTSPlayer : NetworkBehaviour
                 {
                     continue;
                 }
-                foreach (int num in item.builderEntityIndices)
+                foreach (byte num in item.builderEntityIndices)
                 {
                     if (!indices.Contains(num))
                     {
@@ -285,8 +395,8 @@ public class RTSPlayer : NetworkBehaviour
                     }
                 }
             }
-        } 
-        int i = 0;
+        }
+        byte i = 0;
         //enable a button for each indices
         for (; i < indices.Count; i++)
         {
@@ -294,9 +404,9 @@ public class RTSPlayer : NetworkBehaviour
             button.gameObject.SetActive(true);
             TMP_Text text = button.GetComponentInChildren<TMP_Text>();
             FactionEntityClass fac = _faction.entities[indices[i]];
-            text.text = fac.productionName; 
-            int j = indices[i];
-            Debug.Log(j);
+            text.text = fac.productionName;
+            byte j = indices[i];
+            //Debug.Log(j);
             button.onClick.RemoveAllListeners(); 
             if (_faction.entities[indices[i]].needsConstructing)
             { 
@@ -304,7 +414,7 @@ public class RTSPlayer : NetworkBehaviour
             }
             else
             { 
-                button.onClick.AddListener(delegate { SpawnFromBuilding(j); });
+                button.onClick.AddListener(delegate { QueueBuildingSpawn(j); });
             }
             button.interactable = gold >= fac.goldCost;
         }
@@ -322,19 +432,49 @@ public class RTSPlayer : NetworkBehaviour
             button.interactable = gold >= fac.goldCost;
         }
     }
-    private void SpawnFromBuilding(int id = 0)
+    private void QueueBuildingSpawn(byte id = 0)
     {
-        //first pick a building from those selected that is able to spawn
-        SelectableEntity select = _selectedEntities[0];
-        SimpleSpawnMinion(select.transform.position, id);
+        FactionEntityClass fac = new FactionEntityClass();
+        fac.timeCost = _faction.entities[id].timeCost;
+        fac.prefabToSpawn = _faction.entities[id].prefabToSpawn;
+        fac.goldCost = _faction.entities[id].goldCost;
+        fac.buildID = id;
+
+        int cost = fac.goldCost;
+        //try to spawn from all selected buildings if possible 
+        foreach (SelectableEntity select in _selectedEntities)
+        {
+            if (gold < cost)
+            {
+                break;
+            }
+            if (select.fullyBuilt && select.builderEntityIndices.Contains(id))
+            { 
+                gold -= cost;
+                select.buildQueue.Add(fac);
+            }
+        }
     }
-    private void HoverBuildWithID(int id = 0)
+    public void FromBuildingSpawn(SelectableEntity select, Vector3 rally, byte id = 0)
+    { 
+        Vector3 pos;
+        if (select.spawnPosition != null)
+        {
+            pos = new Vector3(select.spawnPosition.position.x, 0, select.spawnPosition.position.z);
+        }
+        else
+        {
+            pos = select.transform.position;
+        }
+        SimpleSpawnMinion(pos, id, rally);
+    }
+    private void HoverBuildWithID(byte id = 0)
     {
         Debug.Log(id);
         placementBlocked = false;
         buildState = BuildStates.ReadyToPlace;
         GameObject build = _faction.entities[id].prefabToSpawn;
-        GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.identity); //spawn locally 
+        GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn locally 
         followCursorObject = spawn;
         meshes = spawn.GetComponentsInChildren<MeshRenderer>();
         for (int i = 0; i < meshes.Length; i++)
@@ -348,10 +488,10 @@ public class RTSPlayer : NetworkBehaviour
         }
         buildingPlacingID = id;
     }
-    public List<int> indices;
+    public List<byte> indices;
     private void SingleSelect()
     { 
-        Ray ray = _cam.ScreenPointToRay(Input.mousePosition);
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
         if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
         {
@@ -363,13 +503,13 @@ public class RTSPlayer : NetworkBehaviour
             if (entity != null && ownedEntities.Contains(entity))
             {
                 _selectedEntities.Add(entity);
-                entity.Select(!entity.selected);
+                entity.Select(true);
             }
         }
     }
     private void DoubleSelectDetected()
     {
-        Ray ray = _cam.ScreenPointToRay(Input.mousePosition);
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
         if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
         {
