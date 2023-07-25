@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using Pathfinding;
-
-[RequireComponent(typeof(LocalRotation))]
+ 
 public class MinionController : NetworkBehaviour
 {
     private Camera cam;
@@ -101,10 +100,10 @@ public class MinionController : NetworkBehaviour
             enemyInRange = false;
             //do a spherecast to get one
             Vector3 center = transform.position;
-            float detectionRange = attackRange;
+            float detectionRange = attackRange * 1.25f;
             if (attackMoving)
             {
-                detectionRange = attackRange * 1.25f;
+                detectionRange = attackRange;
             }
             int maxColliders = Mathf.RoundToInt(20 * detectionRange);
             Collider[] hitColliders = new Collider[maxColliders];
@@ -129,7 +128,7 @@ public class MinionController : NetworkBehaviour
                     closest = hitColliders[i];
                 }
             }
-            if (closest != null )
+            if (closest != null)
             {
                 float dist = Vector3.Distance(transform.position, closest.transform.position);
                 if (dist <= attackRange)
@@ -184,7 +183,7 @@ public class MinionController : NetworkBehaviour
         //HandleMovement();
         DetectIfShouldStopFollowingMoveOrder();
 
-        if (delay > 30)
+        if (delay >= 24) //0 to 24 is half of 50
         {
             delay = 0;
             if ((!followingMoveOrder || attackMoving) && state != AnimStates.Build)
@@ -198,7 +197,7 @@ public class MinionController : NetworkBehaviour
         }  
         if (animsEnabled) UpdateAnimations();
     }
-    //60 fps, 
+    //50 fps fixed update
     private int delay = 0; 
     private int basicallyIdleInstances = 0;
     private int idleThreshold = 30;
@@ -215,8 +214,13 @@ public class MinionController : NetworkBehaviour
         if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
         {
             followingMoveOrder = false;
+            if (attackMoving)
+            {
+                destination = orderedDestination;
+            }
         }
     }
+    bool playedAttackMoveSound = false;
     private void UpdateAnimations()
     {
         switch (state)
@@ -224,37 +228,77 @@ public class MinionController : NetworkBehaviour
             case AnimStates.Spawn:
                 break;
             case AnimStates.Idle:
-                anim.Play("Idle"); 
+                if (anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
+                { 
+                    anim.SetTrigger("Idle");
+                }
+                else
+                { 
+                    anim.Play("Idle");
+                }
                 if (enemyInRange && !followingMoveOrder)
                 {
+                    anim.ResetTrigger("Idle");
                     StartAttack();
                 }
                 else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) <= attackRange)
                 {
+                    anim.ResetTrigger("Idle");
                     StartBuild();
                 }
                 else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) > attackRange)
                 {
+                    anim.ResetTrigger("Idle");
                     state = AnimStates.Walk;
                 }
                 else if (followingMoveOrder || chasingEnemy)
                 {
+                    anim.ResetTrigger("Idle");
                     state = AnimStates.Walk;
                 }
 
                 break;
             case AnimStates.Walk:
-                anim.Play("Walk");
+                if (attackMoving)
+                {
+                    if (!anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
+                    { 
+                        if (!playedAttackMoveSound)
+                        {
+                            playedAttackMoveSound = true;
+                            selector.SimplePlaySound(2);
+                        }
+                        anim.Play("AttackWalkStart"); 
+                    }
+                }
+                else
+                {
+                    if (anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk") || anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart"))
+                    {
+                        playedAttackMoveSound = false;
+                        anim.SetTrigger("Walk");
+                    }
+                    else
+                    { 
+                        anim.Play("Walk");
+                    }
+                }
                 if (enemyInRange && (!followingMoveOrder || attackMoving))
                 {
+                    playedAttackMoveSound = false;
+                    anim.ResetTrigger("Walk");
                     StartAttack();
                 }
                 else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) <= attackRange)
                 {
+                    anim.ResetTrigger("Walk");
+                    playedAttackMoveSound = false;
                     StartBuild();
                 } 
                 else if (!followingMoveOrder && !chasingEnemy && (buildTarget == null || buildTarget.fullyBuilt))
                 {
+                    anim.ResetTrigger("Walk");
+                    playedAttackMoveSound = false;
                     state = AnimStates.Idle;
                 }
                 break;
@@ -374,6 +418,7 @@ public class MinionController : NetworkBehaviour
     }
 
     public bool attackMoving = false;
+    public Vector3 orderedDestination;
     public void SetDestination(bool attackMove = false)
     {
         if (state != AnimStates.Spawn)
@@ -392,16 +437,22 @@ public class MinionController : NetworkBehaviour
                 SelectableEntity select = hit.collider.GetComponent<SelectableEntity>();
                 if (select != null)
                 {
-                    if (select.net.OwnerClientId == selector.net.OwnerClientId && !select.fullyBuilt) //same team
+                    if (select.net.OwnerClientId == selector.net.OwnerClientId) //same team
                     {
-                        if (selector.type == SelectableEntity.EntityTypes.Builder)
+                        if (selector.type == SelectableEntity.EntityTypes.Builder && !select.fullyBuilt)
                         {
                             buildTarget = select;
                         }
                     }
+                    else
+                    {
+                        targetEnemy = select;
+                        attackMoving = true;
+                    }
                 }
 
                 destination = hit.point;
+                orderedDestination = destination;
             }
             state = AnimStates.Walk;
             CancelInvoke();

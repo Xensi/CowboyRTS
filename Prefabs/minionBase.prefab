@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6541845058422189605}
-  - component: {fileID: 4579057423376307924}
+  - component: {fileID: 1420444146532106229}
   - component: {fileID: 1556607826778985850}
   - component: {fileID: 4126868118260038068}
   - component: {fileID: 6883782947868696822}
@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 7586105387906439370}
   - component: {fileID: 84109661982960398}
   - component: {fileID: 5114157818442103759}
+  - component: {fileID: 2696319472600951783}
   m_Layer: 0
   m_Name: minionBase
   m_TagString: Untagged
@@ -40,7 +41,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4579057423376307924
+--- !u!114 &1420444146532106229
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -49,10 +50,30 @@ MonoBehaviour:
   m_GameObject: {fileID: 5353858407141398554}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 04c7fbd3e68a4c24c97a55fa97bf039c, type: 3}
+  m_Script: {fileID: 11500000, guid: 4ef37b2b8ba8e084dae003beb732c07c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rotSpeed: 10
+  controller: {fileID: 1556607826778985850}
+  hitPoints:
+    m_InternalValue: 0
+  selected: 0
+  indicator: {fileID: 0}
+  net: {fileID: 4126868118260038068}
+  teamRenderer: {fileID: 0}
+  type: 3
+  builderEntityIndices: 01000000
+  startingHP: 10
+  maxHP: 10
+  fullyBuilt: 1
+  spawnPosition: {fileID: 0}
+  buildQueue: []
+  sounds:
+  - {fileID: 8300000, guid: e12124de62f005543a8b08aff5493439, type: 3}
+  - {fileID: 8300000, guid: f44f3479724a08e4e8c995e2f633bbfe, type: 3}
+  - {fileID: 8300000, guid: f36c995b0cc52224ebecea1e5b408cfa, type: 3}
+  rallyPoint: {x: 0, y: 0, z: 0}
+  rallyVisual: {fileID: 0}
+  damagedState: {fileID: 0}
 --- !u!114 &1556607826778985850
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -71,11 +92,14 @@ MonoBehaviour:
   attackType: 0
   attackRange: 1
   targetEnemy: {fileID: 0}
-  localRotate: {fileID: 4579057423376307924}
+  followingMoveOrder: 0
+  localRotate: {fileID: 0}
   enemyInRange: 0
   rigid: {fileID: 7586105387906439370}
   buildTarget: {fileID: 0}
   damage: 1
+  attackMoving: 0
+  orderedDestination: {x: 0, y: 0, z: 0}
 --- !u!114 &4126868118260038068
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -111,13 +135,13 @@ MonoBehaviour:
   SyncPositionY: 0
   SyncPositionZ: 1
   SyncRotAngleX: 0
-  SyncRotAngleY: 0
+  SyncRotAngleY: 1
   SyncRotAngleZ: 0
   SyncScaleX: 0
   SyncScaleY: 0
   SyncScaleZ: 0
   PositionThreshold: 0.1
-  RotAngleThreshold: 15
+  RotAngleThreshold: 22.5
   ScaleThreshold: 0.01
   UseQuaternionSynchronization: 0
   UseQuaternionCompression: 0
@@ -236,3 +260,26 @@ SphereCollider:
   serializedVersion: 2
   m_Radius: 0.25
   m_Center: {x: 0, y: 0.25, z: 0}
+--- !u!114 &2696319472600951783
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5353858407141398554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b090bec917bbe4c3bbc612ef13f7c4a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 1
+  useRaycasting: 1
+  mask:
+    serializedVersion: 2
+    m_Bits: 8
+  thickRaycast: 0
+  thickRaycastRadius: 0
+  use2DPhysics: 0
+  raycastOffset: {x: 0, y: 0, z: 0}
+  useGraphRaycasting: 1
+  quality: 0

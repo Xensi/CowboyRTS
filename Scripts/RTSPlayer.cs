@@ -143,12 +143,13 @@ public class RTSPlayer : NetworkBehaviour
                 SelectWithinBounds();
             }
         }
-        if (Input.GetMouseButtonUp(0))
+        if (!Input.GetMouseButton(0) && finishedSelection)
         { 
             Global.Instance.selectionRect.gameObject.SetActive(false);
         }
-            Global.Instance.goldText.text = "Gold: " + gold; 
+        Global.Instance.goldText.text = "Gold: " + gold; 
     }
+    private bool finishedSelection = false;
     private void SelectWithinBounds()
     {
         RectTransform SelectionBox = Global.Instance.selectionRect;
@@ -175,6 +176,7 @@ public class RTSPlayer : NetworkBehaviour
             UpdateGUIFromSelections();
         }
         Global.Instance.selectionRect.gameObject.SetActive(false);
+        finishedSelection = true;
     }
     private bool UnitIsInSelectionBox(Vector2 Position, Bounds Bounds)
     {
@@ -184,6 +186,7 @@ public class RTSPlayer : NetworkBehaviour
     Vector2 StartMousePosition;
     private void ResizeSelection()
     {
+        finishedSelection = false;
         RectTransform SelectionBox = Global.Instance.selectionRect;
         float width = Input.mousePosition.x - StartMousePosition.x;
         float height = Input.mousePosition.y - StartMousePosition.y;

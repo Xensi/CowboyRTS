@@ -33,9 +33,11 @@ public class SelectableEntity : NetworkBehaviour
     public List<FactionEntityClass> buildQueue;
     private int delay = 50;
     private int count = 0;
-    public AudioClip[] sounds; //0 spawn, 1 attack
+    public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
     public Vector3 rallyPoint;
     [SerializeField] private GameObject rallyVisual;
+
+    [SerializeField] private Material damagedState;
     private void FixedUpdate()
     {
         if (count < delay)
@@ -67,7 +69,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         //fire locally 
         AudioClip clip = sounds[id];
-        AudioSource.PlayClipAtPoint(clip, transform.position, 0.5f);
+        AudioSource.PlayClipAtPoint(clip, transform.position, 0.25f);
         //request server to send to other clients
         RequestSoundServerRpc(id);
     }
@@ -114,6 +116,8 @@ public class SelectableEntity : NetworkBehaviour
         SimplePlaySound(0);
         //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
     }
+    private bool damaged = false;
+    [SerializeField] private MeshRenderer[] meshes;
     public void TakeDamage(byte damage)
     {
         hitPoints.Value -= damage;
@@ -121,6 +125,15 @@ public class SelectableEntity : NetworkBehaviour
         {
             Global.Instance.localPlayer.ownedEntities.Remove(this);
             Destroy(gameObject);
+        }
+        if (hitPoints.Value <= maxHP / 2 && !damaged)
+        {
+            damaged = true;
+
+            for (int i = 0; i < meshes.Length; i++)
+            {
+                meshes[i].material = damagedState;
+            } 
         }
     }
     public void OnTriggerEnter(Collider other)
