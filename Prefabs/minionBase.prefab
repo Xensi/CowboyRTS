@@ -54,8 +54,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   controller: {fileID: 1556607826778985850}
-  hitPoints:
-    m_InternalValue: 0
+  hitPoints: 0
   selected: 0
   indicator: {fileID: 0}
   net: {fileID: 4126868118260038068}
@@ -74,6 +73,7 @@ MonoBehaviour:
   rallyPoint: {x: 0, y: 0, z: 0}
   rallyVisual: {fileID: 0}
   damagedState: {fileID: 0}
+  meshes: []
 --- !u!114 &1556607826778985850
 MonoBehaviour:
   m_ObjectHideFlags: 0
