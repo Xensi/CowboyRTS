@@ -36,10 +36,13 @@ public class MinionController : NetworkBehaviour
     public SelectableEntity targetEnemy;
     public bool followingMoveOrder = false;
     [SerializeField] private LocalRotation localRotate;
-
+    private RaycastModifier rayMod;
+    private Seeker seeker;
     void OnEnable()
     {
         ai = GetComponent<AIPath>();
+        rayMod = GetComponent<RaycastModifier>();
+        seeker = GetComponent<Seeker>();
         // Update the destination right before searching for a path as well.
         // This is enough in theory, but this script will also update the destination every
         // frame as the destination is used for debugging and may be used for other things by other
@@ -80,6 +83,9 @@ public class MinionController : NetworkBehaviour
         if (!IsOwner)
         {
             rigid.isKinematic = true;
+            ai.enabled = false;
+            rayMod.enabled = false;
+            seeker.enabled = false;
         }
         //localRotate.rotSpeed = ai.rotationSpeed;
         //localRotate.enabled = !IsOwner; //if isOwner, localRotate is disabled
@@ -265,7 +271,7 @@ public class MinionController : NetworkBehaviour
             case AnimStates.Walk:
                 if (attackMoving)
                 {
-                    if (!anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
+                    if (!anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
                     { 
                         if (!playedAttackMoveSound)
                         {
@@ -351,7 +357,7 @@ public class MinionController : NetworkBehaviour
         Invoke("ReturnState", attackDuration);
     }
     public SelectableEntity buildTarget;
-    [SerializeField] private byte damage = 1; 
+    [SerializeField] private sbyte damage = 1; 
     public void SimpleDamageEnemy() //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         //fire locally
@@ -367,7 +373,7 @@ public class MinionController : NetworkBehaviour
         }
     }
     [ServerRpc]
-    private void RequestDamageServerRpc(byte damage, NetworkBehaviourReference enemy)
+    private void RequestDamageServerRpc(sbyte damage, NetworkBehaviourReference enemy)
     {
         //server must handle damage! 
         if (enemy.TryGet(out SelectableEntity select))

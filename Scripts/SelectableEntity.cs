@@ -6,7 +6,7 @@ using Unity.Netcode;
 public class SelectableEntity : NetworkBehaviour
 {
     public MinionController controller;
-    public NetworkVariable<byte> hitPoints = new NetworkVariable<byte>();
+    public NetworkVariable<sbyte> hitPoints = new NetworkVariable<sbyte>();
     //public byte hitPoints;
 
     public bool selected = false;
@@ -25,7 +25,7 @@ public class SelectableEntity : NetworkBehaviour
     public EntityTypes type = EntityTypes.Melee;
     public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
 
-    [SerializeField] private byte startingHP = 10;
+    [SerializeField] private sbyte startingHP = 10;
     public byte maxHP = 10;
     public bool fullyBuilt = true;
     public Transform spawnPosition;
@@ -48,37 +48,28 @@ public class SelectableEntity : NetworkBehaviour
         {
             hitPoints.Value = startingHP;
         }
+        damagedThreshold = (sbyte) (maxHP / 2);
         rallyPoint = transform.position;
         SimplePlaySound(0);
         //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
     }
     private bool damaged = false;
     [SerializeField] private MeshRenderer[] meshes;
-    public void TakeDamage(byte damage)
+    public void TakeDamage(sbyte damage) //always managed by SERVER
     {
-        hitPoints.Value -= damage;
-        if (hitPoints.Value <= 0)
-        { 
-            Global.Instance.localPlayer.ownedEntities.Remove(this);
-            Global.Instance.localPlayer.selectedEntities.Remove(this);
-            Destroy(gameObject);
-        }
-        /*hitPoints -= damage;
-        //hitPoints.Value -= damage;
-        if (hitPoints <= 0)
-        {
-            Global.Instance.localPlayer.ownedEntities.Remove(this);
-            Destroy(gameObject);
-        }
-        if (hitPoints <= maxHP / 2 && !damaged)
+        hitPoints.Value -= damage; 
+    }  
+    private sbyte damagedThreshold;
+    private void CheckIfDamaged()
+    { 
+        if (hitPoints.Value <= damagedThreshold)
         {
             damaged = true;
-
             for (int i = 0; i < meshes.Length; i++)
             {
                 meshes[i].material = damagedState;
             }
-        }*/
+        }
     }
     public void BuildThis(byte delta)
     {
@@ -95,6 +86,20 @@ public class SelectableEntity : NetworkBehaviour
             count = 0;
             UpdateBuildQueue();
         }
+        if (!damaged)
+        { 
+            CheckIfDamaged();
+        } 
+        if (hitPoints.Value <= 0)
+        {
+            ProperDestroyMinion();
+        }
+    }
+    private void ProperDestroyMinion()
+    {
+        Global.Instance.localPlayer.ownedEntities.Remove(this);
+        Global.Instance.localPlayer.selectedEntities.Remove(this);
+        Destroy(gameObject);
     }
     public void SetRally()
     { 

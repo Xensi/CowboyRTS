@@ -163,14 +163,17 @@ public class RTSPlayer : NetworkBehaviour
             }
             foreach (SelectableEntity item in ownedEntities)
             {
-                if (UnitIsInSelectionBox(cam.WorldToScreenPoint(item.transform.position), bounds))
-                {
-                    selectedEntities.Add(item);
-                    item.Select(true);
-                }
-                else
-                {
-                    item.Select(false);
+                if (item != null)
+                { 
+                    if (UnitIsInSelectionBox(cam.WorldToScreenPoint(item.transform.position), bounds))
+                    {
+                        selectedEntities.Add(item);
+                        item.Select(true);
+                    }
+                    else
+                    {
+                        item.Select(false);
+                    }
                 }
             }
             UpdateGUIFromSelections();
