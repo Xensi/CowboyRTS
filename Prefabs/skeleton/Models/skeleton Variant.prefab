@@ -52,6 +52,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7149592654142216218, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6624284599213274808, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -5226459778557201266, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -64,7 +72,23 @@ PrefabInstance:
       propertyPath: m_CastShadows
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -3727092050775795701, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -2365799807126233485, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -1963147817464941509, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -753151001700664263, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -737301503470899180, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
       propertyPath: m_CastShadows
       value: 0
       objectReference: {fileID: 0}
@@ -77,6 +101,10 @@ PrefabInstance:
       value: skeleton Variant
       objectReference: {fileID: 0}
     - target: {fileID: 3017012381539479380, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4460575006036232802, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
       propertyPath: m_CastShadows
       value: 0
       objectReference: {fileID: 0}

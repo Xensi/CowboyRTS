@@ -369,18 +369,20 @@ MonoBehaviour:
   selected: 0
   indicator: {fileID: 8538805119813934419}
   net: {fileID: 3728683629940428650}
-  teamRenderer: {fileID: 5919709758556755740}
+  teamRenderers: []
   type: 2
-  builderEntityIndices: 00000000
-  startingHP: 0
+  builderEntityIndices: 0000000002000000
+  startingHP: 1
   maxHP: 10
-  fullyBuilt: 1
+  fullyBuilt: 0
   spawnPosition: {fileID: 2611512526502323818}
   buildQueue: []
   sounds:
   - {fileID: 8300000, guid: 19b2c63a1be878745af73c2bcd27620d, type: 3}
   rallyPoint: {x: 0, y: 0, z: 0}
   rallyVisual: {fileID: 6668329420782785046}
+  damagedState: {fileID: 0}
+  meshes: []
 --- !u!114 &3728683629940428650
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -413,7 +415,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   version: 1
-  uniqueID: 5665787826156390179
+  uniqueID: 211722222399008074
   updateError: 1
   checkTime: 0.2
 --- !u!1001 &7928476944379451159

@@ -401,7 +401,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!108 &705507994
 Light:
   m_ObjectHideFlags: 0
@@ -547,6 +547,17 @@ MonoBehaviour:
   blocked: {fileID: 2100000, guid: af869502384536d4085a91bc91ee5517, type: 2}
   localPlayer: {fileID: 0}
   goldText: {fileID: 1577954332}
+  footsteps:
+  - {fileID: 8300000, guid: 39e24eb7f7c86b84f86f7e8e2b187f38, type: 3}
+  - {fileID: 8300000, guid: b4ba03700a761f14ea918bc42c46e441, type: 3}
+  - {fileID: 8300000, guid: 7b08a138c2b1dce48b2a8fc3655410d2, type: 3}
+  - {fileID: 8300000, guid: 428c66a51ee14e7478f42fd3821171f5, type: 3}
+  - {fileID: 8300000, guid: 00ebbd58cd32f624c917d7c20e510ec4, type: 3}
+  - {fileID: 8300000, guid: fb67091bf4d4c434bbb75763750ab270, type: 3}
+  - {fileID: 8300000, guid: 1a13220806de3aa479a4589c3084bd4f, type: 3}
+  - {fileID: 8300000, guid: 8c4b3ded28c2e9f498bc80d9a7dc2ed6, type: 3}
+  - {fileID: 8300000, guid: 86cbb8462ea50b441aeaf69d7dd4a37e, type: 3}
+  - {fileID: 8300000, guid: c432d55e4412f3149a0a252fbad48ada, type: 3}
 --- !u!4 &833777888
 Transform:
   m_ObjectHideFlags: 0
@@ -620,7 +631,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Dig Grave
+  m_text: Raise Gunslinger
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -647,12 +658,12 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
+  m_fontSize: 17.8
   m_fontSizeBase: 24
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 1
+  m_fontSizeMax: 17.8
   m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
@@ -1564,7 +1575,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 55fbdbb663543a84da1fb40743d56f02, type: 2}
+  - {fileID: 2100000, guid: 2eb579fd21b899147906cf704b131727, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1667,7 +1678,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Dig Grave
+  m_text: Raise Gravedigger
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1694,12 +1705,12 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
+  m_fontSize: 17.8
   m_fontSizeBase: 24
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 1
+  m_fontSizeMax: 17.8
   m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
@@ -2258,7 +2269,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Dig Grave
+  m_text: Raise Gravedigger
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2285,12 +2296,12 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
+  m_fontSize: 17.8
   m_fontSizeBase: 24
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 1
+  m_fontSizeMax: 17.8
   m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512

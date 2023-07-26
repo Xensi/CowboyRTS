@@ -8,7 +8,7 @@ public class MinionController : NetworkBehaviour
 {
     private Camera cam;
     public Vector3 destination;  
-    [SerializeField] private Animator anim;
+    public Animator anim;
     bool animsEnabled = false;
     AIPath ai;
     [SerializeField] private SelectableEntity selector;
@@ -333,7 +333,7 @@ public class MinionController : NetworkBehaviour
             default:
                 break;
         }
-    }
+    } 
     private void CancelAttack()
     {
         targetEnemy = null;
@@ -341,7 +341,7 @@ public class MinionController : NetworkBehaviour
         state = AnimStates.Idle;
         CancelInvoke();
     }
-    private byte buildDelta = 1;
+    private sbyte buildDelta = 1;
     private void StartBuild()
     {
         state = AnimStates.Build;
@@ -379,50 +379,31 @@ public class MinionController : NetworkBehaviour
         if (enemy.TryGet(out SelectableEntity select))
         {
             select.TakeDamage(damage);
-        } 
-        //DamageClientRpc(damage, enemy); //send to all clients?
+        }  
     }
-    /*[ClientRpc]
-    private void DamageClientRpc(byte damage, NetworkObjectReference enemy)
-    { 
-        if (!IsOwner)
-        {
-            selector.SimplePlaySound(1);
-        }
-    } */
-    public void SimpleBuildTarget()
+    public void SimpleBuildTarget() //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
+        //fire locally
         selector.SimplePlaySound(1);
 
-        RequestBuildServerRpc(buildDelta, buildTarget.gameObject);
-        
+        if (IsServer)
+        {
+            buildTarget.BuildThis(buildDelta);
+        }
+        else //client tell server to change the network variable
+        {
+            RequestBuildServerRpc(buildDelta, buildTarget);
+        }
     }
     [ServerRpc]
-    private void RequestBuildServerRpc(byte delta, NetworkObjectReference structure)
+    private void RequestBuildServerRpc(sbyte damage, NetworkBehaviourReference target)
     {
-        BuildClientRpc(delta, structure);
-    }
-    [ClientRpc]
-    private void BuildClientRpc(byte delta, NetworkObjectReference structure)
-    {
-        /*if (!IsOwner)
+        //server must handle damage! 
+        if (target.TryGet(out SelectableEntity select))
         {
-            selector.SimplePlaySound(1);
-        }
-        //server must handle delta!
-        GameObject actual = structure;
-        actual.GetComponent<SelectableEntity>().BuildThis(delta);
-
-        if (IsOwner) //only the owner really cares if it's fully built 
-        { 
-            if (buildTarget.hitPoints >= buildTarget.maxHP)
-            {
-                buildTarget.fullyBuilt = true;
-                buildTarget = null;
-                Global.Instance.localPlayer.UpdateGUIFromSelections();
-            }
-        }*/
-    }
+            select.BuildThis(damage);
+        } 
+    }  
 
 
     private float attackDuration = 1;

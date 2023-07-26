@@ -97,7 +97,7 @@ public class RTSPlayer : NetworkBehaviour
             if (Input.GetKey(KeyCode.RightShift))
             {
                 SimpleSpawnMinion(_worldPosition, 0, _worldPosition);
-            }
+            } 
 #endif
             if (Input.GetMouseButtonDown(0))
             {
@@ -283,7 +283,7 @@ public class RTSPlayer : NetworkBehaviour
         FactionEntityClass fac = _faction.entities[id];
         pos.y = 0;
         GameObject guy = Instantiate(fac.prefabToSpawn, pos, Quaternion.Euler(0, 180, 0)); //spawn locally
-        SelectableEntity select = guy.GetComponent<SelectableEntity>();
+        SelectableEntity select = guy.GetComponent<SelectableEntity>(); 
         select.fullyBuilt = !fac.needsConstructing;
         NetworkObject net = guy.GetComponent<NetworkObject>();
         ownedEntities.Add(select);
@@ -307,13 +307,13 @@ public class RTSPlayer : NetworkBehaviour
                 }
             }
         } 
-    } 
+    }  
     [ServerRpc] //client tells server to spawn the object
     private void SpawnMinionServerRPC(Vector2 pos2D, Vector2 rally2D, byte id, ServerRpcParams serverRpcParams = default)
     {
         Vector3 pos = new Vector3(pos2D.x, 0, pos2D.y); 
         GameObject guy = Instantiate(_faction.entities[id].prefabToSpawn, pos, Quaternion.Euler(0, 180, 0)); 
-        NetworkObject net = guy.GetComponent<NetworkObject>();
+        NetworkObject net = guy.GetComponent<NetworkObject>(); 
 
         var clientId = serverRpcParams.Receive.SenderClientId;
         net.SpawnWithOwnership(clientId); 
@@ -336,7 +336,7 @@ public class RTSPlayer : NetworkBehaviour
         if (obj != null)
         {
             FactionEntityClass fac = _faction.entities[id];
-            SelectableEntity select = obj.GetComponent<SelectableEntity>();
+            SelectableEntity select = obj.GetComponent<SelectableEntity>(); 
             select.fullyBuilt = !fac.needsConstructing;
             ownedEntities.Add(select);
             lastPlaced = select;
@@ -480,7 +480,7 @@ public class RTSPlayer : NetworkBehaviour
         placementBlocked = false;
         buildState = BuildStates.ReadyToPlace;
         GameObject build = _faction.entities[id].prefabToSpawn;
-        GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn locally 
+        GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn locally  
         followCursorObject = spawn;
         meshes = spawn.GetComponentsInChildren<MeshRenderer>();
         for (int i = 0; i < meshes.Length; i++)

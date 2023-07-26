@@ -13,7 +13,7 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private GameObject indicator;
     public NetworkObject net;
      
-    public MeshRenderer teamRenderer;
+    public MeshRenderer[] teamRenderers;
     
     public enum EntityTypes
     {
@@ -40,10 +40,13 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private Material damagedState;
     public override void OnNetworkSpawn()
     {
-        if (teamRenderer != null)
-        {
-            teamRenderer.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
-        } 
+        foreach (MeshRenderer item in teamRenderers)
+        { 
+            if (item != null)
+            {
+                item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
+            }
+        }
         if (IsServer)
         {
             hitPoints.Value = startingHP;
@@ -71,28 +74,61 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-    public void BuildThis(byte delta)
+    public void BuildThis(sbyte delta)
     {
-        //hitPoints += delta;
-    }
+        hitPoints.Value += delta;
+    } 
     private void FixedUpdate()
-    {
-        if (count < delay)
+    { 
+        if (!fullyBuilt)
         {
-            count++;
+            CheckIfBuilt();
         }
         else
-        {
-            count = 0;
-            UpdateBuildQueue();
-        }
-        if (!damaged)
         { 
-            CheckIfDamaged();
-        } 
-        if (hitPoints.Value <= 0)
+            if (count < delay)
+            {
+                count++;
+            }
+            else
+            {
+                count = 0;
+                UpdateBuildQueue();
+            } 
+            if (!damaged)
+            {
+                CheckIfDamaged();
+            }
+            if (hitPoints.Value <= 0)
+            {
+                ProperDestroyMinion();
+            }
+            //walking sounds
+            if (controller != null)
+            {
+                if (controller.anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") || controller.anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk") || controller.anim.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
+                {
+                    if (footstepCount < footstepThreshold)
+                    {
+                        footstepCount++;
+                    }
+                    else
+                    {
+                        footstepCount = 0;
+                        Global.Instance.PlayClipAtPoint(Global.Instance.footsteps[Random.Range(0, Global.Instance.footsteps.Length)], transform.position, .05f); 
+                    }
+                }
+            }
+        }
+    } 
+    private int footstepCount = 0;
+    private int footstepThreshold = 12;
+    private void CheckIfBuilt()
+    {
+        if (hitPoints.Value >= maxHP)
         {
-            ProperDestroyMinion();
+            fullyBuilt = true; 
+            Global.Instance.localPlayer.UpdateGUIFromSelections();
         }
     }
     private void ProperDestroyMinion()
@@ -120,7 +156,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         //fire locally 
         AudioClip clip = sounds[id];
-        AudioSource.PlayClipAtPoint(clip, transform.position, 0.25f);
+        Global.Instance.PlayClipAtPoint(clip, transform.position, 0.25f, Random.Range(.9f, 1.1f));
         //request server to send to other clients
         RequestSoundServerRpc(id);
     }
@@ -135,7 +171,7 @@ public class SelectableEntity : NetworkBehaviour
         if (!IsOwner)
         {
             AudioClip clip = sounds[id];
-            AudioSource.PlayClipAtPoint(clip, transform.position, 0.5f);
+            Global.Instance.PlayClipAtPoint(clip, transform.position, 0.25f, Random.Range(.9f, 1.1f));
         }
     }
     private void UpdateBuildQueue()
