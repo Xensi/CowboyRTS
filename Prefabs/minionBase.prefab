@@ -17,7 +17,6 @@ GameObject:
   - component: {fileID: 4721624654941951496}
   - component: {fileID: 801487402834003379}
   - component: {fileID: 7586105387906439370}
-  - component: {fileID: 84109661982960398}
   - component: {fileID: 5114157818442103759}
   - component: {fileID: 2696319472600951783}
   m_Layer: 0
@@ -55,7 +54,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   controller: {fileID: 1556607826778985850}
-  hitPoints: 0
+  hitPoints:
+    m_InternalValue: 0
   selected: 0
   indicator: {fileID: 0}
   net: {fileID: 4126868118260038068}
@@ -127,7 +127,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5353858407141398554}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df2868252ab5c4d1da357e8f11f1b524, type: 3}
   m_Name: 
@@ -141,8 +141,8 @@ MonoBehaviour:
   SyncScaleX: 0
   SyncScaleY: 0
   SyncScaleZ: 0
-  PositionThreshold: 0.1
-  RotAngleThreshold: 22.5
+  PositionThreshold: 0.35
+  RotAngleThreshold: 30
   ScaleThreshold: 0.01
   UseQuaternionSynchronization: 0
   UseQuaternionCompression: 0
@@ -157,7 +157,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5353858407141398554}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 411d4aaf62f123943a712bb3c7c66220, type: 3}
   m_Name: 
@@ -165,6 +165,7 @@ MonoBehaviour:
   rotationDifferenceThreshold: 30
   positionDifferenceThreshold: 0.35
   _interpolateTime: 0.2
+  _rotInterpolate: 0.1
 --- !u!114 &4721624654941951496
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -251,18 +252,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 84
   m_CollisionDetection: 0
---- !u!114 &84109661982960398
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5353858407141398554}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f6c0be61502bb534f922ebb746851216, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!135 &5114157818442103759
 SphereCollider:
   m_ObjectHideFlags: 0

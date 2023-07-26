@@ -77,6 +77,10 @@ public class MinionController : NetworkBehaviour
     } 
     public override void OnNetworkSpawn()
     {
+        if (!IsOwner)
+        {
+            rigid.isKinematic = true;
+        }
         //localRotate.rotSpeed = ai.rotationSpeed;
         //localRotate.enabled = !IsOwner; //if isOwner, localRotate is disabled
         enabled = IsOwner;
@@ -348,67 +352,38 @@ public class MinionController : NetworkBehaviour
     }
     public SelectableEntity buildTarget;
     [SerializeField] private byte damage = 1; 
-    public void SimpleDamageEnemy()
+    public void SimpleDamageEnemy() //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         //fire locally
         selector.SimplePlaySound(1); 
-        //request server to send to other clients
-        RequestDamageServerRpc(damage, targetEnemy.gameObject);
+
+        if (IsServer)
+        {
+            targetEnemy.TakeDamage(damage);
+        }
+        else //client tell server to change the network variable
+        {  
+            RequestDamageServerRpc(damage, targetEnemy);
+        }
     }
     [ServerRpc]
-    private void RequestDamageServerRpc(byte damage, NetworkObjectReference enemy)
+    private void RequestDamageServerRpc(byte damage, NetworkBehaviourReference enemy)
     {
-        DamageClientRpc(damage, enemy);
+        //server must handle damage! 
+        if (enemy.TryGet(out SelectableEntity select))
+        {
+            select.TakeDamage(damage);
+        } 
+        //DamageClientRpc(damage, enemy); //send to all clients?
     }
-    [ClientRpc]
+    /*[ClientRpc]
     private void DamageClientRpc(byte damage, NetworkObjectReference enemy)
     { 
         if (!IsOwner)
         {
             selector.SimplePlaySound(1);
         }
-        //server must handle damage!
-        GameObject actual = enemy;
-        actual.GetComponent<SelectableEntity>().TakeDamage(damage);
-    }
-    /*
-    private void BuildTarget()
-    {
-        selector.SimplePlaySound(1);
-        //AudioSource.PlayClipAtPoint(selector.attackSound, transform.position);
-        if (IsServer)
-        {
-            BuildFromServer();
-        }
-        else
-        {
-            BuildFromClientServerRpc(buildTarget.gameObject);
-            if (buildTarget.hitPoints >= buildTarget.maxHP - 1)
-            {
-                buildTarget.fullyBuilt = true;
-                buildTarget = null;
-                Global.Instance.localPlayer.UpdateGUIFromSelections();
-            }
-        }
-    }
-    private void BuildFromServer()
-    {
-        buildTarget.hitPoints += buildDelta;
-        if (buildTarget.hitPoints >= buildTarget.maxHP)
-        {
-            buildTarget.fullyBuilt = true;
-            buildTarget = null;
-            Global.Instance.localPlayer.UpdateGUIFromSelections();
-        }
-    }
-    [ServerRpc]
-    private void BuildFromClientServerRpc(NetworkObjectReference obj)
-    {
-        GameObject act = obj;
-        SelectableEntity buildTarget = act.GetComponent<SelectableEntity>();
-        buildTarget.hitPoints += buildDelta;
-    }
-*/
+    } */
     public void SimpleBuildTarget()
     {
         selector.SimplePlaySound(1);
@@ -424,7 +399,7 @@ public class MinionController : NetworkBehaviour
     [ClientRpc]
     private void BuildClientRpc(byte delta, NetworkObjectReference structure)
     {
-        if (!IsOwner)
+        /*if (!IsOwner)
         {
             selector.SimplePlaySound(1);
         }
@@ -440,7 +415,7 @@ public class MinionController : NetworkBehaviour
                 buildTarget = null;
                 Global.Instance.localPlayer.UpdateGUIFromSelections();
             }
-        }
+        }*/
     }
 
 

@@ -13,7 +13,7 @@ public class RTSPlayer : NetworkBehaviour
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
     public List<SelectableEntity> ownedEntities; //must be serialized or public
-    [SerializeField] private List<SelectableEntity> _selectedEntities;
+    public List<SelectableEntity> selectedEntities;
 
     [SerializeField] private FactionScriptableObject _faction;
     [SerializeField] private int _entitiesIndex = 0; //used to pick a prefab from faction list
@@ -64,7 +64,7 @@ public class RTSPlayer : NetworkBehaviour
     } 
     private void SelectedAttackMove()
     { 
-        foreach (SelectableEntity item in _selectedEntities)
+        foreach (SelectableEntity item in selectedEntities)
         {
             if (item.controller != null) //minion
             {
@@ -74,7 +74,7 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void SelectedSetDestination()
     {
-        foreach (SelectableEntity item in _selectedEntities)
+        foreach (SelectableEntity item in selectedEntities)
         {
             if (item.controller != null) //minion
             {
@@ -159,13 +159,13 @@ public class RTSPlayer : NetworkBehaviour
         {
             if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
             {
-                _selectedEntities.Clear();
+                selectedEntities.Clear();
             }
             foreach (SelectableEntity item in ownedEntities)
             {
                 if (UnitIsInSelectionBox(cam.WorldToScreenPoint(item.transform.position), bounds))
                 {
-                    _selectedEntities.Add(item);
+                    selectedEntities.Add(item);
                     item.Select(true);
                 }
                 else
@@ -295,7 +295,7 @@ public class RTSPlayer : NetworkBehaviour
         lastPlaced = select;
         if (fac.needsConstructing)
         {
-            foreach (SelectableEntity item in _selectedEntities)
+            foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.type == SelectableEntity.EntityTypes.Builder)
                 {
@@ -345,7 +345,7 @@ public class RTSPlayer : NetworkBehaviour
             }
             if (fac.needsConstructing)
             {
-                foreach (SelectableEntity item in _selectedEntities)
+                foreach (SelectableEntity item in selectedEntities)
                 {
                     if (item.type == SelectableEntity.EntityTypes.Builder)
                     {
@@ -381,10 +381,10 @@ public class RTSPlayer : NetworkBehaviour
     {
         indices.Clear();
 
-        if (_selectedEntities.Count > 0) //at least one unit selected
+        if (selectedEntities.Count > 0) //at least one unit selected
         { 
             //show gui elements based on unit type selected
-            foreach (SelectableEntity item in _selectedEntities)
+            foreach (SelectableEntity item in selectedEntities)
             { 
                 if (!item.fullyBuilt)
                 {
@@ -445,7 +445,7 @@ public class RTSPlayer : NetworkBehaviour
 
         int cost = fac.goldCost;
         //try to spawn from all selected buildings if possible 
-        foreach (SelectableEntity select in _selectedEntities)
+        foreach (SelectableEntity select in selectedEntities)
         {
             if (gold < cost)
             {
@@ -505,7 +505,7 @@ public class RTSPlayer : NetworkBehaviour
             SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
             if (entity != null && ownedEntities.Contains(entity))
             {
-                _selectedEntities.Add(entity);
+                selectedEntities.Add(entity);
                 entity.Select(true);
             }
         }
@@ -534,17 +534,17 @@ public class RTSPlayer : NetworkBehaviour
             if (item.type == type)
             { 
                 item.Select(true);
-                _selectedEntities.Add(item);
+                selectedEntities.Add(item);
             }
         }
     }
     private void DeselectAll()
     { 
-        foreach (SelectableEntity item in _selectedEntities)
+        foreach (SelectableEntity item in selectedEntities)
         {
             item.Select(false);
         }
-        _selectedEntities.Clear();
+        selectedEntities.Clear();
     }
     #endregion
     private void OnDrawGizmos()

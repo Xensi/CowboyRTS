@@ -2199,7 +2199,7 @@ MonoBehaviour:
     <OverridePosition>k__BackingField: 1
     m_PositionLeftToRight: 1
     m_PositionTopToBottom: 0
-  <Configuration>k__BackingField: {fileID: 11400000, guid: 8f1b4e3792d8446399527749cfb591a2, type: 2}
+  <Configuration>k__BackingField: {fileID: 11400000, guid: 531402d59af187f4c85d5c2103ea44fe, type: 2}
 --- !u!1 &1886773543
 GameObject:
   m_ObjectHideFlags: 0

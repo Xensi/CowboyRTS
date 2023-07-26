@@ -491,13 +491,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6883782947868696822, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6883782947868696822, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: SyncRotAngleY
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 6883782947868696822, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: PositionThreshold
+      value: 0.1
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 6883782947868696822, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 6541845058422189605, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       insertIndex: -1

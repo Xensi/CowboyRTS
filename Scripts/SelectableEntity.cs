@@ -6,8 +6,8 @@ using Unity.Netcode;
 public class SelectableEntity : NetworkBehaviour
 {
     public MinionController controller;
-    //public NetworkVariable<byte> hitPoints = new NetworkVariable<byte>();
-    public byte hitPoints;
+    public NetworkVariable<byte> hitPoints = new NetworkVariable<byte>();
+    //public byte hitPoints;
 
     public bool selected = false;
     [SerializeField] private GameObject indicator;
@@ -38,6 +38,52 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private GameObject rallyVisual;
 
     [SerializeField] private Material damagedState;
+    public override void OnNetworkSpawn()
+    {
+        if (teamRenderer != null)
+        {
+            teamRenderer.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
+        } 
+        if (IsServer)
+        {
+            hitPoints.Value = startingHP;
+        }
+        rallyPoint = transform.position;
+        SimplePlaySound(0);
+        //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
+    }
+    private bool damaged = false;
+    [SerializeField] private MeshRenderer[] meshes;
+    public void TakeDamage(byte damage)
+    {
+        hitPoints.Value -= damage;
+        if (hitPoints.Value <= 0)
+        { 
+            Global.Instance.localPlayer.ownedEntities.Remove(this);
+            Global.Instance.localPlayer.selectedEntities.Remove(this);
+            Destroy(gameObject);
+        }
+        /*hitPoints -= damage;
+        //hitPoints.Value -= damage;
+        if (hitPoints <= 0)
+        {
+            Global.Instance.localPlayer.ownedEntities.Remove(this);
+            Destroy(gameObject);
+        }
+        if (hitPoints <= maxHP / 2 && !damaged)
+        {
+            damaged = true;
+
+            for (int i = 0; i < meshes.Length; i++)
+            {
+                meshes[i].material = damagedState;
+            }
+        }*/
+    }
+    public void BuildThis(byte delta)
+    {
+        //hitPoints += delta;
+    }
     private void FixedUpdate()
     {
         if (count < delay)
@@ -101,47 +147,6 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     } 
-    public override void OnNetworkSpawn()
-    {
-        if (teamRenderer != null)
-        {
-            teamRenderer.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
-        }
-
-        hitPoints = startingHP;
-        /*if (IsServer)
-        {
-            hitPoints.Value = startingHP;
-        }*/
-        rallyPoint = transform.position;
-        SimplePlaySound(0);
-        //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
-    }
-    private bool damaged = false;
-    [SerializeField] private MeshRenderer[] meshes;
-    public void TakeDamage(byte damage)
-    {
-        hitPoints -= damage;
-        //hitPoints.Value -= damage;
-        if (hitPoints <= 0)
-        {
-            Global.Instance.localPlayer.ownedEntities.Remove(this);
-            Destroy(gameObject);
-        }
-        if (hitPoints <= maxHP / 2 && !damaged)
-        {
-            damaged = true;
-
-            for (int i = 0; i < meshes.Length; i++)
-            {
-                meshes[i].material = damagedState;
-            } 
-        }
-    }
-    public void BuildThis(byte delta)
-    {
-        hitPoints += delta;
-    }
     public void OnTriggerEnter(Collider other)
     {
         Global.Instance.localPlayer.placementBlocked = true;

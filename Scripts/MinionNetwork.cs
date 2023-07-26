@@ -19,6 +19,7 @@ public class MinionNetwork : NetworkBehaviour
     }
     public override void OnNetworkSpawn()
     {
+        WriteData();
         oldPosition = transform.position;
         oldRotation = transform.rotation.eulerAngles;
     }
@@ -32,22 +33,26 @@ public class MinionNetwork : NetworkBehaviour
         float diff = Vector3.Distance(transform.position, oldPosition);
         return diff;
     }
+    private void WriteData()
+    { 
+        float diff = CalculateChangeInRotation();
+        if (diff >= rotationDifferenceThreshold)
+        {
+            //Debug.Log("writing rot");
+            WriteRotation();
+        }
+        float posDiff = CalculateChangeInPosition();
+        if (posDiff >= positionDifferenceThreshold)
+        {
+            //Debug.Log("writing pos");
+            WritePosition();
+        }
+    }
     private void FixedUpdate()
     {
         if (IsOwner) //write
         {
-            float diff = CalculateChangeInRotation();
-            if (diff >= rotationDifferenceThreshold)
-            {
-                Debug.Log("writing rot");
-                WriteRotation();
-            }
-            float posDiff = CalculateChangeInPosition();
-            if (posDiff >= positionDifferenceThreshold)
-            {
-                Debug.Log("writing pos");
-                WritePosition();
-            }
+            WriteData();
         }
         else //read w interpolation
         {
