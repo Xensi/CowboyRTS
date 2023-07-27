@@ -12,14 +12,15 @@ public class MinionController : NetworkBehaviour
     bool animsEnabled = false;
     AIPath ai;
     [SerializeField] private SelectableEntity selector;
-    private AnimStates state = AnimStates.Spawn;
-    private enum AnimStates
+    public AnimStates state = AnimStates.Spawn;
+    public enum AnimStates
     {
         Idle,
         Walk,
         Attack,
         Build,
-        Spawn
+        Spawn,
+        Die
     }
     public enum AttackType
     {
@@ -38,11 +39,24 @@ public class MinionController : NetworkBehaviour
     [SerializeField] private LocalRotation localRotate;
     private RaycastModifier rayMod;
     private Seeker seeker;
+    private Collider col;
+    public void PrepareForDeath()
+    { 
+        Global.Instance.localPlayer.selectedEntities.Remove(selector);
+        selector.Select(false);
+        state = AnimStates.Die;
+        ai.enabled = false;
+        rayMod.enabled = false;
+        seeker.enabled = false;
+        Destroy(rigid);
+        Destroy(col);
+    }
     void OnEnable()
     {
         ai = GetComponent<AIPath>();
         rayMod = GetComponent<RaycastModifier>();
         seeker = GetComponent<Seeker>();
+        col = GetComponent<Collider>();
         // Update the destination right before searching for a path as well.
         // This is enough in theory, but this script will also update the destination every
         // frame as the destination is used for debugging and may be used for other things by other
@@ -95,7 +109,11 @@ public class MinionController : NetworkBehaviour
     }
     private void OnDrawGizmos()
     {
-        Gizmos.DrawWireSphere(transform.position, attackRange);
+        //Gizmos.DrawWireSphere(transform.position, attackRange);
+        if (targetEnemy != null)
+        { 
+            Gizmos.DrawSphere(targetEnemy.transform.position, .1f);
+        }
     }
     LayerMask enemyMask; 
     public void SetBuildDestination(Vector3 pos, SelectableEntity ent)
@@ -103,64 +121,68 @@ public class MinionController : NetworkBehaviour
         destination = pos;
         buildTarget = ent; 
     } 
+    
     private void CheckTargetEnemy() //use spherecast to get an enemy. if in attack range they become our target
-    { 
-        if (targetEnemy == null)
+    {
+        if (targetEnemy != null && targetEnemy.hitPoints.Value <= 0)
         {
-            enemyInRange = false;
-            //do a spherecast to get one
-            Vector3 center = transform.position;
-            float detectionRange = attackRange * 1.25f;
-            if (attackMoving)
+            targetEnemy = null; 
+        }
+
+
+        enemyInRange = false;
+        //do a spherecast to get one
+        Vector3 center = transform.position;
+        float detectionRange = attackRange * 1.25f;
+        if (attackMoving)
+        {
+            detectionRange = attackRange;
+        }
+        int maxColliders = Mathf.RoundToInt(40 * detectionRange);
+        Collider[] hitColliders = new Collider[maxColliders];
+        int numColliders = Physics.OverlapSphereNonAlloc(center, detectionRange, hitColliders, enemyMask);
+        //get closest collider 
+        Collider closest = null;
+        float distance = Mathf.Infinity;
+        for (int i = 0; i < numColliders; i++)
+        {
+            if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self
             {
-                detectionRange = attackRange;
+                continue;
             }
-            int maxColliders = Mathf.RoundToInt(20 * detectionRange);
-            Collider[] hitColliders = new Collider[maxColliders];
-            int numColliders = Physics.OverlapSphereNonAlloc(center, detectionRange, hitColliders, enemyMask);
-            //get closest collider 
-            Collider closest = null;
-            float distance = Mathf.Infinity;
-            for (int i = 0; i < numColliders; i++)
+            SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
+            if (Global.Instance.localPlayer.ownedEntities.Contains(select))
             {
-                if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self
-                {
-                    continue;
-                }
-                SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
-                if (Global.Instance.localPlayer.ownedEntities.Contains(select))
-                {
-                    continue;
-                }
-                float newDist = Vector3.SqrMagnitude(transform.position - hitColliders[i].transform.position);
-                if (newDist < distance)
-                {
-                    closest = hitColliders[i];
-                }
+                continue;
             }
-            if (closest != null)
+            float newDist = Vector3.SqrMagnitude(transform.position - hitColliders[i].transform.position);
+            if (newDist < distance)
             {
-                float dist = Vector3.Distance(transform.position, closest.transform.position);
-                if (dist <= attackRange)
-                { 
-                    targetEnemy = closest.GetComponent<SelectableEntity>();
-                    enemyInRange = true;
-                    chasingEnemy = false;
-                }
-                else
-                { 
-                    destination = closest.transform.position;
-                    enemyInRange = false;
-                    chasingEnemy = true;
-                }
+                closest = hitColliders[i];
+            }
+        }
+        if (closest != null)
+        {
+            float dist = Vector3.Distance(transform.position, closest.transform.position);
+            if (dist <= attackRange)
+            {
+                targetEnemy = closest.GetComponent<SelectableEntity>();
+                enemyInRange = true;
+                chasingEnemy = false;
             }
             else
             {
+                destination = closest.transform.position;
                 enemyInRange = false;
-                chasingEnemy = false;
+                chasingEnemy = true;
             }
         }
         else
+        {
+            enemyInRange = false;
+            chasingEnemy = false;
+        }
+        if (targetEnemy != null)
         {
             float dist = Vector3.Distance(transform.position, targetEnemy.transform.position);
             if (dist > attackRange)
@@ -246,7 +268,7 @@ public class MinionController : NetworkBehaviour
                 { 
                     anim.Play("Idle");
                 }
-                if (enemyInRange && !followingMoveOrder)
+                if (enemyInRange && !followingMoveOrder && attackReady)
                 {
                     anim.ResetTrigger("Idle");
                     StartAttack();
@@ -269,6 +291,7 @@ public class MinionController : NetworkBehaviour
 
                 break;
             case AnimStates.Walk:
+                ai.canMove = true;
                 if (attackMoving)
                 {
                     if (!anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
@@ -293,7 +316,7 @@ public class MinionController : NetworkBehaviour
                         anim.Play("Walk");
                     }
                 }
-                if (enemyInRange && (!followingMoveOrder || attackMoving))
+                if (enemyInRange && (!followingMoveOrder || attackMoving) && attackReady)
                 {
                     playedAttackMoveSound = false;
                     anim.ResetTrigger("Walk");
@@ -315,6 +338,7 @@ public class MinionController : NetworkBehaviour
             case AnimStates.Attack:
                 anim.Play("Attack");
                 transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, targetEnemy.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
+                ai.canMove = moveWhileAttacking;
                 break;
             case AnimStates.Build:
                 anim.Play("Attack");
@@ -327,19 +351,22 @@ public class MinionController : NetworkBehaviour
                 else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) > attackRange)
                 {
                     state = AnimStates.Walk;
-                }
-                
+                } 
+                break;
+            case AnimStates.Die:
+                anim.Play("Die");
                 break;
             default:
                 break;
         }
-    } 
+    }
+    [SerializeField] private bool moveWhileAttacking = false;
     private void CancelAttack()
     {
         targetEnemy = null;
         buildTarget = null;
         state = AnimStates.Idle;
-        CancelInvoke();
+        CancelInvoke("SimpleDamageEnemy");
     }
     private sbyte buildDelta = 1;
     private void StartBuild()
@@ -351,18 +378,23 @@ public class MinionController : NetworkBehaviour
     }
     private void StartAttack()
     {
+        attackReady = false;
         state = AnimStates.Attack;
         destination = transform.position;
-        Invoke("SimpleDamageEnemy", impactTime);
+        Invoke("SimpleDamageEnemy", impactTime + Random.Range(-0.1f, 0.1f));
         Invoke("ReturnState", attackDuration);
     }
     public SelectableEntity buildTarget;
-    [SerializeField] private sbyte damage = 1; 
+    [SerializeField] private sbyte damage = 1;
+    private bool attackReady = true;
     public void SimpleDamageEnemy() //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         //fire locally
         selector.SimplePlaySound(1); 
-
+        if (selector.attackEffects.Length > 0)
+        {
+            selector.DisplayAttackEffects();
+        }
         if (IsServer)
         {
             targetEnemy.TakeDamage(damage);
@@ -403,14 +435,14 @@ public class MinionController : NetworkBehaviour
         {
             select.BuildThis(damage);
         } 
-    }  
+    } 
 
-
-    private float attackDuration = 1;
-    private float impactTime = .5f;
+    [SerializeField] private float attackDuration = 1;
+    [SerializeField] private float impactTime = .5f;
     private void ReturnState()
     {
         state = AnimStates.Idle;
+        attackReady = true;
     }
     private float GetActualPositionChange()
     {
@@ -457,7 +489,11 @@ public class MinionController : NetworkBehaviour
                 orderedDestination = destination;
             }
             state = AnimStates.Walk;
-            CancelInvoke();
+            CancelInvoke("SimpleDamageEnemy");
+            if (attackMoving) //more responsive?
+            {
+                CheckTargetEnemy();
+            }
         } 
     } 
     /*private void HandleMovement()

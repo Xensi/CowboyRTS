@@ -86,8 +86,24 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
     }
+    private void SelectAll()
+    {
+        foreach (SelectableEntity item in ownedEntities)
+        {
+            if (item != null)
+            { 
+                selectedEntities.Add(item);
+                item.Select(true);
+            }
+        }
+
+    }
     void Update()
     {
+        if (Input.GetKey(KeyCode.Q))
+        {
+            SelectAll();
+        }
         CameraMove();
         if (!MouseOverUI()) 
         {
@@ -97,7 +113,11 @@ public class RTSPlayer : NetworkBehaviour
             if (Input.GetKey(KeyCode.RightShift))
             {
                 SimpleSpawnMinion(_worldPosition, 0, _worldPosition);
-            } 
+            }
+            if (Input.GetKey(KeyCode.RightAlt))
+            {
+                SimpleSpawnMinion(_worldPosition, 2, _worldPosition);
+            }
 #endif
             if (Input.GetMouseButtonDown(0))
             {

@@ -57,7 +57,7 @@ public class SelectableEntity : NetworkBehaviour
         //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
     }
     private bool damaged = false;
-    [SerializeField] private MeshRenderer[] meshes;
+    [SerializeField] private MeshRenderer[] damageableMeshes;
     public void TakeDamage(sbyte damage) //always managed by SERVER
     {
         hitPoints.Value -= damage; 
@@ -68,9 +68,9 @@ public class SelectableEntity : NetworkBehaviour
         if (hitPoints.Value <= damagedThreshold)
         {
             damaged = true;
-            for (int i = 0; i < meshes.Length; i++)
+            for (int i = 0; i < damageableMeshes.Length; i++)
             {
-                meshes[i].material = damagedState;
+                damageableMeshes[i].material = damagedState;
             }
         }
     }
@@ -131,8 +131,24 @@ public class SelectableEntity : NetworkBehaviour
             Global.Instance.localPlayer.UpdateGUIFromSelections();
         }
     }
+    private float deathDuration = 60;
     private void ProperDestroyMinion()
     {
+        if (type != EntityTypes.ProductionStructure)
+        {
+            if (controller != null)
+            {
+                controller.PrepareForDeath();
+            }
+            Invoke("Die", deathDuration); 
+        }
+        else
+        {
+            Die();
+        }
+    }
+    private void Die()
+    { 
         Global.Instance.localPlayer.ownedEntities.Remove(this);
         Global.Instance.localPlayer.selectedEntities.Remove(this);
         Destroy(gameObject);
@@ -151,12 +167,49 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-     
+    public MeshRenderer[] attackEffects;
+
+    private float attackEffectDuration = 0.1f;
+    public void DisplayAttackEffects()
+    {
+        //fire locally
+        for (int i = 0; i < attackEffects.Length; i++)
+        {
+            attackEffects[i].enabled = true;
+        }
+        Invoke("HideAttackEffects", attackEffectDuration);
+        //request server to send to other clients
+        RequestEffectServerRpc();
+    }
+    [ServerRpc]
+    private void RequestEffectServerRpc()
+    {
+        PlayAttackEffectClientRpc();
+    }
+    [ClientRpc]
+    private void PlayAttackEffectClientRpc()
+    {
+        if (!IsOwner)
+        {
+            for (int i = 0; i < attackEffects.Length; i++)
+            {
+                attackEffects[i].enabled = true;
+            }
+            Invoke("HideAttackEffects", attackEffectDuration);
+        }
+    }
+    private void HideAttackEffects()
+    { 
+        for (int i = 0; i < attackEffects.Length; i++)
+        {
+            attackEffects[i].enabled = false;
+        }
+    }
     public void SimplePlaySound(byte id)
     {
         //fire locally 
         AudioClip clip = sounds[id];
-        Global.Instance.PlayClipAtPoint(clip, transform.position, 0.25f, Random.Range(.9f, 1.1f));
+        Global.Instance.PlayClipAtPoint(clip, transform.position, 0.25f);
         //request server to send to other clients
         RequestSoundServerRpc(id);
     }
@@ -171,7 +224,7 @@ public class SelectableEntity : NetworkBehaviour
         if (!IsOwner)
         {
             AudioClip clip = sounds[id];
-            Global.Instance.PlayClipAtPoint(clip, transform.position, 0.25f, Random.Range(.9f, 1.1f));
+            Global.Instance.PlayClipAtPoint(clip, transform.position, 0.25f);
         }
     }
     private void UpdateBuildQueue()

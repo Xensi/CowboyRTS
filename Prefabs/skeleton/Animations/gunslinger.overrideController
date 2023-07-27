@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: gunslinger
+  m_Controller: {fileID: 9100000, guid: c71b7ba23e3d5924792e0dd2c40bc864, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: 5da5e8dee8ff8ce4f9c96a8ad48ca869, type: 2}
+    m_OverrideClip: {fileID: -4885119122951247324, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+  - m_OriginalClip: {fileID: 7400000, guid: a9aa2ad668eb42f4bae1697e38b6995c, type: 2}
+    m_OverrideClip: {fileID: 1963079803359675471, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+  - m_OriginalClip: {fileID: -623603649343465320, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+    m_OverrideClip: {fileID: -623603649343465320, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+  - m_OriginalClip: {fileID: -8206857311389296499, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+    m_OverrideClip: {fileID: -8206857311389296499, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+  - m_OriginalClip: {fileID: -626948583029366203, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+    m_OverrideClip: {fileID: -626948583029366203, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+  - m_OriginalClip: {fileID: -8800838248204228948, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+    m_OverrideClip: {fileID: -8800838248204228948, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+  - m_OriginalClip: {fileID: -4807389317913785953, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+    m_OverrideClip: {fileID: -4807389317913785953, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}

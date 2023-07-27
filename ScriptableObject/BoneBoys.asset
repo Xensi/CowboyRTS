@@ -28,6 +28,6 @@ MonoBehaviour:
   - productionName: Raise Gunslinger
     needsConstructing: 0
     prefabToSpawn: {fileID: 2545681379473208697, guid: 05ce46963ff2d244eb7b213c8e4e5220, type: 3}
-    goldCost: 50
-    timeCost: 10
+    goldCost: 20
+    timeCost: 6
     buildID: 0
