@@ -48,7 +48,7 @@ public class RTSPlayer : NetworkBehaviour
             Global.Instance.localPlayer = this;
             //SimpleSpawnMinion(Vector3.zero);
             Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position; 
-            SimpleSpawnMinion(spawn, 0, spawn);
+            //SimpleSpawnMinion(spawn, 0);
         }
     }
     private Transform camParent;
@@ -112,11 +112,11 @@ public class RTSPlayer : NetworkBehaviour
 #if UNITY_EDITOR
             if (Input.GetKey(KeyCode.RightShift))
             {
-                SimpleSpawnMinion(_worldPosition, 0, _worldPosition);
+                SimpleSpawnMinion(_worldPosition, 0);
             }
             if (Input.GetKey(KeyCode.RightAlt))
             {
-                SimpleSpawnMinion(_worldPosition, 2, _worldPosition);
+                SimpleSpawnMinion(_worldPosition, 2);
             }
 #endif
             if (Input.GetMouseButtonDown(0))
@@ -235,7 +235,7 @@ public class RTSPlayer : NetworkBehaviour
     {
         FactionEntityClass fac = _faction.entities[id];
         gold -= fac.goldCost;
-        SimpleSpawnMinion(_worldPosition, id, _worldPosition); 
+        SimpleSpawnMinion(_worldPosition, id); 
         StopPlacingBuilding();
     }  
     private void StopPlacingBuilding()
@@ -282,11 +282,20 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
     }
+    public SelectableEntity lastPlaced;
     #region SpawnMinion
-    private void SimpleSpawnMinion(Vector3 pos, byte id, Vector3 rally)
+    /// <summary>
+    /// Tell the server to spawn in a minion at a position.
+    /// </summary> 
+    private void SimpleSpawnMinion(Vector3 spawnPos, byte minionID)
     {
-        UpdateButtons(); 
-        if (IsServer)
+        sbyte xSpawn = (sbyte)spawnPos.x;
+        sbyte zSpawn = (sbyte)spawnPos.z;
+        SpawnMinionServerRpc(xSpawn, zSpawn, minionID); 
+
+        UpdateButtons();
+        //
+        /*if (IsServer)
         {
             SpawnMinion(pos, id, rally); 
         }
@@ -295,10 +304,32 @@ public class RTSPlayer : NetworkBehaviour
             Vector2 pos2D = new Vector2(pos.x, pos.z);
             Vector2 rally2D = new Vector2(rally.x, rally.z);
             SpawnMinionServerRPC(pos2D, rally2D, id);
-        }
+        }*/
     } 
-    public SelectableEntity lastPlaced;
-    private void SpawnMinion(Vector3 pos, byte id, Vector3 rally)
+    /// <summary>
+    /// Any client (including host) tells server to spawn in a minion and grant ownership to the client.
+    /// </summary> 
+    [ServerRpc] 
+    private void SpawnMinionServerRpc(sbyte xSpawn, sbyte zSpawn, byte minionID, ServerRpcParams serverRpcParams = default)
+    {
+        FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
+        Vector3 spawnPosition = new Vector3(xSpawn, 0, zSpawn); //get spawn position
+
+        GameObject minion = Instantiate(fac.prefabToSpawn, spawnPosition, Quaternion.Euler(0, 180, 0)); //spawn locally
+        //Get components
+        SelectableEntity select = minion.GetComponent<SelectableEntity>();
+        NetworkObject net = minion.GetComponent<NetworkObject>();
+        select.SetFullyBuiltStatus(!fac.needsConstructing);
+        //Grant ownership to client that called this
+        var clientId = serverRpcParams.Receive.SenderClientId;
+        if (NetworkManager.ConnectedClients.ContainsKey(clientId))
+        {
+            //var client = NetworkManager.ConnectedClients[clientId]; //access client
+            net.SpawnWithOwnership(clientId);
+        }
+
+    }
+    /*private void SpawnMinion(Vector3 pos, byte id, Vector3 rally)
     {
         FactionEntityClass fac = _faction.entities[id];
         pos.y = 0;
@@ -378,7 +409,7 @@ public class RTSPlayer : NetworkBehaviour
                 }
             } 
         }
-    }
+    }*/
     #endregion
     #region Selection
     private void DoNotDoubleSelect()
@@ -399,6 +430,18 @@ public class RTSPlayer : NetworkBehaviour
             DoubleSelectDetected();
         }
         UpdateGUIFromSelections();
+    }
+    /// <summary>
+    /// Update all buttons to be interactable or not based on their cost vs your gold.
+    /// </summary>
+    public void UpdateButtons()
+    {
+        for (int i = 0; i < indices.Count; i++)
+        {
+            Button button = Global.Instance.productionButtons[i];
+            FactionEntityClass fac = _faction.entities[indices[i]];
+            button.interactable = gold >= fac.goldCost;
+        }
     }
     public void UpdateGUIFromSelections()
     {
@@ -494,15 +537,6 @@ public class RTSPlayer : NetworkBehaviour
             UpdateGUIFromSelections();
         }
     }
-    public void UpdateButtons()
-    {
-        for (int i = 0; i < indices.Count; i++)
-        {
-            Button button = Global.Instance.productionButtons[i];  
-            FactionEntityClass fac = _faction.entities[indices[i]];  
-            button.interactable = gold >= fac.goldCost;
-        }
-    }
     private void QueueBuildingSpawn(byte id = 0)
     {
         FactionEntityClass fac = new FactionEntityClass();
@@ -539,7 +573,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             pos = select.transform.position;
         }
-        SimpleSpawnMinion(pos, id, rally);
+        SimpleSpawnMinion(pos, id);
     }
     private void HoverBuildWithID(byte id = 0)
     {

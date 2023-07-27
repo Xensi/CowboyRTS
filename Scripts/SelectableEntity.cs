@@ -92,6 +92,10 @@ public class SelectableEntity : NetworkBehaviour
         Global.Instance.localPlayer.placementBlocked = false;
         Global.Instance.localPlayer.UpdatePlacement();
     }
+    public void SetFullyBuiltStatus(bool val)
+    {
+        fullyBuilt = val;
+    }
     private void FixedUpdate()
     { 
         //workaround for issue where units are not "spawned"

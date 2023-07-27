@@ -15,7 +15,8 @@ public class NetworkButtons : MonoBehaviour
             {
                 if (GUILayout.Button("Host")) NetworkManager.Singleton.StartHost();
                 if (GUILayout.Button("Client")) NetworkManager.Singleton.StartClient();
-            } 
+            }
+            GUILayout.EndArea();
         }
     }
 }
