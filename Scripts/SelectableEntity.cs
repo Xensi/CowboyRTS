@@ -81,9 +81,27 @@ public class SelectableEntity : NetworkBehaviour
     public void BuildThis(sbyte delta)
     {
         hitPoints.Value += delta;
-    } 
+    }
+    public void OnTriggerEnter(Collider other)
+    {
+        Global.Instance.localPlayer.placementBlocked = true;
+        Global.Instance.localPlayer.UpdatePlacement();
+    }
+    public void OnTriggerExit(Collider other)
+    {
+        Global.Instance.localPlayer.placementBlocked = false;
+        Global.Instance.localPlayer.UpdatePlacement();
+    }
     private void FixedUpdate()
     { 
+        //workaround for issue where units are not "spawned"
+        //if (IsSpawned)
+
+        if (!alive)
+        {
+            return;
+        }
+
         if (!fullyBuilt)
         {
             CheckIfBuilt();
@@ -124,7 +142,25 @@ public class SelectableEntity : NetworkBehaviour
                 }
             }
         }
-    } 
+    }
+    private bool alive = true;
+    private void ProperDestroyMinion()
+    {
+        alive = false;
+
+        if (type != EntityTypes.ProductionStructure)
+        {
+            if (controller != null)
+            {
+                controller.PrepareForDeath();
+            }
+            Invoke("Die", deathDuration);
+        }
+        else
+        {
+            Die();
+        }
+    }
     private int footstepCount = 0;
     private int footstepThreshold = 12;
     private void CheckIfBuilt()
@@ -144,22 +180,7 @@ public class SelectableEntity : NetworkBehaviour
 
         }
     }
-    private float deathDuration = 60;
-    private void ProperDestroyMinion()
-    {
-        if (type != EntityTypes.ProductionStructure)
-        {
-            if (controller != null)
-            {
-                controller.PrepareForDeath();
-            }
-            Invoke("Die", deathDuration); 
-        }
-        else
-        {
-            Die();
-        }
-    }
+    private float deathDuration = 10;
     private void Die()
     { 
         Global.Instance.localPlayer.ownedEntities.Remove(this);
@@ -255,16 +276,6 @@ public class SelectableEntity : NetworkBehaviour
         }
         Global.Instance.localPlayer.UpdateBuildQueue();
     } 
-    public void OnTriggerEnter(Collider other)
-    {
-        Global.Instance.localPlayer.placementBlocked = true;
-        Global.Instance.localPlayer.UpdatePlacement();
-    }
-    public void OnTriggerExit(Collider other)
-    {
-        Global.Instance.localPlayer.placementBlocked = false;
-        Global.Instance.localPlayer.UpdatePlacement();
-    }
     private void UpdateIndicator()
     {
         if (indicator != null) indicator.SetActive(selected);
