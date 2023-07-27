@@ -60,7 +60,7 @@ public class MinionNetwork : NetworkBehaviour
             if (diff >= rotationDifferenceThreshold || posDiff >= positionDifferenceThreshold)
             {
                 MinionData data = WriteData();
-                Debug.Log("updating data");
+                //Debug.Log("updating data");
                 if (IsServer || !_useServerAuthoritative) //write if you are server, or if using owner-auth
                 {
                     _netData.Value = data;
@@ -133,7 +133,7 @@ public class MinionNetwork : NetworkBehaviour
         oldRotation = transform.rotation.eulerAngles; //update this
         return state;
     }
-    [ServerRpc] 
+    [ServerRpc(RequireOwnership = false)] 
     private void UpdateNetDataServerRpc(MinionData data)
     { 
         _netData.Value = data;

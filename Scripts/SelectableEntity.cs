@@ -1,11 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Netcode;
-
+using Unity.Netcode; 
 public class SelectableEntity : NetworkBehaviour
-{
-
+{ 
     public MeshRenderer[] unbuiltRenderers;
     public MeshRenderer[] finishedRenderers;
     public MinionController controller;
@@ -16,7 +14,8 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private GameObject indicator;
     public NetworkObject net;
      
-    public MeshRenderer[] teamRenderers;
+    public List<MeshRenderer> teamRenderers;
+    private MeshRenderer[] allMeshes;
     
     public enum EntityTypes
     {
@@ -42,15 +41,27 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private GameObject rallyVisual;
 
     [SerializeField] private Material damagedState;
-    public override void OnNetworkSpawn()
+    private void RequestBuilders()
     {
-        foreach (MeshRenderer item in teamRenderers)
-        { 
-            if (item != null)
+        RTSPlayer local = Global.Instance.localPlayer;
+        foreach (SelectableEntity item in local.selectedEntities)
+        {
+            if (item.type == EntityTypes.Builder)
             {
-                item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
+                MinionController minion = item.GetComponent<MinionController>();
+                minion.SetBuildDestination(transform.position, this);
             }
         }
+    }
+    public override void OnNetworkSpawn()
+    {
+        if (IsOwner)
+        {
+            Global.Instance.localPlayer.ownedEntities.Add(this);
+            Global.Instance.localPlayer.lastSpawnedEntity = this;
+            RequestBuilders();
+        }
+        allMeshes = GetComponentsInChildren<MeshRenderer>();
         if (IsServer)
         {
             hitPoints.Value = startingHP;
@@ -59,6 +70,19 @@ public class SelectableEntity : NetworkBehaviour
         rallyPoint = transform.position;
         SimplePlaySound(0);
         //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
+        UpdateTeamRenderers();
+    }
+    private bool teamRenderersUpdated = false;
+    private void UpdateTeamRenderers()
+    {
+        foreach (MeshRenderer item in teamRenderers)
+        {
+            if (item != null)
+            {
+                item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
+            }
+        }
+        teamRenderersUpdated = true;
     }
     private bool damaged = false;
     [SerializeField] private MeshRenderer[] damageableMeshes;
@@ -91,18 +115,26 @@ public class SelectableEntity : NetworkBehaviour
     {
         Global.Instance.localPlayer.placementBlocked = false;
         Global.Instance.localPlayer.UpdatePlacement();
-    }
-    public void SetFullyBuiltStatus(bool val)
-    {
-        fullyBuilt = val;
-    }
+    } 
     private void FixedUpdate()
-    { 
-        //workaround for issue where units are not "spawned"
-        //if (IsSpawned)
+    {
+        //Alert for issue where units are not "spawned"
+        /*if (!IsSpawned)
+        {
+            Debug.LogError("Minion not spawned correctly ...");
+            //Global.Instance.localPlayer.SimpleSpawnMinion()
+        }*/
+        if (!teamRenderersUpdated)
+        {
+            UpdateTeamRenderers();
+        }
 
         if (!alive)
         {
+            if (controller != null)
+            {
+                controller.state = MinionController.AnimStates.Die;
+            }
             return;
         }
 
@@ -147,11 +179,17 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-    private bool alive = true;
+    public bool alive = true;
     private void ProperDestroyMinion()
     {
         alive = false;
-
+        foreach (MeshRenderer item in allMeshes)
+        { 
+            if (!teamRenderers.Contains(item))
+            { 
+                item.material.color = Color.gray;
+            }
+        }
         if (type != EntityTypes.ProductionStructure)
         {
             if (controller != null)
@@ -187,13 +225,29 @@ public class SelectableEntity : NetworkBehaviour
     private float deathDuration = 10;
     private void Die()
     { 
-        Global.Instance.localPlayer.ownedEntities.Remove(this);
-        Global.Instance.localPlayer.selectedEntities.Remove(this);
-        Destroy(gameObject);
+        if (IsOwner)
+        { 
+            Global.Instance.localPlayer.ownedEntities.Remove(this);
+            Global.Instance.localPlayer.selectedEntities.Remove(this);
+            if (IsServer) //only the server may destroy networkobjects
+            {
+                Destroy(gameObject);
+            }
+            else
+            {
+                DestroyObjectServerRpc(gameObject);
+            }
+        }
+    }
+    [ServerRpc]
+    private void DestroyObjectServerRpc(NetworkObjectReference obj)
+    {
+        GameObject game = obj;
+        Destroy(game);
     }
     public void SetRally()
-    { 
-        Ray ray = Global.Instance.localPlayer.cam.ScreenPointToRay(Input.mousePosition);
+    {
+        /*Ray ray = Global.Instance.localPlayer.cam.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
 
         if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
@@ -203,6 +257,11 @@ public class SelectableEntity : NetworkBehaviour
             {
                 rallyVisual.transform.position = rallyPoint;
             }
+        }*/
+        rallyPoint = Global.Instance.localPlayer.worldPosition;
+        if (rallyVisual != null)
+        {
+            rallyVisual.transform.position = rallyPoint;
         }
     }
     public MeshRenderer[] attackEffects;
@@ -251,7 +310,7 @@ public class SelectableEntity : NetworkBehaviour
         //request server to send to other clients
         RequestSoundServerRpc(id);
     }
-    [ServerRpc]
+    [ServerRpc(RequireOwnership = false)]
     private void RequestSoundServerRpc(byte id)
     {
         PlaySoundClientRpc(id);
@@ -291,7 +350,14 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void Select(bool val)
     {
-        selected = val;
+        if (alive)
+        { 
+            selected = val;
+        }
+        else
+        {
+            selected = false;
+        }
         UpdateIndicator();
     }
 }
