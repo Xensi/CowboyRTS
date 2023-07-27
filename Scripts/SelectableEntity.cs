@@ -5,6 +5,9 @@ using Unity.Netcode;
 
 public class SelectableEntity : NetworkBehaviour
 {
+
+    public MeshRenderer[] unbuiltRenderers;
+    public MeshRenderer[] finishedRenderers;
     public MinionController controller;
     public NetworkVariable<sbyte> hitPoints = new NetworkVariable<sbyte>();
     //public byte hitPoints;
@@ -20,7 +23,8 @@ public class SelectableEntity : NetworkBehaviour
         Melee,
         Ranged,
         ProductionStructure,
-        Builder
+        Builder,
+        HarvestableStructure
     }
     public EntityTypes type = EntityTypes.Melee;
     public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
@@ -129,6 +133,15 @@ public class SelectableEntity : NetworkBehaviour
         {
             fullyBuilt = true; 
             Global.Instance.localPlayer.UpdateGUIFromSelections();
+            foreach (MeshRenderer item in finishedRenderers)
+            {
+                item.enabled = true;
+            }
+            foreach (MeshRenderer item in unbuiltRenderers)
+            {
+                item.enabled = false;
+            }
+
         }
     }
     private float deathDuration = 60;
@@ -240,6 +253,7 @@ public class SelectableEntity : NetworkBehaviour
                 Global.Instance.localPlayer.FromBuildingSpawn(this, rallyPoint, fac.buildID);
             }
         }
+        Global.Instance.localPlayer.UpdateBuildQueue();
     } 
     public void OnTriggerEnter(Collider other)
     {

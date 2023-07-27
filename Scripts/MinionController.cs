@@ -273,7 +273,7 @@ public class MinionController : NetworkBehaviour
                     anim.ResetTrigger("Idle");
                     StartAttack();
                 }
-                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) <= attackRange)
+                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) <= attackRange && attackReady)
                 {
                     anim.ResetTrigger("Idle");
                     StartBuild();
@@ -322,7 +322,7 @@ public class MinionController : NetworkBehaviour
                     anim.ResetTrigger("Walk");
                     StartAttack();
                 }
-                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) <= attackRange)
+                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) <= attackRange && attackReady)
                 {
                     anim.ResetTrigger("Walk");
                     playedAttackMoveSound = false;
@@ -371,6 +371,7 @@ public class MinionController : NetworkBehaviour
     private sbyte buildDelta = 1;
     private void StartBuild()
     {
+        attackReady = false;
         state = AnimStates.Build;
         destination = transform.position;
         Invoke("SimpleBuildTarget", impactTime);

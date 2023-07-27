@@ -6,8 +6,8 @@ using TMPro;
 
 public class Global : MonoBehaviour
 {
-    public RectTransform selectionRect;
     public static Global Instance { get; private set; }
+    public RectTransform selectionRect;
     public List<Material> colors;
     public List<Transform> playerSpawn;
     public List<Button> productionButtons;
@@ -16,6 +16,8 @@ public class Global : MonoBehaviour
     public RTSPlayer localPlayer;
     public TMP_Text goldText;
     public AudioClip[] footsteps;
+    public List<Button> queueButtons;
+    public Transform queueParent;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.

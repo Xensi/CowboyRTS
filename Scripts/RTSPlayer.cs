@@ -229,7 +229,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             count = 0;
             gold += 100;
-        }
+        } 
     }
     private void PlaceBuilding(byte id = 0)
     {
@@ -430,7 +430,7 @@ public class RTSPlayer : NetworkBehaviour
             button.gameObject.SetActive(true);
             TMP_Text text = button.GetComponentInChildren<TMP_Text>();
             FactionEntityClass fac = _faction.entities[indices[i]];
-            text.text = fac.productionName;
+            text.text = fac.productionName + ": " + fac.goldCost +"g";
             byte j = indices[i];
             //Debug.Log(j);
             button.onClick.RemoveAllListeners(); 
@@ -448,6 +448,51 @@ public class RTSPlayer : NetworkBehaviour
         { 
             Global.Instance.productionButtons[i].gameObject.SetActive(false);
         }
+        UpdateBuildQueue();
+    }
+    public void UpdateBuildQueue()
+    {
+        Global.Instance.queueParent.gameObject.SetActive(false);
+        if (selectedEntities.Count == 1)
+        {
+            SelectableEntity select = selectedEntities[0];
+            if (select.type == SelectableEntity.EntityTypes.ProductionStructure && select.fullyBuilt)
+            {
+                Global.Instance.queueParent.gameObject.SetActive(true);
+                int num = Mathf.Clamp(select.buildQueue.Count, 0, Global.Instance.queueButtons.Count);
+                //enable a button for each indices
+
+                for (int i = 0; i < Global.Instance.queueButtons.Count; i++)
+                {
+                    Global.Instance.queueButtons[i].gameObject.SetActive(false);
+                    if (i < num)
+                    {
+                        UpdateButton(select, i); 
+                    }
+                }  
+            } 
+        }
+    }
+    private void UpdateButton(SelectableEntity select, int i = 0)
+    { 
+        Button button = Global.Instance.queueButtons[i];
+        button.gameObject.SetActive(true);
+        TMP_Text text = button.GetComponentInChildren<TMP_Text>();
+        FactionEntityClass fac = select.buildQueue[i];
+        text.text = fac.productionName + ": " + fac.timeCost + "s";
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(delegate { DequeueProductionOrder(i); });
+    }
+    public void DequeueProductionOrder(int index = 0) //on click remove thing from queue and refund gold
+    { 
+        if (selectedEntities.Count == 1)
+        {
+            SelectableEntity select = selectedEntities[0]; 
+            FactionEntityClass fac = select.buildQueue[index]; 
+            gold += fac.goldCost; 
+            select.buildQueue.RemoveAt(index);
+            UpdateGUIFromSelections();
+        }
     }
     public void UpdateButtons()
     {
@@ -461,6 +506,7 @@ public class RTSPlayer : NetworkBehaviour
     private void QueueBuildingSpawn(byte id = 0)
     {
         FactionEntityClass fac = new FactionEntityClass();
+        fac.productionName = _faction.entities[id].prefabToSpawn.name;
         fac.timeCost = _faction.entities[id].timeCost;
         fac.prefabToSpawn = _faction.entities[id].prefabToSpawn;
         fac.goldCost = _faction.entities[id].goldCost;
@@ -480,6 +526,7 @@ public class RTSPlayer : NetworkBehaviour
                 select.buildQueue.Add(fac);
             }
         }
+        UpdateBuildQueue();
     }
     public void FromBuildingSpawn(SelectableEntity select, Vector3 rally, byte id = 0)
     { 
