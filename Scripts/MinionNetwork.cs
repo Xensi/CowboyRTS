@@ -13,11 +13,11 @@ public class MinionNetwork : NetworkBehaviour
     private float _rotVel;
     [SerializeField] private float _interpolateTime = 0.1f;
     [SerializeField] private float _rotInterpolate = 0.1f;
-    [SerializeField] private bool _useServerAuthoratative = false;
+    [SerializeField] private bool _useServerAuthoritative = true;
     [SerializeField] private bool _combinePackets = true; //combining packets seems better!
     private void Awake()
     { 
-        var perm = _useServerAuthoratative ? NetworkVariableWritePermission.Server : NetworkVariableWritePermission.Owner;
+        var perm = _useServerAuthoritative ? NetworkVariableWritePermission.Server : NetworkVariableWritePermission.Owner;
 
         _netRot = new NetworkVariable<RotationData>(writePerm : perm); //client authoratative
         _netPos = new NetworkVariable<PositionData>(writePerm: perm); //client authoratative
@@ -60,8 +60,8 @@ public class MinionNetwork : NetworkBehaviour
             if (diff >= rotationDifferenceThreshold || posDiff >= positionDifferenceThreshold)
             {
                 MinionData data = WriteData();
-                Debug.Log("updating data");
-                if (IsServer || !_useServerAuthoratative) //write if you are server, or if using owner-auth
+                //Debug.Log("updating data");
+                if (IsServer || !_useServerAuthoritative) //write if you are server, or if using owner-auth
                 {
                     _netData.Value = data;
                 }
@@ -78,7 +78,7 @@ public class MinionNetwork : NetworkBehaviour
             {
                 RotationData data = WriteRotation();
                 Debug.Log("updating rot");
-                if (IsServer || !_useServerAuthoratative) //write if you are server, or if using owner-auth
+                if (IsServer || !_useServerAuthoritative) //write if you are server, or if using owner-auth
                 {
                     _netRot.Value = data;
                 }
@@ -92,7 +92,7 @@ public class MinionNetwork : NetworkBehaviour
             {
                 PositionData data = WritePosition();
                 Debug.Log("updating pos");
-                if (IsServer || !_useServerAuthoratative) //write if you are server, or if using owner-auth
+                if (IsServer || !_useServerAuthoritative) //write if you are server, or if using owner-auth
                 {
                     _netPos.Value = data;
                 }
@@ -133,7 +133,7 @@ public class MinionNetwork : NetworkBehaviour
         oldRotation = transform.rotation.eulerAngles; //update this
         return state;
     }
-    [ServerRpc] 
+    [ServerRpc(RequireOwnership = false)] 
     private void UpdateNetDataServerRpc(MinionData data)
     { 
         _netData.Value = data;

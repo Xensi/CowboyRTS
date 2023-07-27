@@ -227,6 +227,11 @@ public class MinionController : NetworkBehaviour
         {
             delay++;
         }  
+        if (buildTarget != null && buildTarget.fullyBuilt)
+        {
+            buildTarget = null;
+        }
+
         if (animsEnabled) UpdateAnimations();
     }
     //50 fps fixed update
@@ -337,20 +342,22 @@ public class MinionController : NetworkBehaviour
                 break;
             case AnimStates.Attack:
                 anim.Play("Attack");
-                transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, targetEnemy.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
                 ai.canMove = moveWhileAttacking;
+                if (targetEnemy != null)
+                { 
+                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, targetEnemy.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
+                } 
                 break;
             case AnimStates.Build:
                 anim.Play("Attack");
-                transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, buildTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
-                //
-                if (buildTarget.fullyBuilt)
-                {
-                    CancelAttack();
-                }
-                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) > attackRange)
-                {
-                    state = AnimStates.Walk;
+                if (buildTarget != null)
+                { 
+                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, buildTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
+                     
+                    if (Vector3.Distance(transform.position, buildTarget.transform.position) > attackRange)
+                    {
+                        state = AnimStates.Walk;
+                    }
                 } 
                 break;
             case AnimStates.Die:
@@ -367,7 +374,8 @@ public class MinionController : NetworkBehaviour
         buildTarget = null;
         state = AnimStates.Idle;
         CancelInvoke("SimpleDamageEnemy");
-    }
+        CancelInvoke("SimpleBuildTarget");
+    } 
     private sbyte buildDelta = 1;
     private void StartBuild()
     {
@@ -390,19 +398,22 @@ public class MinionController : NetworkBehaviour
     private bool attackReady = true;
     public void SimpleDamageEnemy() //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
-        //fire locally
-        selector.SimplePlaySound(1); 
-        if (selector.attackEffects.Length > 0)
-        {
-            selector.DisplayAttackEffects();
-        }
-        if (IsServer)
-        {
-            targetEnemy.TakeDamage(damage);
-        }
-        else //client tell server to change the network variable
-        {  
-            RequestDamageServerRpc(damage, targetEnemy);
+        if (targetEnemy != null)
+        { 
+            //fire locally
+            selector.SimplePlaySound(1);
+            if (selector.attackEffects.Length > 0)
+            {
+                selector.DisplayAttackEffects();
+            }
+            if (IsServer)
+            {
+                targetEnemy.TakeDamage(damage);
+            }
+            else //client tell server to change the network variable
+            {
+                RequestDamageServerRpc(damage, targetEnemy);
+            }
         }
     }
     [ServerRpc]
@@ -419,13 +430,16 @@ public class MinionController : NetworkBehaviour
         //fire locally
         selector.SimplePlaySound(1);
 
-        if (IsServer)
-        {
-            buildTarget.BuildThis(buildDelta);
-        }
-        else //client tell server to change the network variable
-        {
-            RequestBuildServerRpc(buildDelta, buildTarget);
+        if (buildTarget != null)
+        { 
+            if (IsServer)
+            {
+                buildTarget.BuildThis(buildDelta);
+            }
+            else //client tell server to change the network variable
+            {
+                RequestBuildServerRpc(buildDelta, buildTarget);
+            }
         }
     }
     [ServerRpc]
@@ -454,7 +468,14 @@ public class MinionController : NetworkBehaviour
 
     public bool attackMoving = false;
     public Vector3 orderedDestination;
-    public void SetDestination(bool attackMove = false)
+    public void SetDestinationToPos(Vector3 pos)
+    {
+        followingMoveOrder = true;
+        destination = pos;
+        orderedDestination = destination;
+        state = AnimStates.Walk;
+    }
+    public void SetDestinationRaycast(bool attackMove = false)
     {
         if (state != AnimStates.Spawn)
         {
@@ -488,12 +509,12 @@ public class MinionController : NetworkBehaviour
 
                 destination = hit.point;
                 orderedDestination = destination;
-            }
-            state = AnimStates.Walk;
-            CancelInvoke("SimpleDamageEnemy");
-            if (attackMoving) //more responsive?
-            {
-                CheckTargetEnemy();
+                state = AnimStates.Walk;
+                CancelInvoke("SimpleDamageEnemy");
+                if (attackMoving) //more responsive?
+                {
+                    CheckTargetEnemy();
+                }
             }
         } 
     } 
