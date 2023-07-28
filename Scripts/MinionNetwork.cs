@@ -103,12 +103,12 @@ public class MinionNetwork : NetworkBehaviour
             }
         } 
     }
-    [ServerRpc]
+    [ServerRpc(RequireOwnership = false)]
     private void UpdateNetRotServerRpc(RotationData data)
     { 
         _netRot.Value = data;
     }
-    [ServerRpc]
+    [ServerRpc(RequireOwnership = false)]
     private void UpdateNetPosServerRpc(PositionData data)
     { 
         _netPos.Value = data;

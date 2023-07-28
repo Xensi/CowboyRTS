@@ -11,7 +11,8 @@ public class SelectableEntity : NetworkBehaviour
     //public byte hitPoints;
 
     public bool selected = false;
-    [SerializeField] private GameObject indicator;
+    [SerializeField] private GameObject selectIndicator;
+    public GameObject targetIndicator;
     public NetworkObject net;
      
     public List<MeshRenderer> teamRenderers;
@@ -71,6 +72,12 @@ public class SelectableEntity : NetworkBehaviour
         SimplePlaySound(0);
         //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
         UpdateTeamRenderers();
+
+        targetIndicator.transform.parent = null;
+    }
+    public override void OnNetworkDespawn()
+    {
+        Destroy(targetIndicator);
     }
     private bool teamRenderersUpdated = false;
     private void UpdateTeamRenderers()
@@ -182,6 +189,8 @@ public class SelectableEntity : NetworkBehaviour
     public bool alive = true;
     private void ProperDestroyMinion()
     {
+        targetIndicator.SetActive(false);
+        targetIndicator.transform.parent = transform;
         alive = false;
         foreach (MeshRenderer item in allMeshes)
         { 
@@ -339,9 +348,31 @@ public class SelectableEntity : NetworkBehaviour
         }
         Global.Instance.localPlayer.UpdateBuildQueue();
     } 
-    private void UpdateIndicator()
+    public void UpdateTargetIndicator()
+    { 
+        if (targetIndicator != null)
+        {
+            if (alive)
+            { 
+                if (controller != null && controller.targetEnemy != null)
+                {
+                    targetIndicator.SetActive(selected);
+                }
+                else
+                {
+                    targetIndicator.SetActive(false);
+                }
+            }
+            else
+            {
+                targetIndicator.SetActive(false);
+            }
+        }
+    }
+    public void UpdateIndicator()
     {
-        if (indicator != null) indicator.SetActive(selected);
+        if (selectIndicator != null) selectIndicator.SetActive(selected);
+        UpdateTargetIndicator();
         if (rallyVisual != null)
         {
             rallyVisual.transform.position = rallyPoint;

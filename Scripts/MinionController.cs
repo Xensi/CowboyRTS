@@ -346,6 +346,11 @@ public class MinionController : NetworkBehaviour
                 if (targetEnemy != null)
                 { 
                     transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, targetEnemy.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
+                    if (selector.targetIndicator != null)
+                    {
+                        selector.targetIndicator.transform.position = new Vector3(targetEnemy.transform.position.x, 0.05f, targetEnemy.transform.position.z);
+                        selector.UpdateTargetIndicator();
+                    }
                 } 
                 break;
             case AnimStates.Build:
@@ -375,6 +380,7 @@ public class MinionController : NetworkBehaviour
         state = AnimStates.Idle;
         CancelInvoke("SimpleDamageEnemy");
         CancelInvoke("SimpleBuildTarget");
+        selector.UpdateIndicator();
     } 
     private sbyte buildDelta = 1;
     private void StartBuild()
