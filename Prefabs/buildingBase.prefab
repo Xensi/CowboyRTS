@@ -30,7 +30,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2870261118279373742}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -15.261787, y: -9.454548, z: 10.110275}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -102,10 +102,12 @@ MonoBehaviour:
   hitPoints:
     m_InternalValue: 0
   selected: 0
-  indicator: {fileID: 1429755578989971349}
+  selectIndicator: {fileID: 1429755578989971349}
+  targetIndicator: {fileID: 0}
   net: {fileID: 3728683629940428650}
   teamRenderers:
   - {fileID: 0}
+  teamBehavior: 0
   type: 2
   builderEntityIndices: 0000000002000000
   startingHP: 1
@@ -119,6 +121,7 @@ MonoBehaviour:
   rallyVisual: {fileID: 0}
   damagedState: {fileID: 0}
   damageableMeshes: []
+  alive: 1
   attackEffects: []
 --- !u!114 &3728683629940428650
 MonoBehaviour:
@@ -291,7 +294,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0e3bdc84c36d08045867157da426aea5, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.182
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0e3bdc84c36d08045867157da426aea5, type: 3}
       propertyPath: m_LocalRotation.w

@@ -98,21 +98,70 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void SelectAllAttackers()
     {
+        DeselectAll();
         foreach (SelectableEntity item in ownedEntities)
         {
             if (item != null && item.type != SelectableEntity.EntityTypes.ProductionStructure && item.type != SelectableEntity.EntityTypes.Builder)
             { 
-                selectedEntities.Add(item);
-                item.Select(true);
+                if (item.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
+                {
+                    TrySelectEntity(item);
+                }
             }
         }
-
     }
+    private void SelectAllProduction()
+    {
+        DeselectAll();
+        foreach (SelectableEntity item in ownedEntities)
+        {
+            if (item != null && item.type == SelectableEntity.EntityTypes.ProductionStructure)
+            {
+                if (item.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
+                {
+                    TrySelectEntity(item);
+                }
+            }
+        }
+    }
+    private void SelectAllIdleBuilders()
+    {
+        DeselectAll();
+        foreach (SelectableEntity item in ownedEntities)
+        {
+            if (item != null && item.type == SelectableEntity.EntityTypes.Builder && item.controller != null && item.controller.buildTarget == null)
+            {
+                if (item.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
+                {
+                    TrySelectEntity(item);
+                }
+            }
+        }
+    }
+    private void TrySelectEntity(SelectableEntity entity)
+    {
+        if (entity.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam && (ownedEntities.Contains(entity)) || entity.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
+        {
+            selectedEntities.Add(entity);
+            entity.Select(true);
+        }
+        UpdateGUIFromSelections();
+    }
+
+
     void Update()
     {
         if (Input.GetKey(KeyCode.Q))
         {
             SelectAllAttackers();
+        }
+        if (Input.GetKey(KeyCode.E))
+        {
+            SelectAllProduction();
+        }
+        if (Input.GetKey(KeyCode.B))
+        {
+            SelectAllIdleBuilders();
         }
         CameraMove();
         if (!MouseOverUI()) 
@@ -247,6 +296,12 @@ public class RTSPlayer : NetworkBehaviour
         gold -= fac.goldCost;
         SimpleSpawnMinion(worldPosition, id); 
         StopPlacingBuilding();
+
+        //if this is a wall, we should connect it to any adjacent nodes
+        
+        //find adjacent nodes
+
+        //place walls between this and those nodes
     }  
     private void StopPlacingBuilding()
     {
@@ -418,7 +473,6 @@ public class RTSPlayer : NetworkBehaviour
             _doubleSelect = false;
             DoubleSelectDetected();
         }
-        UpdateGUIFromSelections();
     }
     /// <summary>
     /// Update all buttons to be interactable or not based on their cost vs your gold.
@@ -597,10 +651,9 @@ public class RTSPlayer : NetworkBehaviour
         if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
         {
             SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
-            if (entity != null && ownedEntities.Contains(entity))
+            if (entity != null)
             {
-                selectedEntities.Add(entity);
-                entity.Select(true);
+                TrySelectEntity(entity);
             }
         }
     }

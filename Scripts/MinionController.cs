@@ -232,6 +232,10 @@ public class MinionController : NetworkBehaviour
             buildTarget = null;
         }
 
+        if (selector != null)
+        { 
+            selector.UpdateTargetIndicator();
+        }
         if (animsEnabled) UpdateAnimations();
     }
     //50 fps fixed update
@@ -347,11 +351,7 @@ public class MinionController : NetworkBehaviour
                 if (targetEnemy != null)
                 { 
                     transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, targetEnemy.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
-                    if (selector.targetIndicator != null)
-                    {
-                        selector.targetIndicator.transform.position = new Vector3(targetEnemy.transform.position.x, 0.05f, targetEnemy.transform.position.z);
-                        selector.UpdateTargetIndicator();
-                    }
+                     
                 } 
                 break;
             case AnimStates.Build:
@@ -588,6 +588,8 @@ public class MinionController : NetworkBehaviour
                     CheckTargetEnemy();
                 }
             }
+            //check if clicked is resource
+            //if it is, then tell resource collectors to gather it
         } 
     } 
     /*private void HandleMovement()

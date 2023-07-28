@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode; 
 public class SelectableEntity : NetworkBehaviour
-{ 
+{
+    public LineRenderer lineIndicator;
+
     public MeshRenderer[] unbuiltRenderers;
     public MeshRenderer[] finishedRenderers;
     public MinionController controller;
@@ -17,7 +19,13 @@ public class SelectableEntity : NetworkBehaviour
      
     public List<MeshRenderer> teamRenderers;
     private MeshRenderer[] allMeshes;
-    
+    public enum TeamBehavior
+    {
+        OwnerTeam, //be on the same team as owner
+        FriendlyNeutral, //anyone can select/use this. typically a resource
+        EnemyNeutral //will attack anybody (except for other neutrals). typically npcs
+    }
+    public TeamBehavior teamBehavior = TeamBehavior.OwnerTeam;
     public enum EntityTypes
     {
         Melee,
@@ -57,6 +65,10 @@ public class SelectableEntity : NetworkBehaviour
     }
     public override void OnNetworkSpawn()
     {
+        if (lineIndicator != null)
+        {
+            lineIndicator.enabled = false;
+        }
         if (IsOwner)
         {
             Global.Instance.localPlayer.ownedEntities.Add(this);
@@ -140,63 +152,60 @@ public class SelectableEntity : NetworkBehaviour
         }
     } 
     private void FixedUpdate()
-    {
-        //Alert for issue where units are not "spawned"
-        /*if (!IsSpawned)
-        {
-            Debug.LogError("Minion not spawned correctly ...");
-            //Global.Instance.localPlayer.SimpleSpawnMinion()
-        }*/
-        if (!teamRenderersUpdated)
-        {
-            UpdateTeamRenderers();
-        }
-
-        if (!alive)
-        {
-            if (controller != null)
-            {
-                controller.state = MinionController.AnimStates.Die;
-            }
-            return;
-        }
-
-        if (!fullyBuilt)
-        {
-            CheckIfBuilt();
-        }
-        else
+    { 
+        if (IsSpawned)
         { 
-            if (count < delay)
+            if (!teamRenderersUpdated)
             {
-                count++;
+                UpdateTeamRenderers();
+            }
+
+            if (!alive)
+            {
+                if (controller != null)
+                {
+                    controller.state = MinionController.AnimStates.Die;
+                }
+                return;
+            }
+
+            if (!fullyBuilt)
+            {
+                CheckIfBuilt();
             }
             else
             {
-                count = 0;
-                UpdateBuildQueue();
-            } 
-            if (!damaged)
-            {
-                CheckIfDamaged();
-            }
-            if (hitPoints.Value <= 0)
-            {
-                ProperDestroyMinion();
-            }
-            //walking sounds
-            if (controller != null)
-            {
-                if (controller.anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") || controller.anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk") || controller.anim.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
+                if (count < delay)
                 {
-                    if (footstepCount < footstepThreshold)
+                    count++;
+                }
+                else
+                {
+                    count = 0;
+                    UpdateBuildQueue();
+                }
+                if (!damaged)
+                {
+                    CheckIfDamaged();
+                }
+                if (hitPoints.Value <= 0)
+                {
+                    ProperDestroyMinion();
+                }
+                //walking sounds
+                if (controller != null)
+                {
+                    if (controller.anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") || controller.anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk") || controller.anim.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
                     {
-                        footstepCount++;
-                    }
-                    else
-                    {
-                        footstepCount = 0;
-                        Global.Instance.PlayClipAtPoint(Global.Instance.footsteps[Random.Range(0, Global.Instance.footsteps.Length)], transform.position, .05f); 
+                        if (footstepCount < footstepThreshold)
+                        {
+                            footstepCount++;
+                        }
+                        else
+                        {
+                            footstepCount = 0;
+                            Global.Instance.PlayClipAtPoint(Global.Instance.footsteps[Random.Range(0, Global.Instance.footsteps.Length)], transform.position, .05f);
+                        }
                     }
                 }
             }
@@ -213,7 +222,7 @@ public class SelectableEntity : NetworkBehaviour
         alive = false;
         foreach (MeshRenderer item in allMeshes)
         { 
-            if (!teamRenderers.Contains(item))
+            if (item != null && !teamRenderers.Contains(item))
             { 
                 item.material.color = Color.gray;
             }
@@ -376,15 +385,26 @@ public class SelectableEntity : NetworkBehaviour
                 if (controller != null && controller.targetEnemy != null)
                 {
                     targetIndicator.SetActive(selected);
+                    lineIndicator.enabled = selected;
+                    if (selected)
+                    { 
+                        targetIndicator.transform.position = new Vector3(controller.targetEnemy.transform.position.x, 0.05f, controller.targetEnemy.transform.position.z);
+                        Vector3[] array = new Vector3[lineIndicator.positionCount];
+                        array[0] = transform.position;
+                        array[1] = controller.targetEnemy.transform.position;
+                        lineIndicator.SetPositions(array);
+                    } 
                 }
                 else
                 {
                     targetIndicator.SetActive(false);
+                    lineIndicator.enabled = false;
                 }
             }
             else
             {
                 targetIndicator.SetActive(false);
+                lineIndicator.enabled = false;
             }
         }
     }
