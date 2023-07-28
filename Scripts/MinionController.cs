@@ -20,7 +20,8 @@ public class MinionController : NetworkBehaviour
         Attack,
         Build,
         Spawn,
-        Die
+        Die,
+        Harvest
     }
     public enum AttackType
     {
@@ -283,12 +284,22 @@ public class MinionController : NetworkBehaviour
                     anim.ResetTrigger("Idle");
                     StartAttack();
                 }
-                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) <= attackRange && attackReady)
+                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) <= attackRange && attackReady) //try to build
                 {
                     anim.ResetTrigger("Idle");
                     StartBuild();
                 }
-                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) > attackRange)
+                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) > attackRange) //move towards build target
+                {
+                    anim.ResetTrigger("Idle");
+                    state = AnimStates.Walk;
+                }
+                else if (harvestTarget != null && Vector3.Distance(transform.position, harvestTarget.transform.position) <= attackRange && attackReady) //try to harvest
+                {
+                    anim.ResetTrigger("Idle");
+                    StartHarvest();
+                }
+                else if (harvestTarget != null && Vector3.Distance(transform.position, harvestTarget.transform.position) > attackRange) //move towards harvest target
                 {
                     anim.ResetTrigger("Idle");
                     state = AnimStates.Walk;
@@ -337,6 +348,11 @@ public class MinionController : NetworkBehaviour
                     anim.ResetTrigger("Walk");
                     playedAttackMoveSound = false;
                     StartBuild();
+                }
+                else if (harvestTarget != null && Vector3.Distance(transform.position, harvestTarget.transform.position) <= attackRange && attackReady) //try to harvest
+                {
+                    anim.ResetTrigger("Walk");
+                    StartHarvest();
                 } 
                 else if (!followingMoveOrder && !chasingEnemy && (buildTarget == null || buildTarget.fullyBuilt))
                 {
@@ -366,6 +382,18 @@ public class MinionController : NetworkBehaviour
                     }
                 } 
                 break;
+            case AnimStates.Harvest:
+                anim.Play("Attack");
+                if (harvestTarget != null)
+                {
+                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, harvestTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
+
+                    if (Vector3.Distance(transform.position, harvestTarget.transform.position) > attackRange)
+                    {
+                        state = AnimStates.Walk;
+                    }
+                }
+                break;
             case AnimStates.Die:
                 anim.Play("Die");
                 break;
@@ -373,6 +401,7 @@ public class MinionController : NetworkBehaviour
                 break;
         }
     }
+    private sbyte harvestAmount = 1;
     [SerializeField] private bool moveWhileAttacking = false;
     private void CancelAttack()
     {
@@ -393,6 +422,32 @@ public class MinionController : NetworkBehaviour
         Invoke("SimpleBuildTarget", impactTime);
         Invoke("ReturnState", attackDuration);
     }
+    public void SimpleBuildTarget() //since hp is a network variable, changing it on the server will propagate changes to clients as well
+    {
+        //fire locally
+        selector.SimplePlaySound(1);
+
+        if (buildTarget != null)
+        {
+            if (IsServer)
+            {
+                buildTarget.BuildThis(buildDelta);
+            }
+            else //client tell server to change the network variable
+            {
+                RequestBuildServerRpc(buildDelta, buildTarget);
+            }
+        }
+    }
+    [ServerRpc]
+    private void RequestBuildServerRpc(sbyte damage, NetworkBehaviourReference target)
+    {
+        //server must handle damage! 
+        if (target.TryGet(out SelectableEntity select))
+        {
+            select.BuildThis(damage);
+        }
+    }
     private void StartAttack()
     {
         attackReady = false;
@@ -412,6 +467,51 @@ public class MinionController : NetworkBehaviour
                 break;
         }
     }
+    private void StartHarvest()
+    { 
+        attackReady = false;
+        state = AnimStates.Harvest;
+        destination = transform.position;
+        Invoke("HarvestTarget", impactTime);
+        Invoke("ReturnState", attackDuration);
+    }
+    private void HarvestTarget()
+    { 
+        selector.SimplePlaySound(1);
+
+        if (harvestTarget != null)
+        {  
+            int actualHarvested = Mathf.Clamp(harvestAmount, 0, harvestTarget.hitPoints.Value); 
+
+            if (IsServer)
+            {
+                harvestTarget.Harvest(harvestAmount);
+            }
+            else //client tell server to change the network variable
+            {
+                RequestHarvestServerRpc(harvestAmount, harvestTarget);
+            }
+
+            switch (selector.harvestType)
+            {
+                case SelectableEntity.HarvestType.Gold: 
+                    selector.harvestedGold += actualHarvested;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    [ServerRpc]
+    private void RequestHarvestServerRpc(sbyte amount, NetworkBehaviourReference target)
+    {
+        //server must handle damage! 
+        if (target.TryGet(out SelectableEntity select))
+        {
+            select.Harvest(amount);
+        }
+    }
+
     private void Explode(float explodeRadius)
     {
         Vector3 center = transform.position;  
@@ -487,38 +587,11 @@ public class MinionController : NetworkBehaviour
             select.TakeDamage(damage);
         }  
     }
-    public void SimpleBuildTarget() //since hp is a network variable, changing it on the server will propagate changes to clients as well
-    {
-        //fire locally
-        selector.SimplePlaySound(1);
-
-        if (buildTarget != null)
-        { 
-            if (IsServer)
-            {
-                buildTarget.BuildThis(buildDelta);
-            }
-            else //client tell server to change the network variable
-            {
-                RequestBuildServerRpc(buildDelta, buildTarget);
-            }
-        }
-    }
-    [ServerRpc]
-    private void RequestBuildServerRpc(sbyte damage, NetworkBehaviourReference target)
-    {
-        //server must handle damage! 
-        if (target.TryGet(out SelectableEntity select))
-        {
-            select.BuildThis(damage);
-        } 
-    } 
 
     [SerializeField] private float attackDuration = 1;
     [SerializeField] private float impactTime = .5f;
     private void ReturnState()
-    {
-
+    {  
         switch (attackType)
         {
             case AttackType.Instant:
@@ -553,6 +626,7 @@ public class MinionController : NetworkBehaviour
         {
             targetEnemy = null;
             buildTarget = null;
+            harvestTarget = null;
             enemyInRange = false;
             basicallyIdleInstances = 0;
             followingMoveOrder = true;
@@ -565,18 +639,33 @@ public class MinionController : NetworkBehaviour
                 SelectableEntity select = hit.collider.GetComponent<SelectableEntity>();
                 if (select != null)
                 {
-                    if (select.net.OwnerClientId == selector.net.OwnerClientId) //same team
-                    {
-                        if (selector.type == SelectableEntity.EntityTypes.Builder && !select.fullyBuilt)
+                    if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
+                    { 
+                        if (select.net.OwnerClientId == selector.net.OwnerClientId) //same team
                         {
-                            buildTarget = select;
+                            if (selector.type == SelectableEntity.EntityTypes.Builder && !select.fullyBuilt)
+                            {
+                                buildTarget = select;
+                            }
+                        }
+                        else
+                        {
+                            targetEnemy = select;
+                            attackMoving = true;
                         }
                     }
-                    else
+                    else if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
                     {
-                        targetEnemy = select;
-                        attackMoving = true;
-                    }
+                        if (select.type == SelectableEntity.EntityTypes.HarvestableStructure)
+                        { 
+                            //check if clicked is resource
+                            //if it is, then tell resource collectors to gather it
+                            if (selector.canGather)
+                            {
+                                harvestTarget = select;
+                            }
+                        }
+                    } 
                 }
 
                 destination = hit.point;
@@ -588,10 +677,9 @@ public class MinionController : NetworkBehaviour
                     CheckTargetEnemy();
                 }
             }
-            //check if clicked is resource
-            //if it is, then tell resource collectors to gather it
         } 
-    } 
+    }
+    private SelectableEntity harvestTarget;
     /*private void HandleMovement()
     {
         transform.position = Vector3.MoveTowards(transform.position, destination, Time.deltaTime * speed);

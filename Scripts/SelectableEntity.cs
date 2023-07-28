@@ -4,6 +4,9 @@ using UnityEngine;
 using Unity.Netcode; 
 public class SelectableEntity : NetworkBehaviour
 {
+    public string displayName = "name";
+    [TextArea(2, 4)]
+    public string desc = "desc";
     public LineRenderer lineIndicator;
 
     public MeshRenderer[] unbuiltRenderers;
@@ -19,6 +22,7 @@ public class SelectableEntity : NetworkBehaviour
      
     public List<MeshRenderer> teamRenderers;
     private MeshRenderer[] allMeshes;
+    public bool canGather = false;
     public enum TeamBehavior
     {
         OwnerTeam, //be on the same team as owner
@@ -101,21 +105,34 @@ public class SelectableEntity : NetworkBehaviour
     private bool teamRenderersUpdated = false;
     private void UpdateTeamRenderers()
     {
+        int id = System.Convert.ToInt32(net.OwnerClientId);
         foreach (MeshRenderer item in teamRenderers)
         {
             if (item != null)
             {
-                item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
+                ///item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
+                item.material.color = Global.Instance.teamColors[id];
             }
         }
         teamRenderersUpdated = true;
     }
+    public enum HarvestType
+    {
+        Gold
+    }
+    public HarvestType harvestType = HarvestType.Gold;
+    public int harvestedGold = 0;
+    public int harvestCapacity = 10;
     private bool damaged = false;
     [SerializeField] private MeshRenderer[] damageableMeshes;
     public void TakeDamage(sbyte damage) //always managed by SERVER
     {
         hitPoints.Value -= damage; 
-    }  
+    }
+    public void Harvest(sbyte amount) //always managed by SERVER
+    {
+        hitPoints.Value -= amount;
+    }
     private sbyte damagedThreshold;
     private void CheckIfDamaged()
     { 

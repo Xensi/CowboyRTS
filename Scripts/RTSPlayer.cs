@@ -36,6 +36,7 @@ public class RTSPlayer : NetworkBehaviour
         camParent = cam.transform.parent.transform;
         Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
         camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
+        Global.Instance.selectedParent.SetActive(false); 
     }
     public override void OnNetworkSpawn()
     {
@@ -508,6 +509,17 @@ public class RTSPlayer : NetworkBehaviour
                 }
             }
         }
+        if (Global.Instance.selectedParent != null && Global.Instance.nameText != null && Global.Instance.descText != null && selectedEntities.Count == 1 && selectedEntities[0] != null)
+        { 
+            Global.Instance.selectedParent.SetActive(true);
+            Global.Instance.nameText.text = selectedEntities[0].displayName;
+            Global.Instance.descText.text = selectedEntities[0].desc;
+        }
+        else
+        {
+            Global.Instance.selectedParent.SetActive(false);
+        }
+
         byte i = 0;
         int cap = Mathf.Clamp(indices.Count, 0, Global.Instance.productionButtons.Count);
         //enable a button for each indices
@@ -653,9 +665,10 @@ public class RTSPlayer : NetworkBehaviour
             SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
             if (entity != null)
             {
-                TrySelectEntity(entity);
+                TrySelectEntity(entity); 
             }
         }
+
     }
     private void DoubleSelectDetected()
     {
@@ -692,6 +705,7 @@ public class RTSPlayer : NetworkBehaviour
             item.Select(false);
         }
         selectedEntities.Clear();
+        UpdateGUIFromSelections();
     }
     #endregion
     private void OnDrawGizmos()

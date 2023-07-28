@@ -9,5 +9,5 @@ public class FactionEntityClass
     public GameObject prefabToSpawn;
     public int goldCost = 0;
     public int timeCost = 5;
-    public byte buildID = 0;
+    public byte buildID = 0; 
 }

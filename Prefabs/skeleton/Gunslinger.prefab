@@ -242,6 +242,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5269420332017592200, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5404681800882875922, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: m_IsActive
       value: 1
@@ -255,8 +259,18 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: desc
+      value: 'Basic ranged unit.
+
+        "Colt made man equal, and I''m an egalitarian."'
+      objectReference: {fileID: 0}
+    - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: type
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: displayName
+      value: Gunslinger
       objectReference: {fileID: 0}
     - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: sounds.Array.data[1]
@@ -267,6 +281,10 @@ PrefabInstance:
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: teamRenderers.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: attackEffects.Array.data[0]
       value: 
       objectReference: {fileID: 8469314644261872258}
@@ -274,6 +292,18 @@ PrefabInstance:
       propertyPath: attackEffects.Array.data[1]
       value: 
       objectReference: {fileID: 5725700140469239151}
+    - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: teamRenderers.Array.data[0]
+      value: 
+      objectReference: {fileID: 5667874529474329722}
+    - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: teamRenderers.Array.data[1]
+      value: 
+      objectReference: {fileID: 3237748480419208580}
+    - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: teamRenderers.Array.data[2]
+      value: 
+      objectReference: {fileID: 8487193154697503709}
     - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: builderEntityIndices.Array.size
       value: 0
@@ -306,5 +336,20 @@ PrefabInstance:
 --- !u!4 &2963930406754840342 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4484097611644750248, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+  m_PrefabInstance: {fileID: 1665003675599939262}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3237748480419208580 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 4320503538760825658, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+  m_PrefabInstance: {fileID: 1665003675599939262}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5667874529474329722 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6463542736524384964, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+  m_PrefabInstance: {fileID: 1665003675599939262}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8487193154697503709 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 7121274238065280355, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
   m_PrefabInstance: {fileID: 1665003675599939262}
   m_PrefabAsset: {fileID: 0}

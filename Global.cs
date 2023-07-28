@@ -9,6 +9,7 @@ public class Global : MonoBehaviour
     public static Global Instance { get; private set; }
     public RectTransform selectionRect;
     public List<Material> colors;
+    public List<Color> teamColors;
     public List<Transform> playerSpawn;
     public List<Button> productionButtons;
     public Material transparent;
@@ -19,6 +20,10 @@ public class Global : MonoBehaviour
     public List<Button> queueButtons;
     public Transform queueParent;
     public GameObject explosionPrefab;
+
+    public GameObject selectedParent;
+    public TMP_Text nameText;
+    public TMP_Text descText;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.
