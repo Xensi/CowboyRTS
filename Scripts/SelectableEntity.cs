@@ -44,6 +44,7 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private Material damagedState;
     private void RequestBuilders()
     {
+        Debug.Log("request builders");
         RTSPlayer local = Global.Instance.localPlayer;
         foreach (SelectableEntity item in local.selectedEntities)
         {
@@ -60,7 +61,10 @@ public class SelectableEntity : NetworkBehaviour
         {
             Global.Instance.localPlayer.ownedEntities.Add(this);
             Global.Instance.localPlayer.lastSpawnedEntity = this;
-            RequestBuilders();
+            if (!fullyBuilt)
+            { 
+                RequestBuilders();
+            }
         }
         allMeshes = GetComponentsInChildren<MeshRenderer>();
         if (IsServer)
@@ -73,7 +77,10 @@ public class SelectableEntity : NetworkBehaviour
         //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
         UpdateTeamRenderers();
 
-        targetIndicator.transform.parent = null;
+        if (targetIndicator != null)
+        {
+            targetIndicator.transform.parent = null; 
+        }
     }
     public override void OnNetworkDespawn()
     {
@@ -105,7 +112,10 @@ public class SelectableEntity : NetworkBehaviour
             damaged = true;
             for (int i = 0; i < damageableMeshes.Length; i++)
             {
-                damageableMeshes[i].material = damagedState;
+                if (damageableMeshes[i] != null)
+                { 
+                    damageableMeshes[i].material = damagedState;
+                }
             }
         }
     }
@@ -115,13 +125,19 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void OnTriggerEnter(Collider other)
     {
-        Global.Instance.localPlayer.placementBlocked = true;
-        Global.Instance.localPlayer.UpdatePlacement();
+        if (Global.Instance.localPlayer != null)
+        { 
+            Global.Instance.localPlayer.placementBlocked = true;
+            Global.Instance.localPlayer.UpdatePlacement();
+        }
     }
     public void OnTriggerExit(Collider other)
     {
-        Global.Instance.localPlayer.placementBlocked = false;
-        Global.Instance.localPlayer.UpdatePlacement();
+        if (Global.Instance.localPlayer != null)
+        { 
+            Global.Instance.localPlayer.placementBlocked = false;
+            Global.Instance.localPlayer.UpdatePlacement();
+        }
     } 
     private void FixedUpdate()
     {
@@ -187,10 +203,13 @@ public class SelectableEntity : NetworkBehaviour
         }
     }
     public bool alive = true;
-    private void ProperDestroyMinion()
+    public void ProperDestroyMinion()
     {
-        targetIndicator.SetActive(false);
-        targetIndicator.transform.parent = transform;
+        if (targetIndicator != null)
+        { 
+            targetIndicator.SetActive(false);
+            targetIndicator.transform.parent = transform;
+        }
         alive = false;
         foreach (MeshRenderer item in allMeshes)
         { 

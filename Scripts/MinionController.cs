@@ -24,9 +24,9 @@ public class MinionController : NetworkBehaviour
     }
     public enum AttackType
     {
-        Melee, Ranged
+        Instant, SelfDestruct
     }
-    public AttackType attackType = AttackType.Melee;
+    public AttackType attackType = AttackType.Instant;
     private bool chasingEnemy = false;
     private float change;
     private float walkAnimThreshold = 0.01f;
@@ -109,7 +109,7 @@ public class MinionController : NetworkBehaviour
     }
     private void OnDrawGizmos()
     {
-        //Gizmos.DrawWireSphere(transform.position, attackRange);
+        Gizmos.DrawWireSphere(transform.position, attackRange);
         if (targetEnemy != null)
         { 
             Gizmos.DrawSphere(targetEnemy.transform.position, .1f);
@@ -253,6 +253,7 @@ public class MinionController : NetworkBehaviour
             followingMoveOrder = false;
             if (attackMoving)
             {
+                Debug.Log("moving to ordered destination");
                 destination = orderedDestination;
             }
         }
@@ -383,6 +384,7 @@ public class MinionController : NetworkBehaviour
         selector.UpdateIndicator();
     } 
     private sbyte buildDelta = 1;
+    [SerializeField] private float areaOfEffect = 1;
     private void StartBuild()
     {
         attackReady = false;
@@ -396,8 +398,62 @@ public class MinionController : NetworkBehaviour
         attackReady = false;
         state = AnimStates.Attack;
         destination = transform.position;
-        Invoke("SimpleDamageEnemy", impactTime + Random.Range(-0.1f, 0.1f));
-        Invoke("ReturnState", attackDuration);
+
+        switch (attackType)
+        {
+            case AttackType.Instant:
+                Invoke("SimpleDamageEnemy", impactTime + Random.Range(-0.1f, 0.1f));
+                Invoke("ReturnState", attackDuration);
+                break;
+            case AttackType.SelfDestruct:
+                Explode(areaOfEffect);
+                break;
+            default:
+                break;
+        }
+    }
+    private void Explode(float explodeRadius)
+    {
+        Vector3 center = transform.position;  
+        Collider[] hitColliders = new Collider[40];
+        int numColliders = Physics.OverlapSphereNonAlloc(center, explodeRadius, hitColliders, enemyMask);  
+        for (int i = 0; i < numColliders; i++)
+        {
+            if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self
+            {
+                continue;
+            }
+            SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
+            if (Global.Instance.localPlayer.ownedEntities.Contains(select)) //skip teammates
+            {
+                continue;
+            }
+            DamageSpecifiedEnemy(select);
+            //Debug.Log(i);
+        }
+        GameObject prefab = Global.Instance.explosionPrefab;
+        GameObject instantiated = Instantiate(prefab, transform.position, Quaternion.identity); 
+        selector.ProperDestroyMinion();
+    } 
+    public void DamageSpecifiedEnemy(SelectableEntity enemy) //since hp is a network variable, changing it on the server will propagate changes to clients as well
+    {
+        if (enemy != null)
+        {
+            //fire locally
+            selector.SimplePlaySound(1);
+            if (selector.attackEffects.Length > 0)
+            {
+                selector.DisplayAttackEffects();
+            }
+            if (IsServer)
+            {
+                enemy.TakeDamage(damage);
+            }
+            else //client tell server to change the network variable
+            {
+                RequestDamageServerRpc(damage, enemy);
+            }
+        }
     }
     public SelectableEntity buildTarget;
     [SerializeField] private sbyte damage = 1;
@@ -462,8 +518,18 @@ public class MinionController : NetworkBehaviour
     [SerializeField] private float impactTime = .5f;
     private void ReturnState()
     {
-        state = AnimStates.Idle;
-        attackReady = true;
+
+        switch (attackType)
+        {
+            case AttackType.Instant:
+                state = AnimStates.Idle;
+                attackReady = true;
+                break;
+            case AttackType.SelfDestruct:
+                break;
+            default:
+                break;
+        }
     }
     private float GetActualPositionChange()
     {

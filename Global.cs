@@ -17,7 +17,8 @@ public class Global : MonoBehaviour
     public TMP_Text goldText;
     public AudioClip[] footsteps;
     public List<Button> queueButtons;
-    public Transform queueParent; 
+    public Transform queueParent;
+    public GameObject explosionPrefab;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.

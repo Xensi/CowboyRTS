@@ -455,8 +455,9 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
         byte i = 0;
+        int cap = Mathf.Clamp(indices.Count, 0, Global.Instance.productionButtons.Count);
         //enable a button for each indices
-        for (; i < indices.Count; i++)
+        for (; i < cap; i++)
         {
             Button button = Global.Instance.productionButtons[i];
             button.gameObject.SetActive(true);

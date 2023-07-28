@@ -77,7 +77,7 @@ public class MinionNetwork : NetworkBehaviour
             if (diff >= rotationDifferenceThreshold)
             {
                 RotationData data = WriteRotation();
-                Debug.Log("updating rot");
+                //Debug.Log("updating rot");
                 if (IsServer || !_useServerAuthoritative) //write if you are server, or if using owner-auth
                 {
                     _netRot.Value = data;
@@ -91,7 +91,7 @@ public class MinionNetwork : NetworkBehaviour
             if (posDiff >= positionDifferenceThreshold)
             {
                 PositionData data = WritePosition();
-                Debug.Log("updating pos");
+                //Debug.Log("updating pos");
                 if (IsServer || !_useServerAuthoritative) //write if you are server, or if using owner-auth
                 {
                     _netPos.Value = data;
