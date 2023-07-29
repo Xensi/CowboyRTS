@@ -36,7 +36,6 @@ public class RTSPlayer : NetworkBehaviour
         camParent = cam.transform.parent.transform;
         Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
         camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
-        Global.Instance.selectedParent.SetActive(false); 
     }
     public override void OnNetworkSpawn()
     {
@@ -152,6 +151,10 @@ public class RTSPlayer : NetworkBehaviour
 
     void Update()
     {
+        if (Global.Instance.gridVisual != null)
+        { 
+            Global.Instance.gridVisual.SetActive(buildState == BuildStates.ReadyToPlace);
+        }
         if (Input.GetKey(KeyCode.Q))
         {
             SelectAllAttackers();
@@ -276,33 +279,25 @@ public class RTSPlayer : NetworkBehaviour
 
         SelectionBox.anchoredPosition = StartMousePosition + new Vector2(width / 2, height / 2);
         SelectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
-    }
-    private int goldDelay = 10; //in seconds
-    private int count = 0;
-    private void FixedUpdate()
-    {
-        if (count < goldDelay * 50)
-        {
-            count++;
-        }
-        else
-        {
-            count = 0;
-            gold += 100;
-        } 
-    }
+    } 
     private void PlaceBuilding(byte id = 0)
     {
         FactionEntityClass fac = _faction.entities[id];
-        gold -= fac.goldCost;
-        SimpleSpawnMinion(worldPosition, id); 
-        StopPlacingBuilding();
+        if (gold >= fac.goldCost)
+        { 
+            gold -= fac.goldCost;
+            SimpleSpawnMinion(followCursorObject.transform.position, id);
+            if (!Input.GetKey(KeyCode.LeftShift)) //if holding shift, continue placing buildings
+            {
 
-        //if this is a wall, we should connect it to any adjacent nodes
-        
-        //find adjacent nodes
+                StopPlacingBuilding();
+            }
+            //if this is a wall, we should connect it to any adjacent nodes
 
-        //place walls between this and those nodes
+            //find adjacent nodes
+
+            //place walls between this and those nodes
+        }
     }  
     private void StopPlacingBuilding()
     {
@@ -347,7 +342,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             _mousePosition = hit.point;
             _gridPosition = grid.WorldToCell(_mousePosition);
-            worldPosition = grid.CellToWorld(_gridPosition);
+            worldPosition = grid.CellToWorld(_gridPosition) + _offset;
             if (followCursorObject != null)
             {
                 followCursorObject.transform.position = worldPosition;
@@ -404,6 +399,7 @@ public class RTSPlayer : NetworkBehaviour
     {
         FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
         Vector3 spawnPosition = new Vector3(xSpawn, 0, zSpawn); //get spawn position
+        spawnPosition += _offset;
 
         GameObject minion = Instantiate(fac.prefabToSpawn, spawnPosition, Quaternion.Euler(0, 180, 0)); //spawn locally
         //Get components
@@ -508,16 +504,26 @@ public class RTSPlayer : NetworkBehaviour
                     }
                 }
             }
-        }
-        if (Global.Instance.selectedParent != null && Global.Instance.nameText != null && Global.Instance.descText != null && selectedEntities.Count == 1 && selectedEntities[0] != null)
+        } 
+        if (Global.Instance.selectedParent != null && Global.Instance.resourcesParent != null && Global.Instance.resourceText != null)
         { 
-            Global.Instance.selectedParent.SetActive(true);
-            Global.Instance.nameText.text = selectedEntities[0].displayName;
-            Global.Instance.descText.text = selectedEntities[0].desc;
-        }
-        else
-        {
-            Global.Instance.selectedParent.SetActive(false);
+            if (Global.Instance.nameText != null && Global.Instance.descText != null && selectedEntities.Count == 1 && selectedEntities[0] != null)
+            {
+                Global.Instance.selectedParent.SetActive(true);
+                Global.Instance.nameText.text = selectedEntities[0].displayName;
+                Global.Instance.descText.text = selectedEntities[0].desc;
+
+                if (selectedEntities[0].isHarvester)
+                { 
+                    Global.Instance.resourcesParent.SetActive(true);
+                    Global.Instance.resourceText.text = "Stored gold: " + selectedEntities[0].harvestedResource + "/" + selectedEntities[0].harvestCapacity;
+                }
+            }
+            else
+            {
+                Global.Instance.selectedParent.SetActive(false);
+                Global.Instance.resourcesParent.SetActive(false);
+            }
         }
 
         byte i = 0;

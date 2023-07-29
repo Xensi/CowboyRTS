@@ -22,7 +22,14 @@ public class SelectableEntity : NetworkBehaviour
      
     public List<MeshRenderer> teamRenderers;
     private MeshRenderer[] allMeshes;
-    public bool canGather = false;
+    public bool isHarvester = false;
+    public enum DepositType
+    {
+        None,
+        All,
+        Gold
+    }
+    public DepositType depositType = DepositType.None;
     public enum TeamBehavior
     {
         OwnerTeam, //be on the same team as owner
@@ -56,7 +63,7 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private Material damagedState;
     private void RequestBuilders()
     {
-        Debug.Log("request builders");
+        //Debug.Log("request builders");
         RTSPlayer local = Global.Instance.localPlayer;
         foreach (SelectableEntity item in local.selectedEntities)
         {
@@ -121,7 +128,7 @@ public class SelectableEntity : NetworkBehaviour
         Gold
     }
     public HarvestType harvestType = HarvestType.Gold;
-    public int harvestedGold = 0;
+    public int harvestedResource = 0;
     public int harvestCapacity = 10;
     private bool damaged = false;
     [SerializeField] private MeshRenderer[] damageableMeshes;
@@ -154,19 +161,19 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void OnTriggerEnter(Collider other)
     {
-        if (Global.Instance.localPlayer != null)
+        /*if (Global.Instance.localPlayer != null)
         { 
             Global.Instance.localPlayer.placementBlocked = true;
             Global.Instance.localPlayer.UpdatePlacement();
-        }
+        }*/
     }
     public void OnTriggerExit(Collider other)
     {
-        if (Global.Instance.localPlayer != null)
+        /*if (Global.Instance.localPlayer != null)
         { 
             Global.Instance.localPlayer.placementBlocked = false;
             Global.Instance.localPlayer.UpdatePlacement();
-        }
+        }*/
     } 
     private void FixedUpdate()
     { 
@@ -181,7 +188,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 if (controller != null)
                 {
-                    controller.state = MinionController.AnimStates.Die;
+                    controller.state = MinionController.State.Die;
                 }
                 return;
             }
@@ -244,7 +251,7 @@ public class SelectableEntity : NetworkBehaviour
                 item.material.color = Color.gray;
             }
         }
-        if (type != EntityTypes.ProductionStructure)
+        if (type != EntityTypes.ProductionStructure && type != EntityTypes.HarvestableStructure)
         {
             if (controller != null)
             {

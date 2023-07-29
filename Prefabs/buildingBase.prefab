@@ -94,6 +94,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ef37b2b8ba8e084dae003beb732c07c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  displayName: name
+  desc: desc
+  lineIndicator: {fileID: 0}
   unbuiltRenderers:
   - {fileID: 0}
   finishedRenderers:
@@ -107,6 +110,8 @@ MonoBehaviour:
   net: {fileID: 3728683629940428650}
   teamRenderers:
   - {fileID: 0}
+  isHarvester: 0
+  depositType: 0
   teamBehavior: 0
   type: 2
   builderEntityIndices: 0000000002000000
@@ -120,6 +125,9 @@ MonoBehaviour:
   rallyPoint: {x: 0, y: 0, z: 0}
   rallyVisual: {fileID: 0}
   damagedState: {fileID: 0}
+  harvestType: 0
+  harvestedResource: 0
+  harvestCapacity: 10
   damageableMeshes: []
   alive: 1
   attackEffects: []
@@ -330,7 +338,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: d5ea40dec34950e468e7665308c192c6, type: 2}
     - target: {fileID: 919132149155446097, guid: 0e3bdc84c36d08045867157da426aea5, type: 3}
       propertyPath: m_Name
-      value: a
+      value: selectionIndicator
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 0e3bdc84c36d08045867157da426aea5, type: 3}
       propertyPath: m_Layer

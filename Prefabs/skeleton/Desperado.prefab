@@ -88,8 +88,8 @@ PrefabInstance:
       propertyPath: desc
       value: 'Attacks by explosively self-destructing.
 
-        Outlaws that can''t
-        die plus dynamite? What could go wrong?'
+        "You''ll never catch
+        me alive!"'
       objectReference: {fileID: 0}
     - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: type

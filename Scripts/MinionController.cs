@@ -12,17 +12,7 @@ public class MinionController : NetworkBehaviour
     bool animsEnabled = false;
     AIPath ai;
     [SerializeField] private SelectableEntity selector;
-    public AnimStates state = AnimStates.Spawn;
-    public enum AnimStates
-    {
-        Idle,
-        Walk,
-        Attack,
-        Build,
-        Spawn,
-        Die,
-        Harvest
-    }
+    public State state = State.Spawn;
     public enum AttackType
     {
         Instant, SelfDestruct
@@ -45,7 +35,7 @@ public class MinionController : NetworkBehaviour
     { 
         Global.Instance.localPlayer.selectedEntities.Remove(selector);
         selector.Select(false);
-        state = AnimStates.Die;
+        state = State.Die;
         ai.enabled = false;
         rayMod.enabled = false;
         seeker.enabled = false;
@@ -69,10 +59,6 @@ public class MinionController : NetworkBehaviour
     {
         if (ai != null) ai.onSearchPath -= Update;
     }
-    private void Update()
-    {
-        
-    }
     private void Awake()
     {
         enemyMask = LayerMask.GetMask("Entity", "Obstacle");
@@ -89,10 +75,14 @@ public class MinionController : NetworkBehaviour
         if (anim != null)
         {
             anim.Play("Spawn");
-        } 
+        }
         Invoke("FinishSpawning", spawnDuration);
         //rigid.isKinematic = true;
-    } 
+    }
+    private void Update()
+    {
+        
+    }
     public override void OnNetworkSpawn()
     {
         if (!IsOwner)
@@ -122,68 +112,77 @@ public class MinionController : NetworkBehaviour
         destination = pos;
         buildTarget = ent; 
     } 
-    
+    private SelectableEntity GetClosestEnemy()
+    {
+        return null;
+    }
+    private void CheckForEnemy()
+    {
+
+    }
     private void CheckTargetEnemy() //use spherecast to get an enemy. if in attack range they become our target
     {
         if (targetEnemy != null && targetEnemy.hitPoints.Value <= 0)
         {
             targetEnemy = null; 
         }
-
-
-        enemyInRange = false;
-        //do a spherecast to get one
-        Vector3 center = transform.position;
-        float detectionRange = attackRange * 1.25f;
-        if (attackMoving)
-        {
-            detectionRange = attackRange;
-        }
-        int maxColliders = Mathf.RoundToInt(40 * detectionRange);
-        Collider[] hitColliders = new Collider[maxColliders];
-        int numColliders = Physics.OverlapSphereNonAlloc(center, detectionRange, hitColliders, enemyMask);
-        //get closest collider 
-        Collider closest = null;
-        float distance = Mathf.Infinity;
-        for (int i = 0; i < numColliders; i++)
-        {
-            if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self
+        if (targetEnemy == null)
+        { 
+            enemyInRange = false;
+            //do a spherecast to get one
+            Vector3 center = transform.position;
+            float detectionRange = attackRange * 1.25f;
+            if (attackMoving)
             {
-                continue;
+                detectionRange = attackRange;
             }
-            SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
-            if (Global.Instance.localPlayer.ownedEntities.Contains(select))
+            int maxColliders = Mathf.RoundToInt(40 * detectionRange);
+            Collider[] hitColliders = new Collider[maxColliders];
+            int numColliders = Physics.OverlapSphereNonAlloc(center, detectionRange, hitColliders, enemyMask);
+            //get closest collider 
+            Collider closest = null;
+            float distance = Mathf.Infinity;
+            for (int i = 0; i < numColliders; i++)
             {
-                continue;
+                if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self
+                {
+                    continue;
+                }
+                SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
+                if (Global.Instance.localPlayer.ownedEntities.Contains(select))
+                {
+                    continue;
+                }
+                float newDist = Vector3.SqrMagnitude(transform.position - hitColliders[i].transform.position);
+                if (newDist < distance)
+                {
+                    closest = hitColliders[i];
+                    distance = newDist;
+                }
             }
-            float newDist = Vector3.SqrMagnitude(transform.position - hitColliders[i].transform.position);
-            if (newDist < distance)
+            if (closest != null)
             {
-                closest = hitColliders[i];
-            }
-        }
-        if (closest != null)
-        {
-            float dist = Vector3.Distance(transform.position, closest.transform.position);
-            if (dist <= attackRange)
-            {
-                targetEnemy = closest.GetComponent<SelectableEntity>();
-                enemyInRange = true;
-                chasingEnemy = false;
+                float dist = Vector3.Distance(transform.position, closest.transform.position);
+                if (dist <= attackRange)
+                {
+                    targetEnemy = closest.GetComponent<SelectableEntity>();
+                    enemyInRange = true;
+                    chasingEnemy = false;
+                }
+                else
+                {
+                    destination = closest.transform.position;
+                    enemyInRange = false;
+                    chasingEnemy = true;
+                }
             }
             else
             {
-                destination = closest.transform.position;
                 enemyInRange = false;
-                chasingEnemy = true;
+                chasingEnemy = false;
             }
         }
         else
-        {
-            enemyInRange = false;
-            chasingEnemy = false;
-        }
-        if (targetEnemy != null)
         {
             float dist = Vector3.Distance(transform.position, targetEnemy.transform.position);
             if (dist > attackRange)
@@ -206,7 +205,7 @@ public class MinionController : NetworkBehaviour
     private void FinishSpawning()
     {
         //rigid.isKinematic = false;
-        state = AnimStates.Idle; 
+        state = State.Idle; 
     }
     private void FixedUpdate()
     { 
@@ -219,10 +218,10 @@ public class MinionController : NetworkBehaviour
         if (delay >= 24) //0 to 24 is half of 50
         {
             delay = 0;
-            if ((!followingMoveOrder || attackMoving) && state != AnimStates.Build)
+            /*if ((!followingMoveOrder || attackMoving) && state != State.Building)
             { 
                 CheckTargetEnemy();
-            }
+            }*/
         }
         else
         {
@@ -237,7 +236,7 @@ public class MinionController : NetworkBehaviour
         { 
             selector.UpdateTargetIndicator();
         }
-        if (animsEnabled) UpdateAnimations();
+        if (animsEnabled) UpdateState();
     }
     //50 fps fixed update
     private int delay = 0; 
@@ -258,61 +257,75 @@ public class MinionController : NetworkBehaviour
             followingMoveOrder = false;
             if (attackMoving)
             {
-                Debug.Log("moving to ordered destination");
+                //Debug.Log("moving to ordered destination");
                 destination = orderedDestination;
             }
         }
     }
     bool playedAttackMoveSound = false;
-    private void UpdateAnimations()
+    private int attackReadyTimer = 0;
+    private void UpdateState()
     {
+        UpdateAttackReadiness();
         switch (state)
         {
-            case AnimStates.Spawn:
+            case State.Spawn: //don't really do anything, just play the spawn animation
+                anim.Play("Spawn");
                 break;
-            case AnimStates.Idle:
-                if (anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
+            case State.Idle:
+                anim.Play("Idle");
+                ai.canMove = false;
+                destination = transform.position;
+                CheckForEnemy();
+                /*if (anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk") || anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart")) //transitioning from attack walk to idle
                 { 
                     anim.SetTrigger("Idle");
                 }
-                else
+                else //otherwise idle
                 { 
                     anim.Play("Idle");
-                }
-                if (enemyInRange && !followingMoveOrder && attackReady)
+                }*/
+                //conditions to move to other states
+                /*if (enemyInRange && !followingMoveOrder && attackReady)
                 {
                     anim.ResetTrigger("Idle");
                     StartAttack();
-                }
-                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) <= attackRange && attackReady) //try to build
-                {
-                    anim.ResetTrigger("Idle");
-                    StartBuild();
-                }
-                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) > attackRange) //move towards build target
-                {
-                    anim.ResetTrigger("Idle");
-                    state = AnimStates.Walk;
-                }
-                else if (harvestTarget != null && Vector3.Distance(transform.position, harvestTarget.transform.position) <= attackRange && attackReady) //try to harvest
-                {
-                    anim.ResetTrigger("Idle");
-                    StartHarvest();
-                }
-                else if (harvestTarget != null && Vector3.Distance(transform.position, harvestTarget.transform.position) > attackRange) //move towards harvest target
-                {
-                    anim.ResetTrigger("Idle");
-                    state = AnimStates.Walk;
-                }
+                }    
                 else if (followingMoveOrder || chasingEnemy)
                 {
                     anim.ResetTrigger("Idle");
                     state = AnimStates.Walk;
-                }
-
+                }*/
                 break;
-            case AnimStates.Walk:
+            case State.Walk:
                 ai.canMove = true;
+                anim.Play("Walk");
+
+                if (!followingMoveOrder) //!followingMoveOrder && !chasingEnemy && (buildTarget == null || buildTarget.fullyBuilt)
+                {
+                    //anim.ResetTrigger("Walk");
+                    //playedAttackMoveSound = false;
+                    state = State.Idle;
+                } 
+                /*if (enemyInRange && (!followingMoveOrder || attackMoving) && attackReady)
+                {
+                    playedAttackMoveSound = false;
+                    anim.ResetTrigger("Walk");
+                    StartAttack();
+                }
+                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) <= attackRange && attackReady)
+                {
+                    anim.ResetTrigger("Walk");
+                    playedAttackMoveSound = false;
+                    StartBuild();
+                }
+                else if (harvestTarget != null && Vector3.Distance(transform.position, harvestTarget.transform.position) <= attackRange && attackReady) //try to harvest
+                {
+                    anim.ResetTrigger("Walk");
+                    StartHarvest();
+                }
+                */
+                /*ai.canMove = true;
                 if (attackMoving)
                 {
                     if (!anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
@@ -336,106 +349,449 @@ public class MinionController : NetworkBehaviour
                     { 
                         anim.Play("Walk");
                     }
-                }
-                if (enemyInRange && (!followingMoveOrder || attackMoving) && attackReady)
-                {
-                    playedAttackMoveSound = false;
-                    anim.ResetTrigger("Walk");
-                    StartAttack();
-                }
-                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) <= attackRange && attackReady)
-                {
-                    anim.ResetTrigger("Walk");
-                    playedAttackMoveSound = false;
-                    StartBuild();
-                }
-                else if (harvestTarget != null && Vector3.Distance(transform.position, harvestTarget.transform.position) <= attackRange && attackReady) //try to harvest
-                {
-                    anim.ResetTrigger("Walk");
-                    StartHarvest();
-                } 
-                else if (!followingMoveOrder && !chasingEnemy && (buildTarget == null || buildTarget.fullyBuilt))
-                {
-                    anim.ResetTrigger("Walk");
-                    playedAttackMoveSound = false;
-                    state = AnimStates.Idle;
-                }
+                }*/
+                /**/
                 break;
-            case AnimStates.Attack:
-                anim.Play("Attack");
+            case State.AttackWalk:
+                ai.canMove = true;
+                anim.Play("Walk"); 
+                CheckForEnemy();
+                break;
+            case State.Attacking:
+                /*anim.Play("Attack");
                 ai.canMove = moveWhileAttacking;
-                if (targetEnemy != null)
+                if (targetEnemy != null) //face target enemy
                 { 
                     transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, targetEnemy.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
-                     
-                } 
+                } */
                 break;
-            case AnimStates.Build:
-                anim.Play("Attack");
-                if (buildTarget != null)
-                { 
-                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, buildTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
-                     
+            case State.FindBuildable:
+                if (buildTarget == null || buildTarget.fullyBuilt)
+                {
+                    buildTarget = FindClosestBuildable();
+                }
+                else
+                {
+                    state = State.WalkToBuildable;
+                }
+                break;
+            case State.WalkToBuildable: 
+                ai.canMove = true;
+                if (buildTarget == null)
+                {
+                    state = State.FindBuildable;
+                }
+                else
+                {
                     if (Vector3.Distance(transform.position, buildTarget.transform.position) > attackRange)
                     {
-                        state = AnimStates.Walk;
+                        ai.canMove = true;
+                        anim.Play("Walk");
+                        destination = buildTarget.transform.position;
                     }
-                } 
-                break;
-            case AnimStates.Harvest:
-                anim.Play("Attack");
-                if (harvestTarget != null)
-                {
-                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, harvestTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
-
-                    if (Vector3.Distance(transform.position, harvestTarget.transform.position) > attackRange)
+                    else
                     {
-                        state = AnimStates.Walk;
+                        stateTimer = 0;
+                        state = State.Building;
                     }
                 }
                 break;
-            case AnimStates.Die:
+            case State.Building: 
+                if (buildTarget == null)
+                {
+                    state = State.FindBuildable;
+                }
+                else
+                {
+                    ai.canMove = false;
+                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, buildTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
+
+                    if (attackReady)
+                    {
+                        anim.Play("Attack");
+
+                        if (AnimatorPlaying())
+                        {
+                            if (stateTimer < ConvertTimeToFrames(impactTime))
+                            {
+                                stateTimer++;
+                            }
+                            else if (attackReady)
+                            {
+                                attackReady = false;
+                                BuildTarget(buildTarget);
+                            }
+                        }
+                        else //animation finished
+                        {
+                            state = State.AfterBuildCheck;
+                        }
+                    }
+                } 
+                break;
+            case State.AfterBuildCheck:
+                anim.Play("Idle"); 
+                if (buildTarget != null)
+                {
+                    if (buildTarget.fullyBuilt)
+                    { 
+                        state = State.FindBuildable;
+                    }
+                    else
+                    { 
+                        stateTimer = 0;
+                        state = State.Building;
+                    }
+                }
+                else
+                {
+                    state = State.FindBuildable;
+                }
+                break;
+            case State.FindHarvestable:
+                if (harvestTarget == null)
+                {
+                    harvestTarget = FindClosestResource();
+                }
+                else
+                {
+                    state = State.WalkToHarvestable;
+                }
+                break;
+            case State.WalkToHarvestable:
+                ai.canMove = true;
+                if (harvestTarget == null)
+                {
+                    state = State.FindHarvestable;
+                }
+                else
+                {
+                    if (Vector3.Distance(transform.position, harvestTarget.transform.position) > attackRange) //if out of harvest range walk there
+                    {
+                        ai.canMove = true;
+                        anim.Play("Walk");
+                        destination = harvestTarget.transform.position;
+                    }
+                    else
+                    {
+                        stateTimer = 0;
+                        state = State.Harvesting;
+                    }
+                } 
+                break;
+            case State.Harvesting:
+                if (harvestTarget == null)
+                { 
+                    state = State.FindHarvestable;
+                }
+                else
+                { 
+                    ai.canMove = false; 
+                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, harvestTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
+                    
+                    if (attackReady)
+                    {
+                        anim.Play("Attack");
+
+                        if (AnimatorPlaying())
+                        {
+                            if (stateTimer < ConvertTimeToFrames(impactTime))
+                            {
+                                stateTimer++;
+                            }
+                            else if (attackReady)
+                            {
+                                attackReady = false;
+                                HarvestTarget(harvestTarget);
+                            }
+                        }
+                        else //animation finished
+                        {
+                            state = State.AfterHarvestCheck;
+                        }
+                    }  
+                }
+                break;
+            case State.AfterHarvestCheck:
+                anim.Play("Idle");
+                if (selector.harvestedResource >= selector.harvestCapacity)
+                {
+                    state = State.FindDeposit;
+                }
+                else if (harvestTarget != null)
+                {
+                    stateTimer = 0; 
+                    state = State.Harvesting;
+                }
+                else
+                {
+                    state = State.FindHarvestable;
+                }
+                break;
+            case State.FindDeposit:
+                if (depositTarget == null)
+                {
+                    depositTarget = FindClosestDeposit();
+                }
+                else
+                {
+                    state = State.WalkToDeposit;
+                }
+                break;
+            case State.WalkToDeposit:
+                ai.canMove = true;
+                if (depositTarget == null)
+                {
+                    state = State.FindDeposit;
+                }
+                else
+                {
+                    if (Vector3.Distance(transform.position, depositTarget.transform.position) > attackRange)
+                    {
+                        ai.canMove = true;
+                        anim.Play("Walk");
+                        destination = depositTarget.transform.position;
+                    }
+                    else
+                    { 
+                        state = State.Depositing;
+                    }
+                }
+                break;
+            case State.Depositing:
+                if (depositTarget == null)
+                {
+                    state = State.FindDeposit;
+                }
+                else
+                {
+                    ai.canMove = false;
+                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, depositTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
+
+                    anim.Play("Attack"); //replace with deposit animation
+                    if (!AnimatorPlaying())
+                    {
+                        if (selector != null)
+                        {
+                            Global.Instance.localPlayer.gold += selector.harvestedResource;
+                            selector.harvestedResource = 0;
+                            UpdateResourceGUI();
+                        } 
+                        state = State.AfterDepositCheck;
+                    }  
+                } 
+                break;
+            case State.AfterDepositCheck: 
+                anim.Play("Idle");
+                if (harvestTarget != null)
+                {
+                    stateTimer = 0;
+                    state = State.WalkToHarvestable;
+                }
+                else
+                {
+                    state = State.FindHarvestable;
+                }
+                break;
+            case State.Die:
                 anim.Play("Die");
                 break;
             default:
                 break;
         }
+    } 
+    private void UpdateAttackReadiness()
+    {  
+        if (!attackReady)
+        {
+            if (attackReadyTimer < ConvertTimeToFrames(attackDuration - impactTime))
+            {
+                attackReadyTimer++;
+            }
+            else
+            {
+                attackReady = true;
+                attackReadyTimer = 0;
+            }
+        }
     }
+    private float ConvertTimeToFrames(float seconds) //1 second is 50 frames
+    {
+        float frames = seconds * 50;
+        return frames;
+    }
+    private bool AnimatorPlaying()
+    {
+        return anim.GetCurrentAnimatorStateInfo(0).length > anim.GetCurrentAnimatorStateInfo(0).normalizedTime;
+    }
+    public enum State
+    {
+        Idle,
+        Walk,
+        AttackWalk,
+        Attacking,
+        FindBuildable,
+        WalkToBuildable, 
+        Building,
+        AfterBuildCheck,
+        Spawn,
+        Die,
+        FindHarvestable,
+        WalkToHarvestable,
+        Harvesting,
+        AfterHarvestCheck,
+        FindDeposit,
+        WalkToDeposit,
+        Depositing,
+        AfterDepositCheck
+    }
+    private int stateTimer = 0;
+    private void HarvestTarget(SelectableEntity target)
+    {
+        selector.SimplePlaySound(1); //play impact sound 
+        if (target != null)
+        {
+            int actualHarvested = Mathf.Clamp(harvestAmount, 0, target.hitPoints.Value); //max amount we can harvest clamped by hitpoints remaining
+            int diff = selector.harvestCapacity - selector.harvestedResource;
+            actualHarvested = Mathf.Clamp(actualHarvested, 0, diff); //max amount we can harvest clamped by remaining carrying capacity
+            if (IsServer)
+            {
+                target.Harvest(harvestAmount);
+            }
+            else //client tell server to change the network variable
+            {
+                RequestHarvestServerRpc(harvestAmount, target);
+            }
+
+            selector.harvestedResource += actualHarvested;
+            UpdateResourceGUI();
+        }
+    }
+    private void UpdateResourceGUI()
+    { 
+        if (Global.Instance.resourcesParent.activeInHierarchy)
+        {
+            Global.Instance.resourceText.text = "Stored gold: " + selector.harvestedResource + "/" + selector.harvestCapacity;
+        }
+    }
+    private void StartHarvest()
+    {
+        attackReady = false;
+        state = State.FindHarvestable;
+        destination = transform.position;
+        Invoke("HarvestTarget", impactTime);
+        Invoke("ReturnState", attackDuration);
+    }
+    private SelectableEntity FindClosestBuildable()
+    {
+        List<SelectableEntity> list = Global.Instance.localPlayer.ownedEntities;
+
+        SelectableEntity closest = null;
+        float distance = Mathf.Infinity;
+        foreach (SelectableEntity item in list)
+        {
+            if (item != null && !item.fullyBuilt)
+            {
+                float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position);
+                if (newDist < distance)
+                {
+                    closest = item;
+                    distance = newDist;
+                }
+            }
+        }
+        return closest;
+    }
+    private SelectableEntity FindClosestResource()
+    { 
+        SelectableEntity[] list = Global.Instance.harvestableResources;
+
+        SelectableEntity closest = null;
+        float distance = Mathf.Infinity;
+        foreach (SelectableEntity item in list)
+        {
+            if (item != null && item.harvestType != SelectableEntity.HarvestType.Gold)
+            {
+                float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position);
+                if (newDist < distance)
+                {
+                    closest = item;
+                    distance = newDist;
+                }
+            }
+        }
+        return closest;
+    }
+    private SelectableEntity FindClosestDeposit() //right now resource agnostic
+    {
+        List<SelectableEntity> list = Global.Instance.localPlayer.ownedEntities;
+
+        SelectableEntity closest = null;
+        float distance = Mathf.Infinity;
+        foreach (SelectableEntity item in list)
+        { 
+            if (item != null && item.depositType != SelectableEntity.DepositType.None)
+            {
+                float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position);
+                if (newDist < distance)
+                {
+                    closest = item;
+                    distance = newDist;
+                }
+            }
+        }  
+        return closest;
+    }
+    public SelectableEntity depositTarget;
     private sbyte harvestAmount = 1;
     [SerializeField] private bool moveWhileAttacking = false;
     private void CancelAttack()
     {
         targetEnemy = null;
         buildTarget = null;
-        state = AnimStates.Idle;
+        state = State.Idle;
         CancelInvoke("SimpleDamageEnemy");
         CancelInvoke("SimpleBuildTarget");
         selector.UpdateIndicator();
-    } 
+    }
+    private void ReturnState()
+    {
+        switch (attackType)
+        {
+            case AttackType.Instant:
+                state = State.Idle;
+                attackReady = true;
+                break;
+            case AttackType.SelfDestruct:
+                break;
+            default:
+                break;
+        }
+    }
     private sbyte buildDelta = 1;
     [SerializeField] private float areaOfEffect = 1;
     private void StartBuild()
     {
         attackReady = false;
-        state = AnimStates.Build;
+        state = State.Building;
         destination = transform.position;
         Invoke("SimpleBuildTarget", impactTime);
         Invoke("ReturnState", attackDuration);
     }
-    public void SimpleBuildTarget() //since hp is a network variable, changing it on the server will propagate changes to clients as well
+    public void BuildTarget(SelectableEntity target) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         //fire locally
         selector.SimplePlaySound(1);
 
-        if (buildTarget != null)
+        if (target != null)
         {
             if (IsServer)
             {
-                buildTarget.BuildThis(buildDelta);
+                target.BuildThis(buildDelta);
             }
             else //client tell server to change the network variable
             {
-                RequestBuildServerRpc(buildDelta, buildTarget);
+                RequestBuildServerRpc(buildDelta, target);
             }
         }
     }
@@ -451,7 +807,7 @@ public class MinionController : NetworkBehaviour
     private void StartAttack()
     {
         attackReady = false;
-        state = AnimStates.Attack;
+        state = State.Attacking;
         destination = transform.position;
 
         switch (attackType)
@@ -465,41 +821,6 @@ public class MinionController : NetworkBehaviour
                 break;
             default:
                 break;
-        }
-    }
-    private void StartHarvest()
-    { 
-        attackReady = false;
-        state = AnimStates.Harvest;
-        destination = transform.position;
-        Invoke("HarvestTarget", impactTime);
-        Invoke("ReturnState", attackDuration);
-    }
-    private void HarvestTarget()
-    { 
-        selector.SimplePlaySound(1);
-
-        if (harvestTarget != null)
-        {  
-            int actualHarvested = Mathf.Clamp(harvestAmount, 0, harvestTarget.hitPoints.Value); 
-
-            if (IsServer)
-            {
-                harvestTarget.Harvest(harvestAmount);
-            }
-            else //client tell server to change the network variable
-            {
-                RequestHarvestServerRpc(harvestAmount, harvestTarget);
-            }
-
-            switch (selector.harvestType)
-            {
-                case SelectableEntity.HarvestType.Gold: 
-                    selector.harvestedGold += actualHarvested;
-                    break;
-                default:
-                    break;
-            }
         }
     }
     [ServerRpc]
@@ -590,20 +911,6 @@ public class MinionController : NetworkBehaviour
 
     [SerializeField] private float attackDuration = 1;
     [SerializeField] private float impactTime = .5f;
-    private void ReturnState()
-    {  
-        switch (attackType)
-        {
-            case AttackType.Instant:
-                state = AnimStates.Idle;
-                attackReady = true;
-                break;
-            case AttackType.SelfDestruct:
-                break;
-            default:
-                break;
-        }
-    }
     private float GetActualPositionChange()
     {
         float dist = Vector3.SqrMagnitude(transform.position - oldPosition);
@@ -618,38 +925,52 @@ public class MinionController : NetworkBehaviour
         followingMoveOrder = true;
         destination = pos;
         orderedDestination = destination;
-        state = AnimStates.Walk;
+        state = State.Walk;
     }
-    public void SetDestinationRaycast(bool attackMove = false)
+    private void ResetAllTargets()
+    { 
+        targetEnemy = null;
+        buildTarget = null;
+        harvestTarget = null;
+        depositTarget = null;
+    }
+    public void SetDestinationRaycast(bool attackMoveVal = false)
     {
-        if (state != AnimStates.Spawn)
+        if (state != State.Spawn)
         {
-            targetEnemy = null;
-            buildTarget = null;
-            harvestTarget = null;
+            ResetAllTargets();
             enemyInRange = false;
             basicallyIdleInstances = 0;
             followingMoveOrder = true;
-            attackMoving = attackMove;
-            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
+            attackMoving = attackMoveVal;
+            state = State.Walk; //default to walking state
 
-            if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
+            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
             {
+                destination = hit.point;
+                orderedDestination = destination;
+
                 SelectableEntity select = hit.collider.GetComponent<SelectableEntity>();
                 if (select != null)
                 {
                     if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
-                    { 
+                    {
                         if (select.net.OwnerClientId == selector.net.OwnerClientId) //same team
                         {
-                            if (selector.type == SelectableEntity.EntityTypes.Builder && !select.fullyBuilt)
+                            if (select.depositType == SelectableEntity.DepositType.Gold && select.fullyBuilt) //if deposit point
+                            {
+                                depositTarget = select;
+                                state = State.FindDeposit;
+                            }
+                            else if (selector.type == SelectableEntity.EntityTypes.Builder && !select.fullyBuilt) //if buildable and this is a builder
                             {
                                 buildTarget = select;
+                                state = State.WalkToBuildable;
                             }
                         }
-                        else
-                        {
+                        else //enemy
+                        { //try to target this enemy specifically
                             targetEnemy = select;
                             attackMoving = true;
                         }
@@ -660,17 +981,14 @@ public class MinionController : NetworkBehaviour
                         { 
                             //check if clicked is resource
                             //if it is, then tell resource collectors to gather it
-                            if (selector.canGather)
+                            if (selector.isHarvester)
                             {
                                 harvestTarget = select;
+                                state = State.WalkToHarvestable;
                             }
                         }
                     } 
-                }
-
-                destination = hit.point;
-                orderedDestination = destination;
-                state = AnimStates.Walk;
+                } 
                 CancelInvoke("SimpleDamageEnemy");
                 if (attackMoving) //more responsive?
                 {
@@ -679,7 +997,7 @@ public class MinionController : NetworkBehaviour
             }
         } 
     }
-    private SelectableEntity harvestTarget;
+    public SelectableEntity harvestTarget;
     /*private void HandleMovement()
     {
         transform.position = Vector3.MoveTowards(transform.position, destination, Time.deltaTime * speed);

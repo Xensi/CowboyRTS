@@ -24,6 +24,10 @@ public class Global : MonoBehaviour
     public GameObject selectedParent;
     public TMP_Text nameText;
     public TMP_Text descText;
+    public SelectableEntity[] harvestableResources;
+    public GameObject resourcesParent;
+    public TMP_Text resourceText;
+    public GameObject gridVisual;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.
@@ -41,6 +45,19 @@ public class Global : MonoBehaviour
         {
             item.gameObject.SetActive(false);
         }
+        SelectableEntity[] array = FindObjectsOfType<SelectableEntity>();
+        harvestableResources = new SelectableEntity[array.Length];
+        int j = 0;
+        for (int i = 0; i < array.Length; i++)
+        {
+            if (array[i] != null && array[i].harvestType == SelectableEntity.HarvestType.Gold)
+            {
+                harvestableResources[j] = array[i];
+                j++;
+            }
+        }
+        selectedParent.SetActive(false);
+        resourcesParent.SetActive(false);
     }
     public AudioSource PlayClipAtPoint(AudioClip clip, Vector3 pos, float volume = 1, float pitch = 1, bool useChorus = true)
     {
