@@ -78,7 +78,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             if (item.controller != null) //minion
             {
-                item.controller.SetDestinationRaycast(true); 
+                item.controller.SetAttackMoveDestination(); 
             } 
         }
     }
@@ -440,7 +440,7 @@ public class RTSPlayer : NetworkBehaviour
         if (minion.TryGet(out SelectableEntity select))
         {
             Vector3 rallyPos = new Vector3(xRally, 0, zRally); //get spawn position 
-            select.controller.SetDestinationToPos(rallyPos);
+            select.controller.RallyToPos(rallyPos);
         }  
     }
     /// <summary>

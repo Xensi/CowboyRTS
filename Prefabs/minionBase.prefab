@@ -227,6 +227,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ef37b2b8ba8e084dae003beb732c07c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  displayName: name
+  desc: desc
   lineIndicator: {fileID: 555440906972586300}
   unbuiltRenderers: []
   finishedRenderers: []
@@ -238,6 +240,8 @@ MonoBehaviour:
   targetIndicator: {fileID: 3480814061053556006}
   net: {fileID: 4126868118260038068}
   teamRenderers: []
+  isHarvester: 0
+  depositType: 0
   teamBehavior: 0
   type: 3
   builderEntityIndices: 01000000
@@ -253,6 +257,9 @@ MonoBehaviour:
   rallyPoint: {x: 0, y: 0, z: 0}
   rallyVisual: {fileID: 0}
   damagedState: {fileID: 0}
+  harvestType: 0
+  harvestedResource: 0
+  harvestCapacity: 10
   damageableMeshes: []
   alive: 1
   attackEffects: []
@@ -268,10 +275,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cba2131cba19af4c9d3a513f211d5ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  harvestTarget: {fileID: 0}
   destination: {x: 0, y: 0, z: 0}
   anim: {fileID: 0}
   selector: {fileID: 0}
-  state: 4
+  state: 10
   attackType: 0
   attackRange: 1
   targetEnemy: {fileID: 0}
@@ -279,6 +287,7 @@ MonoBehaviour:
   localRotate: {fileID: 0}
   enemyInRange: 0
   rigid: {fileID: 7586105387906439370}
+  depositTarget: {fileID: 0}
   moveWhileAttacking: 0
   areaOfEffect: 1
   buildTarget: {fileID: 0}

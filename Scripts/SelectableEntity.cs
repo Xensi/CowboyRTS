@@ -241,8 +241,10 @@ public class SelectableEntity : NetworkBehaviour
         if (targetIndicator != null)
         { 
             targetIndicator.SetActive(false);
+            lineIndicator.enabled = false;
             targetIndicator.transform.parent = transform;
         }
+
         alive = false;
         foreach (MeshRenderer item in allMeshes)
         { 
@@ -257,6 +259,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 controller.PrepareForDeath();
             }
+            //Invoke("Die", deathDuration);
             Invoke("Die", deathDuration);
         }
         else
@@ -400,6 +403,62 @@ public class SelectableEntity : NetworkBehaviour
         }
         Global.Instance.localPlayer.UpdateBuildQueue();
     } 
+    private Vector3[] LineArray(Vector3 des)
+    { 
+        targetIndicator.transform.position = new Vector3(des.x, 0.05f, des.z);
+        Vector3[] array = new Vector3[lineIndicator.positionCount];
+        array[0] = transform.position;
+        array[1] = des;
+        return array;
+    }
+    public void HideMoveIndicator()
+    {
+        if (targetIndicator != null)
+        {
+            targetIndicator.SetActive(false);
+            lineIndicator.enabled = false;
+        }
+    }
+    public void UpdateAttackIndicator()
+    { 
+        if (targetIndicator != null && controller != null && controller.targetEnemy != null)
+        {
+            if (alive)
+            {
+                targetIndicator.SetActive(selected);
+                lineIndicator.enabled = selected;
+                if (selected)
+                {
+                    lineIndicator.SetPositions(LineArray(controller.targetEnemy.transform.position));
+                }
+            }
+            else //disable if dead
+            {
+                targetIndicator.SetActive(false);
+                lineIndicator.enabled = false;
+            }
+        }
+    }
+    public void UpdateMoveIndicator()
+    { 
+        if (targetIndicator != null && controller != null)
+        {
+            if (alive)
+            {
+                targetIndicator.SetActive(selected);
+                lineIndicator.enabled = selected;
+                if (selected)
+                { 
+                    lineIndicator.SetPositions(LineArray(controller.destination));
+                }   
+            }
+            else //disable if dead
+            {
+                targetIndicator.SetActive(false);
+                lineIndicator.enabled = false;
+            }
+        }
+    }
     public void UpdateTargetIndicator()
     { 
         if (targetIndicator != null)
@@ -419,6 +478,7 @@ public class SelectableEntity : NetworkBehaviour
                         lineIndicator.SetPositions(array);
                     } 
                 }
+
                 else
                 {
                     targetIndicator.SetActive(false);
@@ -435,7 +495,7 @@ public class SelectableEntity : NetworkBehaviour
     public void UpdateIndicator()
     {
         if (selectIndicator != null) selectIndicator.SetActive(selected);
-        UpdateTargetIndicator();
+        //UpdateTargetIndicator();
         if (rallyVisual != null)
         {
             rallyVisual.transform.position = rallyPoint;
