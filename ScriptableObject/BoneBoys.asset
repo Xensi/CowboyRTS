@@ -37,3 +37,15 @@ MonoBehaviour:
     goldCost: 30
     timeCost: 5
     buildID: 0
+  - productionName: Place Wall
+    needsConstructing: 1
+    prefabToSpawn: {fileID: 3798861697192735719, guid: 0469ba43681a07247aef51cf6ccb8ef9, type: 3}
+    goldCost: 5
+    timeCost: 0
+    buildID: 0
+  - productionName: Raise Gatling
+    needsConstructing: 0
+    prefabToSpawn: {fileID: 6512270723407849226, guid: 2d424a28e19378c4d921d6906353559c, type: 3}
+    goldCost: 100
+    timeCost: 10
+    buildID: 0

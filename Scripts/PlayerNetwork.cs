@@ -5,7 +5,7 @@ public class PlayerNetwork : NetworkBehaviour
     private NetworkVariable<PlayerNetworkData> _netState;
     private Vector3 _vel;
     private float _rotVel;
-    private float _interpolateTime = 0.1f;
+    private readonly float _interpolateTime = 0.1f;
 
     [SerializeField] private bool _serverAuth;
     private void Awake()
@@ -42,11 +42,10 @@ public class PlayerNetwork : NetworkBehaviour
     }
     private void ReadData() //basic interpolation
     { 
-        transform.position = Vector3.SmoothDamp(transform.position, _netState.Value.Position, ref _vel, _interpolateTime);
-        transform.rotation = Quaternion.Euler(
+        transform.SetPositionAndRotation(Vector3.SmoothDamp(transform.position, _netState.Value.Position, ref _vel, _interpolateTime), Quaternion.Euler(
             0,
             Mathf.SmoothDampAngle(transform.rotation.eulerAngles.y, _netState.Value.Rotation.y, ref _rotVel, _interpolateTime),
-            0);
+            0));
 
         //transform.position = _netState.Value.Position;
         //transform.rotation = Quaternion.Euler(0, _netState.Value.Rotation.y, 0);
@@ -65,7 +64,7 @@ public class PlayerNetwork : NetworkBehaviour
 
         internal Vector3 Position
         {
-            get => new Vector3(_x, 0, _z);
+            get => new(_x, 0, _z);
             set
             {
                 _x = value.x;
@@ -74,7 +73,7 @@ public class PlayerNetwork : NetworkBehaviour
         }
         internal Vector3 Rotation
         {
-            get => new Vector3(0, _yRot, 0);
+            get => new(0, _yRot, 0);
             set => _yRot = (short)value.y;
         }
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T: IReaderWriter

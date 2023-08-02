@@ -116,6 +116,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8971879586089695257, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: impactTime
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8971879586089695257, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: attackRange
       value: 1
       objectReference: {fileID: 0}
@@ -125,7 +129,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8971879586089695257, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: attackDuration
-      value: 0.6
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 9133018300631584138, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: m_IsActive

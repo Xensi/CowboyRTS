@@ -28,6 +28,9 @@ public class Global : MonoBehaviour
     public GameObject resourcesParent;
     public TMP_Text resourceText;
     public GameObject gridVisual;
+    public TMP_Text hpText;
+
+    public TrailController gunTrailGlobal;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.
@@ -61,7 +64,7 @@ public class Global : MonoBehaviour
     }
     public AudioSource PlayClipAtPoint(AudioClip clip, Vector3 pos, float volume = 1, float pitch = 1, bool useChorus = true)
     {
-        GameObject tempGO = new GameObject("TempAudio"); // create the temp object
+        GameObject tempGO = new("TempAudio"); // create the temp object
         tempGO.transform.position = pos; // set its position
         AudioSource tempASource = tempGO.AddComponent<AudioSource>(); // add an audio source
         if (useChorus)

@@ -24,10 +24,9 @@ public class PlayerController : NetworkBehaviour
     }
     private void SetDestination()
     {
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition); 
 
-        if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
         {
             destination = hit.point;
         }
@@ -38,8 +37,7 @@ public class PlayerController : NetworkBehaviour
     }
     private void HandleMovement()
     { 
-        transform.position = Vector3.MoveTowards(transform.position, destination, Time.deltaTime * speed);
-        transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, destination - transform.position, Time.deltaTime * rotSpeed, 0));
+        transform.SetPositionAndRotation(Vector3.MoveTowards(transform.position, destination, Time.deltaTime * speed), Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, destination - transform.position, Time.deltaTime * rotSpeed, 0)));
         //transform.rotation = Quaternion.LookRotation(destination - transform.position);
     }
     private void OnDrawGizmos()

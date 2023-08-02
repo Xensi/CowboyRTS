@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5979901183641035642}
   - component: {fileID: 555440906972586300}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: line
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -153,7 +153,7 @@ GameObject:
   - component: {fileID: 4721624654941951496}
   - component: {fileID: 801487402834003379}
   - component: {fileID: 2696319472600951783}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: minionBase
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -287,6 +287,7 @@ MonoBehaviour:
   localRotate: {fileID: 0}
   enemyInRange: 0
   rigid: {fileID: 7586105387906439370}
+  trailSpawnPos: {fileID: 0}
   depositTarget: {fileID: 0}
   moveWhileAttacking: 0
   areaOfEffect: 1

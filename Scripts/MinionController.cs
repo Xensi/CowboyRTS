@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using Pathfinding;
- 
+[RequireComponent(typeof(SelectableEntity))]
 public class MinionController : NetworkBehaviour
 {
     #region Variables
@@ -12,7 +12,8 @@ public class MinionController : NetworkBehaviour
     {
         Idle,
         Walk,
-        WalkFindEnemies,
+        WalkBeginFindEnemies,
+        WalkContinueFindEnemies,
         WalkToEnemy,
         Attacking,
         AfterAttackCheck,
@@ -31,23 +32,33 @@ public class MinionController : NetworkBehaviour
         Depositing,
         AfterDepositCheck
     }
+
+    private void UpdateColliderStatus()
+    {
+        if (rigid != null)
+        { 
+            rigid.isKinematic = state switch
+            {
+                State.FindHarvestable or State.WalkToHarvestable or State.Harvesting or State.AfterHarvestCheck
+                or State.FindDeposit or State.WalkToDeposit or State.Depositing or State.AfterDepositCheck => true,
+                _ => false,
+            };
+        }
+    }
     LayerMask enemyMask;
-    public SelectableEntity harvestTarget;
     private Camera cam;
     public Vector3 destination;
-    public Animator anim;
-    bool animsEnabled = false;
+    public Animator anim; 
     AIPath ai;
     [SerializeField] private SelectableEntity selector;
     public State state = State.Spawn;
     public enum AttackType
     {
-        Instant, SelfDestruct
+        Instant, SelfDestruct, Artillery
     }
-    public AttackType attackType = AttackType.Instant;
-    private bool chasingEnemy = false;
+    public AttackType attackType = AttackType.Instant; 
     private float change;
-    private float walkAnimThreshold = 0.01f;
+    private readonly float walkAnimThreshold = 0.01f;
     private Vector3 oldPosition;
 
     [SerializeField] private float attackRange = 1;
@@ -58,10 +69,9 @@ public class MinionController : NetworkBehaviour
     private RaycastModifier rayMod;
     private Seeker seeker;
     private Collider col;
-
-    public bool enemyInRange = false;
+     
     [SerializeField] private Rigidbody rigid;
-    private float spawnDuration = .5f;
+    private readonly float spawnDuration = .5f;
     #endregion
     public void PrepareForDeath()
     { 
@@ -102,7 +112,7 @@ public class MinionController : NetworkBehaviour
             anim = GetComponentInChildren<Animator>();
         }
         state = State.Spawn;
-        Invoke("FinishSpawning", spawnDuration);
+        Invoke(nameof(FinishSpawning), spawnDuration);
     }
     private void FinishSpawning()
     { 
@@ -114,20 +124,7 @@ public class MinionController : NetworkBehaviour
     }
     private void FixedUpdate()
     {
-        change = GetActualPositionChange();
-
-        /*if (delay >= 24) //0 to 24 is half of 50
-        {
-            delay = 0; 
-        }
-        else
-        {
-            delay++;
-        }  */ 
-        /*if (selector != null)
-        { 
-            selector.UpdateTargetIndicator();
-        }*/
+        change = GetActualPositionChange(); 
         UpdateState();
     }
     public override void OnNetworkSpawn()
@@ -157,10 +154,12 @@ public class MinionController : NetworkBehaviour
         buildTarget = ent; 
     } 
     private SelectableEntity GetClosestEnemy()
-    {  
-        int maxColliders = Mathf.RoundToInt(40 * attackRange);
+    {
+        float range = attackRange + 2;
+
+        int maxColliders = Mathf.RoundToInt(40 * range);
         Collider[] hitColliders = new Collider[maxColliders];
-        int numColliders = Physics.OverlapSphereNonAlloc(transform.position, attackRange, hitColliders, enemyMask); 
+        int numColliders = Physics.OverlapSphereNonAlloc(transform.position, range, hitColliders, enemyMask); 
         Collider closest = null;
         float distance = Mathf.Infinity;
         for (int i = 0; i < numColliders; i++)
@@ -198,92 +197,11 @@ public class MinionController : NetworkBehaviour
             enemy = closest.GetComponent<SelectableEntity>();
         }
         return enemy;
-    }
-    #region Unused
-    private void CheckTargetEnemy() //use spherecast to get an enemy. if in detect range they become our target
-    {
-        if (targetEnemy != null && targetEnemy.hitPoints.Value <= 0)
-        {
-            targetEnemy = null;
-        }
-        if (targetEnemy == null)
-        {
-            enemyInRange = false;
-            //do a spherecast to get one
-            Vector3 center = transform.position;
-            float detectionRange = attackRange * 1.25f;
-            if (attackMoving)
-            {
-                detectionRange = attackRange;
-            }
-            int maxColliders = Mathf.RoundToInt(40 * detectionRange);
-            Collider[] hitColliders = new Collider[maxColliders];
-            int numColliders = Physics.OverlapSphereNonAlloc(center, detectionRange, hitColliders, enemyMask);
-            //get closest collider 
-            Collider closest = null;
-            float distance = Mathf.Infinity;
-            for (int i = 0; i < numColliders; i++)
-            {
-                if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self
-                {
-                    continue;
-                }
-                SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
-                if (Global.Instance.localPlayer.ownedEntities.Contains(select))
-                {
-                    continue;
-                }
-                float newDist = Vector3.SqrMagnitude(transform.position - hitColliders[i].transform.position);
-                if (newDist < distance)
-                {
-                    closest = hitColliders[i];
-                    distance = newDist;
-                }
-            }
-            if (closest != null)
-            {
-                float dist = Vector3.Distance(transform.position, closest.transform.position);
-                if (dist <= attackRange)
-                {
-                    targetEnemy = closest.GetComponent<SelectableEntity>();
-                    enemyInRange = true;
-                    chasingEnemy = false;
-                }
-                else
-                {
-                    destination = closest.transform.position;
-                    enemyInRange = false;
-                    chasingEnemy = true;
-                }
-            }
-            else
-            {
-                enemyInRange = false;
-                chasingEnemy = false;
-            }
-        }
-        else
-        {
-            float dist = Vector3.Distance(transform.position, targetEnemy.transform.position);
-            if (dist > attackRange)
-            {
-                chasingEnemy = false;
-                targetEnemy = null;
-                enemyInRange = false;
-                CancelAttack();
-            }
-            else
-            {
-                chasingEnemy = false;
-                enemyInRange = true;
-            }
-        }
-    }
-    #endregion
+    } 
     //50 fps fixed update
-    private int delay = 0; 
+    private readonly int delay = 0; 
     private int basicallyIdleInstances = 0;
-    private int idleThreshold = 30;
+    private readonly int idleThreshold = 30;
     bool playedAttackMoveSound = false;
     private int attackReadyTimer = 0;
     private void HideMoveIndicator()
@@ -327,17 +245,39 @@ public class MinionController : NetworkBehaviour
         }
         if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
         {
-            followingMoveOrder = false;
-            if (attackMoving)
+            val = true;
+            //followingMoveOrder = false;
+            /*if (attackMoving)
             {
                 //Debug.Log("moving to ordered destination");
                 destination = orderedDestination;
-            }
+            }*/
         }
         return val;
+    } 
+    private void UpdateHarvestables()
+    {  
+        if (selector.harvestTarget != null && selector.harvestTarget.alive) //if we have a harvest target
+        {
+            if (!selector.harvestTarget.harvesters.Contains(selector) ) //if we are not in harvester list
+            {
+                if (selector.harvestTarget.harvesters.Count < selector.harvestTarget.allowedHarvesters) //if there is space
+                {
+                    //add us
+                    selector.harvestTarget.harvesters.Add(selector);
+                }
+                else //there is no space
+                {
+                    //get a new harvest target
+                    selector.harvestTarget = null;
+                }
+            } 
+        }
     }
     private void UpdateState()
     {
+        UpdateHarvestables();
+        UpdateColliderStatus();
         UpdateAttackReadiness();
         switch (state)
         {
@@ -346,40 +286,33 @@ public class MinionController : NetworkBehaviour
                 ai.canMove = false;
                 destination = transform.position;
                 break;
+            case State.Die:
+                anim.Play("Die");
+                break;
             case State.Idle:
                 HideMoveIndicator();
                 anim.Play("Idle");
                 ai.canMove = false;
                 destination = transform.position;
-                if (targetEnemy == null)
-                { 
+                if (targetEnemy == null || !targetEnemy.alive)
+                {
                     targetEnemy = GetClosestEnemy();
                 }
                 else
                 {
                     state = State.WalkToEnemy;
                 }
-                #region Unused
-                /*if (anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk") || anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart")) //transitioning from attack walk to idle
-                { 
-                    anim.SetTrigger("Idle");
+                if (selector.type == SelectableEntity.EntityTypes.Builder)
+                {
+                    if (buildTarget == null || buildTarget.fullyBuilt)
+                    {
+                        buildTarget = FindClosestBuildable();
+                    }
+                    else
+                    {
+                        state = State.WalkToBuildable;
+                    }
                 }
-                else //otherwise idle
-                { 
-                    anim.Play("Idle");
-                }*/
-                //conditions to move to other states
-                /*if (enemyInRange && !followingMoveOrder && attackReady)
-                {
-                    anim.ResetTrigger("Idle");
-                    StartAttack();
-                }    
-                else if (followingMoveOrder || chasingEnemy)
-                {
-                    anim.ResetTrigger("Idle");
-                    state = AnimStates.Walk;
-                }*/
-                #endregion
                 break;
             case State.Walk: 
                 UpdateMoveIndicator();
@@ -392,46 +325,10 @@ public class MinionController : NetworkBehaviour
                     //anim.ResetTrigger("Walk");
                     //playedAttackMoveSound = false;
                     state = State.Idle;
-                }
-                #region Unused 
-                /*if (enemyInRange && (!followingMoveOrder || attackMoving) && attackReady)
-                {
-                    playedAttackMoveSound = false;
-                    anim.ResetTrigger("Walk");
-                    StartAttack();
-                }
-                else if (buildTarget != null && Vector3.Distance(transform.position, buildTarget.transform.position) <= attackRange && attackReady)
-                {
-                    anim.ResetTrigger("Walk");
-                    playedAttackMoveSound = false;
-                    StartBuild();
-                }
-                else if (harvestTarget != null && Vector3.Distance(transform.position, harvestTarget.transform.position) <= attackRange && attackReady) //try to harvest
-                {
-                    anim.ResetTrigger("Walk");
-                    StartHarvest();
-                }
-                */
-                /*ai.canMove = true;
-                if (attackMoving)
-                {
-                    
-                }
-                else
-                {
-                    if (anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk") || anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart"))
-                    {
-                        playedAttackMoveSound = false;
-                        anim.SetTrigger("Walk");
-                    }
-                    else
-                    { 
-                        anim.Play("Walk");
-                    }
-                }*/ 
-                #endregion
+                } 
                 break;
-            case State.WalkFindEnemies: //"ATTACK MOVE" 
+            #region Attacking
+            case State.WalkBeginFindEnemies: //"ATTACK MOVE" 
                 UpdateMoveIndicator();
                 ai.canMove = true;
                 destination = orderedDestination;
@@ -444,7 +341,7 @@ public class MinionController : NetworkBehaviour
                         selector.SimplePlaySound(2);
                     }
                     anim.Play("AttackWalkStart");
-                }  
+                }
 
                 if (targetEnemy == null || !targetEnemy.alive)
                 {
@@ -454,18 +351,42 @@ public class MinionController : NetworkBehaviour
                 {
                     state = State.WalkToEnemy;
                 }
+
+                if (DetectIfStuck())
+                { 
+                    state = State.Idle;
+                }
+                break;
+            case State.WalkContinueFindEnemies: 
+                UpdateMoveIndicator();
+                ai.canMove = true;
+                destination = orderedDestination;
+                 
+                if (targetEnemy == null || !targetEnemy.alive)
+                {
+                    targetEnemy = GetClosestEnemy();
+                }
+                else
+                {
+                    state = State.WalkToEnemy;
+                }
+
+                if (DetectIfStuck())
+                {
+                    state = State.Idle;
+                }
                 break;
             case State.WalkToEnemy:
-                ai.canMove = true; 
-                if (targetEnemy == null)
+                ai.canMove = true;
+                if (targetEnemy == null || !targetEnemy.alive)
                 {
-                    state = State.WalkFindEnemies;
+                    state = State.WalkContinueFindEnemies;
                 }
                 else
                 {
                     UpdateAttackIndicator();
                     if (Vector3.Distance(transform.position, targetEnemy.transform.position) > attackRange)
-                    { 
+                    {
                         anim.Play("AttackWalk");
                         destination = targetEnemy.transform.position;
                     }
@@ -477,9 +398,13 @@ public class MinionController : NetworkBehaviour
                 }
                 break;
             case State.Attacking:
-                if (targetEnemy == null)
+                if ((targetEnemy == null || !targetEnemy.alive) && !attackReady)
                 {
-                    state = State.WalkFindEnemies;
+                    state = State.Idle;
+                }
+                else if ((targetEnemy == null || !targetEnemy.alive) && attackReady)
+                {
+                    state = State.WalkContinueFindEnemies;
                 }
                 else if (Vector3.Distance(transform.position, targetEnemy.transform.position) <= attackRange)
                 {
@@ -501,7 +426,18 @@ public class MinionController : NetworkBehaviour
                             else if (attackReady)
                             {
                                 attackReady = false;
-                                DamageSpecifiedEnemy(targetEnemy);
+                                switch (attackType)
+                                {
+                                    case AttackType.Instant:
+                                        DamageSpecifiedEnemy(targetEnemy, damage);
+                                        break;
+                                    case AttackType.SelfDestruct:
+                                        Explode(areaOfEffect);
+                                        break;
+                                    case AttackType.Artillery:
+                                        ShootProjectileAtEnemy(targetEnemy);
+                                        break;
+                                }
                             }
                         }
                         else //animation finished
@@ -509,31 +445,30 @@ public class MinionController : NetworkBehaviour
                             state = State.AfterAttackCheck;
                         }
                     }
+                    else if (!anim.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
+                    {
+                        anim.Play("Idle");
+                    }
                 }
-                else
+                else //walk to enemy if out of range
                 {
                     state = State.WalkToEnemy;
                 }
                 break;
             case State.AfterAttackCheck:
-                anim.Play("Idle");
-                if (targetEnemy != null)
+                anim.Play("Idle"); 
+                if (targetEnemy == null || !targetEnemy.alive)
                 {
-                    if (targetEnemy.alive) //attack again.
-                    {
-                        stateTimer = 0;
-                        state = State.Attacking;
-                    }
-                    else
-                    {
-                        state = State.WalkFindEnemies;
-                    }
+                    state = State.WalkContinueFindEnemies;
                 }
-                else
-                {
-                    state = State.WalkFindEnemies;
-                }
+                else //if target enemy is alive
+                { 
+                    stateTimer = 0;
+                    state = State.Attacking;
+                }  
                 break;
+            #endregion
+            #region Building
             case State.FindBuildable:
                 if (buildTarget == null || buildTarget.fullyBuilt)
                 {
@@ -544,7 +479,7 @@ public class MinionController : NetworkBehaviour
                     state = State.WalkToBuildable;
                 }
                 break;
-            case State.WalkToBuildable: 
+            case State.WalkToBuildable:
                 ai.canMove = true;
                 UpdateMoveIndicator();
                 if (buildTarget == null)
@@ -566,7 +501,7 @@ public class MinionController : NetworkBehaviour
                     }
                 }
                 break;
-            case State.Building: 
+            case State.Building:
                 if (buildTarget == null)
                 {
                     state = State.FindBuildable;
@@ -597,18 +532,18 @@ public class MinionController : NetworkBehaviour
                             state = State.AfterBuildCheck;
                         }
                     }
-                } 
+                }
                 break;
             case State.AfterBuildCheck:
-                anim.Play("Idle"); 
+                anim.Play("Idle");
                 if (buildTarget != null)
-                { 
+                {
                     if (buildTarget.fullyBuilt)
-                    { 
+                    {
                         state = State.FindBuildable;
                     }
                     else
-                    { 
+                    {
                         stateTimer = 0;
                         state = State.Building;
                     }
@@ -618,10 +553,12 @@ public class MinionController : NetworkBehaviour
                     state = State.FindBuildable;
                 }
                 break;
+            #endregion
+            #region Harvestable 
             case State.FindHarvestable:
-                if (harvestTarget == null)
+                if (selector.harvestTarget == null || !selector.harvestTarget.alive)
                 {
-                    harvestTarget = FindClosestResource();
+                    selector.harvestTarget = FindClosestHarvestable();
                 }
                 else
                 {
@@ -631,35 +568,35 @@ public class MinionController : NetworkBehaviour
             case State.WalkToHarvestable:
                 UpdateMoveIndicator();
                 ai.canMove = true;
-                if (harvestTarget == null)
+                if (selector.harvestTarget == null)
                 {
                     state = State.FindHarvestable;
                 }
                 else
                 {
-                    if (Vector3.Distance(transform.position, harvestTarget.transform.position) > attackRange) //if out of harvest range walk there
+                    if (Vector3.Distance(transform.position, selector.harvestTarget.transform.position) > attackRange) //if out of harvest range walk there
                     {
                         ai.canMove = true;
                         anim.Play("Walk");
-                        destination = harvestTarget.transform.position;
+                        destination = selector.harvestTarget.transform.position;
                     }
                     else
                     {
                         stateTimer = 0;
                         state = State.Harvesting;
                     }
-                } 
+                }
                 break;
             case State.Harvesting:
-                if (harvestTarget == null)
-                { 
+                if (selector.harvestTarget == null)
+                {
                     state = State.FindHarvestable;
                 }
                 else
-                { 
-                    ai.canMove = false; 
-                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, harvestTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
-                    
+                {
+                    ai.canMove = false;
+                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, selector.harvestTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
+
                     if (attackReady)
                     {
                         anim.Play("Attack");
@@ -673,14 +610,14 @@ public class MinionController : NetworkBehaviour
                             else if (attackReady)
                             {
                                 attackReady = false;
-                                HarvestTarget(harvestTarget);
+                                HarvestTarget(selector.harvestTarget);
                             }
                         }
                         else //animation finished
                         {
                             state = State.AfterHarvestCheck;
                         }
-                    }  
+                    }
                 }
                 break;
             case State.AfterHarvestCheck:
@@ -689,9 +626,9 @@ public class MinionController : NetworkBehaviour
                 {
                     state = State.FindDeposit;
                 }
-                else if (harvestTarget != null)
+                else if (selector.harvestTarget != null)
                 {
-                    stateTimer = 0; 
+                    stateTimer = 0;
                     state = State.Harvesting;
                 }
                 else
@@ -725,7 +662,7 @@ public class MinionController : NetworkBehaviour
                         destination = depositTarget.transform.position;
                     }
                     else
-                    { 
+                    {
                         state = State.Depositing;
                     }
                 }
@@ -740,22 +677,20 @@ public class MinionController : NetworkBehaviour
                     ai.canMove = false;
                     transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, depositTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
 
-                    anim.Play("Attack"); //replace with deposit animation
-                    if (!AnimatorPlaying())
+                    //anim.Play("Attack"); //replace with deposit animation
+                    //instant dropoff
+                    if (selector != null)
                     {
-                        if (selector != null)
-                        {
-                            Global.Instance.localPlayer.gold += selector.harvestedResource;
-                            selector.harvestedResource = 0;
-                            UpdateResourceGUI();
-                        } 
-                        state = State.AfterDepositCheck;
-                    }  
-                } 
+                        Global.Instance.localPlayer.gold += selector.harvestedResource;
+                        selector.harvestedResource = 0;
+                        Global.Instance.localPlayer.UpdateGUIFromSelections();
+                    }
+                    state = State.AfterDepositCheck;
+                }
                 break;
-            case State.AfterDepositCheck: 
+            case State.AfterDepositCheck:
                 anim.Play("Idle");
-                if (harvestTarget != null)
+                if (selector.harvestTarget != null)
                 {
                     stateTimer = 0;
                     state = State.WalkToHarvestable;
@@ -765,18 +700,22 @@ public class MinionController : NetworkBehaviour
                     state = State.FindHarvestable;
                 }
                 break;
-            case State.Die:
-                anim.Play("Die");
-                break;
+            #endregion 
             default:
                 break;
         }
+    } 
+    private void ShootProjectileAtEnemy(SelectableEntity enemy)
+    { 
+
     }
+
+    [SerializeField] private Transform trailSpawnPos; 
     private void UpdateAttackIndicator()
     { 
         if (selector != null)
         {
-            if (Input.GetKey(KeyCode.Space))
+            if (Input.GetKey(KeyCode.Space) && targetEnemy != null)
             {
                 selector.UpdateAttackIndicator();
             }
@@ -843,14 +782,7 @@ public class MinionController : NetworkBehaviour
             }
 
             selector.harvestedResource += actualHarvested;
-            UpdateResourceGUI();
-        }
-    }
-    private void UpdateResourceGUI()
-    { 
-        if (Global.Instance.resourcesParent.activeInHierarchy)
-        {
-            Global.Instance.resourceText.text = "Stored gold: " + selector.harvestedResource + "/" + selector.harvestCapacity;
+            Global.Instance.localPlayer.UpdateGUIFromSelections();
         }
     } 
     private SelectableEntity FindClosestBuildable()
@@ -873,7 +805,11 @@ public class MinionController : NetworkBehaviour
         }
         return closest;
     }
-    private SelectableEntity FindClosestResource()
+    /// <summary>
+    /// Returns closest harvestable resource with space for new harvesters.
+    /// </summary>
+    /// <returns></returns>
+    private SelectableEntity FindClosestHarvestable()
     { 
         SelectableEntity[] list = Global.Instance.harvestableResources;
 
@@ -881,14 +817,17 @@ public class MinionController : NetworkBehaviour
         float distance = Mathf.Infinity;
         foreach (SelectableEntity item in list)
         {
-            if (item != null && item.harvestType != SelectableEntity.HarvestType.Gold)
+            if (item != null)
             {
-                float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position);
-                if (newDist < distance)
+                if (item.harvesters.Count < item.allowedHarvesters) //there is space for a new harvester
                 {
-                    closest = item;
-                    distance = newDist;
-                }
+                    float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position);
+                    if (newDist < distance)
+                    {
+                        closest = item;
+                        distance = newDist;
+                    }
+                } 
             }
         }
         return closest;
@@ -901,7 +840,7 @@ public class MinionController : NetworkBehaviour
         float distance = Mathf.Infinity;
         foreach (SelectableEntity item in list)
         { 
-            if (item != null && item.depositType != SelectableEntity.DepositType.None)
+            if (item != null && item.depositType != SelectableEntity.DepositType.None && item.fullyBuilt)
             {
                 float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position);
                 if (newDist < distance)
@@ -914,7 +853,7 @@ public class MinionController : NetworkBehaviour
         return closest;
     }
     public SelectableEntity depositTarget;
-    private sbyte harvestAmount = 1;
+    private readonly sbyte harvestAmount = 1;
     [SerializeField] private bool moveWhileAttacking = false;
     private void CancelAttack()
     {
@@ -939,7 +878,7 @@ public class MinionController : NetworkBehaviour
                 break;
         }
     }
-    private sbyte buildDelta = 1;
+    private readonly sbyte buildDelta = 1;
     [SerializeField] private float areaOfEffect = 1; 
     public void BuildTarget(SelectableEntity target) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
@@ -976,8 +915,8 @@ public class MinionController : NetworkBehaviour
         switch (attackType)
         {
             case AttackType.Instant:
-                Invoke("SimpleDamageEnemy", impactTime + Random.Range(-0.1f, 0.1f));
-                Invoke("ReturnState", attackDuration);
+                Invoke(nameof(SimpleDamageEnemy), impactTime + Random.Range(-0.1f, 0.1f));
+                Invoke(nameof(ReturnState), attackDuration);
                 break;
             case AttackType.SelfDestruct:
                 Explode(areaOfEffect);
@@ -1012,23 +951,84 @@ public class MinionController : NetworkBehaviour
             {
                 continue;
             }
-            DamageSpecifiedEnemy(select);
+            if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
+            {
+                continue;
+            }
+            DamageSpecifiedEnemy(select, damage);
             //Debug.Log(i);
         }
+        DamageSpecifiedEnemy(selector, damage); //kill this also
+        SimpleExplosion(transform.position);
+    }  
+    private void SimpleExplosion(Vector3 pos)
+    { 
+        //spawn explosion prefab locally
+        SpawnExplosion(pos);
+
+        //spawn for other clients as well
+        if (IsServer)
+        {
+            SpawnExplosionClientRpc(pos);
+        }
+        else
+        {
+            RequestExplosionServerRpc(pos);
+        }
+    }
+    private void SpawnExplosion(Vector3 pos)
+    { 
         GameObject prefab = Global.Instance.explosionPrefab;
-        GameObject instantiated = Instantiate(prefab, transform.position, Quaternion.identity); 
-        selector.ProperDestroyMinion();
-    } 
-    public void DamageSpecifiedEnemy(SelectableEntity enemy) //since hp is a network variable, changing it on the server will propagate changes to clients as well
+        _ = Instantiate(prefab, pos, Quaternion.identity);
+    }
+    /// <summary>
+    /// Ask server to play explosions
+    /// </summary> 
+    [ServerRpc] 
+    private void RequestExplosionServerRpc(Vector3 pos)
+    {
+        SpawnExplosionClientRpc(pos);
+    }
+    /// <summary>
+    /// Play explosion for all other clients
+    /// </summary> 
+    [ClientRpc]  
+    private void SpawnExplosionClientRpc(Vector3 pos)
+    {
+        if (!IsOwner)
+        {
+            SpawnExplosion(pos);
+        }
+    }
+    private void SimpleTrail(Vector3 star, Vector3 dest)
+    {
+        SpawnTrail(star, dest); //spawn effect locally
+
+        //spawn for other clients as well
+        if (IsServer)
+        {
+            TrailClientRpc(star, dest);
+        }
+        else
+        {
+            RequestTrailServerRpc(star, dest);
+        }
+    }
+    public void DamageSpecifiedEnemy(SelectableEntity enemy, sbyte damage) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         if (enemy != null)
         {
             //fire locally
             selector.SimplePlaySound(1);
+            if (selector.type == SelectableEntity.EntityTypes.Ranged && trailSpawnPos != null)
+            {
+                SimpleTrail(trailSpawnPos.position, enemy.transform.position);
+            }
             if (selector.attackEffects.Length > 0)
             {
                 selector.DisplayAttackEffects();
             }
+
             if (IsServer)
             {
                 enemy.TakeDamage(damage);
@@ -1038,7 +1038,28 @@ public class MinionController : NetworkBehaviour
                 RequestDamageServerRpc(damage, enemy);
             }
         }
+    } 
+    private void SpawnTrail(Vector3 start, Vector3 destination)
+    {
+        TrailController tra = Instantiate(Global.Instance.gunTrailGlobal, transform.position, Quaternion.identity);
+        tra.start = start;
+        tra.destination = destination; 
     }
+    [ServerRpc]
+    private void RequestTrailServerRpc(Vector3 star, Vector3 dest)
+    {
+        TrailClientRpc(star, dest);
+    }
+    [ClientRpc]
+    private void TrailClientRpc(Vector3 star, Vector3 dest)
+    {
+        if (!IsOwner)
+        {
+            SpawnTrail(star, dest);
+        }
+    }
+
+
     public SelectableEntity buildTarget;
     [SerializeField] private sbyte damage = 1;
     private bool attackReady = true;
@@ -1094,7 +1115,7 @@ public class MinionController : NetworkBehaviour
     { 
         targetEnemy = null;
         buildTarget = null;
-        harvestTarget = null;
+        selector.harvestTarget = null;
         depositTarget = null;
     }
     public void SetAttackMoveDestination()
@@ -1102,7 +1123,7 @@ public class MinionController : NetworkBehaviour
         ResetAllTargets(); 
         basicallyIdleInstances = 0;
         followingMoveOrder = true; 
-        state = State.WalkFindEnemies; //default to walking state
+        state = State.WalkBeginFindEnemies; //default to walking state
         playedAttackMoveSound = false;
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
@@ -1115,8 +1136,7 @@ public class MinionController : NetworkBehaviour
     {
         if (state != State.Spawn)
         {
-            ResetAllTargets();
-            enemyInRange = false;
+            ResetAllTargets(); 
             basicallyIdleInstances = 0;
             followingMoveOrder = true;
             attackMoving = attackMoveVal;
@@ -1160,7 +1180,7 @@ public class MinionController : NetworkBehaviour
                             //if it is, then tell resource collectors to gather it
                             if (selector.isHarvester)
                             {
-                                harvestTarget = select;
+                                selector.harvestTarget = select;
                                 state = State.WalkToHarvestable;
                             }
                         }

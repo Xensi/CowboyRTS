@@ -140,11 +140,12 @@ public class MinionNetwork : NetworkBehaviour
     }
     private MinionData WriteData()
     {
-        var state = new MinionData();
-        state.Rotation = transform.rotation.eulerAngles;
-        oldRotation = transform.rotation.eulerAngles;
-
-        state.Position = transform.position;
+        var state = new MinionData
+        {
+            Rotation = transform.rotation.eulerAngles,
+            Position = transform.position
+        };
+        oldRotation = transform.rotation.eulerAngles; 
         oldPosition = transform.position;
         return state;
     }
@@ -152,19 +153,17 @@ public class MinionNetwork : NetworkBehaviour
     { 
         if (_combinePackets)
         {
-            transform.position = Vector3.SmoothDamp(transform.position, _netData.Value.Position, ref _vel, _interpolateTime);
-            transform.rotation = Quaternion.Euler(
+            transform.SetPositionAndRotation(Vector3.SmoothDamp(transform.position, _netData.Value.Position, ref _vel, _interpolateTime), Quaternion.Euler(
                 0,
                 Mathf.SmoothDampAngle(transform.rotation.eulerAngles.y, _netData.Value.Rotation.y, ref _rotVel, _rotInterpolate),
-                0); 
+                0)); 
         }
         else
         {
-            transform.position = Vector3.SmoothDamp(transform.position, _netPos.Value.Position, ref _vel, _interpolateTime);
-            transform.rotation = Quaternion.Euler(
+            transform.SetPositionAndRotation(Vector3.SmoothDamp(transform.position, _netPos.Value.Position, ref _vel, _interpolateTime), Quaternion.Euler(
                 0,
                 Mathf.SmoothDampAngle(transform.rotation.eulerAngles.y, _netRot.Value.Rotation.y, ref _rotVel, _rotInterpolate),
-                0);
+                0));
         }
 
         //transform.position = _netState.Value.Position;
@@ -176,12 +175,12 @@ public class MinionNetwork : NetworkBehaviour
         private ushort _x, _z;
         internal Vector3 Rotation
         {
-            get => new Vector3(0, _yRot, 0);
+            get => new(0, _yRot, 0);
             set => _yRot = (short)value.y;
         }
         internal Vector3 Position
         {
-            get => new Vector3(Mathf.HalfToFloat(_x), 0, Mathf.HalfToFloat(_z));
+            get => new(Mathf.HalfToFloat(_x), 0, Mathf.HalfToFloat(_z));
             set
             {
                 //floats input are converted to ushorts
@@ -201,7 +200,7 @@ public class MinionNetwork : NetworkBehaviour
         private short _yRot; 
         internal Vector3 Rotation
         {
-            get => new Vector3(0, _yRot, 0);
+            get => new(0, _yRot, 0);
             set => _yRot = (short)value.y;
         }
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -216,7 +215,7 @@ public class MinionNetwork : NetworkBehaviour
 
         internal Vector3 Position
         {
-            get => new Vector3(Mathf.HalfToFloat(_x), 0, Mathf.HalfToFloat(_z));
+            get => new(Mathf.HalfToFloat(_x), 0, Mathf.HalfToFloat(_z));
             set
             {
                 //floats input are converted to ushorts

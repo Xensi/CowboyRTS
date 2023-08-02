@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2155717870530061543
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8029189885722262290}
+  m_Layer: 0
+  m_Name: SpawnPos
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8029189885722262290
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2155717870530061543}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4484097611644750248}
+  m_RootOrder: -1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1099766696682319936
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -233,7 +264,10 @@ PrefabInstance:
       value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 3565040004861180392, guid: 4df2c8dd6df68a346a0542c9ca69ac12, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8029189885722262290}
   m_SourcePrefab: {fileID: 100100000, guid: 4df2c8dd6df68a346a0542c9ca69ac12, type: 3}
 --- !u!4 &114876129043797683 stripped
 Transform:
@@ -302,6 +336,11 @@ MeshRenderer:
 --- !u!23 &4097312646803598096 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 4008119964110969680, guid: 4df2c8dd6df68a346a0542c9ca69ac12, type: 3}
+  m_PrefabInstance: {fileID: 1099766696682319936}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4484097611644750248 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3565040004861180392, guid: 4df2c8dd6df68a346a0542c9ca69ac12, type: 3}
   m_PrefabInstance: {fileID: 1099766696682319936}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &4646915447488685222 stripped
@@ -452,10 +491,22 @@ PrefabInstance:
       propertyPath: damageableMeshes.Array.data[7]
       value: 
       objectReference: {fileID: 5699690474321225560}
+    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: builderEntityIndices.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: builderEntityIndices.Array.data[1]
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: anim
       value: 
       objectReference: {fileID: 1123810511653194625}
+    - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: state
+      value: 11
+      objectReference: {fileID: 0}
     - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: selector
       value: 

@@ -354,15 +354,23 @@ PrefabInstance:
       objectReference: {fileID: 5481423942079476517}
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: builderEntityIndices.Array.size
-      value: 3
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: finishedRenderers.Array.data[0]
       value: 
       objectReference: {fileID: 5956307022247494263}
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: builderEntityIndices.Array.data[1]
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: builderEntityIndices.Array.data[2]
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: builderEntityIndices.Array.data[3]
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 2870261118279373742, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: m_Name

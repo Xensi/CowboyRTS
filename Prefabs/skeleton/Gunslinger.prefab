@@ -190,6 +190,10 @@ PrefabInstance:
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 22100000, guid: 318e0c81d7d2f83449a8ab110ac30bfd, type: 2}
+    - target: {fileID: 2155717870530061543, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: m_Icon
+      value: 
+      objectReference: {fileID: 7174288486110832750, guid: 0000000000000000d000000000000000, type: 0}
     - target: {fileID: 2545681379473208697, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: m_Name
       value: Gunslinger
@@ -258,6 +262,18 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8029189885722262290, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8029189885722262290, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.661
+      objectReference: {fileID: 0}
+    - target: {fileID: 8029189885722262290, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: desc
       value: 'Basic ranged unit.
@@ -309,6 +325,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8971879586089695257, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: trail
+      value: 
+      objectReference: {fileID: 3867023542017964721, guid: 7beb53985a2959a4e92721b60820683e, type: 3}
+    - target: {fileID: 8971879586089695257, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: damage
       value: 2
       objectReference: {fileID: 0}
@@ -317,8 +337,12 @@ PrefabInstance:
       value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 8971879586089695257, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: trailSpawnPos
+      value: 
+      objectReference: {fileID: 8680162356123721132}
+    - target: {fileID: 8971879586089695257, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: attackDuration
-      value: 3
+      value: 2.5
       objectReference: {fileID: 0}
     - target: {fileID: 9133018300631584138, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: m_IsActive
@@ -351,5 +375,10 @@ MeshRenderer:
 --- !u!23 &8487193154697503709 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 7121274238065280355, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+  m_PrefabInstance: {fileID: 1665003675599939262}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8680162356123721132 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8029189885722262290, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
   m_PrefabInstance: {fileID: 1665003675599939262}
   m_PrefabAsset: {fileID: 0}

@@ -97,10 +97,8 @@ MonoBehaviour:
   displayName: name
   desc: desc
   lineIndicator: {fileID: 0}
-  unbuiltRenderers:
-  - {fileID: 0}
-  finishedRenderers:
-  - {fileID: 0}
+  unbuiltRenderers: []
+  finishedRenderers: []
   controller: {fileID: 0}
   hitPoints:
     m_InternalValue: 0
@@ -111,10 +109,12 @@ MonoBehaviour:
   teamRenderers:
   - {fileID: 0}
   isHarvester: 0
+  harvesters: []
+  allowedHarvesters: 1
   depositType: 0
   teamBehavior: 0
   type: 2
-  builderEntityIndices: 0000000002000000
+  builderEntityIndices: 
   startingHP: 1
   maxHP: 10
   fullyBuilt: 0
@@ -129,6 +129,7 @@ MonoBehaviour:
   harvestedResource: 0
   harvestCapacity: 10
   damageableMeshes: []
+  harvestTarget: {fileID: 0}
   alive: 1
   attackEffects: []
 --- !u!114 &3728683629940428650

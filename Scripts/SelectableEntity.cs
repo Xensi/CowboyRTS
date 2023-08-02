@@ -12,7 +12,7 @@ public class SelectableEntity : NetworkBehaviour
     public MeshRenderer[] unbuiltRenderers;
     public MeshRenderer[] finishedRenderers;
     public MinionController controller;
-    public NetworkVariable<sbyte> hitPoints = new NetworkVariable<sbyte>();
+    public NetworkVariable<sbyte> hitPoints = new();
     //public byte hitPoints;
 
     public bool selected = false;
@@ -23,6 +23,8 @@ public class SelectableEntity : NetworkBehaviour
     public List<MeshRenderer> teamRenderers;
     private MeshRenderer[] allMeshes;
     public bool isHarvester = false;
+    public List<SelectableEntity> harvesters;
+    public int allowedHarvesters = 1;
     public enum DepositType
     {
         None,
@@ -43,7 +45,8 @@ public class SelectableEntity : NetworkBehaviour
         Ranged,
         ProductionStructure,
         Builder,
-        HarvestableStructure
+        HarvestableStructure,
+        WallNode
     }
     public EntityTypes type = EntityTypes.Melee;
     public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
@@ -54,7 +57,7 @@ public class SelectableEntity : NetworkBehaviour
     public Transform spawnPosition;
 
     public List<FactionEntityClass> buildQueue;
-    private int delay = 50;
+    private readonly int delay = 50;
     private int count = 0;
     public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
     public Vector3 rallyPoint;
@@ -159,26 +162,48 @@ public class SelectableEntity : NetworkBehaviour
     {
         hitPoints.Value += delta;
     }
-    public void OnTriggerEnter(Collider other)
+    /*public void OnTriggerEnter(Collider other)
     {
-        /*if (Global.Instance.localPlayer != null)
-        { 
+        if (Global.Instance.localPlayer != null && Global.in)
+        {
             Global.Instance.localPlayer.placementBlocked = true;
             Global.Instance.localPlayer.UpdatePlacement();
-        }*/
+        }
     }
     public void OnTriggerExit(Collider other)
     {
-        /*if (Global.Instance.localPlayer != null)
-        { 
+        if (Global.Instance.localPlayer != null)
+        {
             Global.Instance.localPlayer.placementBlocked = false;
             Global.Instance.localPlayer.UpdatePlacement();
-        }*/
-    } 
+        }
+    } */
+    public SelectableEntity harvestTarget;
+    private void UpdateHarvesters()
+    {
+        if (harvesters.Count > 0)
+        { 
+            for (int i = 0; i < harvesters.Count; i++)
+            {
+                if (harvesters[i] != null)
+                {
+                    if (harvesters[i].harvestTarget != this)
+                    {
+                        harvesters.RemoveAt(i);
+                        break;
+                    }
+                }
+            }
+        }
+    }
     private void FixedUpdate()
     { 
         if (IsSpawned)
         { 
+            if (type == EntityTypes.HarvestableStructure)
+            {
+                UpdateHarvesters();
+            }
             if (!teamRenderersUpdated)
             {
                 UpdateTeamRenderers();
@@ -196,6 +221,10 @@ public class SelectableEntity : NetworkBehaviour
             if (!fullyBuilt)
             {
                 CheckIfBuilt();
+                if (hitPoints.Value < 0)
+                {
+                    ProperDestroyMinion();
+                }
             }
             else
             {
@@ -260,7 +289,7 @@ public class SelectableEntity : NetworkBehaviour
                 controller.PrepareForDeath();
             }
             //Invoke("Die", deathDuration);
-            Invoke("Die", deathDuration);
+            Invoke(nameof(Die), deathDuration);
         }
         else
         {
@@ -268,25 +297,34 @@ public class SelectableEntity : NetworkBehaviour
         }
     }
     private int footstepCount = 0;
-    private int footstepThreshold = 12;
+    private readonly int footstepThreshold = 12;
     private void CheckIfBuilt()
     {
         if (hitPoints.Value >= maxHP)
         {
-            fullyBuilt = true; 
-            Global.Instance.localPlayer.UpdateGUIFromSelections();
-            foreach (MeshRenderer item in finishedRenderers)
+            BecomeFullyBuilt();
+        }
+    }
+    private void BecomeFullyBuilt()
+    {
+        fullyBuilt = true;
+        Global.Instance.localPlayer.UpdateGUIFromSelections();
+        foreach (MeshRenderer item in finishedRenderers)
+        {
+            if (item != null)
             {
                 item.enabled = true;
             }
-            foreach (MeshRenderer item in unbuiltRenderers)
+        }
+        foreach (MeshRenderer item in unbuiltRenderers)
+        {
+            if (item != null)
             {
                 item.enabled = false;
             }
-
-        }
-    }
-    private float deathDuration = 10;
+        }  
+    } 
+    private readonly float deathDuration = 10;
     private void Die()
     { 
         if (IsOwner)
@@ -330,7 +368,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public MeshRenderer[] attackEffects;
 
-    private float attackEffectDuration = 0.1f;
+    private readonly float attackEffectDuration = 0.1f;
     public void DisplayAttackEffects()
     {
         //fire locally
@@ -338,7 +376,7 @@ public class SelectableEntity : NetworkBehaviour
         {
             attackEffects[i].enabled = true;
         }
-        Invoke("HideAttackEffects", attackEffectDuration);
+        Invoke(nameof(HideAttackEffects), attackEffectDuration);
         //request server to send to other clients
         RequestEffectServerRpc();
     }
@@ -356,7 +394,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 attackEffects[i].enabled = true;
             }
-            Invoke("HideAttackEffects", attackEffectDuration);
+            Invoke(nameof(HideAttackEffects), attackEffectDuration);
         }
     }
     private void HideAttackEffects()
