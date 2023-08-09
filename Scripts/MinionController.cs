@@ -54,7 +54,8 @@ public class MinionController : NetworkBehaviour
     public State state = State.Spawn;
     public enum AttackType
     {
-        Instant, SelfDestruct, Artillery
+        Instant, SelfDestruct, Artillery, 
+        Continuous //for gatling gun
     }
     public AttackType attackType = AttackType.Instant; 
     private float change;
@@ -234,25 +235,34 @@ public class MinionController : NetworkBehaviour
     private bool DetectIfStuck()
     {
         bool val = false;
-
-        if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
+        if (ai.slowWhenNotFacingTarget)
         {
-            basicallyIdleInstances++;
-        }
-        else if (change > walkAnimThreshold)
-        {
-            basicallyIdleInstances = 0;
-        }
-        if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
-        {
-            val = true;
-            //followingMoveOrder = false;
-            /*if (attackMoving)
+            if (ai.reachedDestination)
             {
-                //Debug.Log("moving to ordered destination");
-                destination = orderedDestination;
-            }*/
+                val = true; 
+            }
         }
+        else
+        { 
+            if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
+            {
+                basicallyIdleInstances++;
+            }
+            else if (change > walkAnimThreshold)
+            {
+                basicallyIdleInstances = 0;
+            }
+            if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
+            {
+                val = true;
+                //followingMoveOrder = false;
+                /*if (attackMoving)
+                {
+                    //Debug.Log("moving to ordered destination");
+                    destination = orderedDestination;
+                }*/
+            }
+        } 
         return val;
     } 
     private void UpdateHarvestables()
@@ -415,8 +425,7 @@ public class MinionController : NetworkBehaviour
 
                     if (attackReady)
                     {
-                        anim.Play("Attack");
-
+                        anim.Play("Attack");  
                         if (AnimatorPlaying())
                         {
                             if (stateTimer < ConvertTimeToFrames(impactTime))
@@ -436,6 +445,11 @@ public class MinionController : NetworkBehaviour
                                         break;
                                     case AttackType.Artillery:
                                         ShootProjectileAtEnemy(targetEnemy);
+                                        break;
+                                    case AttackType.Continuous:
+                                        DamageSpecifiedEnemy(targetEnemy, damage);
+                                        break;
+                                    default:
                                         break;
                                 }
                             }
@@ -704,7 +718,7 @@ public class MinionController : NetworkBehaviour
             default:
                 break;
         }
-    } 
+    }
     private void ShootProjectileAtEnemy(SelectableEntity enemy)
     { 
 
@@ -1041,7 +1055,7 @@ public class MinionController : NetworkBehaviour
     } 
     private void SpawnTrail(Vector3 start, Vector3 destination)
     {
-        TrailController tra = Instantiate(Global.Instance.gunTrailGlobal, transform.position, Quaternion.identity);
+        TrailController tra = Instantiate(Global.Instance.gunTrailGlobal, start, Quaternion.identity);
         tra.start = start;
         tra.destination = destination; 
     }

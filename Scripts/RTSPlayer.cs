@@ -202,6 +202,10 @@ public class RTSPlayer : NetworkBehaviour
             {
                 SimpleSpawnMinion(worldPosition, 3);
             }
+            if (Input.GetKey(KeyCode.KeypadEnter))
+            {
+                SimpleSpawnMinion(worldPosition, 5);
+            }
 #endif
             if (Input.GetMouseButtonDown(0))
             {
