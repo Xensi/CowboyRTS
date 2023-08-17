@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: GatlingOverride
+  m_Controller: {fileID: 9100000, guid: 9d9aebec091565e45bdd51eb1bcfad44, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: -8800838248204228948, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+    m_OverrideClip: {fileID: -8800838248204228948, guid: 51ab270c5e6158144a6567c32fa875c7, type: 3}
+  - m_OriginalClip: {fileID: 723096430288179899, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+    m_OverrideClip: {fileID: 723096430288179899, guid: 51ab270c5e6158144a6567c32fa875c7, type: 3}
+  - m_OriginalClip: {fileID: -623603649343465320, guid: 51ab270c5e6158144a6567c32fa875c7, type: 3}
+    m_OverrideClip: {fileID: -623603649343465320, guid: 51ab270c5e6158144a6567c32fa875c7, type: 3}
+  - m_OriginalClip: {fileID: -8206857311389296499, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+    m_OverrideClip: {fileID: -8800838248204228948, guid: 51ab270c5e6158144a6567c32fa875c7, type: 3}

@@ -55,9 +55,11 @@ public class MinionController : NetworkBehaviour
     public enum AttackType
     {
         Instant, SelfDestruct, Artillery, 
-        Continuous //for gatling gun
+        Gatling //for gatling gun
     }
-    public AttackType attackType = AttackType.Instant; 
+    public AttackType attackType = AttackType.Instant;
+    public bool directionalAttack = false;
+
     private float change;
     private readonly float walkAnimThreshold = 0.01f;
     private Vector3 oldPosition;
@@ -284,11 +286,18 @@ public class MinionController : NetworkBehaviour
             } 
         }
     }
+    private float rotationSpeed = 10f;
     private void UpdateState()
     {
         UpdateHarvestables();
         UpdateColliderStatus();
         UpdateAttackReadiness();
+
+        if (attackType == AttackType.Gatling)
+        {
+            anim.SetFloat("AttackSpeed", 0);
+        }
+
         switch (state)
         {
             case State.Spawn: //don't really do anything, just play the spawn animation
@@ -407,7 +416,11 @@ public class MinionController : NetworkBehaviour
                     }
                 }
                 break;
-            case State.Attacking:
+            case State.Attacking: 
+                if (attackType == AttackType.Gatling)
+                {
+                    anim.SetFloat("AttackSpeed", 1);
+                }
                 if ((targetEnemy == null || !targetEnemy.alive) && !attackReady)
                 {
                     state = State.Idle;
@@ -421,10 +434,11 @@ public class MinionController : NetworkBehaviour
                     UpdateAttackIndicator();
                     ai.canMove = false;
                     ai.canMove = moveWhileAttacking;
-                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, targetEnemy.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
+                    rotationSpeed = ai.rotationSpeed / 60;
+                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, targetEnemy.transform.position - transform.position, Time.deltaTime * rotationSpeed, 0));
 
-                    if (attackReady)
-                    {
+                    if (attackReady && CheckFacingTowards(targetEnemy.transform.position))
+                    { 
                         anim.Play("Attack");  
                         if (AnimatorPlaying())
                         {
@@ -446,7 +460,7 @@ public class MinionController : NetworkBehaviour
                                     case AttackType.Artillery:
                                         ShootProjectileAtEnemy(targetEnemy);
                                         break;
-                                    case AttackType.Continuous:
+                                    case AttackType.Gatling:
                                         DamageSpecifiedEnemy(targetEnemy, damage);
                                         break;
                                     default:
@@ -470,6 +484,10 @@ public class MinionController : NetworkBehaviour
                 }
                 break;
             case State.AfterAttackCheck:
+                if (attackType == AttackType.Gatling)
+                {
+                    anim.SetFloat("AttackSpeed", 1);
+                }
                 anim.Play("Idle"); 
                 if (targetEnemy == null || !targetEnemy.alive)
                 {
@@ -718,6 +736,20 @@ public class MinionController : NetworkBehaviour
             default:
                 break;
         }
+    }
+
+    private bool CheckFacingTowards(Vector3 pos)
+    {
+        if (!directionalAttack) return true;
+        float threshold = .95f; //-1 opposite, 0 perpendicular, 1 facing
+        Vector3 forward = transform.TransformDirection(Vector3.forward).normalized;
+        Vector3 heading = (pos - transform.position).normalized;  
+        Debug.Log(Vector3.Dot(forward, heading));
+        if (Vector3.Dot(forward, heading) >= threshold)
+        {
+            return true;
+        }
+        return false;
     }
     private void ShootProjectileAtEnemy(SelectableEntity enemy)
     { 
