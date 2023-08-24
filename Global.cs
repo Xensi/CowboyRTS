@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Unity.Netcode;
 
 public class Global : MonoBehaviour
 {
@@ -31,6 +32,8 @@ public class Global : MonoBehaviour
     public TMP_Text hpText;
 
     public TrailController gunTrailGlobal;
+    public Projectile projectileGlobal;
+    public AudioClip explosion;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.
@@ -78,5 +81,5 @@ public class Global : MonoBehaviour
         tempASource.Play(); // start the sound
         Destroy(tempGO, tempASource.clip.length * pitch); // destroy object after clip duration (this will not account for whether it is set to loop) 
         return tempASource;
-    }
+    } 
 }

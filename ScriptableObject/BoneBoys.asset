@@ -49,3 +49,9 @@ MonoBehaviour:
     goldCost: 100
     timeCost: 10
     buildID: 0
+  - productionName: Raise Artillery
+    needsConstructing: 0
+    prefabToSpawn: {fileID: 5720112366935824539, guid: cf3423804651bfe4188c21f8446cf567, type: 3}
+    goldCost: 100
+    timeCost: 10
+    buildID: 0

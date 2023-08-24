@@ -289,6 +289,10 @@ PrefabInstance:
       value: Gunslinger
       objectReference: {fileID: 0}
     - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: isHarvester
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: sounds.Array.data[1]
       value: 
       objectReference: {fileID: 8300000, guid: ece1bbbbedff32a48b397650f27eed3d, type: 3}

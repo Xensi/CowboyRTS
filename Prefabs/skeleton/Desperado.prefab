@@ -100,6 +100,10 @@ PrefabInstance:
       value: Desperado
       objectReference: {fileID: 0}
     - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      propertyPath: isHarvester
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
       propertyPath: sounds.Array.data[1]
       value: 
       objectReference: {fileID: 8300000, guid: 53ce377f4f8f57347a834ce5d017add5, type: 3}

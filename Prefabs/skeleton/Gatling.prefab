@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7750933700214250446
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5368978586253961831}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5368978586253961831
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7750933700214250446}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.933, z: 1.889}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6912993571711444744}
+  m_RootOrder: -1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &4657580545528173713
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -61,7 +92,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 22100000, guid: 433f71963370c9a4c97d27a775fc65ed, type: 2}
     m_RemovedComponents: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 2255441201456051097, guid: eb7a94e4368ce9544807dcce1da98461, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5368978586253961831}
   m_SourcePrefab: {fileID: 100100000, guid: eb7a94e4368ce9544807dcce1da98461, type: 3}
 --- !u!95 &652968973538082162 stripped
 Animator:
@@ -204,6 +238,10 @@ PrefabInstance:
       propertyPath: directionalAttack
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7753453597570817703, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: attackEffectSpawnPosition
+      value: 
+      objectReference: {fileID: 5368978586253961831}
     - target: {fileID: 7905378693235340328, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: desc
       value: 
@@ -219,6 +257,10 @@ PrefabInstance:
     - target: {fileID: 7905378693235340328, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: displayName
       value: Gatling
+      objectReference: {fileID: 0}
+    - target: {fileID: 7905378693235340328, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: isHarvester
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7905378693235340328, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: attackEffects.Array.data[0]

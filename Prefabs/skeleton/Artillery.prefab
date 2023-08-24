@@ -64,6 +64,10 @@ PrefabInstance:
       propertyPath: attackType
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 7753453597570817703, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: attackRange
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 7905378693235340328, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: desc
       value: 
@@ -71,6 +75,10 @@ PrefabInstance:
     - target: {fileID: 7905378693235340328, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: displayName
       value: Artillery
+      objectReference: {fileID: 0}
+    - target: {fileID: 7905378693235340328, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: isHarvester
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []

@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;// Required when using Event data.
 using TMPro;
 
 public class RTSPlayer : NetworkBehaviour
-{
+{ 
     public int gold = 100;
     public Camera cam;   
     [SerializeField] private Grid grid;
@@ -30,7 +30,7 @@ public class RTSPlayer : NetworkBehaviour
     LayerMask groundLayer;
     LayerMask entityLayer;
     void Start()
-    {
+    { 
         groundLayer = LayerMask.GetMask("Ground");
         entityLayer = LayerMask.GetMask("Entity", "Obstacle");
         _offset = new Vector3(0.5f, 0, .5f);
@@ -205,6 +205,10 @@ public class RTSPlayer : NetworkBehaviour
             if (Input.GetKey(KeyCode.KeypadEnter))
             {
                 SimpleSpawnMinion(worldPosition, 5);
+            }
+            if (Input.GetKey(KeyCode.Keypad0))
+            {
+                SimpleSpawnMinion(worldPosition, 6);
             }
 #endif
             if (Input.GetMouseButtonDown(0))
@@ -759,4 +763,48 @@ public class RTSPlayer : NetworkBehaviour
         UpdateGUIFromSelections();
     }
     #endregion
+
+    /// <summary>
+    /// Damages all in radius at point.
+    /// </summary> 
+    public void CreateExplosionAtPoint(Vector3 center, float explodeRadius)
+    { 
+        sbyte damage = 10;
+        Collider[] hitColliders = new Collider[40];
+        int numColliders = Physics.OverlapSphereNonAlloc(center, explodeRadius, hitColliders, entityLayer);
+        for (int i = 0; i < numColliders; i++) //indiscriminate
+        {
+            SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
+            DamageEntity(select, damage); 
+        } 
+    }
+    public void DamageEntity(SelectableEntity enemy, sbyte damage) //since hp is a network variable, changing it on the server will propagate changes to clients as well
+    {
+        if (enemy != null)
+        {
+            //fire locally 
+            if (IsServer)
+            {
+                enemy.TakeDamage(damage);
+            }
+            else //client tell server to change the network variable
+            {
+                RequestDamageServerRpc(damage, enemy);
+            }
+        }
+    }
+    [ServerRpc]
+    private void RequestDamageServerRpc(sbyte damage, NetworkBehaviourReference enemy)
+    {
+        //server must handle damage! 
+        if (enemy.TryGet(out SelectableEntity select))
+        {
+            select.TakeDamage(damage);
+        }
+    } 
+    public void SpawnExplosion(Vector3 pos)
+    {
+        GameObject prefab = Global.Instance.explosionPrefab;
+        _ = Instantiate(prefab, pos, Quaternion.identity);
+    } 
 }

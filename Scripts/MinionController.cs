@@ -165,6 +165,8 @@ public class MinionController : NetworkBehaviour
         int numColliders = Physics.OverlapSphereNonAlloc(transform.position, range, hitColliders, enemyMask); 
         Collider closest = null;
         float distance = Mathf.Infinity;
+        float threshold = -Mathf.Infinity;
+        Vector3 forward = transform.TransformDirection(Vector3.forward).normalized;
         for (int i = 0; i < numColliders; i++)
         {
             if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self and triggers
@@ -187,11 +189,24 @@ public class MinionController : NetworkBehaviour
             {
                 continue;
             } 
-            float newDist = Vector3.SqrMagnitude(transform.position - hitColliders[i].transform.position);
-            if (newDist < distance)
-            {
-                closest = hitColliders[i];
-                distance = newDist;
+            if (directionalAttack)
+            { 
+                Vector3 heading = (hitColliders[i].transform.position - transform.position).normalized;
+                float dot = Vector3.Dot(forward, heading);
+                if (dot > threshold)
+                {
+                    closest = hitColliders[i];
+                    threshold = dot;
+                }
+            }
+            else
+            { 
+                float newDist = Vector3.SqrMagnitude(transform.position - hitColliders[i].transform.position);
+                if (newDist < distance)
+                {
+                    closest = hitColliders[i];
+                    distance = newDist;
+                }
             }
         }
         SelectableEntity enemy = null;
@@ -458,7 +473,7 @@ public class MinionController : NetworkBehaviour
                                         Explode(areaOfEffect);
                                         break;
                                     case AttackType.Artillery:
-                                        ShootProjectileAtEnemy(targetEnemy);
+                                        ShootProjectileAtPosition(targetEnemy.transform.position);
                                         break;
                                     case AttackType.Gatling:
                                         DamageSpecifiedEnemy(targetEnemy, damage);
@@ -744,19 +759,15 @@ public class MinionController : NetworkBehaviour
         float threshold = .95f; //-1 opposite, 0 perpendicular, 1 facing
         Vector3 forward = transform.TransformDirection(Vector3.forward).normalized;
         Vector3 heading = (pos - transform.position).normalized;  
-        Debug.Log(Vector3.Dot(forward, heading));
+        //Debug.Log(Vector3.Dot(forward, heading));
         if (Vector3.Dot(forward, heading) >= threshold)
         {
             return true;
         }
         return false;
     }
-    private void ShootProjectileAtEnemy(SelectableEntity enemy)
-    { 
 
-    }
-
-    [SerializeField] private Transform trailSpawnPos; 
+    [SerializeField] private Transform attackEffectSpawnPosition; 
     private void UpdateAttackIndicator()
     { 
         if (selector != null)
@@ -1046,6 +1057,39 @@ public class MinionController : NetworkBehaviour
             SpawnExplosion(pos);
         }
     }
+    public void DamageSpecifiedEnemy(SelectableEntity enemy, sbyte damage) //since hp is a network variable, changing it on the server will propagate changes to clients as well
+    {
+        if (enemy != null)
+        {
+            //fire locally
+            selector.SimplePlaySound(1);
+            if (selector.attackEffects.Length > 0) //show muzzle flash
+            {
+                selector.DisplayAttackEffects();
+            }
+            if (selector.type == SelectableEntity.EntityTypes.Ranged ) //shoot trail
+            {
+                Vector3 spawnPos;
+                if (attackEffectSpawnPosition != null)
+                {
+                    spawnPos = attackEffectSpawnPosition.position;
+                }
+                else
+                {
+                    spawnPos = transform.position;
+                }
+                SimpleTrail(spawnPos, enemy.transform.position);
+            }
+            if (IsServer)
+            {
+                enemy.TakeDamage(damage);
+            }
+            else //client tell server to change the network variable
+            {
+                RequestDamageServerRpc(damage, enemy);
+            }
+        }
+    }
     private void SimpleTrail(Vector3 star, Vector3 dest)
     {
         SpawnTrail(star, dest); //spawn effect locally
@@ -1060,31 +1104,6 @@ public class MinionController : NetworkBehaviour
             RequestTrailServerRpc(star, dest);
         }
     }
-    public void DamageSpecifiedEnemy(SelectableEntity enemy, sbyte damage) //since hp is a network variable, changing it on the server will propagate changes to clients as well
-    {
-        if (enemy != null)
-        {
-            //fire locally
-            selector.SimplePlaySound(1);
-            if (selector.type == SelectableEntity.EntityTypes.Ranged && trailSpawnPos != null)
-            {
-                SimpleTrail(trailSpawnPos.position, enemy.transform.position);
-            }
-            if (selector.attackEffects.Length > 0)
-            {
-                selector.DisplayAttackEffects();
-            }
-
-            if (IsServer)
-            {
-                enemy.TakeDamage(damage);
-            }
-            else //client tell server to change the network variable
-            {
-                RequestDamageServerRpc(damage, enemy);
-            }
-        }
-    } 
     private void SpawnTrail(Vector3 start, Vector3 destination)
     {
         TrailController tra = Instantiate(Global.Instance.gunTrailGlobal, start, Quaternion.identity);
@@ -1103,8 +1122,52 @@ public class MinionController : NetworkBehaviour
         {
             SpawnTrail(star, dest);
         }
-    }
+    } 
+    private void ShootProjectileAtPosition(Vector3 dest)
+    {
+        Vector3 star;
+        if (attackEffectSpawnPosition != null)
+        {
+            star = attackEffectSpawnPosition.position;
+        }
+        else
+        {
+            star = transform.position;
+        }
 
+        //Spawn locally
+        SpawnProjectile(star, dest);
+        //spawn for other clients as well
+        if (IsServer)
+        {
+            ProjectileClientRpc(star, dest);
+        }
+        else
+        {
+            ProjectileServerRpc(star, dest);
+        }
+    }
+    private void SpawnProjectile(Vector3 spawnPos, Vector3 destination)
+    { 
+        //instantiate projectile
+        Projectile proj = Instantiate(Global.Instance.projectileGlobal, spawnPos, Quaternion.identity);
+        //tell projectile where to go 
+        proj.target = destination;
+        proj.isLocal = IsOwner;
+    }
+    [ClientRpc]
+    private void ProjectileClientRpc(Vector3 star, Vector3 dest)
+    {
+        if (!IsOwner)
+        {
+            SpawnProjectile(star, dest);
+        }
+    }
+    [ServerRpc]
+    private void ProjectileServerRpc(Vector3 star, Vector3 dest)
+    {
+        ProjectileClientRpc(star, dest);
+    }
 
     public SelectableEntity buildTarget;
     [SerializeField] private sbyte damage = 1;
@@ -1215,7 +1278,7 @@ public class MinionController : NetworkBehaviour
                         else //enemy
                         { //try to target this enemy specifically
                             targetEnemy = select;
-                            attackMoving = true;
+                            state = State.WalkToEnemy; 
                         }
                     }
                     else if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
@@ -1224,7 +1287,7 @@ public class MinionController : NetworkBehaviour
                         { 
                             //check if clicked is resource
                             //if it is, then tell resource collectors to gather it
-                            if (selector.isHarvester)
+                            if (selector.isHarvester && selector.harvestedResource < selector.harvestCapacity)
                             {
                                 selector.harvestTarget = select;
                                 state = State.WalkToHarvestable;

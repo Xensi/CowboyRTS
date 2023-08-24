@@ -3610,6 +3610,8 @@ MonoBehaviour:
   gridVisual: {fileID: 421003417}
   hpText: {fileID: 830991040}
   gunTrailGlobal: {fileID: 3867023542017964721, guid: 7beb53985a2959a4e92721b60820683e, type: 3}
+  projectileGlobal: {fileID: 4931648679904400479, guid: ff26c0b7fbc2c1e439bd021472664b90, type: 3}
+  explosion: {fileID: 8300000, guid: 53ce377f4f8f57347a834ce5d017add5, type: 3}
 --- !u!4 &833777888
 Transform:
   m_ObjectHideFlags: 0

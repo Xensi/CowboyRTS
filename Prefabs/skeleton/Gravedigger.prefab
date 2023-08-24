@@ -519,6 +519,10 @@ PrefabInstance:
       propertyPath: attackDuration
       value: 1.25
       objectReference: {fileID: 0}
+    - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: attackEffectSpawnPosition
+      value: 
+      objectReference: {fileID: 8029189885722262290}
     - target: {fileID: 2794094538110024962, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Enabled
       value: 1
