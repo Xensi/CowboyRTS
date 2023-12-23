@@ -46,7 +46,7 @@ public class SelectableEntity : NetworkBehaviour
         ProductionStructure,
         Builder,
         HarvestableStructure,
-        WallNode
+        DefensiveStructure
     }
     public EntityTypes type = EntityTypes.Melee;
     public List<int> builderEntityIndices; //list of indices that can be built with this builder.    

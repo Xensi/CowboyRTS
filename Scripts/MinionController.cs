@@ -1256,8 +1256,8 @@ public class MinionController : NetworkBehaviour
             {
                 destination = hit.point;
                 orderedDestination = destination;
-
-                SelectableEntity select = hit.collider.GetComponent<SelectableEntity>();
+                //check if player right clicked on an entity and what behavior unit should have
+                SelectableEntity select = hit.collider.GetComponent<SelectableEntity>(); 
                 if (select != null)
                 {
                     if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
@@ -1284,13 +1284,20 @@ public class MinionController : NetworkBehaviour
                     else if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
                     {
                         if (select.type == SelectableEntity.EntityTypes.HarvestableStructure)
-                        { 
+                        {
                             //check if clicked is resource
                             //if it is, then tell resource collectors to gather it
-                            if (selector.isHarvester && selector.harvestedResource < selector.harvestCapacity)
+                            if (selector.isHarvester)
                             {
-                                selector.harvestTarget = select;
-                                state = State.WalkToHarvestable;
+                                if (selector.harvestedResource < selector.harvestCapacity) //we could still harvest more
+                                { 
+                                    selector.harvestTarget = select;
+                                    state = State.WalkToHarvestable;
+                                }
+                                else
+                                { 
+                                    state = State.FindDeposit;
+                                }
                             }
                         }
                     } 

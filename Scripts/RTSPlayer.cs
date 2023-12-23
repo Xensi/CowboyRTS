@@ -262,7 +262,7 @@ public class RTSPlayer : NetworkBehaviour
         Global.Instance.goldText.text = "Gold: " + gold; 
     }
     private bool finishedSelection = false;
-    private void SelectWithinBounds()
+    private void SelectWithinBounds() //rectangle select
     {
         RectTransform SelectionBox = Global.Instance.selectionRect;
         Bounds bounds = new(SelectionBox.anchoredPosition, SelectionBox.sizeDelta);
@@ -273,7 +273,71 @@ public class RTSPlayer : NetworkBehaviour
             {
                 selectedEntities.Clear();
             }
+            //DeselectAll();
+            //evaluate which should actually be selected based on priority
+            //count types
+            List<SelectableEntity> evaluation = new();
             foreach (SelectableEntity item in ownedEntities)
+            {
+                if (item != null)
+                {
+                    if (UnitIsInSelectionBox(cam.WorldToScreenPoint(item.transform.position), bounds))
+                    {
+                        evaluation.Add(item);
+                    }
+                }
+            }
+            int military = 0;
+            int production = 0;
+            int builder = 0;
+            foreach (SelectableEntity item in evaluation)
+            {
+                switch (item.type)
+                {
+                    case SelectableEntity.EntityTypes.Melee:
+                    case SelectableEntity.EntityTypes.Ranged:
+                        military++;
+                        break;
+                    case SelectableEntity.EntityTypes.ProductionStructure:
+                        production++;
+                        break;
+                    case SelectableEntity.EntityTypes.Builder:
+                        builder++;
+                        break;
+                    case SelectableEntity.EntityTypes.HarvestableStructure:
+                        break;
+                    case SelectableEntity.EntityTypes.DefensiveStructure:
+                        break;
+                    default:
+                        break;
+                }
+            }
+            SelectableEntity.EntityTypes privileged = SelectableEntity.EntityTypes.Melee;
+            SelectableEntity.EntityTypes privilegedSecondary = SelectableEntity.EntityTypes.Ranged;
+            if (military > 0 || builder > 0) //these take precedent over production always
+            {
+                if (military < builder)
+                {
+                    privileged = SelectableEntity.EntityTypes.Builder;
+                    privilegedSecondary = SelectableEntity.EntityTypes.Builder;
+                }
+            }
+            else
+            {
+                privileged = SelectableEntity.EntityTypes.ProductionStructure;
+                privilegedSecondary = SelectableEntity.EntityTypes.ProductionStructure;
+            }
+            foreach (SelectableEntity item in evaluation)
+            {
+                if (item.type == privileged || item.type == privilegedSecondary)
+                {
+                    selectedEntities.Add(item);
+                    item.Select(true);
+                }
+            }
+
+
+            /*foreach (SelectableEntity item in ownedEntities)
             {
                 if (item != null)
                 { 
@@ -287,12 +351,12 @@ public class RTSPlayer : NetworkBehaviour
                         item.Select(false);
                     }
                 }
-            }
+            }*/
             UpdateGUIFromSelections();
         }
         Global.Instance.selectionRect.gameObject.SetActive(false);
         finishedSelection = true;
-    }
+    } 
     private bool UnitIsInSelectionBox(Vector2 Position, Bounds Bounds)
     {
         return Position.x > Bounds.min.x && Position.x < Bounds.max.x
