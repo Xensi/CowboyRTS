@@ -174,21 +174,25 @@ public class MinionController : NetworkBehaviour
                 continue;
             }
             SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
-            if (!select.alive)
+            if (select != null)
             {
-                continue;
-            }
-            if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
-            {
-                if (Global.Instance.localPlayer.ownedEntities.Contains(select))
+                if (!select.alive)
+                {
+                    continue;
+                }
+                if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
+                {
+                    if (Global.Instance.localPlayer.ownedEntities.Contains(select))
+                    {
+                        continue;
+                    }
+                }
+                else if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
                 {
                     continue;
                 }
             }
-            else if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
-            {
-                continue;
-            } 
+            
             if (directionalAttack)
             { 
                 Vector3 heading = (hitColliders[i].transform.position - transform.position).normalized;

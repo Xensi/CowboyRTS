@@ -105,6 +105,26 @@ PrefabInstance:
     serializedVersion: 2
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: type
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: maxHP
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: fullyBuilt
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: startingHP
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: teamBehavior
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2870261118279373742, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: m_Name
       value: SmokePortal
