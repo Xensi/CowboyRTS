@@ -55,3 +55,9 @@ MonoBehaviour:
     goldCost: 100
     timeCost: 10
     buildID: 0
+  - productionName: Raise Cannon
+    needsConstructing: 0
+    prefabToSpawn: {fileID: 7053587513937563618, guid: e09fd5d67d137c64ba4bb85e80c024bf, type: 3}
+    goldCost: 100
+    timeCost: 10
+    buildID: 0

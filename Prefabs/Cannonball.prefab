@@ -94,7 +94,7 @@ GameObject:
   - component: {fileID: 4248045379616443412}
   - component: {fileID: 4931648679904400479}
   m_Layer: 0
-  m_Name: Projectile
+  m_Name: Cannonball
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -128,7 +128,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d64db24f21004fd438af755f9d314f28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 4
+  speed: 50
   target: {x: 0, y: 0, z: 0}
-  arcHeight: 5
-  explosionRadius: 1.25
+  arcHeight: 0.1
+  explosionRadius: 0.75
+  isLocal: 1
