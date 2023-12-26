@@ -61,9 +61,10 @@ public class RTSPlayer : NetworkBehaviour
                 spawn = new Vector3(Random.Range(-9, 9),0, Random.Range(-9, 9));
             }
 
-            SimpleSpawnMinion(spawn, 0);
+            SimpleSpawnMinion(spawn, starterUnitID);
         }
     }
+    public byte starterUnitID = 0;
     private Transform camParent;
     private bool MouseOverUI()
     {

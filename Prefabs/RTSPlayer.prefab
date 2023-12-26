@@ -53,9 +53,11 @@ MonoBehaviour:
   selectedEntities: []
   _faction: {fileID: 11400000, guid: 66749da4c40495e4780f36062d3a4f8b, type: 2}
   _entitiesIndex: 0
+  worldPosition: {x: 0, y: 0, z: 0}
   buildState: 0
+  starterUnitID: 8
   placementBlocked: 0
-  lastPlaced: {fileID: 0}
+  lastSpawnedEntity: {fileID: 0}
   indices: 
 --- !u!114 &1888051484682193116
 MonoBehaviour:

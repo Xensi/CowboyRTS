@@ -61,3 +61,15 @@ MonoBehaviour:
     goldCost: 100
     timeCost: 10
     buildID: 0
+  - productionName: Lich Starter
+    needsConstructing: 0
+    prefabToSpawn: {fileID: 3248330781506673160, guid: 52e2a3da2c39f304d807ad464822f867, type: 3}
+    goldCost: 0
+    timeCost: 0
+    buildID: 0
+  - productionName: Smoke Portal
+    needsConstructing: 0
+    prefabToSpawn: {fileID: 3248330781506673160, guid: 52e2a3da2c39f304d807ad464822f867, type: 3}
+    goldCost: 0
+    timeCost: 0
+    buildID: 0
