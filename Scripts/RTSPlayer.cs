@@ -247,7 +247,7 @@ public class RTSPlayer : NetworkBehaviour
 
             if (Input.GetMouseButtonDown(1))
             {
-                if (buildState == BuildStates.ReadyToPlace)
+                if (buildState == BuildStates.ReadyToPlace && !placingLinkedBuilding)
                 {
                     StopPlacingBuilding();
                 }
@@ -270,6 +270,7 @@ public class RTSPlayer : NetworkBehaviour
         }
         Global.Instance.goldText.text = "Gold: " + gold; 
     }
+    public bool placingLinkedBuilding = false;
     private bool finishedSelection = false;
     private void SelectWithinBounds() //rectangle select
     {
@@ -382,6 +383,7 @@ public class RTSPlayer : NetworkBehaviour
         SelectionBox.anchoredPosition = StartMousePosition + new Vector2(width / 2, height / 2);
         SelectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
     } 
+
     private void PlaceBuilding(byte id = 0)
     {
         FactionEntityClass fac = _faction.entities[id];
@@ -391,8 +393,15 @@ public class RTSPlayer : NetworkBehaviour
             SimpleSpawnMinion(followCursorObject.transform.position, id);
             if (!Input.GetKey(KeyCode.LeftShift)) //if holding shift, continue placing buildings
             {
-
-                StopPlacingBuilding();
+                if (fac.linkedID == -1) //if no linked building, stop after placing building
+                {
+                    StopPlacingBuilding();
+                }
+                else //if there's a linked building, we continue placing buildings so the player can place the next part of the building.
+                {
+                    buildingPlacingID = (byte) fac.linkedID;
+                    placingLinkedBuilding = true;
+                }
             }
             //if this is a wall, we should connect it to any adjacent nodes
 
@@ -406,7 +415,7 @@ public class RTSPlayer : NetworkBehaviour
         Destroy(followCursorObject);
         followCursorObject = null; 
         buildState = BuildStates.Waiting;
-
+        placingLinkedBuilding = false;
     }
     private void OnDrawGizmos()
     {
@@ -638,7 +647,7 @@ public class RTSPlayer : NetworkBehaviour
                 if (selectedEntities[0].isHarvester)
                 { 
                     Global.Instance.resourcesParent.SetActive(true);
-                    Global.Instance.resourceText.text = "Stored gold: " + selectedEntities[0].harvestedResource + "/" + selectedEntities[0].harvestCapacity;
+                    Global.Instance.resourceText.text = "Stored gold: " + selectedEntities[0].harvestedResourceAmount + "/" + selectedEntities[0].harvestCapacity;
                 }
             }
             else

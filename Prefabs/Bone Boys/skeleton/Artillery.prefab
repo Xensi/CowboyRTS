@@ -56,6 +56,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Artillery
       objectReference: {fileID: 0}
+    - target: {fileID: 5014086622096128341, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5135923085209891433, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 951099334

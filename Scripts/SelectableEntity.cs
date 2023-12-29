@@ -12,10 +12,10 @@ public class SelectableEntity : NetworkBehaviour
     public MeshRenderer[] unbuiltRenderers;
     public MeshRenderer[] finishedRenderers;
     public MinionController controller;
-    public NetworkVariable<sbyte> hitPoints = new();
+    [HideInInspector] public NetworkVariable<sbyte> hitPoints = new();
     //public byte hitPoints;
 
-    public bool selected = false;
+    [HideInInspector] public bool selected = false;
     [SerializeField] private GameObject selectIndicator;
     public GameObject targetIndicator;
     public NetworkObject net;
@@ -24,7 +24,7 @@ public class SelectableEntity : NetworkBehaviour
     private MeshRenderer[] allMeshes;
     public bool isHarvester = false;
     public List<SelectableEntity> harvesters;
-    public int allowedHarvesters = 1;
+    public int allowedHarvesters = 1; //only relevant if this is a resource
     public enum DepositType
     {
         None,
@@ -60,7 +60,7 @@ public class SelectableEntity : NetworkBehaviour
     private readonly int delay = 50;
     private int count = 0;
     public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
-    public Vector3 rallyPoint;
+    [HideInInspector] public Vector3 rallyPoint;
     [SerializeField] private GameObject rallyVisual;
 
     [SerializeField] private Material damagedState;
@@ -131,7 +131,7 @@ public class SelectableEntity : NetworkBehaviour
         Gold
     }
     public HarvestType harvestType = HarvestType.Gold;
-    public int harvestedResource = 0;
+    [HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
     public int harvestCapacity = 10;
     private bool damaged = false;
     [SerializeField] private MeshRenderer[] damageableMeshes;
@@ -178,7 +178,7 @@ public class SelectableEntity : NetworkBehaviour
             Global.Instance.localPlayer.UpdatePlacement();
         }
     } */
-    public SelectableEntity harvestTarget;
+    [HideInInspector] public SelectableEntity harvestTarget;
     private void UpdateHarvesters()
     {
         if (harvesters.Count > 0)
@@ -264,7 +264,7 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-    public bool alive = true;
+    [HideInInspector] public bool alive = true;
     public void ProperDestroyMinion()
     {
         if (targetIndicator != null)

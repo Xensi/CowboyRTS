@@ -16,60 +16,77 @@ MonoBehaviour:
   - productionName: Raise Gravedigger
     needsConstructing: 0
     prefabToSpawn: {fileID: 2545681379473208697, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+    linkedID: -1
     goldCost: 10
     timeCost: 5
     buildID: 0
   - productionName: Dig Grave
     needsConstructing: 1
     prefabToSpawn: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
+    linkedID: -1
     goldCost: 50
     timeCost: 0
     buildID: 0
   - productionName: Raise Gunslinger
     needsConstructing: 0
     prefabToSpawn: {fileID: 3769332290757923783, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+    linkedID: -1
     goldCost: 20
     timeCost: 5
     buildID: 0
   - productionName: Raise Desperado
     needsConstructing: 0
     prefabToSpawn: {fileID: 4902783662846873726, guid: 14aa9348e444d404baea8d5cf76f8398, type: 3}
+    linkedID: -1
     goldCost: 30
     timeCost: 5
     buildID: 0
   - productionName: Place Wall
     needsConstructing: 1
     prefabToSpawn: {fileID: 3798861697192735719, guid: 0469ba43681a07247aef51cf6ccb8ef9, type: 3}
+    linkedID: -1
     goldCost: 5
     timeCost: 0
     buildID: 0
   - productionName: Raise Gatling
     needsConstructing: 0
     prefabToSpawn: {fileID: 6512270723407849226, guid: 2d424a28e19378c4d921d6906353559c, type: 3}
+    linkedID: -1
     goldCost: 100
     timeCost: 10
     buildID: 0
   - productionName: Raise Artillery
     needsConstructing: 0
     prefabToSpawn: {fileID: 5720112366935824539, guid: cf3423804651bfe4188c21f8446cf567, type: 3}
+    linkedID: -1
     goldCost: 100
     timeCost: 10
     buildID: 0
   - productionName: Raise Cannon
     needsConstructing: 0
     prefabToSpawn: {fileID: 7053587513937563618, guid: e09fd5d67d137c64ba4bb85e80c024bf, type: 3}
+    linkedID: -1
     goldCost: 100
     timeCost: 10
     buildID: 0
   - productionName: Lich Starter
     needsConstructing: 0
     prefabToSpawn: {fileID: 7692795664679932580, guid: 27bf33d358ef0194aa8fa42cf69b6502, type: 3}
+    linkedID: -1
     goldCost: 0
     timeCost: 0
     buildID: 0
   - productionName: Smoke Portal
     needsConstructing: 1
     prefabToSpawn: {fileID: 6960648852560355660, guid: 7b30b838627cfe8449fe5d8f21682979, type: 3}
+    linkedID: 10
+    goldCost: 0
+    timeCost: 0
+    buildID: 0
+  - productionName: Smoke Portal End
+    needsConstructing: 1
+    prefabToSpawn: {fileID: 4756355450301298893, guid: f2fe34ee6c415c4488bdeed110872d95, type: 3}
+    linkedID: -1
     goldCost: 0
     timeCost: 0
     buildID: 0

@@ -66,9 +66,9 @@ public class MinionController : NetworkBehaviour
 
     [SerializeField] private float attackRange = 1;
 
-    public SelectableEntity targetEnemy;
+    [HideInInspector] public SelectableEntity targetEnemy;
     public bool followingMoveOrder = false;
-    [SerializeField] private LocalRotation localRotate;
+    //[SerializeField] private LocalRotation localRotate;
     private RaycastModifier rayMod;
     private Seeker seeker;
     private Collider col;
@@ -673,7 +673,7 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.AfterHarvestCheck:
                 anim.Play("Idle");
-                if (selector.harvestedResource >= selector.harvestCapacity)
+                if (selector.harvestedResourceAmount >= selector.harvestCapacity)
                 {
                     state = State.FindDeposit;
                 }
@@ -732,8 +732,8 @@ public class MinionController : NetworkBehaviour
                     //instant dropoff
                     if (selector != null)
                     {
-                        Global.Instance.localPlayer.gold += selector.harvestedResource;
-                        selector.harvestedResource = 0;
+                        Global.Instance.localPlayer.gold += selector.harvestedResourceAmount;
+                        selector.harvestedResourceAmount = 0;
                         Global.Instance.localPlayer.UpdateGUIFromSelections();
                     }
                     state = State.AfterDepositCheck;
@@ -831,7 +831,7 @@ public class MinionController : NetworkBehaviour
         if (target != null)
         {
             int actualHarvested = Mathf.Clamp(harvestAmount, 0, target.hitPoints.Value); //max amount we can harvest clamped by hitpoints remaining
-            int diff = selector.harvestCapacity - selector.harvestedResource;
+            int diff = selector.harvestCapacity - selector.harvestedResourceAmount;
             actualHarvested = Mathf.Clamp(actualHarvested, 0, diff); //max amount we can harvest clamped by remaining carrying capacity
             if (IsServer)
             {
@@ -842,7 +842,7 @@ public class MinionController : NetworkBehaviour
                 RequestHarvestServerRpc(harvestAmount, target);
             }
 
-            selector.harvestedResource += actualHarvested;
+            selector.harvestedResourceAmount += actualHarvested;
             Global.Instance.localPlayer.UpdateGUIFromSelections();
         }
     } 
@@ -913,7 +913,7 @@ public class MinionController : NetworkBehaviour
         }  
         return closest;
     }
-    public SelectableEntity depositTarget;
+    [HideInInspector] public SelectableEntity depositTarget;
     private readonly sbyte harvestAmount = 1;
     [SerializeField] private bool moveWhileAttacking = false;
     private void CancelAttack()
@@ -1293,7 +1293,7 @@ public class MinionController : NetworkBehaviour
                             //if it is, then tell resource collectors to gather it
                             if (selector.isHarvester)
                             {
-                                if (selector.harvestedResource < selector.harvestCapacity) //we could still harvest more
+                                if (selector.harvestedResourceAmount < selector.harvestCapacity) //we could still harvest more
                                 { 
                                     selector.harvestTarget = select;
                                     state = State.WalkToHarvestable;
