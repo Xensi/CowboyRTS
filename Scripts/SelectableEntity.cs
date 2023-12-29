@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Netcode; 
 public class SelectableEntity : NetworkBehaviour
 {
+    #region variables
     public string displayName = "name";
     [TextArea(2, 4)]
     public string desc = "desc";
@@ -61,9 +62,43 @@ public class SelectableEntity : NetworkBehaviour
     private int count = 0;
     public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
     [HideInInspector] public Vector3 rallyPoint;
+    [HideInInspector] public bool alive = true;
     [SerializeField] private GameObject rallyVisual;
 
     [SerializeField] private Material damagedState;
+
+    public List<GarrisonablePosition> garrisonablePositions = new();
+    #endregion
+    public void ReceivePassenger(SelectableEntity newPassenger)
+    {
+        foreach (GarrisonablePosition item in garrisonablePositions)
+        {
+            if (item.passenger == null)
+            {
+                item.passenger = newPassenger;
+                break;
+            }
+        }
+    }
+    public bool HasEmptyGarrisonablePosition()
+    {
+        if (garrisonablePositions.Count <= 0)
+        {
+            return false;
+        }
+        else
+        {
+            bool val = false;
+            foreach (GarrisonablePosition item in garrisonablePositions)
+            {
+                if (item.passenger == null)
+                {
+                    val = true;
+                }
+            }
+            return val;
+        }
+    }
     private void RequestBuilders()
     {
         //Debug.Log("request builders");
@@ -264,7 +299,6 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-    [HideInInspector] public bool alive = true;
     public void ProperDestroyMinion()
     {
         if (targetIndicator != null)

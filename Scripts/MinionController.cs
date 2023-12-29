@@ -30,21 +30,13 @@ public class MinionController : NetworkBehaviour
         FindDeposit,
         WalkToDeposit,
         Depositing,
-        AfterDepositCheck
+        AfterDepositCheck,
+        WalkToGarrisonable,
+        Garrisoning,
+        AfterGarrisonCheck,
+        FindGarrisonable
     }
 
-    private void UpdateColliderStatus()
-    {
-        if (rigid != null)
-        { 
-            rigid.isKinematic = state switch
-            {
-                State.FindHarvestable or State.WalkToHarvestable or State.Harvesting or State.AfterHarvestCheck
-                or State.FindDeposit or State.WalkToDeposit or State.Depositing or State.AfterDepositCheck => true,
-                _ => false,
-            };
-        }
-    }
     LayerMask enemyMask;
     private Camera cam;
     public Vector3 destination;
@@ -66,8 +58,6 @@ public class MinionController : NetworkBehaviour
 
     [SerializeField] private float attackRange = 1;
 
-    [HideInInspector] public SelectableEntity targetEnemy;
-    public bool followingMoveOrder = false;
     //[SerializeField] private LocalRotation localRotate;
     private RaycastModifier rayMod;
     private Seeker seeker;
@@ -75,7 +65,46 @@ public class MinionController : NetworkBehaviour
      
     [SerializeField] private Rigidbody rigid;
     private readonly float spawnDuration = .5f;
+    private readonly sbyte buildDelta = 1;
+    [SerializeField] private float selfDestructAreaOfEffect = 1; //ignore if not selfdestructer
+    private readonly sbyte harvestAmount = 1;
+    [SerializeField] private bool canMoveWhileAttacking = false;
+    private int stateTimer = 0;
+    private float rotationSpeed = 10f;
+    [SerializeField] private Transform attackEffectSpawnPosition;
+    [SerializeField] private sbyte damage = 1;
+    private bool attackReady = true;
+    [SerializeField] private float attackDuration = 1;
+    [SerializeField] private float impactTime = .5f;
+    public bool attackMoving = false;
+
+    [HideInInspector] public SelectableEntity depositTarget;
+    [HideInInspector] public SelectableEntity buildTarget;
+    [HideInInspector] public SelectableEntity targetEnemy;
+    [HideInInspector] public SelectableEntity garrisonTarget;
+    public readonly float garrisonRange = 1;
+    [HideInInspector] public bool followingMoveOrder = false;
+    [HideInInspector] public Vector3 orderedDestination;
+    //50 fps fixed update
+    private readonly int delay = 0;
+    private int basicallyIdleInstances = 0;
+    private readonly int idleThreshold = 30;
+    bool playedAttackMoveSound = false;
+    private int attackReadyTimer = 0;
     #endregion
+    #region Stuff
+    private void UpdateColliderStatus()
+    {
+        if (rigid != null)
+        {
+            rigid.isKinematic = state switch
+            {
+                State.FindHarvestable or State.WalkToHarvestable or State.Harvesting or State.AfterHarvestCheck
+                or State.FindDeposit or State.WalkToDeposit or State.Depositing or State.AfterDepositCheck => true,
+                _ => false,
+            };
+        }
+    }
     public void PrepareForDeath()
     { 
         Global.Instance.localPlayer.selectedEntities.Remove(selector);
@@ -220,12 +249,6 @@ public class MinionController : NetworkBehaviour
         }
         return enemy;
     } 
-    //50 fps fixed update
-    private readonly int delay = 0; 
-    private int basicallyIdleInstances = 0;
-    private readonly int idleThreshold = 30;
-    bool playedAttackMoveSound = false;
-    private int attackReadyTimer = 0;
     private void HideMoveIndicator()
     {
         if (selector != null)
@@ -305,7 +328,7 @@ public class MinionController : NetworkBehaviour
             } 
         }
     }
-    private float rotationSpeed = 10f;
+    #endregion
     private void UpdateState()
     {
         UpdateHarvestables();
@@ -319,6 +342,7 @@ public class MinionController : NetworkBehaviour
 
         switch (state)
         {
+            #region defaults
             case State.Spawn: //don't really do anything, just play the spawn animation
                 anim.Play("Spawn");
                 ai.canMove = false;
@@ -365,6 +389,7 @@ public class MinionController : NetworkBehaviour
                     state = State.Idle;
                 } 
                 break;
+            #endregion
             #region Attacking
             case State.WalkBeginFindEnemies: //"ATTACK MOVE" 
                 UpdateMoveIndicator();
@@ -452,7 +477,7 @@ public class MinionController : NetworkBehaviour
                 {
                     UpdateAttackIndicator();
                     ai.canMove = false;
-                    ai.canMove = moveWhileAttacking;
+                    ai.canMove = canMoveWhileAttacking;
                     rotationSpeed = ai.rotationSpeed / 60;
                     transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, targetEnemy.transform.position - transform.position, Time.deltaTime * rotationSpeed, 0));
 
@@ -474,7 +499,7 @@ public class MinionController : NetworkBehaviour
                                         DamageSpecifiedEnemy(targetEnemy, damage);
                                         break;
                                     case AttackType.SelfDestruct:
-                                        Explode(areaOfEffect);
+                                        Explode(selfDestructAreaOfEffect);
                                         break;
                                     case AttackType.Artillery:
                                         ShootProjectileAtPosition(targetEnemy.transform.position);
@@ -751,12 +776,48 @@ public class MinionController : NetworkBehaviour
                     state = State.FindHarvestable;
                 }
                 break;
-            #endregion 
+            #endregion
+            #region Garrison
+            case State.WalkToGarrisonable:
+                UpdateMoveIndicator();
+                ai.canMove = true;
+                if (garrisonTarget == null)
+                {
+                    state = State.FindGarrisonable; //later make this check for nearby garrisonables in the same target?
+                }
+                else
+                {
+                    if (Vector3.Distance(transform.position, garrisonTarget.transform.position) > garrisonRange)
+                    {
+                        ai.canMove = true;
+                        anim.Play("Walk");
+                        destination = garrisonTarget.transform.position;
+                    }
+                    else
+                    {
+                        state = State.Garrisoning;
+                    }
+                }
+                break;
+            case State.Garrisoning:
+                if (garrisonTarget == null)
+                {
+                    state = State.FindGarrisonable;
+                }
+                else
+                {
+                    ai.canMove = false;
+                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, garrisonTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
+                    //garrison into
+                    garrisonTarget.ReceivePassenger(selector);
+                    state = State.Idle;
+                }
+                break;
+            #endregion
             default:
                 break;
         }
     }
-
     private bool CheckFacingTowards(Vector3 pos)
     {
         if (!directionalAttack) return true;
@@ -771,7 +832,6 @@ public class MinionController : NetworkBehaviour
         return false;
     }
 
-    [SerializeField] private Transform attackEffectSpawnPosition; 
     private void UpdateAttackIndicator()
     { 
         if (selector != null)
@@ -786,6 +846,9 @@ public class MinionController : NetworkBehaviour
             }
         }
     }
+    /// <summary>
+    /// Update the indicator that shows where the minion will be moving towards.
+    /// </summary>
     private void UpdateMoveIndicator()
     {
         if (selector != null)
@@ -824,7 +887,6 @@ public class MinionController : NetworkBehaviour
     {
         return anim.GetCurrentAnimatorStateInfo(0).length > anim.GetCurrentAnimatorStateInfo(0).normalizedTime;
     }
-    private int stateTimer = 0;
     private void HarvestTarget(SelectableEntity target)
     {
         selector.SimplePlaySound(1); //play impact sound 
@@ -913,9 +975,7 @@ public class MinionController : NetworkBehaviour
         }  
         return closest;
     }
-    [HideInInspector] public SelectableEntity depositTarget;
-    private readonly sbyte harvestAmount = 1;
-    [SerializeField] private bool moveWhileAttacking = false;
+    #region Attacks
     private void CancelAttack()
     {
         targetEnemy = null;
@@ -939,8 +999,6 @@ public class MinionController : NetworkBehaviour
                 break;
         }
     }
-    private readonly sbyte buildDelta = 1;
-    [SerializeField] private float areaOfEffect = 1; 
     public void BuildTarget(SelectableEntity target) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         //fire locally
@@ -980,7 +1038,7 @@ public class MinionController : NetworkBehaviour
                 Invoke(nameof(ReturnState), attackDuration);
                 break;
             case AttackType.SelfDestruct:
-                Explode(areaOfEffect);
+                Explode(selfDestructAreaOfEffect);
                 break;
             default:
                 break;
@@ -1173,9 +1231,6 @@ public class MinionController : NetworkBehaviour
         ProjectileClientRpc(star, dest);
     }
 
-    public SelectableEntity buildTarget;
-    [SerializeField] private sbyte damage = 1;
-    private bool attackReady = true;
     public void SimpleDamageEnemy() //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         if (targetEnemy != null)
@@ -1206,8 +1261,6 @@ public class MinionController : NetworkBehaviour
         }  
     }
 
-    [SerializeField] private float attackDuration = 1;
-    [SerializeField] private float impactTime = .5f;
     private float GetActualPositionChange()
     {
         float dist = Vector3.SqrMagnitude(transform.position - oldPosition);
@@ -1215,8 +1268,6 @@ public class MinionController : NetworkBehaviour
         return dist/Time.deltaTime;
     }
 
-    public bool attackMoving = false;
-    public Vector3 orderedDestination;
     public void RallyToPos(Vector3 pos)
     {
         //followingMoveOrder = true;
@@ -1278,6 +1329,12 @@ public class MinionController : NetworkBehaviour
                                 buildTarget = select;
                                 state = State.WalkToBuildable;
                             }
+                            else if (select.HasEmptyGarrisonablePosition() && selector.garrisonablePositions.Count <= 0) //target can be garrisoned, and passenger cannot garrison
+                            {
+                                garrisonTarget = select;
+                                state = State.WalkToGarrisonable;
+                                
+                            }
                         }
                         else //enemy
                         { //try to target this enemy specifically
@@ -1308,6 +1365,7 @@ public class MinionController : NetworkBehaviour
                 } 
                 CancelInvoke("SimpleDamageEnemy"); 
             }
-        } 
+        }
     }
+    #endregion
 }

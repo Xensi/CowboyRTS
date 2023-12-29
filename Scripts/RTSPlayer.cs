@@ -235,7 +235,7 @@ public class RTSPlayer : NetworkBehaviour
                     TryToSelectOne();
                 }
             }
-            if (Input.GetMouseButtonDown(1))
+            if (Input.GetMouseButtonDown(1)) //right click move
             {
                 SelectedSetDestination();
             }
