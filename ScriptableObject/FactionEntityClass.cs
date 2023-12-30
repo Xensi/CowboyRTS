@@ -9,6 +9,6 @@ public class FactionEntityClass
     public GameObject prefabToSpawn;
     public int linkedID = -1; //some buildings have a second part to them. ignore if -1
     public int goldCost = 0;
-    public int timeCost = 5;
+    public int timeCost = 5; //used only if needsConstructing is false
     [HideInInspector] public byte buildID = 0;
 }

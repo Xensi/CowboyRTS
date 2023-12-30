@@ -82,7 +82,7 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] public SelectableEntity buildTarget;
     [HideInInspector] public SelectableEntity targetEnemy;
     [HideInInspector] public SelectableEntity garrisonTarget;
-    public readonly float garrisonRange = 1;
+    public readonly float garrisonRange = 1.1f;
     [HideInInspector] public bool followingMoveOrder = false;
     [HideInInspector] public Vector3 orderedDestination;
     //50 fps fixed update
@@ -184,71 +184,9 @@ public class MinionController : NetworkBehaviour
     { 
         destination = pos;
         buildTarget = ent; 
-    } 
-    private SelectableEntity GetClosestEnemy()
-    {
-        float range = attackRange + 2;
-
-        int maxColliders = Mathf.RoundToInt(40 * range);
-        Collider[] hitColliders = new Collider[maxColliders];
-        int numColliders = Physics.OverlapSphereNonAlloc(transform.position, range, hitColliders, enemyMask); 
-        Collider closest = null;
-        float distance = Mathf.Infinity;
-        float threshold = -Mathf.Infinity;
-        Vector3 forward = transform.TransformDirection(Vector3.forward).normalized;
-        for (int i = 0; i < numColliders; i++)
-        {
-            if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self and triggers
-            {
-                continue;
-            }
-            SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
-            if (select != null)
-            {
-                if (!select.alive)
-                {
-                    continue;
-                }
-                if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
-                {
-                    if (Global.Instance.localPlayer.ownedEntities.Contains(select))
-                    {
-                        continue;
-                    }
-                }
-                else if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
-                {
-                    continue;
-                }
-            }
-            
-            if (directionalAttack)
-            { 
-                Vector3 heading = (hitColliders[i].transform.position - transform.position).normalized;
-                float dot = Vector3.Dot(forward, heading);
-                if (dot > threshold)
-                {
-                    closest = hitColliders[i];
-                    threshold = dot;
-                }
-            }
-            else
-            { 
-                float newDist = Vector3.SqrMagnitude(transform.position - hitColliders[i].transform.position);
-                if (newDist < distance)
-                {
-                    closest = hitColliders[i];
-                    distance = newDist;
-                }
-            }
-        }
-        SelectableEntity enemy = null;
-        if (closest != null)
-        {
-            enemy = closest.GetComponent<SelectableEntity>();
-        }
-        return enemy;
-    } 
+    }
+    #endregion
+    #region More Stuff
     private void HideMoveIndicator()
     {
         if (selector != null)
@@ -928,6 +866,75 @@ public class MinionController : NetworkBehaviour
         }
         return closest;
     }
+    #region FindClosest
+    private SelectableEntity GetClosestEnemy()
+    {
+        float range = attackRange + 2;
+
+        int maxColliders = Mathf.RoundToInt(40 * range);
+        Collider[] hitColliders = new Collider[maxColliders];
+        int numColliders = Physics.OverlapSphereNonAlloc(transform.position, range, hitColliders, enemyMask);
+        Collider closest = null;
+        float distance = Mathf.Infinity;
+        float threshold = -Mathf.Infinity;
+        Vector3 forward = transform.TransformDirection(Vector3.forward).normalized;
+        for (int i = 0; i < numColliders; i++)
+        {
+            if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self and triggers
+            {
+                continue;
+            }
+            SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
+            if (select != null) //conditions that disqualify an entity from being targeted
+            {
+                if (!select.alive)
+                {
+                    continue;
+                }
+                if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
+                {
+                    if (Global.Instance.localPlayer.ownedEntities.Contains(select))
+                    {
+                        continue;
+                    }
+                }
+                else if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
+                {
+                    continue;
+                }
+                else if (select.occupiedGarrison != null && !select.occupiedGarrison.passengersAreTargetable)
+                {
+                    continue;
+                }
+            }
+
+            if (directionalAttack)
+            {
+                Vector3 heading = (hitColliders[i].transform.position - transform.position).normalized;
+                float dot = Vector3.Dot(forward, heading);
+                if (dot > threshold)
+                {
+                    closest = hitColliders[i];
+                    threshold = dot;
+                }
+            }
+            else
+            {
+                float newDist = Vector3.SqrMagnitude(transform.position - hitColliders[i].transform.position);
+                if (newDist < distance)
+                {
+                    closest = hitColliders[i];
+                    distance = newDist;
+                }
+            }
+        }
+        SelectableEntity enemy = null;
+        if (closest != null)
+        {
+            enemy = closest.GetComponent<SelectableEntity>();
+        }
+        return enemy;
+    }
     /// <summary>
     /// Returns closest harvestable resource with space for new harvesters.
     /// </summary>
@@ -975,6 +982,7 @@ public class MinionController : NetworkBehaviour
         }  
         return closest;
     }
+    #endregion
     #region Attacks
     private void CancelAttack()
     {
@@ -1296,6 +1304,14 @@ public class MinionController : NetworkBehaviour
             orderedDestination = destination;   
         }
     }
+    private void PlaceOnGround()
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity, Global.Instance.groundMask))
+        {
+            transform.position = hit.point;
+        }
+    }
     public void SetDestinationRaycast(bool attackMoveVal = false)
     {
         if (state != State.Spawn)
@@ -1312,6 +1328,11 @@ public class MinionController : NetworkBehaviour
                 destination = hit.point;
                 orderedDestination = destination;
                 //check if player right clicked on an entity and what behavior unit should have
+                if (selector.occupiedGarrison != null) //we are currently garrisoned
+                {
+                    selector.occupiedGarrison.UnloadPassenger(selector); //leave garrison by moving out of it
+                    PlaceOnGround(); //snap to ground
+                }
                 SelectableEntity select = hit.collider.GetComponent<SelectableEntity>(); 
                 if (select != null)
                 {
@@ -1333,7 +1354,6 @@ public class MinionController : NetworkBehaviour
                             {
                                 garrisonTarget = select;
                                 state = State.WalkToGarrisonable;
-                                
                             }
                         }
                         else //enemy

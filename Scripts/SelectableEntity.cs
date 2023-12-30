@@ -68,6 +68,8 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private Material damagedState;
 
     public List<GarrisonablePosition> garrisonablePositions = new();
+    public SelectableEntity occupiedGarrison;
+    public bool passengersAreTargetable = false;
     #endregion
     public void ReceivePassenger(SelectableEntity newPassenger)
     {
@@ -76,6 +78,19 @@ public class SelectableEntity : NetworkBehaviour
             if (item.passenger == null)
             {
                 item.passenger = newPassenger;
+                newPassenger.occupiedGarrison = this;
+                break;
+            }
+        }
+    }
+    public void UnloadPassenger(SelectableEntity exiting)
+    {
+        foreach (GarrisonablePosition item in garrisonablePositions)
+        {
+            if (item.passenger == exiting)
+            {
+                item.passenger = null;
+                exiting.occupiedGarrison = null;
                 break;
             }
         }

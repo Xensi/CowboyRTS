@@ -34,6 +34,7 @@ public class Global : MonoBehaviour
     public TrailController gunTrailGlobal;
     public Projectile projectileGlobal;
     public AudioClip explosion;
+    public LayerMask groundMask;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.

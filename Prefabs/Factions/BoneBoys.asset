@@ -97,3 +97,10 @@ MonoBehaviour:
     goldCost: 10
     timeCost: 0
     buildID: 0
+  - productionName: Fort
+    needsConstructing: 1
+    prefabToSpawn: {fileID: 8795742978982568552, guid: c0363a0cf8391ed498d2b8f91cc1b324, type: 3}
+    linkedID: -1
+    goldCost: 50
+    timeCost: 0
+    buildID: 0
