@@ -70,6 +70,45 @@ public class SelectableEntity : NetworkBehaviour
     public List<GarrisonablePosition> garrisonablePositions = new();
     public SelectableEntity occupiedGarrison;
     public bool passengersAreTargetable = false;
+    public NetworkVariable<bool> isTargetable = new();
+    #endregion
+    #region NetworkSpawn
+    public override void OnNetworkSpawn()
+    {
+        if (lineIndicator != null)
+        {
+            lineIndicator.enabled = false;
+        }
+        if (IsOwner)
+        {
+            Global.Instance.localPlayer.ownedEntities.Add(this);
+            Global.Instance.localPlayer.lastSpawnedEntity = this;
+            if (!fullyBuilt)
+            {
+                RequestBuilders();
+            }
+        }
+        allMeshes = GetComponentsInChildren<MeshRenderer>();
+        if (IsServer)
+        {
+            hitPoints.Value = startingHP;
+            isTargetable.Value = true;
+        }
+        damagedThreshold = (sbyte)(maxHP / 2);
+        rallyPoint = transform.position;
+        SimplePlaySound(0);
+        //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
+        UpdateTeamRenderers();
+
+        if (targetIndicator != null)
+        {
+            targetIndicator.transform.parent = null;
+        }
+    }
+    public override void OnNetworkDespawn()
+    {
+        Destroy(targetIndicator);
+    }
     #endregion
     public void ReceivePassenger(SelectableEntity newPassenger)
     {
@@ -79,6 +118,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 item.passenger = newPassenger;
                 newPassenger.occupiedGarrison = this;
+                newPassenger.isTargetable.Value = passengersAreTargetable;
                 break;
             }
         }
@@ -91,6 +131,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 item.passenger = null;
                 exiting.occupiedGarrison = null;
+                exiting.isTargetable.Value = true;
                 break;
             }
         }
@@ -127,41 +168,7 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-    public override void OnNetworkSpawn()
-    {
-        if (lineIndicator != null)
-        {
-            lineIndicator.enabled = false;
-        }
-        if (IsOwner)
-        {
-            Global.Instance.localPlayer.ownedEntities.Add(this);
-            Global.Instance.localPlayer.lastSpawnedEntity = this;
-            if (!fullyBuilt)
-            { 
-                RequestBuilders();
-            }
-        }
-        allMeshes = GetComponentsInChildren<MeshRenderer>();
-        if (IsServer)
-        {
-            hitPoints.Value = startingHP;
-        }
-        damagedThreshold = (sbyte) (maxHP / 2);
-        rallyPoint = transform.position;
-        SimplePlaySound(0);
-        //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
-        UpdateTeamRenderers();
-
-        if (targetIndicator != null)
-        {
-            targetIndicator.transform.parent = null; 
-        }
-    }
-    public override void OnNetworkDespawn()
-    {
-        Destroy(targetIndicator);
-    }
+    
     private bool teamRenderersUpdated = false;
     private void UpdateTeamRenderers()
     {
@@ -316,6 +323,14 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void ProperDestroyMinion()
     {
+
+        foreach (GarrisonablePosition item in garrisonablePositions)
+        {
+            item.passenger.occupiedGarrison = null;
+            item.passenger.isTargetable.Value = true;
+            item.passenger = null;
+        }
+
         if (targetIndicator != null)
         { 
             targetIndicator.SetActive(false);

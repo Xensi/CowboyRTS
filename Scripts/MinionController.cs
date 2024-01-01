@@ -267,6 +267,17 @@ public class MinionController : NetworkBehaviour
         }
     }
     #endregion
+    private bool TargetEnemyValid()
+    {
+        if (targetEnemy == null || !targetEnemy.alive || !targetEnemy.isTargetable.Value)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
     private void UpdateState()
     {
         UpdateHarvestables();
@@ -344,7 +355,7 @@ public class MinionController : NetworkBehaviour
                     anim.Play("AttackWalkStart");
                 }
 
-                if (targetEnemy == null || !targetEnemy.alive)
+                if (!TargetEnemyValid())
                 {
                     targetEnemy = GetClosestEnemy();
                 }
@@ -363,7 +374,7 @@ public class MinionController : NetworkBehaviour
                 ai.canMove = true;
                 destination = orderedDestination;
                  
-                if (targetEnemy == null || !targetEnemy.alive)
+                if (!TargetEnemyValid())
                 {
                     targetEnemy = GetClosestEnemy();
                 }
@@ -379,7 +390,7 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.WalkToEnemy:
                 ai.canMove = true;
-                if (targetEnemy == null || !targetEnemy.alive)
+                if (!TargetEnemyValid())
                 {
                     state = State.WalkContinueFindEnemies;
                 }
@@ -403,11 +414,11 @@ public class MinionController : NetworkBehaviour
                 {
                     anim.SetFloat("AttackSpeed", 1);
                 }
-                if ((targetEnemy == null || !targetEnemy.alive) && !attackReady)
+                if (!TargetEnemyValid() && !attackReady)
                 {
                     state = State.Idle;
                 }
-                else if ((targetEnemy == null || !targetEnemy.alive) && attackReady)
+                else if (!TargetEnemyValid() && attackReady)
                 {
                     state = State.WalkContinueFindEnemies;
                 }
@@ -471,7 +482,7 @@ public class MinionController : NetworkBehaviour
                     anim.SetFloat("AttackSpeed", 1);
                 }
                 anim.Play("Idle"); 
-                if (targetEnemy == null || !targetEnemy.alive)
+                if (!TargetEnemyValid())
                 {
                     state = State.WalkContinueFindEnemies;
                 }
@@ -902,7 +913,7 @@ public class MinionController : NetworkBehaviour
                 {
                     continue;
                 }
-                else if (select.occupiedGarrison != null && !select.occupiedGarrison.passengersAreTargetable)
+                else if (!select.isTargetable.Value)
                 {
                     continue;
                 }
