@@ -47,7 +47,8 @@ public class SelectableEntity : NetworkBehaviour
         ProductionStructure,
         Builder,
         HarvestableStructure,
-        DefensiveStructure
+        DefensiveGarrison,
+        Transport
     }
     public EntityTypes type = EntityTypes.Melee;
     public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
@@ -70,7 +71,8 @@ public class SelectableEntity : NetworkBehaviour
     public List<GarrisonablePosition> garrisonablePositions = new();
     public SelectableEntity occupiedGarrison;
     public bool passengersAreTargetable = false;
-    public NetworkVariable<bool> isTargetable = new();
+    public NetworkVariable<bool> isTargetable = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    //[HideInInspector] public MinionController minionController;
     #endregion
     #region NetworkSpawn
     public override void OnNetworkSpawn()
@@ -87,12 +89,12 @@ public class SelectableEntity : NetworkBehaviour
             {
                 RequestBuilders();
             }
+            isTargetable.Value = true;
         }
         allMeshes = GetComponentsInChildren<MeshRenderer>();
         if (IsServer)
         {
             hitPoints.Value = startingHP;
-            isTargetable.Value = true;
         }
         damagedThreshold = (sbyte)(maxHP / 2);
         rallyPoint = transform.position;
@@ -104,34 +106,38 @@ public class SelectableEntity : NetworkBehaviour
         {
             targetIndicator.transform.parent = null;
         }
+        if (selectIndicator != null) selectIndicator.SetActive(selected);
+        //minionController = GetComponent<MinionController>();
     }
     public override void OnNetworkDespawn()
     {
         Destroy(targetIndicator);
     }
     #endregion
-    public void ReceivePassenger(SelectableEntity newPassenger)
+    public void ReceivePassenger(MinionController newPassenger)
     {
         foreach (GarrisonablePosition item in garrisonablePositions)
         {
             if (item.passenger == null)
             {
                 item.passenger = newPassenger;
-                newPassenger.occupiedGarrison = this;
-                newPassenger.isTargetable.Value = passengersAreTargetable;
+                newPassenger.selectableEntity.occupiedGarrison = this;
+                newPassenger.selectableEntity.isTargetable.Value = passengersAreTargetable;
+                newPassenger.col.isTrigger = true;
                 break;
             }
         }
     }
-    public void UnloadPassenger(SelectableEntity exiting)
+    public void UnloadPassenger(MinionController exiting)
     {
         foreach (GarrisonablePosition item in garrisonablePositions)
         {
             if (item.passenger == exiting)
             {
                 item.passenger = null;
-                exiting.occupiedGarrison = null;
-                exiting.isTargetable.Value = true;
+                exiting.selectableEntity.occupiedGarrison = null;
+                exiting.selectableEntity.isTargetable.Value = true;
+                exiting.col.isTrigger = false;
                 break;
             }
         }
@@ -323,12 +329,21 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void ProperDestroyMinion()
     {
-
         foreach (GarrisonablePosition item in garrisonablePositions)
         {
-            item.passenger.occupiedGarrison = null;
-            item.passenger.isTargetable.Value = true;
-            item.passenger = null;
+            if (item != null)
+            {
+                if (item.passenger != null)
+                {
+                    UnloadPassenger(item.passenger);
+                    /*if (item.passenger.selectableEntity != null)
+                    {
+                        item.passenger.selectableEntity.occupiedGarrison = null;
+                        item.passenger.selectableEntity.isTargetable.Value = true;
+                        item.passenger = null;
+                    }*/
+                }
+            }
         }
 
         if (targetIndicator != null)

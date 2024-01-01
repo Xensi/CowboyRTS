@@ -272,7 +272,7 @@ public class RTSPlayer : NetworkBehaviour
     }
     public bool placingLinkedBuilding = false;
     private bool finishedSelection = false;
-    private void SelectWithinBounds() //rectangle select
+    private void SelectWithinBounds() //rectangle select, finish drag select
     {
         RectTransform SelectionBox = Global.Instance.selectionRect;
         Bounds bounds = new(SelectionBox.anchoredPosition, SelectionBox.sizeDelta);
@@ -316,7 +316,7 @@ public class RTSPlayer : NetworkBehaviour
                         break;
                     case SelectableEntity.EntityTypes.HarvestableStructure:
                         break;
-                    case SelectableEntity.EntityTypes.DefensiveStructure:
+                    case SelectableEntity.EntityTypes.DefensiveGarrison:
                         break;
                     default:
                         break;
@@ -339,7 +339,7 @@ public class RTSPlayer : NetworkBehaviour
             }
             foreach (SelectableEntity item in evaluation)
             {
-                if (item.type == privileged || item.type == privilegedSecondary)
+                if ((item.type == privileged || item.type == privilegedSecondary) && item.occupiedGarrison == null)
                 {
                     selectedEntities.Add(item);
                     item.Select(true);
@@ -820,8 +820,22 @@ public class RTSPlayer : NetworkBehaviour
             SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
             if (entity != null && ownedEntities.Contains(entity))
             {
-                SelectAllSameType(entity.type);
+                if (entity.occupiedGarrison != null)
+                {
+                    SelectAllInSameGarrison(entity.occupiedGarrison);
+                }
+                else
+                {
+                    SelectAllSameType(entity.type);
+                }
             }
+        }
+    }
+    private void SelectAllInSameGarrison(SelectableEntity garrison)
+    {
+        foreach (GarrisonablePosition item in garrison.garrisonablePositions)
+        {
+            TrySelectEntity(item.passenger.selectableEntity);
         }
     }
     private void SelectAllSameType(SelectableEntity.EntityTypes type)

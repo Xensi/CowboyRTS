@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class GarrisonablePosition : MonoBehaviour
 {
-    public SelectableEntity passenger;
+    public MinionController passenger;
     private void Update()
     {
         if (passenger != null)

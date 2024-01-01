@@ -90,9 +90,9 @@ MonoBehaviour:
     goldCost: 0
     timeCost: 0
     buildID: 0
-  - productionName: Hearse
+  - productionName: Pallbearers
     needsConstructing: 0
-    prefabToSpawn: {fileID: 2269622247996090949, guid: a0161a0a83f36a64cbeabb6fc555ca3d, type: 3}
+    prefabToSpawn: {fileID: 8532064031720343334, guid: a0161a0a83f36a64cbeabb6fc555ca3d, type: 3}
     linkedID: -1
     goldCost: 10
     timeCost: 0

@@ -42,12 +42,13 @@ public class MinionController : NetworkBehaviour
     public Vector3 destination;
     public Animator anim; 
     AIPath ai;
-    [SerializeField] private SelectableEntity selector;
+    [HideInInspector] public SelectableEntity selectableEntity;
     public State state = State.Spawn;
     public enum AttackType
     {
         Instant, SelfDestruct, Artillery, 
-        Gatling //for gatling gun
+        Gatling, //for gatling gun
+        None
     }
     public AttackType attackType = AttackType.Instant;
     public bool directionalAttack = false;
@@ -61,7 +62,7 @@ public class MinionController : NetworkBehaviour
     //[SerializeField] private LocalRotation localRotate;
     private RaycastModifier rayMod;
     private Seeker seeker;
-    private Collider col;
+    public Collider col;
      
     [SerializeField] private Rigidbody rigid;
     private readonly float spawnDuration = .5f;
@@ -76,17 +77,17 @@ public class MinionController : NetworkBehaviour
     private bool attackReady = true;
     [SerializeField] private float attackDuration = 1;
     [SerializeField] private float impactTime = .5f;
-    public bool attackMoving = false;
+    [HideInInspector] public bool attackMoving = false;
 
     [HideInInspector] public SelectableEntity depositTarget;
     [HideInInspector] public SelectableEntity buildTarget;
-    [HideInInspector] public SelectableEntity targetEnemy;
+    public SelectableEntity targetEnemy;
     [HideInInspector] public SelectableEntity garrisonTarget;
     public readonly float garrisonRange = 1.1f;
     [HideInInspector] public bool followingMoveOrder = false;
     [HideInInspector] public Vector3 orderedDestination;
     //50 fps fixed update
-    private readonly int delay = 0;
+    //private readonly int delay = 0;
     private int basicallyIdleInstances = 0;
     private readonly int idleThreshold = 30;
     bool playedAttackMoveSound = false;
@@ -107,8 +108,8 @@ public class MinionController : NetworkBehaviour
     }
     public void PrepareForDeath()
     { 
-        Global.Instance.localPlayer.selectedEntities.Remove(selector);
-        selector.Select(false);
+        Global.Instance.localPlayer.selectedEntities.Remove(selectableEntity);
+        selectableEntity.Select(false);
         state = State.Die;
         ai.enabled = false;
         rayMod.enabled = false;
@@ -122,6 +123,7 @@ public class MinionController : NetworkBehaviour
         rayMod = GetComponent<RaycastModifier>();
         seeker = GetComponent<Seeker>();
         col = GetComponent<Collider>();
+        selectableEntity = GetComponent<SelectableEntity>();
 
         // Update the destination right before searching for a path as well.
         // This is enough in theory, but this script will also update the destination every
@@ -189,9 +191,9 @@ public class MinionController : NetworkBehaviour
     #region More Stuff
     private void HideMoveIndicator()
     {
-        if (selector != null)
+        if (selectableEntity != null)
         {
-            selector.HideMoveIndicator();
+            selectableEntity.HideMoveIndicator();
         }
     }
     private void DetectIfShouldStopFollowingMoveOrder()
@@ -249,19 +251,19 @@ public class MinionController : NetworkBehaviour
     } 
     private void UpdateHarvestables()
     {  
-        if (selector.harvestTarget != null && selector.harvestTarget.alive) //if we have a harvest target
+        if (selectableEntity.harvestTarget != null && selectableEntity.harvestTarget.alive) //if we have a harvest target
         {
-            if (!selector.harvestTarget.harvesters.Contains(selector) ) //if we are not in harvester list
+            if (!selectableEntity.harvestTarget.harvesters.Contains(selectableEntity) ) //if we are not in harvester list
             {
-                if (selector.harvestTarget.harvesters.Count < selector.harvestTarget.allowedHarvesters) //if there is space
+                if (selectableEntity.harvestTarget.harvesters.Count < selectableEntity.harvestTarget.allowedHarvesters) //if there is space
                 {
                     //add us
-                    selector.harvestTarget.harvesters.Add(selector);
+                    selectableEntity.harvestTarget.harvesters.Add(selectableEntity);
                 }
                 else //there is no space
                 {
                     //get a new harvest target
-                    selector.harvestTarget = null;
+                    selectableEntity.harvestTarget = null;
                 }
             } 
         }
@@ -269,7 +271,7 @@ public class MinionController : NetworkBehaviour
     #endregion
     private bool TargetEnemyValid()
     {
-        if (targetEnemy == null || !targetEnemy.alive || !targetEnemy.isTargetable.Value)
+        if (targetEnemy == null || targetEnemy.alive == false || targetEnemy.isTargetable.Value == false)
         {
             return false;
         }
@@ -278,12 +280,18 @@ public class MinionController : NetworkBehaviour
             return true;
         }
     }
+    private void PlaceOnGroundIfNecessary()
+    {
+        if (selectableEntity.occupiedGarrison == null && (transform.position.y > 0.1f || transform.position.y < 0.1f))
+        {
+            PlaceOnGround();
+        }
+    }
     private void UpdateState()
     {
         UpdateHarvestables();
         UpdateColliderStatus();
         UpdateAttackReadiness();
-
         if (attackType == AttackType.Gatling)
         {
             anim.SetFloat("AttackSpeed", 0);
@@ -305,15 +313,15 @@ public class MinionController : NetworkBehaviour
                 anim.Play("Idle");
                 ai.canMove = false;
                 destination = transform.position;
-                if (targetEnemy == null || !targetEnemy.alive)
-                {
-                    targetEnemy = GetClosestEnemy();
-                }
-                else
+                if (TargetEnemyValid())
                 {
                     state = State.WalkToEnemy;
                 }
-                if (selector.type == SelectableEntity.EntityTypes.Builder)
+                else
+                {
+                    targetEnemy = GetClosestEnemy();
+                }
+                if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
                 {
                     if (buildTarget == null || buildTarget.fullyBuilt)
                     {
@@ -350,18 +358,18 @@ public class MinionController : NetworkBehaviour
                     if (!playedAttackMoveSound)
                     {
                         playedAttackMoveSound = true;
-                        selector.SimplePlaySound(2);
+                        selectableEntity.SimplePlaySound(2);
                     }
                     anim.Play("AttackWalkStart");
                 }
 
-                if (!TargetEnemyValid())
+                if (TargetEnemyValid())
                 {
-                    targetEnemy = GetClosestEnemy();
+                    state = State.WalkToEnemy;
                 }
                 else
                 {
-                    state = State.WalkToEnemy;
+                    targetEnemy = GetClosestEnemy();
                 }
 
                 if (DetectIfStuck())
@@ -373,14 +381,14 @@ public class MinionController : NetworkBehaviour
                 UpdateMoveIndicator();
                 ai.canMove = true;
                 destination = orderedDestination;
-                 
-                if (!TargetEnemyValid())
+
+                if (TargetEnemyValid())
                 {
-                    targetEnemy = GetClosestEnemy();
+                    state = State.WalkToEnemy;
                 }
                 else
                 {
-                    state = State.WalkToEnemy;
+                    targetEnemy = GetClosestEnemy();
                 }
 
                 if (DetectIfStuck())
@@ -390,11 +398,7 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.WalkToEnemy:
                 ai.canMove = true;
-                if (!TargetEnemyValid())
-                {
-                    state = State.WalkContinueFindEnemies;
-                }
-                else
+                if (TargetEnemyValid())
                 {
                     UpdateAttackIndicator();
                     if (Vector3.Distance(transform.position, targetEnemy.transform.position) > attackRange)
@@ -407,6 +411,10 @@ public class MinionController : NetworkBehaviour
                         stateTimer = 0;
                         state = State.Attacking;
                     }
+                }
+                else
+                { 
+                    state = State.WalkContinueFindEnemies;
                 }
                 break;
             case State.Attacking: 
@@ -455,6 +463,8 @@ public class MinionController : NetworkBehaviour
                                         break;
                                     case AttackType.Gatling:
                                         DamageSpecifiedEnemy(targetEnemy, damage);
+                                        break;
+                                    case AttackType.None:
                                         break;
                                     default:
                                         break;
@@ -581,9 +591,9 @@ public class MinionController : NetworkBehaviour
             #endregion
             #region Harvestable 
             case State.FindHarvestable:
-                if (selector.harvestTarget == null || !selector.harvestTarget.alive)
+                if (selectableEntity.harvestTarget == null || !selectableEntity.harvestTarget.alive)
                 {
-                    selector.harvestTarget = FindClosestHarvestable();
+                    selectableEntity.harvestTarget = FindClosestHarvestable();
                 }
                 else
                 {
@@ -593,17 +603,17 @@ public class MinionController : NetworkBehaviour
             case State.WalkToHarvestable:
                 UpdateMoveIndicator();
                 ai.canMove = true;
-                if (selector.harvestTarget == null)
+                if (selectableEntity.harvestTarget == null)
                 {
                     state = State.FindHarvestable;
                 }
                 else
                 {
-                    if (Vector3.Distance(transform.position, selector.harvestTarget.transform.position) > attackRange) //if out of harvest range walk there
+                    if (Vector3.Distance(transform.position, selectableEntity.harvestTarget.transform.position) > attackRange) //if out of harvest range walk there
                     {
                         ai.canMove = true;
                         anim.Play("Walk");
-                        destination = selector.harvestTarget.transform.position;
+                        destination = selectableEntity.harvestTarget.transform.position;
                     }
                     else
                     {
@@ -613,14 +623,14 @@ public class MinionController : NetworkBehaviour
                 }
                 break;
             case State.Harvesting:
-                if (selector.harvestTarget == null)
+                if (selectableEntity.harvestTarget == null)
                 {
                     state = State.FindHarvestable;
                 }
                 else
                 {
                     ai.canMove = false;
-                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, selector.harvestTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
+                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, selectableEntity.harvestTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
 
                     if (attackReady)
                     {
@@ -635,7 +645,7 @@ public class MinionController : NetworkBehaviour
                             else if (attackReady)
                             {
                                 attackReady = false;
-                                HarvestTarget(selector.harvestTarget);
+                                HarvestTarget(selectableEntity.harvestTarget);
                             }
                         }
                         else //animation finished
@@ -647,11 +657,11 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.AfterHarvestCheck:
                 anim.Play("Idle");
-                if (selector.harvestedResourceAmount >= selector.harvestCapacity)
+                if (selectableEntity.harvestedResourceAmount >= selectableEntity.harvestCapacity)
                 {
                     state = State.FindDeposit;
                 }
-                else if (selector.harvestTarget != null)
+                else if (selectableEntity.harvestTarget != null)
                 {
                     stateTimer = 0;
                     state = State.Harvesting;
@@ -704,10 +714,10 @@ public class MinionController : NetworkBehaviour
 
                     //anim.Play("Attack"); //replace with deposit animation
                     //instant dropoff
-                    if (selector != null)
+                    if (selectableEntity != null)
                     {
-                        Global.Instance.localPlayer.gold += selector.harvestedResourceAmount;
-                        selector.harvestedResourceAmount = 0;
+                        Global.Instance.localPlayer.gold += selectableEntity.harvestedResourceAmount;
+                        selectableEntity.harvestedResourceAmount = 0;
                         Global.Instance.localPlayer.UpdateGUIFromSelections();
                     }
                     state = State.AfterDepositCheck;
@@ -715,7 +725,7 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.AfterDepositCheck:
                 anim.Play("Idle");
-                if (selector.harvestTarget != null)
+                if (selectableEntity.harvestTarget != null)
                 {
                     stateTimer = 0;
                     state = State.WalkToHarvestable;
@@ -758,7 +768,7 @@ public class MinionController : NetworkBehaviour
                     ai.canMove = false;
                     transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, garrisonTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
                     //garrison into
-                    garrisonTarget.ReceivePassenger(selector);
+                    garrisonTarget.ReceivePassenger(this);
                     state = State.Idle;
                 }
                 break;
@@ -783,15 +793,15 @@ public class MinionController : NetworkBehaviour
 
     private void UpdateAttackIndicator()
     { 
-        if (selector != null)
+        if (selectableEntity != null)
         {
             if (Input.GetKey(KeyCode.Space) && targetEnemy != null)
             {
-                selector.UpdateAttackIndicator();
+                selectableEntity.UpdateAttackIndicator();
             }
             else
             {
-                selector.HideMoveIndicator();
+                selectableEntity.HideMoveIndicator();
             }
         }
     }
@@ -800,15 +810,15 @@ public class MinionController : NetworkBehaviour
     /// </summary>
     private void UpdateMoveIndicator()
     {
-        if (selector != null)
+        if (selectableEntity != null)
         {
             if (Input.GetKey(KeyCode.Space))
             { 
-                selector.UpdateMoveIndicator();
+                selectableEntity.UpdateMoveIndicator();
             }
             else
             {
-                selector.HideMoveIndicator();
+                selectableEntity.HideMoveIndicator();
             }
         }
     }
@@ -838,11 +848,11 @@ public class MinionController : NetworkBehaviour
     }
     private void HarvestTarget(SelectableEntity target)
     {
-        selector.SimplePlaySound(1); //play impact sound 
+        selectableEntity.SimplePlaySound(1); //play impact sound 
         if (target != null)
         {
             int actualHarvested = Mathf.Clamp(harvestAmount, 0, target.hitPoints.Value); //max amount we can harvest clamped by hitpoints remaining
-            int diff = selector.harvestCapacity - selector.harvestedResourceAmount;
+            int diff = selectableEntity.harvestCapacity - selectableEntity.harvestedResourceAmount;
             actualHarvested = Mathf.Clamp(actualHarvested, 0, diff); //max amount we can harvest clamped by remaining carrying capacity
             if (IsServer)
             {
@@ -853,7 +863,7 @@ public class MinionController : NetworkBehaviour
                 RequestHarvestServerRpc(harvestAmount, target);
             }
 
-            selector.harvestedResourceAmount += actualHarvested;
+            selectableEntity.harvestedResourceAmount += actualHarvested;
             Global.Instance.localPlayer.UpdateGUIFromSelections();
         }
     } 
@@ -878,12 +888,14 @@ public class MinionController : NetworkBehaviour
         return closest;
     }
     #region FindClosest
+    private Collider[] debugNearby = new Collider[100];
     private SelectableEntity GetClosestEnemy()
     {
         float range = attackRange + 2;
 
         int maxColliders = Mathf.RoundToInt(40 * range);
         Collider[] hitColliders = new Collider[maxColliders];
+        debugNearby = hitColliders;
         int numColliders = Physics.OverlapSphereNonAlloc(transform.position, range, hitColliders, enemyMask);
         Collider closest = null;
         float distance = Mathf.Infinity;
@@ -902,6 +914,10 @@ public class MinionController : NetworkBehaviour
                 {
                     continue;
                 }
+                if (select.isTargetable.Value == false)
+                {
+                    continue;
+                }
                 if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
                     if (Global.Instance.localPlayer.ownedEntities.Contains(select))
@@ -910,10 +926,6 @@ public class MinionController : NetworkBehaviour
                     }
                 }
                 else if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
-                {
-                    continue;
-                }
-                else if (!select.isTargetable.Value)
                 {
                     continue;
                 }
@@ -943,6 +955,10 @@ public class MinionController : NetworkBehaviour
         if (closest != null)
         {
             enemy = closest.GetComponent<SelectableEntity>();
+            /*if (enemy.occupiedGarrison != null) //if garrisoned
+            {
+                enemy = enemy.occupiedGarrison;
+            }*/
         }
         return enemy;
     }
@@ -1002,7 +1018,7 @@ public class MinionController : NetworkBehaviour
         state = State.Idle;
         CancelInvoke("SimpleDamageEnemy");
         CancelInvoke("SimpleBuildTarget");
-        selector.UpdateIndicator();
+        selectableEntity.UpdateIndicator();
     }
     private void ReturnState()
     {
@@ -1021,7 +1037,7 @@ public class MinionController : NetworkBehaviour
     public void BuildTarget(SelectableEntity target) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         //fire locally
-        selector.SimplePlaySound(1);
+        selectableEntity.SimplePlaySound(1);
 
         if (target != null)
         {
@@ -1096,7 +1112,7 @@ public class MinionController : NetworkBehaviour
             DamageSpecifiedEnemy(select, damage);
             //Debug.Log(i);
         }
-        DamageSpecifiedEnemy(selector, damage); //kill this also
+        DamageSpecifiedEnemy(selectableEntity, damage); //kill this also
         SimpleExplosion(transform.position);
     }  
     private void SimpleExplosion(Vector3 pos)
@@ -1143,12 +1159,12 @@ public class MinionController : NetworkBehaviour
         if (enemy != null)
         {
             //fire locally
-            selector.SimplePlaySound(1);
-            if (selector.attackEffects.Length > 0) //show muzzle flash
+            selectableEntity.SimplePlaySound(1);
+            if (selectableEntity.attackEffects.Length > 0) //show muzzle flash
             {
-                selector.DisplayAttackEffects();
+                selectableEntity.DisplayAttackEffects();
             }
-            if (selector.type == SelectableEntity.EntityTypes.Ranged ) //shoot trail
+            if (selectableEntity.type == SelectableEntity.EntityTypes.Ranged ) //shoot trail
             {
                 Vector3 spawnPos;
                 if (attackEffectSpawnPosition != null)
@@ -1255,10 +1271,10 @@ public class MinionController : NetworkBehaviour
         if (targetEnemy != null)
         { 
             //fire locally
-            selector.SimplePlaySound(1);
-            if (selector.attackEffects.Length > 0)
+            selectableEntity.SimplePlaySound(1);
+            if (selectableEntity.attackEffects.Length > 0)
             {
-                selector.DisplayAttackEffects();
+                selectableEntity.DisplayAttackEffects();
             }
             if (IsServer)
             {
@@ -1298,7 +1314,7 @@ public class MinionController : NetworkBehaviour
     { 
         targetEnemy = null;
         buildTarget = null;
-        selector.harvestTarget = null;
+        selectableEntity.harvestTarget = null;
         depositTarget = null;
     }
     public void SetAttackMoveDestination()
@@ -1318,7 +1334,7 @@ public class MinionController : NetworkBehaviour
     private void PlaceOnGround()
     {
         RaycastHit hit;
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity, Global.Instance.groundMask))
+        if (Physics.Raycast(transform.position + (new Vector3 (0, 100, 0)), transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity, Global.Instance.groundMask))
         {
             transform.position = hit.point;
         }
@@ -1339,9 +1355,11 @@ public class MinionController : NetworkBehaviour
                 destination = hit.point;
                 orderedDestination = destination;
                 //check if player right clicked on an entity and what behavior unit should have
-                if (selector.occupiedGarrison != null) //we are currently garrisoned
+                SelectableEntity justLeftGarrison = null;
+                if (selectableEntity.occupiedGarrison != null) //we are currently garrisoned
                 {
-                    selector.occupiedGarrison.UnloadPassenger(selector); //leave garrison by moving out of it
+                    justLeftGarrison = selectableEntity.occupiedGarrison;
+                    selectableEntity.occupiedGarrison.UnloadPassenger(this); //leave garrison by moving out of it
                     PlaceOnGround(); //snap to ground
                 }
                 SelectableEntity select = hit.collider.GetComponent<SelectableEntity>(); 
@@ -1349,22 +1367,25 @@ public class MinionController : NetworkBehaviour
                 {
                     if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
                     {
-                        if (select.net.OwnerClientId == selector.net.OwnerClientId) //same team
+                        if (select.net.OwnerClientId == selectableEntity.net.OwnerClientId) //same team
                         {
                             if (select.depositType == SelectableEntity.DepositType.Gold && select.fullyBuilt) //if deposit point
                             {
                                 depositTarget = select;
                                 state = State.FindDeposit;
                             }
-                            else if (selector.type == SelectableEntity.EntityTypes.Builder && !select.fullyBuilt) //if buildable and this is a builder
+                            else if (selectableEntity.type == SelectableEntity.EntityTypes.Builder && !select.fullyBuilt) //if buildable and this is a builder
                             {
                                 buildTarget = select;
                                 state = State.WalkToBuildable;
                             }
-                            else if (select.HasEmptyGarrisonablePosition() && selector.garrisonablePositions.Count <= 0) //target can be garrisoned, and passenger cannot garrison
+                            else if (select.HasEmptyGarrisonablePosition() && selectableEntity.garrisonablePositions.Count <= 0) //target can be garrisoned, and passenger cannot garrison
                             {
-                                garrisonTarget = select;
-                                state = State.WalkToGarrisonable;
+                                if (justLeftGarrison != select) //not perfect, fails on multiple units
+                                {
+                                    garrisonTarget = select;
+                                    state = State.WalkToGarrisonable;
+                                }
                             }
                         }
                         else //enemy
@@ -1379,11 +1400,11 @@ public class MinionController : NetworkBehaviour
                         {
                             //check if clicked is resource
                             //if it is, then tell resource collectors to gather it
-                            if (selector.isHarvester)
+                            if (selectableEntity.isHarvester)
                             {
-                                if (selector.harvestedResourceAmount < selector.harvestCapacity) //we could still harvest more
+                                if (selectableEntity.harvestedResourceAmount < selectableEntity.harvestCapacity) //we could still harvest more
                                 { 
-                                    selector.harvestTarget = select;
+                                    selectableEntity.harvestTarget = select;
                                     state = State.WalkToHarvestable;
                                 }
                                 else
