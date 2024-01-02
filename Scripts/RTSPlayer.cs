@@ -27,8 +27,8 @@ public class RTSPlayer : NetworkBehaviour
         ReadyToPlace
     }
     public BuildStates buildState = BuildStates.Waiting;
-    LayerMask groundLayer;
-    LayerMask entityLayer;
+    public LayerMask groundLayer;
+    public LayerMask entityLayer;
     void Start()
     { 
         groundLayer = LayerMask.GetMask("Ground");
@@ -397,11 +397,32 @@ public class RTSPlayer : NetworkBehaviour
                 if (fac.linkedID == -1) //if no linked building, stop after placing building
                 {
                     StopPlacingBuilding();
+
+                    SelectableEntity entity = fac.prefabToSpawn.GetComponent<SelectableEntity>();
+                    if (entity.type == SelectableEntity.EntityTypes.Portal)
+                    {
+                        endPortal = entity.GetComponent<Portal>();
+
+                        startPortal.destination = endPortal.transform.position;
+                        endPortal.destination = startPortal.transform.position;
+                        startPortal.hasLinkedPortal = true;
+                        endPortal.hasLinkedPortal = true;
+
+                        startPortal = null;
+                        endPortal = null;
+                    }
                 }
                 else //if there's a linked building, we continue placing buildings so the player can place the next part of the building.
                 {
                     buildingPlacingID = (byte) fac.linkedID;
                     placingLinkedBuilding = true;
+
+                    //if portal, then keep track
+                    SelectableEntity entity = fac.prefabToSpawn.GetComponent<SelectableEntity>();
+                    if (entity.type == SelectableEntity.EntityTypes.Portal)
+                    {
+                        startPortal = entity.GetComponent<Portal>();
+                    }
                 }
             }
             //if this is a wall, we should connect it to any adjacent nodes
@@ -409,8 +430,11 @@ public class RTSPlayer : NetworkBehaviour
             //find adjacent nodes
 
             //place walls between this and those nodes
+
         }
-    }  
+    }
+    public Portal startPortal;
+    public Portal endPortal;
     private void StopPlacingBuilding()
     {
         Destroy(followCursorObject);
@@ -778,6 +802,8 @@ public class RTSPlayer : NetworkBehaviour
         buildState = BuildStates.ReadyToPlace;
         GameObject build = _faction.entities[id].prefabToSpawn;
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn locally  
+        SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
+        entity.isBuildIndicator = true;
         followCursorObject = spawn;
         meshes = spawn.GetComponentsInChildren<MeshRenderer>();
         for (int i = 0; i < meshes.Length; i++)
@@ -855,6 +881,12 @@ public class RTSPlayer : NetworkBehaviour
                 selectedEntities.Add(item);
             }
         }
+    }
+    public void DeselectSpecific(SelectableEntity entity)
+    {
+        selectedEntities.Remove(entity);
+        entity.Select(false);
+        UpdateGUIFromSelections();
     }
     private void DeselectAll()
     { 

@@ -1358,7 +1358,7 @@ public class MinionController : NetworkBehaviour
     private void PlaceOnGround()
     {
         RaycastHit hit;
-        if (Physics.Raycast(transform.position + (new Vector3 (0, 100, 0)), transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity, Global.Instance.groundMask))
+        if (Physics.Raycast(transform.position + (new Vector3 (0, 100, 0)), transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
         {
             transform.position = hit.point;
         }

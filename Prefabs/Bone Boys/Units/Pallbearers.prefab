@@ -532,7 +532,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 801487402834003379, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: maxSpeed
-      value: 1.5
+      value: 1.75
       objectReference: {fileID: 0}
     - target: {fileID: 801487402834003379, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: rotationSpeed

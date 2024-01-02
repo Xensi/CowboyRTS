@@ -48,7 +48,8 @@ public class SelectableEntity : NetworkBehaviour
         Builder,
         HarvestableStructure,
         DefensiveGarrison,
-        Transport
+        Transport,
+        Portal
     }
     public EntityTypes type = EntityTypes.Melee;
     public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
@@ -73,6 +74,7 @@ public class SelectableEntity : NetworkBehaviour
     public bool passengersAreTargetable = false;
     public NetworkVariable<bool> isTargetable = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     //[HideInInspector] public MinionController minionController;
+    public bool isBuildIndicator = false;
     #endregion
     #region NetworkSpawn
     public override void OnNetworkSpawn()
@@ -126,7 +128,7 @@ public class SelectableEntity : NetworkBehaviour
                 newPassenger.selectableEntity.isTargetable.Value = passengersAreTargetable;
                 newPassenger.col.isTrigger = true;
                 newPassenger.minionNetwork.verticalPosition.Value = item.transform.position.y;
-                //newPassenger.selectableEntity.RTS
+                Global.Instance.localPlayer.DeselectSpecific(newPassenger.selectableEntity);
                 //newPassenger.minionNetwork.positionDifferenceThreshold = .1f;
                 //newPassenger.minionNetwork.ForceUpdatePosition(); //update so that passengers are more in the correct y-position
                 break;
