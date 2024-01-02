@@ -75,6 +75,7 @@ public class SelectableEntity : NetworkBehaviour
     public NetworkVariable<bool> isTargetable = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     //[HideInInspector] public MinionController minionController;
     public bool isBuildIndicator = false;
+    public bool tryingToTeleport = false;
     #endregion
     #region NetworkSpawn
     public override void OnNetworkSpawn()

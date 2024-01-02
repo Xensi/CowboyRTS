@@ -770,15 +770,31 @@ public class MinionController : NetworkBehaviour
                 }
                 else
                 {
-                    if (Vector3.Distance(transform.position, garrisonTarget.transform.position) > garrisonRange)
+                    if (garrisonTarget.type == SelectableEntity.EntityTypes.Portal) //walk into
                     {
-                        ai.canMove = true;
-                        anim.Play("Walk");
-                        destination = garrisonTarget.transform.position;
+                        if (selectableEntity.tryingToTeleport)
+                        {
+                            ai.canMove = true;
+                            anim.Play("Walk");
+                            destination = garrisonTarget.transform.position;
+                        }
+                        else
+                        {
+                            state = State.Idle;
+                        }
                     }
                     else
                     {
-                        state = State.Garrisoning;
+                        if (Vector3.Distance(transform.position, garrisonTarget.transform.position) > garrisonRange)
+                        {
+                            ai.canMove = true;
+                            anim.Play("Walk");
+                            destination = garrisonTarget.transform.position;
+                        }
+                        else
+                        {
+                            state = State.Garrisoning;
+                        }
                     }
                 }
                 break;
@@ -1372,7 +1388,7 @@ public class MinionController : NetworkBehaviour
             followingMoveOrder = true;
             attackMoving = attackMoveVal;
             state = State.Walk; //default to walking state
-
+            selectableEntity.tryingToTeleport = false;
             Ray ray = cam.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
             {
@@ -1410,6 +1426,12 @@ public class MinionController : NetworkBehaviour
                                     garrisonTarget = select;
                                     state = State.WalkToGarrisonable;
                                 }
+                            }
+                            else if (select.type == SelectableEntity.EntityTypes.Portal)
+                            {
+                                selectableEntity.tryingToTeleport = true;
+                                garrisonTarget = select;
+                                state = State.WalkToGarrisonable;
                             }
                         }
                         else //enemy

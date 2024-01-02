@@ -27,7 +27,7 @@ Transform:
   m_GameObject: {fileID: 3962896200070588341}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.5, y: 1, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 840438227060371342}
@@ -109,7 +109,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: teamBehavior
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2870261118279373742, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: m_Name
@@ -169,7 +169,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7884046691171381629, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: m_Size.x
-      value: 1
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 7884046691171381629, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: m_Size.y
@@ -177,7 +177,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7884046691171381629, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: m_Size.z
-      value: 1
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 7884046691171381629, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: m_Center.y
@@ -217,3 +217,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   destination: {x: 0, y: 0, z: 0}
   hasLinkedPortal: 0
+  linkedPortal: {fileID: 0}

@@ -8,6 +8,7 @@ public class Portal : MonoBehaviour
     // teleports minions to destination
     public Vector3 destination;
     public bool hasLinkedPortal = false;
+    public Portal linkedPortal;
 
     private void Start()
     {
@@ -24,9 +25,10 @@ public class Portal : MonoBehaviour
                     if ((Global.Instance.localPlayer.entityLayer.value & (1 << other.gameObject.layer)) > 0)
                     {
                         SelectableEntity otherEntity = other.GetComponent<SelectableEntity>();
-                        if (otherEntity.isBuildIndicator == false)
+                        if (otherEntity.isBuildIndicator == false && otherEntity.tryingToTeleport)
                         {
                             other.transform.position = destination;
+                            otherEntity.tryingToTeleport = false;
                         }
                     }
                 }

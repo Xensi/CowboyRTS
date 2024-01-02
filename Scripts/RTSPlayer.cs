@@ -397,19 +397,30 @@ public class RTSPlayer : NetworkBehaviour
                 if (fac.linkedID == -1) //if no linked building, stop after placing building
                 {
                     StopPlacingBuilding();
-
-                    SelectableEntity entity = fac.prefabToSpawn.GetComponent<SelectableEntity>();
-                    if (entity.type == SelectableEntity.EntityTypes.Portal)
+                    if (placingPortal)
                     {
-                        endPortal = entity.GetComponent<Portal>();
+                        foreach (SelectableEntity item in ownedEntities)
+                        {
+                            if (item.type == SelectableEntity.EntityTypes.Portal)
+                            {
+                                Portal portal = item.GetComponent<Portal>();
+                                if (portal != startPortal)
+                                {
+                                    endPortal = portal;
 
-                        startPortal.destination = endPortal.transform.position;
-                        endPortal.destination = startPortal.transform.position;
-                        startPortal.hasLinkedPortal = true;
-                        endPortal.hasLinkedPortal = true;
+                                    startPortal.destination = endPortal.transform.position;
+                                    endPortal.destination = startPortal.transform.position;
+                                    startPortal.hasLinkedPortal = true;
+                                    endPortal.hasLinkedPortal = true;
+                                    startPortal.linkedPortal = endPortal;
+                                    endPortal.linkedPortal = startPortal;
 
-                        startPortal = null;
-                        endPortal = null;
+                                    startPortal = null;
+                                    endPortal = null;
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
                 else //if there's a linked building, we continue placing buildings so the player can place the next part of the building.
@@ -417,11 +428,17 @@ public class RTSPlayer : NetworkBehaviour
                     buildingPlacingID = (byte) fac.linkedID;
                     placingLinkedBuilding = true;
 
-                    //if portal, then keep track
-                    SelectableEntity entity = fac.prefabToSpawn.GetComponent<SelectableEntity>();
-                    if (entity.type == SelectableEntity.EntityTypes.Portal)
+
+                    if (placingPortal)
                     {
-                        startPortal = entity.GetComponent<Portal>();
+                        foreach (SelectableEntity item in ownedEntities)
+                        {
+                            if (item.type == SelectableEntity.EntityTypes.Portal)
+                            {
+                                startPortal = item.GetComponent<Portal>();
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -517,24 +534,23 @@ public class RTSPlayer : NetworkBehaviour
         sbyte xRally = (sbyte)rallyPos.x;
         sbyte zRally = (sbyte)rallyPos.z;
 
-
-        if (useRally) {
+        /*if (useRally) {
             SpawnMinionRallyServerRpc(xSpawn, zSpawn, minionID, xRally, zRally);
-            /*if (lastSpawnedEntity.controller != null)
+            *//*if (lastSpawnedEntity.controller != null)
             {
                 lastSpawnedEntity.controller.SetDestinationToPos(rallyPos);
-            }*/
+            }*//*
         }
         else
         { 
-            SpawnMinionServerRpc(xSpawn, zSpawn, minionID);
-        }
-
+            spawned = SpawnMinionServerRpc(xSpawn, zSpawn, minionID);
+        }*/
+        SpawnMinionServerRpc(xSpawn, zSpawn, minionID);
         //tell this minion to go to rally point if there is one
 
-        if (useRally)
+        /*if (useRally)
         {
-        }
+        }*/
         //tell minion to build things
 
         UpdateButtons();
@@ -551,12 +567,20 @@ public class RTSPlayer : NetworkBehaviour
         }*/
     }
 
+    /// <summary>
+    /// Any client (including host) tells server to spawn in a minion and grant ownership to the client.
+    /// </summary> 
+    [ServerRpc]
+    private void SpawnMinionServerRpc(sbyte xSpawn, sbyte zSpawn, byte minionID, ServerRpcParams serverRpcParams = default)
+    {
+        SelectableEntity spawned = InternalSpawnMinion(xSpawn, zSpawn, minionID, serverRpcParams);
+    }
     private SelectableEntity InternalSpawnMinion(sbyte xSpawn, sbyte zSpawn, byte minionID, ServerRpcParams serverRpcParams = default)
     {
-        FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
         Vector3 spawnPosition = new(xSpawn, 0, zSpawn); //get spawn position
         spawnPosition += _offset;
 
+        FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
         GameObject minion = Instantiate(fac.prefabToSpawn, spawnPosition, Quaternion.Euler(0, 180, 0)); //spawn locally
         //Get components
         SelectableEntity select = minion.GetComponent<SelectableEntity>();   
@@ -599,14 +623,6 @@ public class RTSPlayer : NetworkBehaviour
             select.controller.RallyToPos(rallyPos);
         }  
     }
-    /// <summary>
-    /// Any client (including host) tells server to spawn in a minion and grant ownership to the client.
-    /// </summary> 
-    [ServerRpc] 
-    private void SpawnMinionServerRpc(sbyte xSpawn, sbyte zSpawn, byte minionID, ServerRpcParams serverRpcParams = default)
-    {
-        _ = InternalSpawnMinion(xSpawn, zSpawn, minionID, serverRpcParams);
-    }  
     #endregion
     #region Selection
     private void DoNotDoubleSelect()
@@ -682,6 +698,11 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
 
+        UpdateButtonsFromSelectedUnits();
+        UpdateBuildQueue();
+    }
+    private void UpdateButtonsFromSelectedUnits()
+    {
         byte i = 0;
         int cap = Mathf.Clamp(indices.Count, 0, Global.Instance.productionButtons.Count);
         //enable a button for each indices
@@ -691,25 +712,24 @@ public class RTSPlayer : NetworkBehaviour
             button.gameObject.SetActive(true);
             TMP_Text text = button.GetComponentInChildren<TMP_Text>();
             FactionEntityClass fac = _faction.entities[indices[i]];
-            text.text = fac.productionName + ": " + fac.goldCost +"g";
+            text.text = fac.productionName + ": " + fac.goldCost + "g";
             byte j = indices[i];
             //Debug.Log(j);
-            button.onClick.RemoveAllListeners(); 
+            button.onClick.RemoveAllListeners();
             if (_faction.entities[indices[i]].needsConstructing)
-            { 
+            {
                 button.onClick.AddListener(delegate { HoverBuildWithID(j); });
             }
             else
-            { 
+            {
                 button.onClick.AddListener(delegate { QueueBuildingSpawn(j); });
             }
             button.interactable = gold >= fac.goldCost;
         }
         for (; i < Global.Instance.productionButtons.Count; i++)
-        { 
+        {
             Global.Instance.productionButtons[i].gameObject.SetActive(false);
         }
-        UpdateBuildQueue();
     }
     public void UpdateBuildQueue()
     {
@@ -803,6 +823,7 @@ public class RTSPlayer : NetworkBehaviour
         GameObject build = _faction.entities[id].prefabToSpawn;
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn locally  
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
+        
         entity.isBuildIndicator = true;
         followCursorObject = spawn;
         meshes = spawn.GetComponentsInChildren<MeshRenderer>();
@@ -816,7 +837,12 @@ public class RTSPlayer : NetworkBehaviour
             colliders[i].isTrigger = true;
         }
         buildingPlacingID = id;
+        if (entity.type == SelectableEntity.EntityTypes.Portal)
+        {
+            placingPortal = true;
+        }
     }
+    public bool placingPortal = false;
     public List<byte> indices;
     private void SingleSelect()
     { 
