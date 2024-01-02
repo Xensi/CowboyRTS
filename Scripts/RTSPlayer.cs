@@ -306,6 +306,7 @@ public class RTSPlayer : NetworkBehaviour
                 {
                     case SelectableEntity.EntityTypes.Melee:
                     case SelectableEntity.EntityTypes.Ranged:
+                    case SelectableEntity.EntityTypes.Transport:
                         military++;
                         break;
                     case SelectableEntity.EntityTypes.ProductionStructure:
@@ -826,7 +827,7 @@ public class RTSPlayer : NetworkBehaviour
                 }
                 else
                 {
-                    SelectAllSameType(entity.type);
+                    SelectAllSameTypeExcludingInGarrisons(entity.type);
                 }
             }
         }
@@ -835,14 +836,20 @@ public class RTSPlayer : NetworkBehaviour
     {
         foreach (GarrisonablePosition item in garrison.garrisonablePositions)
         {
-            TrySelectEntity(item.passenger.selectableEntity);
+            if (item.passenger != null)
+            {
+                if (item.passenger.selectableEntity != null)
+                {
+                    TrySelectEntity(item.passenger.selectableEntity);
+                }
+            }
         }
     }
-    private void SelectAllSameType(SelectableEntity.EntityTypes type)
+    private void SelectAllSameTypeExcludingInGarrisons(SelectableEntity.EntityTypes type)
     {
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item.type == type)
+            if (item.type == type && item.occupiedGarrison == null)
             { 
                 item.Select(true);
                 selectedEntities.Add(item);

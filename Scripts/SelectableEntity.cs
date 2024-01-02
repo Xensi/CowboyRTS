@@ -121,9 +121,14 @@ public class SelectableEntity : NetworkBehaviour
             if (item.passenger == null)
             {
                 item.passenger = newPassenger;
+                //newPassenger.transform.parent = item.transform;
                 newPassenger.selectableEntity.occupiedGarrison = this;
                 newPassenger.selectableEntity.isTargetable.Value = passengersAreTargetable;
                 newPassenger.col.isTrigger = true;
+                newPassenger.minionNetwork.verticalPosition.Value = item.transform.position.y;
+                //newPassenger.selectableEntity.RTS
+                //newPassenger.minionNetwork.positionDifferenceThreshold = .1f;
+                //newPassenger.minionNetwork.ForceUpdatePosition(); //update so that passengers are more in the correct y-position
                 break;
             }
         }
@@ -135,9 +140,12 @@ public class SelectableEntity : NetworkBehaviour
             if (item.passenger == exiting)
             {
                 item.passenger = null;
+                //exiting.transform.parent = null;
                 exiting.selectableEntity.occupiedGarrison = null;
                 exiting.selectableEntity.isTargetable.Value = true;
                 exiting.col.isTrigger = false;
+                exiting.minionNetwork.verticalPosition.Value = 0;
+                //exiting.minionNetwork.positionDifferenceThreshold = exiting.minionNetwork.defaultPositionDifferenceThreshold;
                 break;
             }
         }

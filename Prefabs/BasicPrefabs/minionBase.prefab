@@ -212,9 +212,11 @@ MonoBehaviour:
   rotationDifferenceThreshold: 30
   positionDifferenceThreshold: 0.35
   _interpolateTime: 0.2
-  _rotInterpolate: 0.1
+  _rotInterpolate: 0.2
   _useServerAuthoritative: 1
   _combinePackets: 0
+  verticalPosition:
+    m_InternalValue: 0
 --- !u!114 &1420444146532106229
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -241,6 +243,8 @@ MonoBehaviour:
   net: {fileID: 4126868118260038068}
   teamRenderers: []
   isHarvester: 0
+  harvesters: []
+  allowedHarvesters: 1
   depositType: 0
   teamBehavior: 0
   type: 3
@@ -255,13 +259,19 @@ MonoBehaviour:
   - {fileID: 8300000, guid: f44f3479724a08e4e8c995e2f633bbfe, type: 3}
   - {fileID: 8300000, guid: f36c995b0cc52224ebecea1e5b408cfa, type: 3}
   rallyPoint: {x: 0, y: 0, z: 0}
+  alive: 1
   rallyVisual: {fileID: 0}
   damagedState: {fileID: 0}
+  garrisonablePositions: []
+  occupiedGarrison: {fileID: 0}
+  passengersAreTargetable: 0
+  isTargetable:
+    m_InternalValue: 0
   harvestType: 0
-  harvestedResource: 0
+  harvestedResourceAmount: 0
   harvestCapacity: 10
   damageableMeshes: []
-  alive: 1
+  harvestTarget: {fileID: 0}
   attackEffects: []
 --- !u!114 &1556607826778985850
 MonoBehaviour:
@@ -275,28 +285,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cba2131cba19af4c9d3a513f211d5ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  harvestTarget: {fileID: 0}
   destination: {x: 0, y: 0, z: 0}
   anim: {fileID: 0}
-  selector: {fileID: 0}
+  selectableEntity: {fileID: 0}
   state: 10
   attackType: 0
+  directionalAttack: 0
   attackRange: 1
-  targetEnemy: {fileID: 0}
-  followingMoveOrder: 0
-  localRotate: {fileID: 0}
-  enemyInRange: 0
+  col: {fileID: 0}
   rigid: {fileID: 7586105387906439370}
-  trailSpawnPos: {fileID: 0}
-  depositTarget: {fileID: 0}
-  moveWhileAttacking: 0
-  areaOfEffect: 1
-  buildTarget: {fileID: 0}
+  selfDestructAreaOfEffect: 1
+  canMoveWhileAttacking: 0
+  attackEffectSpawnPosition: {fileID: 0}
   damage: 1
   attackDuration: 1
   impactTime: 0.5
   attackMoving: 0
+  depositTarget: {fileID: 0}
+  buildTarget: {fileID: 0}
+  targetEnemy: {fileID: 0}
+  garrisonTarget: {fileID: 0}
+  followingMoveOrder: 0
   orderedDestination: {x: 0, y: 0, z: 0}
+  minionNetwork: {fileID: 0}
 --- !u!54 &7586105387906439370
 Rigidbody:
   m_ObjectHideFlags: 0

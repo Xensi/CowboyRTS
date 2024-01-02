@@ -3,7 +3,8 @@ using Unity.Netcode;
 public class MinionNetwork : NetworkBehaviour
 {
     [SerializeField] private float rotationDifferenceThreshold = 22.5f;
-    [SerializeField] private float positionDifferenceThreshold = .1f;
+    [SerializeField] public float positionDifferenceThreshold = .1f;
+    public readonly float defaultPositionDifferenceThreshold = .35f;
     private NetworkVariable<RotationData> _netRot;
     private NetworkVariable<PositionData> _netPos;
     private NetworkVariable<MinionData> _netData;
@@ -14,7 +15,8 @@ public class MinionNetwork : NetworkBehaviour
     [SerializeField] private float _interpolateTime = 0.1f;
     [SerializeField] private float _rotInterpolate = 0.1f;
     [SerializeField] private bool _useServerAuthoritative = true;
-    [SerializeField] private bool _combinePackets = true; //combining packets seems better!
+    [SerializeField] private bool _combinePackets = true;
+    public NetworkVariable<float> verticalPosition = new NetworkVariable<float>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private void Awake()
     { 
         var perm = _useServerAuthoritative ? NetworkVariableWritePermission.Server : NetworkVariableWritePermission.Owner;
@@ -28,6 +30,7 @@ public class MinionNetwork : NetworkBehaviour
         TransmitState();
         oldPosition = transform.position;
         oldRotation = transform.rotation.eulerAngles;
+        verticalPosition.Value = 0;
     }
     private float CalculateChangeInRotation()
     {
@@ -90,18 +93,21 @@ public class MinionNetwork : NetworkBehaviour
             float posDiff = CalculateChangeInPosition();
             if (posDiff >= positionDifferenceThreshold)
             {
-                PositionData data = WritePosition();
-                //Debug.Log("updating pos");
-                if (IsServer || !_useServerAuthoritative) //write if you are server, or if using owner-auth
-                {
-                    _netPos.Value = data;
-                }
-                else
-                {
-                    UpdateNetPosServerRpc(data);
-                }
+                ForceUpdatePosition();
             }
         } 
+    }
+    public void ForceUpdatePosition()
+    {
+        PositionData data = WritePosition();
+        if (IsServer || !_useServerAuthoritative) //write if you are server, or if using owner-auth
+        {
+            _netPos.Value = data;
+        }
+        else
+        {
+            UpdateNetPosServerRpc(data);
+        }
     }
     [ServerRpc(RequireOwnership = false)]
     private void UpdateNetRotServerRpc(RotationData data)
@@ -160,7 +166,8 @@ public class MinionNetwork : NetworkBehaviour
         }
         else
         {
-            transform.SetPositionAndRotation(Vector3.SmoothDamp(transform.position, _netPos.Value.Position, ref _vel, _interpolateTime), Quaternion.Euler(
+            Vector3 pos = new Vector3(_netPos.Value.Position.x, verticalPosition.Value, _netPos.Value.Position.z);
+            transform.SetPositionAndRotation(Vector3.SmoothDamp(transform.position, pos, ref _vel, _interpolateTime), Quaternion.Euler(
                 0,
                 Mathf.SmoothDampAngle(transform.rotation.eulerAngles.y, _netRot.Value.Rotation.y, ref _rotVel, _rotInterpolate),
                 0));

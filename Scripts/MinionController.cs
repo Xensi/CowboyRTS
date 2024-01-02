@@ -92,6 +92,7 @@ public class MinionController : NetworkBehaviour
     private readonly int idleThreshold = 30;
     bool playedAttackMoveSound = false;
     private int attackReadyTimer = 0;
+    public MinionNetwork minionNetwork;
     #endregion
     #region Stuff
     private void UpdateColliderStatus()
@@ -124,6 +125,7 @@ public class MinionController : NetworkBehaviour
         seeker = GetComponent<Seeker>();
         col = GetComponent<Collider>();
         selectableEntity = GetComponent<SelectableEntity>();
+        minionNetwork = GetComponent<MinionNetwork>();
 
         // Update the destination right before searching for a path as well.
         // This is enough in theory, but this script will also update the destination every
@@ -344,7 +346,12 @@ public class MinionController : NetworkBehaviour
                     //anim.ResetTrigger("Walk");
                     //playedAttackMoveSound = false;
                     state = State.Idle;
-                } 
+                }
+                if (selectableEntity.occupiedGarrison != null)
+                {
+                    state = State.Idle;
+                    break;
+                }
                 break;
             #endregion
             #region Attacking
@@ -376,12 +383,17 @@ public class MinionController : NetworkBehaviour
                 { 
                     state = State.Idle;
                 }
+                if (selectableEntity.occupiedGarrison != null)
+                {
+                    state = State.Idle;
+                    break;
+                }
                 break;
             case State.WalkContinueFindEnemies: 
                 UpdateMoveIndicator();
                 ai.canMove = true;
                 destination = orderedDestination;
-
+                
                 if (TargetEnemyValid())
                 {
                     state = State.WalkToEnemy;
@@ -395,14 +407,25 @@ public class MinionController : NetworkBehaviour
                 {
                     state = State.Idle;
                 }
+                if (selectableEntity.occupiedGarrison != null)
+                {
+                    state = State.Idle;
+                    break;
+                }
                 break;
             case State.WalkToEnemy:
                 ai.canMove = true;
                 if (TargetEnemyValid())
                 {
+                    
                     UpdateAttackIndicator();
                     if (Vector3.Distance(transform.position, targetEnemy.transform.position) > attackRange)
                     {
+                        if (selectableEntity.occupiedGarrison != null)
+                        {
+                            state = State.Idle;
+                            break;
+                        }
                         anim.Play("AttackWalk");
                         destination = targetEnemy.transform.position;
                     }
@@ -410,6 +433,7 @@ public class MinionController : NetworkBehaviour
                     {
                         stateTimer = 0;
                         state = State.Attacking;
+                        break;
                     }
                 }
                 else
@@ -891,7 +915,7 @@ public class MinionController : NetworkBehaviour
     private Collider[] debugNearby = new Collider[100];
     private SelectableEntity GetClosestEnemy()
     {
-        float range = attackRange + 2;
+        float range = attackRange;// + 2;
 
         int maxColliders = Mathf.RoundToInt(40 * range);
         Collider[] hitColliders = new Collider[maxColliders];
