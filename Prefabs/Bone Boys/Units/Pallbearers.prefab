@@ -579,6 +579,10 @@ PrefabInstance:
       value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: isHeavy
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: canGather
       value: 1
       objectReference: {fileID: 0}
@@ -614,6 +618,10 @@ PrefabInstance:
       propertyPath: damageableMeshes.Array.size
       value: 8
       objectReference: {fileID: 0}
+    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: teamRenderers.Array.data[0]
+      value: 
+      objectReference: {fileID: 7994040780578905670}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: teamRenderers.Array.data[1]
       value: 
@@ -938,5 +946,10 @@ MonoBehaviour:
 --- !u!95 &1883463887902436998 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 4757665980610473386, guid: be872895bffbda04fadd3a714baa7326, type: 3}
+  m_PrefabInstance: {fileID: 6351703223703438124}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &7994040780578905670 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3951136616305155434, guid: be872895bffbda04fadd3a714baa7326, type: 3}
   m_PrefabInstance: {fileID: 6351703223703438124}
   m_PrefabAsset: {fileID: 0}

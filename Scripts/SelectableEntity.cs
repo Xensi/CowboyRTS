@@ -4,42 +4,19 @@ using UnityEngine;
 using Unity.Netcode; 
 public class SelectableEntity : NetworkBehaviour
 {
-    #region variables
-    public string displayName = "name";
-    [TextArea(2, 4)]
-    public string desc = "desc";
-    public LineRenderer lineIndicator;
-
-    public MeshRenderer[] unbuiltRenderers;
-    public MeshRenderer[] finishedRenderers;
-    public MinionController controller;
-    [HideInInspector] public NetworkVariable<sbyte> hitPoints = new();
-    //public byte hitPoints;
-
-    [HideInInspector] public bool selected = false;
-    [SerializeField] private GameObject selectIndicator;
-    public GameObject targetIndicator;
-    public NetworkObject net;
-     
-    public List<MeshRenderer> teamRenderers;
-    private MeshRenderer[] allMeshes;
-    public bool isHarvester = false;
-    public List<SelectableEntity> harvesters;
-    public int allowedHarvesters = 1; //only relevant if this is a resource
+    #region Enums
     public enum DepositType
     {
         None,
         All,
         Gold
     }
-    public DepositType depositType = DepositType.None;
     public enum TeamBehavior
     {
         OwnerTeam, //be on the same team as owner
         FriendlyNeutral, //anyone can select/use this. typically a resource
         EnemyNeutral //will attack anybody (except for other neutrals). typically npcs
     }
-    public TeamBehavior teamBehavior = TeamBehavior.OwnerTeam;
     public enum EntityTypes
     {
         Melee,
@@ -51,33 +28,80 @@ public class SelectableEntity : NetworkBehaviour
         Transport,
         Portal
     }
-    public EntityTypes type = EntityTypes.Melee;
-    public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
-
-    [SerializeField] private sbyte startingHP = 10;
-    public byte maxHP = 10;
-    public bool fullyBuilt = true;
-    public Transform spawnPosition;
-
-    public List<FactionEntityClass> buildQueue;
-    private readonly int delay = 50;
-    private int count = 0;
-    public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
+    public enum HarvestType
+    {
+        Gold, None
+    }
+    #endregion
+    #region Hidden
+    [HideInInspector] public MinionController minionController;
+    [HideInInspector] public NetworkVariable<sbyte> hitPoints = new();
+    [HideInInspector] public bool selected = false;
+    [HideInInspector] public NetworkObject net;
     [HideInInspector] public Vector3 rallyPoint;
     [HideInInspector] public bool alive = true;
-    [SerializeField] private GameObject rallyVisual;
+    [HideInInspector] public NetworkVariable<bool> isTargetable = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
-    [SerializeField] private Material damagedState;
+    [HideInInspector] public SelectableEntity occupiedGarrison;
+    [HideInInspector] public bool isBuildIndicator = false;
+    [HideInInspector] public bool tryingToTeleport = false;
+    [HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
+    [HideInInspector] public SelectableEntity harvestTarget;
 
+    [HideInInspector] public List<FactionEntityClass> buildQueue;
+    [HideInInspector] public List<SelectableEntity> harvesters;
+    private MeshRenderer[] allMeshes;
+    private bool damaged = false;
+    private readonly int delay = 50;
+    private int count = 0;
+
+    #endregion
+    #region Variables
+    [Header("Behavior Settings")]
+    public string displayName = "name";
+    [TextArea(2, 4)]
+    public string desc = "desc";
+    [SerializeField] private sbyte startingHP = 10; //buildings usually don't start with full HP
+    public byte maxHP = 10;
+    public DepositType depositType = DepositType.None;
+    public TeamBehavior teamBehavior = TeamBehavior.OwnerTeam;
+    public EntityTypes type = EntityTypes.Melee;
+    public bool isHeavy = false; //heavy units can't garrison into pallbearers
+    public bool fullyBuilt = true;
+
+    [Header("Builder Only")]
+    public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
+
+    [Header("Harvester Only")]
+    public bool isHarvester = false;
+    public int allowedHarvesters = 1; //only relevant if this is a resource
+    public HarvestType harvestType = HarvestType.None;
+    public int harvestCapacity = 10;
+
+    [Header("Garrison Only")]
     public List<GarrisonablePosition> garrisonablePositions = new();
-    public SelectableEntity occupiedGarrison;
     public bool passengersAreTargetable = false;
-    public NetworkVariable<bool> isTargetable = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    //[HideInInspector] public MinionController minionController;
-    public bool isBuildIndicator = false;
-    public bool tryingToTeleport = false;
+
+    [Header("Spawners Only")]
+    public Transform positionToSpawnMinions; //used for buildings
+
+    [Header("Aesthetic Settings")]
+    [SerializeField] private GameObject rallyVisual;
+    [SerializeField] private Material damagedState;
+    public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
+    public LineRenderer lineIndicator;
+    public MeshRenderer[] unbuiltRenderers;
+    public MeshRenderer[] finishedRenderers;
+    [SerializeField] private MeshRenderer[] damageableMeshes;
+    [SerializeField] private GameObject selectIndicator;
+    public GameObject targetIndicator;
+    public List<MeshRenderer> teamRenderers;
     #endregion
     #region NetworkSpawn
+    private void Start()
+    {
+        net = GetComponent<NetworkObject>();
+    }
     public override void OnNetworkSpawn()
     {
         if (lineIndicator != null)
@@ -110,7 +134,7 @@ public class SelectableEntity : NetworkBehaviour
             targetIndicator.transform.parent = null;
         }
         if (selectIndicator != null) selectIndicator.SetActive(selected);
-        //minionController = GetComponent<MinionController>();
+        minionController = GetComponent<MinionController>();
     }
     public override void OnNetworkDespawn()
     {
@@ -200,15 +224,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         teamRenderersUpdated = true;
     }
-    public enum HarvestType
-    {
-        Gold
-    }
-    public HarvestType harvestType = HarvestType.Gold;
-    [HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
-    public int harvestCapacity = 10;
-    private bool damaged = false;
-    [SerializeField] private MeshRenderer[] damageableMeshes;
+    
     public void TakeDamage(sbyte damage) //always managed by SERVER
     {
         hitPoints.Value -= damage; 
@@ -252,7 +268,6 @@ public class SelectableEntity : NetworkBehaviour
             Global.Instance.localPlayer.UpdatePlacement();
         }
     } */
-    [HideInInspector] public SelectableEntity harvestTarget;
     private void UpdateHarvesters()
     {
         if (harvesters.Count > 0)
@@ -285,9 +300,9 @@ public class SelectableEntity : NetworkBehaviour
 
             if (!alive)
             {
-                if (controller != null)
+                if (minionController != null)
                 {
-                    controller.state = MinionController.State.Die;
+                    minionController.state = MinionController.State.Die;
                 }
                 return;
             }
@@ -320,9 +335,9 @@ public class SelectableEntity : NetworkBehaviour
                     ProperDestroyMinion();
                 }
                 //walking sounds
-                if (controller != null)
+                if (minionController != null)
                 {
-                    if (controller.anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") || controller.anim.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk") || controller.anim.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
+                    if (minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") || minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk") || minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
                     {
                         if (footstepCount < footstepThreshold)
                         {
@@ -374,9 +389,9 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (type != EntityTypes.ProductionStructure && type != EntityTypes.HarvestableStructure)
         {
-            if (controller != null)
+            if (minionController != null)
             {
-                controller.PrepareForDeath();
+                minionController.PrepareForDeath();
             }
             //Invoke("Die", deathDuration);
             Invoke(nameof(Die), deathDuration);
@@ -549,7 +564,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void UpdateAttackIndicator()
     { 
-        if (targetIndicator != null && controller != null && controller.targetEnemy != null)
+        if (targetIndicator != null && minionController != null && minionController.targetEnemy != null)
         {
             if (alive)
             {
@@ -557,7 +572,7 @@ public class SelectableEntity : NetworkBehaviour
                 lineIndicator.enabled = selected;
                 if (selected)
                 {
-                    lineIndicator.SetPositions(LineArray(controller.targetEnemy.transform.position));
+                    lineIndicator.SetPositions(LineArray(minionController.targetEnemy.transform.position));
                 }
             }
             else //disable if dead
@@ -569,7 +584,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void UpdateMoveIndicator()
     { 
-        if (targetIndicator != null && controller != null)
+        if (targetIndicator != null && minionController != null)
         {
             if (alive)
             {
@@ -577,7 +592,7 @@ public class SelectableEntity : NetworkBehaviour
                 lineIndicator.enabled = selected;
                 if (selected)
                 { 
-                    lineIndicator.SetPositions(LineArray(controller.destination));
+                    lineIndicator.SetPositions(LineArray(minionController.destination));
                 }   
             }
             else //disable if dead
@@ -593,16 +608,16 @@ public class SelectableEntity : NetworkBehaviour
         {
             if (alive)
             { 
-                if (controller != null && controller.targetEnemy != null)
+                if (minionController != null && minionController.targetEnemy != null)
                 {
                     targetIndicator.SetActive(selected);
                     lineIndicator.enabled = selected;
                     if (selected)
                     { 
-                        targetIndicator.transform.position = new Vector3(controller.targetEnemy.transform.position.x, 0.05f, controller.targetEnemy.transform.position.z);
+                        targetIndicator.transform.position = new Vector3(minionController.targetEnemy.transform.position.x, 0.05f, minionController.targetEnemy.transform.position.z);
                         Vector3[] array = new Vector3[lineIndicator.positionCount];
                         array[0] = transform.position;
-                        array[1] = controller.targetEnemy.transform.position;
+                        array[1] = minionController.targetEnemy.transform.position;
                         lineIndicator.SetPositions(array);
                     } 
                 }
