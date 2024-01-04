@@ -85,9 +85,9 @@ public class RTSPlayer : NetworkBehaviour
     { 
         foreach (SelectableEntity item in selectedEntities)
         {
-            if (item.minionController != null) //minion
+            if (item.controller != null) //minion
             {
-                item.minionController.SetAttackMoveDestination(); 
+                item.controller.SetAttackMoveDestination(); 
             } 
         }
     }
@@ -95,9 +95,9 @@ public class RTSPlayer : NetworkBehaviour
     {
         foreach (SelectableEntity item in selectedEntities)
         {
-            if (item.minionController != null) //minion
+            if (item.controller != null) //minion
             {
-                item.minionController.SetDestinationRaycast();
+                item.controller.SetDestinationRaycast();
             }
             else //structure
             {
@@ -138,11 +138,11 @@ public class RTSPlayer : NetworkBehaviour
         DeselectAll();
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item != null && item.type == SelectableEntity.EntityTypes.Builder && item.minionController != null)
+            if (item != null && item.type == SelectableEntity.EntityTypes.Builder && item.controller != null)
             {
                 if (item.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
-                    switch (item.minionController.state)
+                    switch (item.controller.state)
                     {
                         case MinionController.State.Idle:
                         case MinionController.State.FindHarvestable:
@@ -620,7 +620,7 @@ public class RTSPlayer : NetworkBehaviour
         if (minion.TryGet(out SelectableEntity select))
         {
             Vector3 rallyPos = new(xRally, 0, zRally); //get spawn position 
-            select.minionController.RallyToPos(rallyPos);
+            select.controller.RallyToPos(rallyPos);
         }  
     }
     #endregion
@@ -805,9 +805,9 @@ public class RTSPlayer : NetworkBehaviour
     public void FromBuildingSpawn(SelectableEntity select, Vector3 rally, byte id = 0)
     { 
         Vector3 pos;
-        if (select.positionToSpawnMinions != null)
+        if (select.spawnPosition != null)
         {
-            pos = new Vector3(select.positionToSpawnMinions.position.x, 0, select.positionToSpawnMinions.position.z);
+            pos = new Vector3(select.spawnPosition.position.x, 0, select.spawnPosition.position.z);
         }
         else
         {
