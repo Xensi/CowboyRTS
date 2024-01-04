@@ -29,14 +29,14 @@ MonoBehaviour:
     buildID: 0
   - productionName: Raise Gunslinger
     needsConstructing: 0
-    prefabToSpawn: {fileID: 3769332290757923783, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+    prefabToSpawn: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
     linkedID: -1
     goldCost: 20
     timeCost: 5
     buildID: 0
   - productionName: Raise Desperado
     needsConstructing: 0
-    prefabToSpawn: {fileID: 4902783662846873726, guid: 14aa9348e444d404baea8d5cf76f8398, type: 3}
+    prefabToSpawn: {fileID: 3247805216466599197, guid: 14aa9348e444d404baea8d5cf76f8398, type: 3}
     linkedID: -1
     goldCost: 30
     timeCost: 5
@@ -50,28 +50,28 @@ MonoBehaviour:
     buildID: 0
   - productionName: Raise Gatling
     needsConstructing: 0
-    prefabToSpawn: {fileID: 6512270723407849226, guid: 2d424a28e19378c4d921d6906353559c, type: 3}
+    prefabToSpawn: {fileID: 2622178954450660567, guid: 2d424a28e19378c4d921d6906353559c, type: 3}
     linkedID: -1
     goldCost: 100
     timeCost: 10
     buildID: 0
   - productionName: Raise Artillery
     needsConstructing: 0
-    prefabToSpawn: {fileID: 5720112366935824539, guid: cf3423804651bfe4188c21f8446cf567, type: 3}
+    prefabToSpawn: {fileID: 3558417108367348550, guid: cf3423804651bfe4188c21f8446cf567, type: 3}
     linkedID: -1
     goldCost: 100
     timeCost: 10
     buildID: 0
   - productionName: Raise Cannon
     needsConstructing: 0
-    prefabToSpawn: {fileID: 7053587513937563618, guid: e09fd5d67d137c64ba4bb85e80c024bf, type: 3}
+    prefabToSpawn: {fileID: 2296978872636195903, guid: e09fd5d67d137c64ba4bb85e80c024bf, type: 3}
     linkedID: -1
     goldCost: 100
     timeCost: 10
     buildID: 0
   - productionName: Lich Starter
     needsConstructing: 0
-    prefabToSpawn: {fileID: 7692795664679932580, guid: 27bf33d358ef0194aa8fa42cf69b6502, type: 3}
+    prefabToSpawn: {fileID: 277787794319671239, guid: 27bf33d358ef0194aa8fa42cf69b6502, type: 3}
     linkedID: -1
     goldCost: 0
     timeCost: 0

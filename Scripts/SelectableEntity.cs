@@ -71,6 +71,7 @@ public class SelectableEntity : NetworkBehaviour
 
     [Header("Builder Only")]
     public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
+    public int spawnableAtOnce = 1; //how many minions can be spawned at at time from this unit.
 
     [Header("Harvester Only")]
     public bool isHarvester = false;
@@ -81,6 +82,7 @@ public class SelectableEntity : NetworkBehaviour
     [Header("Garrison Only")]
     public List<GarrisonablePosition> garrisonablePositions = new();
     public bool passengersAreTargetable = false;
+    public bool acceptsHeavy = false;
 
     [Header("Spawners Only")]
     public Transform positionToSpawnMinions; //used for buildings
@@ -535,11 +537,12 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (buildQueue.Count > 0)
         {
+            // todo add ability to build multiple from one structure
             FactionEntityClass fac = buildQueue[0];
             fac.timeCost--;
             if (fac.timeCost <= 0)
             {
-                Debug.Log("spawn");
+                //Debug.Log("spawn");
                 buildQueue.RemoveAt(0);
                 Global.Instance.localPlayer.FromBuildingSpawn(this, rallyPoint, fac.buildID);
             }

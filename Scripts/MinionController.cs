@@ -935,7 +935,7 @@ public class MinionController : NetworkBehaviour
     }
     #region FindClosest
     private Collider[] debugNearby = new Collider[100];
-    private SelectableEntity GetClosestEnemy()
+    private SelectableEntity GetClosestEnemy() //gets pretty expensive
     {
         float range = attackRange;// + 2;
 
@@ -947,13 +947,13 @@ public class MinionController : NetworkBehaviour
         float distance = Mathf.Infinity;
         float threshold = -Mathf.Infinity;
         Vector3 forward = transform.TransformDirection(Vector3.forward).normalized;
-        for (int i = 0; i < numColliders; i++)
+        for (int i = 0; i < numColliders; i++) //this part is expensive
         {
             if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self and triggers
             {
                 continue;
             }
-            SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
+            /*SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
             if (select != null) //conditions that disqualify an entity from being targeted
             {
                 if (!select.alive)
@@ -975,7 +975,7 @@ public class MinionController : NetworkBehaviour
                 {
                     continue;
                 }
-            }
+            }*/
 
             if (directionalAttack)
             {
@@ -1006,6 +1006,7 @@ public class MinionController : NetworkBehaviour
                 enemy = enemy.occupiedGarrison;
             }*/
         }
+
         return enemy;
     }
     /// <summary>
@@ -1429,8 +1430,17 @@ public class MinionController : NetworkBehaviour
                             {
                                 if (justLeftGarrison != select) //not perfect, fails on multiple units
                                 {
-                                    garrisonTarget = select;
-                                    state = State.WalkToGarrisonable;
+                                    if (select.acceptsHeavy)
+                                    {
+                                        garrisonTarget = select;
+                                        state = State.WalkToGarrisonable;
+                                    }
+                                    else if (!selectableEntity.isHeavy)
+                                    {
+                                        garrisonTarget = select;
+                                        state = State.WalkToGarrisonable;
+                                    }
+                                    
                                 }
                             }
                             else if (select.type == SelectableEntity.EntityTypes.Portal)
