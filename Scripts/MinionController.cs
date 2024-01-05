@@ -35,7 +35,8 @@ public class MinionController : NetworkBehaviour
         WalkToGarrisonable,
         Garrisoning,
         AfterGarrisonCheck,
-        FindGarrisonable
+        FindGarrisonable,
+        WalkToRally
     }
 
     public enum AttackType
@@ -61,7 +62,7 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] public SelectableEntity buildTarget;
     [HideInInspector] public SelectableEntity garrisonTarget;
     [HideInInspector] public bool followingMoveOrder = false;
-    [HideInInspector] public Vector3 orderedDestination;
+    public Vector3 orderedDestination;
     private int basicallyIdleInstances = 0;
     private readonly int idleThreshold = 30;
     private int attackReadyTimer = 0;
@@ -98,6 +99,7 @@ public class MinionController : NetworkBehaviour
     //private readonly int delay = 0;
     [Header("Self-Destruct Only")]
     [SerializeField] private float selfDestructAreaOfEffect = 1; //ignore if not selfdestructer
+    public bool rallyPositionSet = false;
     #endregion
     #region Stuff
     private void UpdateColliderStatus()
@@ -227,7 +229,7 @@ public class MinionController : NetworkBehaviour
     private bool DetectIfStuck()
     {
         bool val = false;
-        if (ai.slowWhenNotFacingTarget)
+        if (ai.slowWhenNotFacingTarget) //because they're slow so special case
         {
             if (ai.reachedDestination)
             {
@@ -321,9 +323,18 @@ public class MinionController : NetworkBehaviour
                 animator.Play("Idle");
                 ai.canMove = false;
                 destination = transform.position;
+
+                if (rallyPositionSet)
+                {
+                    basicallyIdleInstances = 0;
+                    destination = orderedDestination;
+                    state = State.WalkToRally;
+                    break;
+                }
                 if (TargetEnemyValid())
                 {
                     state = State.WalkToEnemy;
+                    break;
                 }
                 else
                 {
@@ -338,10 +349,11 @@ public class MinionController : NetworkBehaviour
                     else
                     {
                         state = State.WalkToBuildable;
+                        break;
                     }
                 }
                 break;
-            case State.Walk: 
+            case State.Walk:
                 UpdateMoveIndicator();
                 ai.canMove = true;
                 destination = orderedDestination;
@@ -352,10 +364,23 @@ public class MinionController : NetworkBehaviour
                     //anim.ResetTrigger("Walk");
                     //playedAttackMoveSound = false;
                     state = State.Idle;
+                    break;
                 }
                 if (selectableEntity.occupiedGarrison != null)
                 {
                     state = State.Idle;
+                    break;
+                }
+                break;
+            case State.WalkToRally:
+                ai.canMove = true;
+                UpdateMoveIndicator();
+                destination = orderedDestination;
+                animator.Play("Walk");
+                if (Vector3.Distance(transform.position, orderedDestination) <= 0.1f)
+                {
+                    state = State.Idle;
+                    rallyPositionSet = false;
                     break;
                 }
                 break;
@@ -953,7 +978,7 @@ public class MinionController : NetworkBehaviour
             {
                 continue;
             }
-            /*SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
+            SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
             if (select != null) //conditions that disqualify an entity from being targeted
             {
                 if (!select.alive)
@@ -975,7 +1000,7 @@ public class MinionController : NetworkBehaviour
                 {
                     continue;
                 }
-            }*/
+            }
 
             if (directionalAttack)
             {
@@ -1350,12 +1375,18 @@ public class MinionController : NetworkBehaviour
         return dist/Time.deltaTime;
     }
 
-    public void RallyToPos(Vector3 pos)
+    /*public void RallyToPos(Vector3 pos)
     {
         //followingMoveOrder = true;
         destination = pos;
         orderedDestination = destination;
         //state = State.Walk;
+    }*/
+    public void SetRally(Vector3 pos)
+    {
+        Debug.Log("setting rally" + pos);
+        rallyPositionSet = true;
+        orderedDestination = pos;
     }
     private void ResetAllTargets()
     { 

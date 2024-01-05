@@ -38,7 +38,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public NetworkVariable<sbyte> hitPoints = new();
     [HideInInspector] public bool selected = false;
     [HideInInspector] public NetworkObject net;
-    [HideInInspector] public Vector3 rallyPoint;
+    public Vector3 rallyPoint;
     [HideInInspector] public bool alive = true;
     [HideInInspector] public NetworkVariable<bool> isTargetable = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
@@ -456,18 +456,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void SetRally()
     {
-        /*Ray ray = Global.Instance.localPlayer.cam.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-
-        if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity))
-        {
-            rallyPoint = hit.point;
-            if (rallyVisual != null)
-            {
-                rallyVisual.transform.position = rallyPoint;
-            }
-        }*/
-        rallyPoint = Global.Instance.localPlayer.worldPosition;
+        rallyPoint = Global.Instance.localPlayer.cursorWorldPosition;
         if (rallyVisual != null)
         {
             rallyVisual.transform.position = rallyPoint;

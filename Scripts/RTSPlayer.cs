@@ -19,7 +19,7 @@ public class RTSPlayer : NetworkBehaviour
     [SerializeField] private int _entitiesIndex = 0; //used to pick a prefab from faction list
     private Vector3 _mousePosition;
     private Vector3 _offset;
-    public Vector3 worldPosition;
+    public Vector3 cursorWorldPosition;
     bool _doubleSelect = false; 
     public enum BuildStates
     {
@@ -193,31 +193,31 @@ public class RTSPlayer : NetworkBehaviour
 #if UNITY_EDITOR
             if (Input.GetKey(KeyCode.RightShift))
             {
-                SimpleSpawnMinion(worldPosition, 0);
+                SimpleSpawnMinion(cursorWorldPosition, 0);
             }
             if (Input.GetKey(KeyCode.RightAlt))
             {
-                SimpleSpawnMinion(worldPosition, 2);
+                SimpleSpawnMinion(cursorWorldPosition, 2);
             }
             if (Input.GetKey(KeyCode.RightControl))
             {
-                SimpleSpawnMinion(worldPosition, 3);
+                SimpleSpawnMinion(cursorWorldPosition, 3);
             }
             if (Input.GetKey(KeyCode.KeypadEnter))
             {
-                SimpleSpawnMinion(worldPosition, 5);
+                SimpleSpawnMinion(cursorWorldPosition, 5);
             }
             if (Input.GetKey(KeyCode.Keypad0))
             {
-                SimpleSpawnMinion(worldPosition, 6);
+                SimpleSpawnMinion(cursorWorldPosition, 6);
             }
             if (Input.GetKey(KeyCode.Keypad1))
             {
-                SimpleSpawnMinion(worldPosition, 7);
+                SimpleSpawnMinion(cursorWorldPosition, 7);
             }
             if (Input.GetKey(KeyCode.Keypad2))
             {
-                SimpleSpawnMinion(worldPosition, 8);
+                SimpleSpawnMinion(cursorWorldPosition, 8);
             }
 #endif
             if (Input.GetMouseButtonDown(0))
@@ -464,7 +464,7 @@ public class RTSPlayer : NetworkBehaviour
         if (IsOwner)
         {
             Gizmos.color = new Color(1, 0, 0, 0.5f);
-            Gizmos.DrawCube(worldPosition, new Vector3(.8f, .8f, .8f));
+            Gizmos.DrawCube(cursorWorldPosition, new Vector3(.8f, .8f, .8f));
             /*Gizmos.DrawWireSphere(_mousePosition, .1f);
             Gizmos.DrawSphere(worldPosition, .1f);*/
         }
@@ -472,7 +472,7 @@ public class RTSPlayer : NetworkBehaviour
     private bool oldPlacement = false;
     public void UpdatePlacement()
     {
-        placementBlocked = Physics.CheckBox(worldPosition, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.identity, entityLayer, QueryTriggerInteraction.Ignore);
+        placementBlocked = Physics.CheckBox(cursorWorldPosition, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.identity, entityLayer, QueryTriggerInteraction.Ignore);
         if (placementBlocked != oldPlacement)
         {
             oldPlacement = placementBlocked;
@@ -515,10 +515,10 @@ public class RTSPlayer : NetworkBehaviour
         {
             _mousePosition = hit.point;
             _gridPosition = grid.WorldToCell(_mousePosition);
-            worldPosition = grid.CellToWorld(_gridPosition) + _offset;
+            cursorWorldPosition = grid.CellToWorld(_gridPosition) + _offset;
             if (followCursorObject != null)
             {
-                followCursorObject.transform.position = worldPosition;
+                followCursorObject.transform.position = cursorWorldPosition;
             }
         }
     }
@@ -534,18 +534,14 @@ public class RTSPlayer : NetworkBehaviour
         sbyte xRally = (sbyte)rallyPos.x;
         sbyte zRally = (sbyte)rallyPos.z;
 
-        /*if (useRally) {
+        if (useRally)
+        {
             SpawnMinionRallyServerRpc(xSpawn, zSpawn, minionID, xRally, zRally);
-            *//*if (lastSpawnedEntity.controller != null)
-            {
-                lastSpawnedEntity.controller.SetDestinationToPos(rallyPos);
-            }*//*
         }
         else
-        { 
-            spawned = SpawnMinionServerRpc(xSpawn, zSpawn, minionID);
-        }*/
-        SpawnMinionServerRpc(xSpawn, zSpawn, minionID);
+        {
+            SpawnMinionServerRpc(xSpawn, zSpawn, minionID);
+        }
         //tell this minion to go to rally point if there is one
 
         /*if (useRally)
@@ -594,8 +590,8 @@ public class RTSPlayer : NetworkBehaviour
         return select;
     }
     /// <summary>
-      /// Any client (including host) tells server to spawn in a minion and grant ownership to the client.
-      /// </summary> 
+    /// Any client (including host) tells server to spawn in a minion and grant ownership to the client.
+    /// </summary> 
     [ServerRpc]
     private void SpawnMinionRallyServerRpc(sbyte xSpawn, sbyte zSpawn, byte minionID, sbyte xRally, sbyte zRally, ServerRpcParams serverRpcParams = default)
     {
@@ -612,16 +608,16 @@ public class RTSPlayer : NetworkBehaviour
                 }
             };
             MinionRallyClientRpc(minion, xRally, zRally, clientRpcParams);
-        } 
+        }
     }
     [ClientRpc]
     private void MinionRallyClientRpc(NetworkBehaviourReference minion, sbyte xRally, sbyte zRally, ClientRpcParams clientRpcParams)
-    { 
+    {
         if (minion.TryGet(out SelectableEntity select))
         {
             Vector3 rallyPos = new(xRally, 0, zRally); //get spawn position 
-            select.minionController.RallyToPos(rallyPos);
-        }  
+            select.minionController.SetRally(rallyPos);
+        }
     }
     #endregion
     #region Selection
