@@ -88,7 +88,7 @@ public class SelectableEntity : NetworkBehaviour
     public Transform positionToSpawnMinions; //used for buildings
 
     [Header("Aesthetic Settings")]
-    [SerializeField] private GameObject rallyVisual;
+    [SerializeField] private MeshRenderer rallyVisual;
     [SerializeField] private Material damagedState;
     public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
     public LineRenderer lineIndicator;
@@ -634,7 +634,7 @@ public class SelectableEntity : NetworkBehaviour
         if (rallyVisual != null)
         {
             rallyVisual.transform.position = rallyPoint;
-            rallyVisual.SetActive(selected);
+            rallyVisual.enabled = selected;
         }
     }
     public void Select(bool val)

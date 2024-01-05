@@ -21,12 +21,13 @@ public class RTSPlayer : NetworkBehaviour
     private Vector3 _offset;
     public Vector3 cursorWorldPosition;
     bool _doubleSelect = false; 
-    public enum BuildStates
+    public enum MouseState
     {
         Waiting,
-        ReadyToPlace
+        ReadyToPlace,
+        ReadyToSetRallyPoint
     }
-    public BuildStates buildState = BuildStates.Waiting;
+    public MouseState mouseState = MouseState.Waiting;
     public LayerMask groundLayer;
     public LayerMask entityLayer;
     void Start()
@@ -105,6 +106,17 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
     }
+    public void ReadySetRallyPoint()
+    {
+        mouseState = MouseState.ReadyToSetRallyPoint;
+    }
+    private void SetSelectedRallyPoint()
+    {
+        foreach (SelectableEntity item in selectedEntities)
+        {
+            item.SetRally();
+        }
+    }
     private void SelectAllAttackers()
     {
         DeselectAll();
@@ -171,7 +183,7 @@ public class RTSPlayer : NetworkBehaviour
         UpdatePlacement();
         if (Global.Instance.gridVisual != null)
         { 
-            Global.Instance.gridVisual.SetActive(buildState == BuildStates.ReadyToPlace);
+            Global.Instance.gridVisual.SetActive(mouseState == MouseState.ReadyToPlace);
         }
         if (Input.GetKey(KeyCode.Q))
         {
@@ -220,36 +232,53 @@ public class RTSPlayer : NetworkBehaviour
                 SimpleSpawnMinion(cursorWorldPosition, 8);
             }
 #endif
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonDown(0)) //left click
             {
                 StartMousePosition = Input.mousePosition;
                 ResizeSelection();
                 Global.Instance.selectionRect.gameObject.SetActive(true);
+                switch (mouseState)
+                {
+                    case MouseState.Waiting:
+                        TryToSelectOne();
+                        break;
+                    case MouseState.ReadyToPlace:
 
-                if (buildState == BuildStates.ReadyToPlace && !placementBlocked)
-                {
-                    PlaceBuilding(buildingPlacingID);
-                }
-                else
-                {
-                    TryToSelectOne();
+                        if (!placementBlocked)
+                        {
+                            PlaceBuilding(buildingPlacingID);
+                        }
+                        break;
+                    case MouseState.ReadyToSetRallyPoint:
+                        mouseState = MouseState.Waiting;
+                        SetSelectedRallyPoint();
+                        break;
+                    default:
+                        break;
                 }
             }
-            if (Input.GetMouseButtonDown(1)) //right click move
-            {
-                SelectedSetDestination();
-            }
-            if (Input.GetMouseButtonDown(2))
+            if (Input.GetMouseButtonDown(2)) //middle click
             {
                 SelectedAttackMove();
             }
-
-
-            if (Input.GetMouseButtonDown(1))
-            {
-                if (buildState == BuildStates.ReadyToPlace && !placingLinkedBuilding)
+            if (Input.GetMouseButtonDown(1)) //right click
+            { //used to cancel most commands, or move
+                switch (mouseState)
                 {
-                    StopPlacingBuilding();
+                    case MouseState.Waiting:
+                        SelectedSetDestination();
+                        break;
+                    case MouseState.ReadyToPlace:
+                        if (!placingLinkedBuilding)
+                        {
+                            StopPlacingBuilding();
+                        }
+                        break;
+                    case MouseState.ReadyToSetRallyPoint:
+                        mouseState = MouseState.Waiting;
+                        break;
+                    default:
+                        break;
                 }
             }
         }
@@ -456,7 +485,7 @@ public class RTSPlayer : NetworkBehaviour
     {
         Destroy(followCursorObject);
         followCursorObject = null; 
-        buildState = BuildStates.Waiting;
+        mouseState = MouseState.Waiting;
         placingLinkedBuilding = false;
     }
     private void OnDrawGizmos()
@@ -653,13 +682,21 @@ public class RTSPlayer : NetworkBehaviour
     }
     public void UpdateGUIFromSelections()
     {
+        UpdateIndices();
+        UpdateBasedOnSelectedUnitCount();
+        UpdateButtonsFromSelectedUnits();
+        UpdateBuildQueue();
+    }
+    private void UpdateIndices()
+    {
+
         indices.Clear();
 
         if (selectedEntities.Count > 0) //at least one unit selected
-        { 
+        {
             //show gui elements based on unit type selected
             foreach (SelectableEntity item in selectedEntities)
-            { 
+            {
                 if (!item.fullyBuilt)
                 {
                     continue;
@@ -672,30 +709,44 @@ public class RTSPlayer : NetworkBehaviour
                     }
                 }
             }
-        } 
-        if (Global.Instance.selectedParent != null && Global.Instance.resourcesParent != null && Global.Instance.resourceText != null)
-        { 
-            if (Global.Instance.nameText != null && Global.Instance.descText != null && selectedEntities.Count == 1 && selectedEntities[0] != null)
+        }
+    }
+
+    private void UpdateBasedOnSelectedUnitCount()
+    {
+        if (Global.Instance.selectedParent != null && Global.Instance.resourcesParent != null && Global.Instance.resourceText != null
+            && Global.Instance.nameText != null && Global.Instance.descText != null && Global.Instance.singleUnitInfoParent != null)
+        {
+            if (selectedEntities.Count <= 0)
+            {
+                Global.Instance.selectedParent.SetActive(false);
+                Global.Instance.resourcesParent.SetActive(false);
+            }
+            else if (selectedEntities.Count == 1 && selectedEntities[0] != null)
             {
                 Global.Instance.selectedParent.SetActive(true);
+                Global.Instance.singleUnitInfoParent.SetActive(true);
                 Global.Instance.nameText.text = selectedEntities[0].displayName;
                 Global.Instance.descText.text = selectedEntities[0].desc;
                 Global.Instance.hpText.text = "HP: " + selectedEntities[0].hitPoints.Value + "/" + selectedEntities[0].maxHP;
                 if (selectedEntities[0].isHarvester)
-                { 
+                {
                     Global.Instance.resourcesParent.SetActive(true);
                     Global.Instance.resourceText.text = "Stored gold: " + selectedEntities[0].harvestedResourceAmount + "/" + selectedEntities[0].harvestCapacity;
                 }
             }
             else
             {
-                Global.Instance.selectedParent.SetActive(false);
-                Global.Instance.resourcesParent.SetActive(false);
+                Global.Instance.selectedParent.SetActive(true);
+                Global.Instance.singleUnitInfoParent.SetActive(false);
+                //Global.Instance.selectedParent.SetActive(false);
+                //Global.Instance.resourcesParent.SetActive(false);
             }
         }
-
-        UpdateButtonsFromSelectedUnits();
-        UpdateBuildQueue();
+        else
+        {
+            Debug.LogError("a GUI element needs to be assigned.");
+        }
     }
     private void UpdateButtonsFromSelectedUnits()
     {
@@ -815,7 +866,7 @@ public class RTSPlayer : NetworkBehaviour
     {
         //Debug.Log(id);
         placementBlocked = false;
-        buildState = BuildStates.ReadyToPlace;
+        mouseState = MouseState.ReadyToPlace;
         GameObject build = _faction.entities[id].prefabToSpawn;
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn locally  
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
@@ -879,6 +930,8 @@ public class RTSPlayer : NetworkBehaviour
                 }
             }
         }
+
+        UpdateGUIFromSelections();
     }
     private void SelectAllInSameGarrison(SelectableEntity garrison)
     {

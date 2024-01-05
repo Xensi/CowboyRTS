@@ -106,7 +106,7 @@ MonoBehaviour:
     buildID: 0
   - productionName: Saloon
     needsConstructing: 1
-    prefabToSpawn: {fileID: 6404897192775958650, guid: b0715be9245d1e042876795d6254f659, type: 3}
+    prefabToSpawn: {fileID: 371321480321102268, guid: b0715be9245d1e042876795d6254f659, type: 3}
     linkedID: -1
     goldCost: 100
     timeCost: 0

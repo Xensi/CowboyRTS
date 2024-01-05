@@ -34,6 +34,7 @@ public class Global : MonoBehaviour
     public TrailController gunTrailGlobal;
     public Projectile projectileGlobal;
     public AudioClip explosion;
+    public GameObject singleUnitInfoParent;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.
@@ -82,4 +83,8 @@ public class Global : MonoBehaviour
         Destroy(tempGO, tempASource.clip.length * pitch); // destroy object after clip duration (this will not account for whether it is set to loop) 
         return tempASource;
     } 
+    public void TellRTSPlayerToSetRally()
+    {
+        localPlayer.ReadySetRallyPoint();
+    }
 }
