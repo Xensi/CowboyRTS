@@ -62,7 +62,7 @@ public class SelectableEntity : NetworkBehaviour
     [TextArea(2, 4)]
     public string desc = "desc";
     [SerializeField] private sbyte startingHP = 10; //buildings usually don't start with full HP
-    public sbyte maxHP = 10;
+    public byte maxHP = 10;
     public DepositType depositType = DepositType.None;
     public TeamBehavior teamBehavior = TeamBehavior.OwnerTeam;
     public EntityTypes type = EntityTypes.Melee;
@@ -130,7 +130,6 @@ public class SelectableEntity : NetworkBehaviour
         {
             hitPoints.Value = startingHP;
         }
-        hitPoints.OnValueChanged += OnHitPointsChanged;
         damagedThreshold = (sbyte)(maxHP / 2);
         rallyPoint = transform.position;
         SimplePlaySound(0);
@@ -143,13 +142,6 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (selectIndicator != null) selectIndicator.SetActive(selected);
         minionController = GetComponent<MinionController>();
-    }
-    public void OnHitPointsChanged(sbyte previous, sbyte current)
-    {
-        if (selected && Global.Instance.localPlayer.selectedEntities.Count == 1)
-        {
-            Global.Instance.localPlayer.UpdateHPText();
-        }
     }
     public override void OnNetworkDespawn()
     {
@@ -265,7 +257,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void BuildThis(sbyte delta)
     {
-        hitPoints.Value = (sbyte)Mathf.Clamp(hitPoints.Value + delta, 0, maxHP);
+        hitPoints.Value += delta;
     }
     /*public void OnTriggerEnter(Collider other)
     {

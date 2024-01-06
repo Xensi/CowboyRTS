@@ -324,11 +324,9 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: desc
-      value: Spend gold to raise the dead.
-      objectReference: {fileID: 0}
-    - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
-      propertyPath: maxHP
-      value: 100
+      value: 'Gold storage.
+
+        Spend gold to raise the dead.'
       objectReference: {fileID: 0}
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: depositType
