@@ -130,6 +130,7 @@ public class SelectableEntity : NetworkBehaviour
         {
             hitPoints.Value = startingHP;
         }
+        hitPoints.OnValueChanged += OnHitPointsChanged;
         damagedThreshold = (sbyte)(maxHP / 2);
         rallyPoint = transform.position;
         SimplePlaySound(0);
@@ -142,6 +143,13 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (selectIndicator != null) selectIndicator.SetActive(selected);
         minionController = GetComponent<MinionController>();
+    }
+    private void OnHitPointsChanged(sbyte prev, sbyte current)
+    {
+        if (selected)
+        {
+            Global.Instance.localPlayer.UpdateHPText();
+        }
     }
     public override void OnNetworkDespawn()
     {
@@ -257,7 +265,8 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void BuildThis(sbyte delta)
     {
-        hitPoints.Value += delta;
+        //hitPoints.Value += delta;
+        hitPoints.Value = (sbyte)Mathf.Clamp(hitPoints.Value + delta, 0, maxHP);
     }
     /*public void OnTriggerEnter(Collider other)
     {

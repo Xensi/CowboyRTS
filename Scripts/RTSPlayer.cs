@@ -59,9 +59,23 @@ public class RTSPlayer : NetworkBehaviour
         //_offset = new Vector3(0, 0, 0);
         cam = Camera.main;
         camParent = cam.transform.parent.transform;
+        meshes = new MeshRenderer[1];
+        if (IsOwner)
+        {
+            MoveCamToSpawn();
+        }
+    }
+    private void MoveCamToSpawn()
+    {
         Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
         camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
-        meshes = new MeshRenderer[1];
+    }
+    public void UpdateHPText()
+    {
+        if (selectedEntities.Count == 1)
+        {
+            Global.Instance.hpText.text = "HP: " + selectedEntities[0].hitPoints.Value + "/" + selectedEntities[0].maxHP;
+        }
     }
     private void OnDisable()
     {

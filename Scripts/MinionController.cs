@@ -1124,12 +1124,12 @@ public class MinionController : NetworkBehaviour
         }
     }
     [ServerRpc]
-    private void RequestBuildServerRpc(sbyte damage, NetworkBehaviourReference target)
+    private void RequestBuildServerRpc(sbyte buildDelta, NetworkBehaviourReference target)
     {
         //server must handle damage! 
         if (target.TryGet(out SelectableEntity select))
         {
-            select.BuildThis(damage);
+            select.BuildThis(buildDelta);
         }
     }
     private void StartAttack()

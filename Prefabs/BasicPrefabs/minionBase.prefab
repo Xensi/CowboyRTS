@@ -254,6 +254,7 @@ MonoBehaviour:
   type: 3
   isHeavy: 0
   fullyBuilt: 1
+  isKeystone: 0
   builderEntityIndices: 01000000
   spawnableAtOnce: 1
   isHarvester: 0
