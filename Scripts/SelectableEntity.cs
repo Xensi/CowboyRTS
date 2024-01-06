@@ -40,7 +40,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public NetworkObject net;
     public Vector3 rallyPoint;
     [HideInInspector] public bool alive = true;
-    [HideInInspector] public NetworkVariable<bool> isTargetable = new NetworkVariable<bool>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    [HideInInspector] public NetworkVariable<bool> isTargetable = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     [HideInInspector] public SelectableEntity occupiedGarrison;
     [HideInInspector] public bool isBuildIndicator = false;
@@ -68,6 +68,7 @@ public class SelectableEntity : NetworkBehaviour
     public EntityTypes type = EntityTypes.Melee;
     public bool isHeavy = false; //heavy units can't garrison into pallbearers
     public bool fullyBuilt = true;
+    public bool isKeystone = false;
 
     [Header("Builder Only")]
     public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
@@ -103,6 +104,10 @@ public class SelectableEntity : NetworkBehaviour
     private void Start()
     {
         net = GetComponent<NetworkObject>();
+        if (isKeystone && Global.Instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
+        {
+            Global.Instance.localPlayer.keystoneUnits.Add(this);
+        }
     }
     public override void OnNetworkSpawn()
     {
@@ -389,6 +394,7 @@ public class SelectableEntity : NetworkBehaviour
                 item.material.color = Color.gray;
             }
         }
+        CheckGameVictoryState();
         if (type != EntityTypes.ProductionStructure && type != EntityTypes.HarvestableStructure)
         {
             if (minionController != null)
@@ -401,6 +407,17 @@ public class SelectableEntity : NetworkBehaviour
         else
         {
             Die();
+        }
+    }
+    private void CheckGameVictoryState()
+    {
+        if (isKeystone)
+        {
+            Global.Instance.localPlayer.keystoneUnits.Remove(this);
+            if (Global.Instance.localPlayer.keystoneUnits.Count <= 0)
+            {
+                Global.Instance.localPlayer.LoseGame();
+            }
         }
     }
     private int footstepCount = 0;
@@ -533,7 +550,8 @@ public class SelectableEntity : NetworkBehaviour
             {
                 //Debug.Log("spawn");
                 buildQueue.RemoveAt(0);
-                Global.Instance.localPlayer.FromBuildingSpawn(this, rallyPoint, fac.buildID);
+                Debug.Log(fac.buildID);
+                Global.Instance.localPlayer.FromBuildingSpawn(this, rallyPoint, fac.buildID); //bug here
             }
         }
         Global.Instance.localPlayer.UpdateBuildQueue();

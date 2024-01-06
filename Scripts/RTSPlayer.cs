@@ -7,7 +7,9 @@ using UnityEngine.EventSystems;// Required when using Event data.
 using TMPro;
 
 public class RTSPlayer : NetworkBehaviour
-{ 
+{
+    public NetworkVariable<bool> inTheGame = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public List<SelectableEntity> keystoneUnits = new();
     public int gold = 100;
     public Camera cam;   
     [SerializeField] private Grid grid;
@@ -30,25 +32,53 @@ public class RTSPlayer : NetworkBehaviour
     public MouseState mouseState = MouseState.Waiting;
     public LayerMask groundLayer;
     public LayerMask entityLayer;
+    public SelectableEntity lastSpawnedEntity;
+    public bool placementBlocked = false;
+    private GameObject followCursorObject;
+    private byte buildingPlacingID = 0;
+    private MeshRenderer[] meshes;
+    private bool oldPlacement = false;
+    public Portal startPortal;
+    public Portal endPortal;
+    Vector2 StartMousePosition;
+    public bool placingLinkedBuilding = false;
+    private bool finishedSelection = false;
+    private readonly float camSpeed = 10;
+    private readonly float camScroll = 0.5f;
+    public byte starterUnitID = 0;
+    private Transform camParent;
+    public void LoseGame()
+    {
+        inTheGame.Value = false;
+    }
     void Start()
     { 
         groundLayer = LayerMask.GetMask("Ground");
         entityLayer = LayerMask.GetMask("Entity", "Obstacle");
         _offset = new Vector3(0.5f, 0, .5f);
+        //_offset = new Vector3(0, 0, 0);
         cam = Camera.main;
         camParent = cam.transform.parent.transform;
         Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
         camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
         meshes = new MeshRenderer[1];
     }
+    private void OnDisable()
+    {
+        Global.Instance.playerList.Remove(this);
+    }
+    private bool active = true;
     public override void OnNetworkSpawn()
     {
+        Global.Instance.playerList.Add(this);
         if (!IsOwner)
-        { 
-            enabled = false;
+        {
+            //enabled = false;
+            active = false;
         }
         else
         { //spawn initial minions/buildings 
+            inTheGame.Value = true;
             Global.Instance.localPlayer = this;
             //SimpleSpawnMinion(Vector3.zero);
             int id = System.Convert.ToInt32(OwnerClientId);
@@ -62,17 +92,13 @@ public class RTSPlayer : NetworkBehaviour
                 spawn = new Vector3(Random.Range(-9, 9),0, Random.Range(-9, 9));
             }
 
-            SimpleSpawnMinion(spawn, starterUnitID);
+            GenericSpawnMinion(spawn, starterUnitID);
         }
     }
-    public byte starterUnitID = 0;
-    private Transform camParent;
     private bool MouseOverUI()
     {
         return EventSystem.current.IsPointerOverGameObject();
     }
-    private readonly float camSpeed = 10;
-    private readonly float camScroll = 0.5f;
     private void CameraMove()
     {
         Vector3 motion = new(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
@@ -167,9 +193,13 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
     }
+    public bool IsTargetExplicitlyOnOurTeam(SelectableEntity target)
+    {
+        return target.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam && ownedEntities.Contains(target);
+    }
     private void TrySelectEntity(SelectableEntity entity)
     {
-        if (entity.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam && (ownedEntities.Contains(entity)) || entity.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
+        if (IsTargetExplicitlyOnOurTeam(entity) || entity.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
         {
             selectedEntities.Add(entity);
             entity.Select(true);
@@ -180,6 +210,7 @@ public class RTSPlayer : NetworkBehaviour
 
     void Update()
     {
+        if (!active) return;
         UpdatePlacement();
         if (Global.Instance.gridVisual != null)
         { 
@@ -205,31 +236,31 @@ public class RTSPlayer : NetworkBehaviour
 #if UNITY_EDITOR
             if (Input.GetKey(KeyCode.RightShift))
             {
-                SimpleSpawnMinion(cursorWorldPosition, 0);
+                GenericSpawnMinion(cursorWorldPosition, 0);
             }
             if (Input.GetKey(KeyCode.RightAlt))
             {
-                SimpleSpawnMinion(cursorWorldPosition, 2);
+                GenericSpawnMinion(cursorWorldPosition, 2);
             }
             if (Input.GetKey(KeyCode.RightControl))
             {
-                SimpleSpawnMinion(cursorWorldPosition, 3);
+                GenericSpawnMinion(cursorWorldPosition, 3);
             }
             if (Input.GetKey(KeyCode.KeypadEnter))
             {
-                SimpleSpawnMinion(cursorWorldPosition, 5);
+                GenericSpawnMinion(cursorWorldPosition, 5);
             }
             if (Input.GetKey(KeyCode.Keypad0))
             {
-                SimpleSpawnMinion(cursorWorldPosition, 6);
+                GenericSpawnMinion(cursorWorldPosition, 6);
             }
             if (Input.GetKey(KeyCode.Keypad1))
             {
-                SimpleSpawnMinion(cursorWorldPosition, 7);
+                GenericSpawnMinion(cursorWorldPosition, 7);
             }
             if (Input.GetKey(KeyCode.Keypad2))
             {
-                SimpleSpawnMinion(cursorWorldPosition, 8);
+                GenericSpawnMinion(cursorWorldPosition, 8);
             }
 #endif
             if (Input.GetMouseButtonDown(0)) //left click
@@ -299,8 +330,6 @@ public class RTSPlayer : NetworkBehaviour
         }
         Global.Instance.goldText.text = "Gold: " + gold; 
     }
-    public bool placingLinkedBuilding = false;
-    private bool finishedSelection = false;
     private void SelectWithinBounds() //rectangle select, finish drag select
     {
         RectTransform SelectionBox = Global.Instance.selectionRect;
@@ -402,7 +431,6 @@ public class RTSPlayer : NetworkBehaviour
         return Position.x > Bounds.min.x && Position.x < Bounds.max.x
             && Position.y > Bounds.min.y && Position.y < Bounds.max.y;
     }
-    Vector2 StartMousePosition;
     private void ResizeSelection()
     {
         finishedSelection = false;
@@ -413,15 +441,27 @@ public class RTSPlayer : NetworkBehaviour
         SelectionBox.anchoredPosition = StartMousePosition + new Vector2(width / 2, height / 2);
         SelectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
     } 
-
+    private void TellSelectedToBuild()
+    {
+        foreach (SelectableEntity item in selectedEntities)
+        {
+            item.minionController.ForceBuildTarget(item);
+        }
+    }
     private void PlaceBuilding(byte id = 0)
     {
         FactionEntityClass fac = _faction.entities[id];
         if (gold >= fac.goldCost)
-        { 
+        {
             gold -= fac.goldCost;
-            SimpleSpawnMinion(followCursorObject.transform.position, id);
-            if (!Input.GetKey(KeyCode.LeftShift)) //if holding shift, continue placing buildings
+            Debug.Log("placing at " + cursorWorldPosition);
+            GenericSpawnMinion(cursorWorldPosition, id); //followCursorObject.transform.position
+            TellSelectedToBuild();
+            if (Input.GetKey(KeyCode.LeftShift) && gold >= fac.goldCost) 
+            {
+                //continue placing buildings
+            }
+            else if (!Input.GetKey(KeyCode.LeftShift) || gold < fac.goldCost) //if not holding shift or out of money for this building
             {
                 if (fac.linkedID == -1) //if no linked building, stop after placing building
                 {
@@ -479,8 +519,6 @@ public class RTSPlayer : NetworkBehaviour
 
         }
     }
-    public Portal startPortal;
-    public Portal endPortal;
     private void StopPlacingBuilding()
     {
         Destroy(followCursorObject);
@@ -498,7 +536,6 @@ public class RTSPlayer : NetworkBehaviour
             Gizmos.DrawSphere(worldPosition, .1f);*/
         }
     }
-    private bool oldPlacement = false;
     public void UpdatePlacement()
     {
         placementBlocked = Physics.CheckBox(cursorWorldPosition, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.identity, entityLayer, QueryTriggerInteraction.Ignore);
@@ -532,10 +569,6 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
     }
-    public bool placementBlocked = false;
-    private GameObject followCursorObject;
-    private byte buildingPlacingID = 0;
-    private MeshRenderer[] meshes;
     private void GetMouseWorldPosition()
     {
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
@@ -551,59 +584,40 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
     }
-    public SelectableEntity lastSpawnedEntity;
     #region SpawnMinion
     /// <summary>
     /// Tell the server to spawn in a minion at a position.
     /// </summary> 
-    public void SimpleSpawnMinion(Vector3 spawnPos, byte minionID = 0, bool useRally = false, Vector3 rallyPos = default)
+    public void GenericSpawnMinion(Vector3 spawnPos, byte minionID = 0, bool useRally = false, Vector3 rallyPos = default)
     {
-        sbyte xSpawn = (sbyte)spawnPos.x;
+        /*sbyte xSpawn = (sbyte)spawnPos.x;
         sbyte zSpawn = (sbyte)spawnPos.z;
         sbyte xRally = (sbyte)rallyPos.x;
-        sbyte zRally = (sbyte)rallyPos.z;
-
+        sbyte zRally = (sbyte)rallyPos.z;*/
+        Vector2 spawn = new Vector2(spawnPos.x, spawnPos.z);
+        Vector2 rally = new Vector2(rallyPos.x, rallyPos.z);
         if (useRally)
         {
-            SpawnMinionRallyServerRpc(xSpawn, zSpawn, minionID, xRally, zRally);
+            SpawnMinionRallyServerRpc(spawn, minionID, rally);
         }
         else
         {
-            SpawnMinionServerRpc(xSpawn, zSpawn, minionID);
+            SpawnMinionServerRpc(spawn, minionID);
         }
-        //tell this minion to go to rally point if there is one
-
-        /*if (useRally)
-        {
-        }*/
-        //tell minion to build things
-
+        //SpawnTargetServerRpc(entity.gameObject);
         UpdateButtons();
-        //
-        /*if (IsServer)
-        {
-            SpawnMinion(pos, id, rally); 
-        }
-        else
-        {
-            Vector2 pos2D = new Vector2(pos.x, pos.z);
-            Vector2 rally2D = new Vector2(rally.x, rally.z);
-            SpawnMinionServerRPC(pos2D, rally2D, id);
-        }*/
-    }
-
+    }  
     /// <summary>
     /// Any client (including host) tells server to spawn in a minion and grant ownership to the client.
     /// </summary> 
     [ServerRpc]
-    private void SpawnMinionServerRpc(sbyte xSpawn, sbyte zSpawn, byte minionID, ServerRpcParams serverRpcParams = default)
+    private void SpawnMinionServerRpc(Vector2 spawn, byte minionID, ServerRpcParams serverRpcParams = default)
     {
-        SelectableEntity spawned = InternalSpawnMinion(xSpawn, zSpawn, minionID, serverRpcParams);
+        InternalSpawnMinion(spawn, minionID, serverRpcParams);
     }
-    private SelectableEntity InternalSpawnMinion(sbyte xSpawn, sbyte zSpawn, byte minionID, ServerRpcParams serverRpcParams = default)
+    private SelectableEntity InternalSpawnMinion(Vector2 spawn, byte minionID, ServerRpcParams serverRpcParams = default)
     {
-        Vector3 spawnPosition = new(xSpawn, 0, zSpawn); //get spawn position
-        spawnPosition += _offset;
+        Vector3 spawnPosition = new(spawn.x, 0, spawn.y); //get spawn position
 
         FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
         GameObject minion = Instantiate(fac.prefabToSpawn, spawnPosition, Quaternion.Euler(0, 180, 0)); //spawn locally
@@ -622,9 +636,9 @@ public class RTSPlayer : NetworkBehaviour
     /// Any client (including host) tells server to spawn in a minion and grant ownership to the client.
     /// </summary> 
     [ServerRpc]
-    private void SpawnMinionRallyServerRpc(sbyte xSpawn, sbyte zSpawn, byte minionID, sbyte xRally, sbyte zRally, ServerRpcParams serverRpcParams = default)
+    private void SpawnMinionRallyServerRpc(Vector2 spawn, byte minionID, Vector2 rally, ServerRpcParams serverRpcParams = default)
     {
-        SelectableEntity minion = InternalSpawnMinion(xSpawn, zSpawn, minionID, serverRpcParams);
+        SelectableEntity minion = InternalSpawnMinion(spawn, minionID, serverRpcParams);
 
         var clientId = serverRpcParams.Receive.SenderClientId;
         if (NetworkManager.ConnectedClients.ContainsKey(clientId))
@@ -636,15 +650,15 @@ public class RTSPlayer : NetworkBehaviour
                     TargetClientIds = new ulong[] { clientId }
                 }
             };
-            MinionRallyClientRpc(minion, xRally, zRally, clientRpcParams);
+            MinionRallyClientRpc(minion, rally, clientRpcParams);
         }
     }
     [ClientRpc]
-    private void MinionRallyClientRpc(NetworkBehaviourReference minion, sbyte xRally, sbyte zRally, ClientRpcParams clientRpcParams)
+    private void MinionRallyClientRpc(NetworkBehaviourReference minion, Vector2 rally, ClientRpcParams clientRpcParams)
     {
         if (minion.TryGet(out SelectableEntity select))
         {
-            Vector3 rallyPos = new(xRally, 0, zRally); //get spawn position 
+            Vector3 rallyPos = new(rally.x, 0, rally.y); //get spawn position 
             select.minionController.SetRally(rallyPos);
         }
     }
@@ -860,7 +874,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             pos = select.transform.position;
         }
-        SimpleSpawnMinion(pos, id, true, rally);
+        GenericSpawnMinion(pos, id, true, rally);
     }
     private void HoverBuildWithID(byte id = 0)
     {

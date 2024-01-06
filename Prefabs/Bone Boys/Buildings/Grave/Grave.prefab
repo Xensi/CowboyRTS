@@ -330,16 +330,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: depositType
-      value: 2
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: displayName
       value: Grave
       objectReference: {fileID: 0}
-    - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
-      propertyPath: rallyVisual
-      value: 
-      objectReference: {fileID: 1951746450813608865}
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: selectIndicator
       value: 
@@ -437,11 +433,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 6624784445567703758}
   m_SourcePrefab: {fileID: 100100000, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
---- !u!1 &1951746450813608865 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8935554887271392799, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
-  m_PrefabInstance: {fileID: 7427712171071423934}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &3166409628928317650 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5541063728032177516, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}

@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using Unity.Netcode;
 
-public class Global : MonoBehaviour
+public class Global : NetworkBehaviour
 {
     public static Global Instance { get; private set; }
     public RectTransform selectionRect;
@@ -35,6 +35,7 @@ public class Global : MonoBehaviour
     public Projectile projectileGlobal;
     public AudioClip explosion;
     public GameObject singleUnitInfoParent;
+    public List<RTSPlayer> playerList = new();
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.
@@ -65,6 +66,34 @@ public class Global : MonoBehaviour
         }
         selectedParent.SetActive(false);
         resourcesParent.SetActive(false);
+    }
+    private void Update()
+    {
+        if (!playerHasWon) CheckIfAPlayerHasWon();
+    }
+    public bool playerHasWon = false;
+    public void CheckIfAPlayerHasWon()
+    {
+        if (playerList.Count <= 1) return;
+        RTSPlayer potentialWinner = null;
+        int inTheGameCount = 0;
+        foreach (RTSPlayer item in playerList)
+        {
+            if (item.inTheGame.Value == true)
+            {
+                potentialWinner = item;
+                inTheGameCount++;
+            }
+        }
+        if (potentialWinner != null && inTheGameCount == 1)
+        {
+            TargetPlayerWinsTheGame(potentialWinner);
+        }
+    }
+    private void TargetPlayerWinsTheGame(RTSPlayer player)
+    {
+        playerHasWon = true;
+        Debug.Log("player has won");
     }
     public AudioSource PlayClipAtPoint(AudioClip clip, Vector3 pos, float volume = 1, float pitch = 1, bool useChorus = true)
     {

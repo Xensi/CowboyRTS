@@ -1411,11 +1411,15 @@ public class MinionController : NetworkBehaviour
     }
     private void PlaceOnGround()
     {
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position + (new Vector3 (0, 100, 0)), transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
+        if (Physics.Raycast(transform.position + (new Vector3 (0, 100, 0)), transform.TransformDirection(Vector3.down), out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
         {
             transform.position = hit.point;
         }
+    }
+    public void ForceBuildTarget(SelectableEntity target)
+    {
+        buildTarget = target;
+        state = State.WalkToBuildable;
     }
     public void SetDestinationRaycast(bool attackMoveVal = false)
     {

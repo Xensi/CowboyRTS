@@ -46,6 +46,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71c860c2c52a0fe4abb2551a872b5d92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inTheGame:
+    m_InternalValue: 0
+  keystoneUnits: []
   gold: 100
   cam: {fileID: 0}
   grid: {fileID: 2084301759269820934}
@@ -53,11 +56,21 @@ MonoBehaviour:
   selectedEntities: []
   _faction: {fileID: 11400000, guid: 66749da4c40495e4780f36062d3a4f8b, type: 2}
   _entitiesIndex: 0
-  worldPosition: {x: 0, y: 0, z: 0}
-  buildState: 0
-  starterUnitID: 8
-  placementBlocked: 0
+  cursorWorldPosition: {x: 0, y: 0, z: 0}
+  mouseState: 0
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  entityLayer:
+    serializedVersion: 2
+    m_Bits: 0
   lastSpawnedEntity: {fileID: 0}
+  placementBlocked: 0
+  startPortal: {fileID: 0}
+  endPortal: {fileID: 0}
+  placingLinkedBuilding: 0
+  starterUnitID: 8
+  placingPortal: 0
   indices: 
 --- !u!114 &1888051484682193116
 MonoBehaviour:
