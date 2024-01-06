@@ -59,8 +59,6 @@ public class RTSPlayer : NetworkBehaviour
         //_offset = new Vector3(0, 0, 0);
         cam = Camera.main;
         camParent = cam.transform.parent.transform;
-        Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
-        camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
         meshes = new MeshRenderer[1];
     }
     private void OnDisable()
@@ -78,6 +76,9 @@ public class RTSPlayer : NetworkBehaviour
         }
         else
         { //spawn initial minions/buildings 
+            Vector3 camSpawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
+            camParent.position = new Vector3(camSpawn.x, camParent.position.y, camSpawn.z);
+
             inTheGame.Value = true;
             Global.Instance.localPlayer = this;
             //SimpleSpawnMinion(Vector3.zero);
@@ -725,7 +726,10 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
     }
-
+    public void UpdateHPText()
+    {
+        Global.Instance.hpText.text = "HP: " + selectedEntities[0].hitPoints.Value + "/" + selectedEntities[0].maxHP;
+    }
     private void UpdateBasedOnSelectedUnitCount()
     {
         if (Global.Instance.selectedParent != null && Global.Instance.resourcesParent != null && Global.Instance.resourceText != null
