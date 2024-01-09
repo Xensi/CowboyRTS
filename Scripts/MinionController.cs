@@ -101,30 +101,9 @@ public class MinionController : NetworkBehaviour
     [SerializeField] private float selfDestructAreaOfEffect = 1; //ignore if not selfdestructer
     public bool rallyPositionSet = false;
     #endregion
-    #region Stuff
-    private void UpdateColliderStatus()
-    {
-        if (rigid != null)
-        {
-            rigid.isKinematic = state switch
-            {
-                State.FindHarvestable or State.WalkToHarvestable or State.Harvesting or State.AfterHarvestCheck
-                or State.FindDeposit or State.WalkToDeposit or State.Depositing or State.AfterDepositCheck => true,
-                _ => false,
-            };
-        }
-    }
-    public void PrepareForDeath()
-    { 
-        Global.Instance.localPlayer.selectedEntities.Remove(selectableEntity);
-        selectableEntity.Select(false);
-        state = State.Die;
-        ai.enabled = false;
-        rayMod.enabled = false;
-        seeker.enabled = false;
-        Destroy(rigid);
-        Destroy(col);
-    }
+    #region Core
+    //private MinionObstacle obstacle;
+    //[SerializeField] private SphereCollider obstacleCollider;
     void OnEnable()
     {
         ai = GetComponent<AIPath>();
@@ -135,13 +114,18 @@ public class MinionController : NetworkBehaviour
         minionNetwork = GetComponent<MinionNetwork>();
         animator = GetComponentInChildren<Animator>();
         rigid = GetComponent<Rigidbody>();
+        //obstacle = GetComponentInChildren<MinionObstacle>();
         // Update the destination right before searching for a path as well.
         // This is enough in theory, but this script will also update the destination every
         // frame as the destination is used for debugging and may be used for other things by other
         // scripts as well. So it makes sense that it is up to date every frame.
         if (ai != null) ai.onSearchPath += Update;
     }
+    private void Update()
+    {
+        if (ai != null) ai.destination = destination;
 
+    }
     void OnDisable()
     {
         if (ai != null) ai.onSearchPath -= Update;
@@ -158,17 +142,9 @@ public class MinionController : NetworkBehaviour
         state = State.Spawn;
         Invoke(nameof(FinishSpawning), spawnDuration);
     }
-    private void FinishSpawning()
-    { 
-        state = State.Idle;
-    }
-    private void Update()
-    { 
-        if (ai != null) ai.destination = destination;
-    }
     private void FixedUpdate()
     {
-        change = GetActualPositionChange(); 
+        change = GetActualPositionChange();
         UpdateState();
     }
     public override void OnNetworkSpawn()
@@ -179,7 +155,7 @@ public class MinionController : NetworkBehaviour
             ai.enabled = false;
             rayMod.enabled = false;
             seeker.enabled = false;
-        } 
+        }
         enabled = IsOwner;
         destination = transform.position;
         oldPosition = transform.position;
@@ -188,24 +164,69 @@ public class MinionController : NetworkBehaviour
     {
         Gizmos.DrawWireSphere(transform.position, attackRange);
         if (targetEnemy != null)
-        { 
+        {
             Gizmos.DrawSphere(targetEnemy.transform.position, .1f);
         }
     }
-    public void SetBuildDestination(Vector3 pos, SelectableEntity ent)
-    { 
-        destination = pos;
-        buildTarget = ent; 
-    }
     #endregion
-    #region More Stuff
-    private void HideMoveIndicator()
+    #region UpdaterFunctions
+    private void UpdateColliderStatus()
     {
-        if (selectableEntity != null)
+        if (rigid != null)
         {
-            selectableEntity.HideMoveIndicator();
+            rigid.isKinematic = state switch
+            {
+                State.FindHarvestable or State.WalkToHarvestable or State.Harvesting or State.AfterHarvestCheck
+                or State.FindDeposit or State.WalkToDeposit or State.Depositing or State.AfterDepositCheck => true,
+                _ => false,
+            };
         }
     }
+    private void UpdateHarvestables()
+    {
+        if (selectableEntity.harvestTarget != null && selectableEntity.harvestTarget.alive) //if we have a harvest target
+        {
+            if (!selectableEntity.harvestTarget.harvesters.Contains(selectableEntity)) //if we are not in harvester list
+            {
+                if (selectableEntity.harvestTarget.harvesters.Count < selectableEntity.harvestTarget.allowedHarvesters) //if there is space
+                {
+                    //add us
+                    selectableEntity.harvestTarget.harvesters.Add(selectableEntity);
+                }
+                else //there is no space
+                {
+                    //get a new harvest target
+                    selectableEntity.harvestTarget = null;
+                }
+            }
+        }
+    }
+    #endregion
+    #region SetterFunctions
+
+    public void PrepareForDeath()
+    {
+        Global.Instance.localPlayer.selectedEntities.Remove(selectableEntity);
+        selectableEntity.Select(false);
+        state = State.Die;
+        ai.enabled = false;
+        rayMod.enabled = false;
+        seeker.enabled = false;
+        Destroy(rigid);
+        Destroy(col);
+    }
+
+    private void FinishSpawning()
+    {
+        state = State.Idle;
+    }
+    public void SetBuildDestination(Vector3 pos, SelectableEntity ent)
+    {
+        destination = pos;
+        buildTarget = ent;
+    }
+    #endregion
+    #region DetectionFunctions
     private void DetectIfShouldStopFollowingMoveOrder()
     {
         if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
@@ -229,15 +250,15 @@ public class MinionController : NetworkBehaviour
     private bool DetectIfStuck()
     {
         bool val = false;
-        if (ai.slowWhenNotFacingTarget) //because they're slow so special case
+        if (ai.slowWhenNotFacingTarget || ai.maxSpeed <= 1) //because they're slow so special case
         {
             if (ai.reachedDestination)
             {
-                val = true; 
+                val = true;
             }
         }
         else
-        { 
+        {
             if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
             {
                 basicallyIdleInstances++;
@@ -256,26 +277,16 @@ public class MinionController : NetworkBehaviour
                     destination = orderedDestination;
                 }*/
             }
-        } 
+        }
         return val;
-    } 
-    private void UpdateHarvestables()
-    {  
-        if (selectableEntity.harvestTarget != null && selectableEntity.harvestTarget.alive) //if we have a harvest target
+    }
+    #endregion
+    #region More Stuff
+    private void HideMoveIndicator()
+    {
+        if (selectableEntity != null)
         {
-            if (!selectableEntity.harvestTarget.harvesters.Contains(selectableEntity) ) //if we are not in harvester list
-            {
-                if (selectableEntity.harvestTarget.harvesters.Count < selectableEntity.harvestTarget.allowedHarvesters) //if there is space
-                {
-                    //add us
-                    selectableEntity.harvestTarget.harvesters.Add(selectableEntity);
-                }
-                else //there is no space
-                {
-                    //get a new harvest target
-                    selectableEntity.harvestTarget = null;
-                }
-            } 
+            selectableEntity.HideMoveIndicator();
         }
     }
     #endregion
@@ -297,6 +308,39 @@ public class MinionController : NetworkBehaviour
             PlaceOnGround();
         }
     }
+    /// <summary>
+    /// Freeze rigidbody. Defaults to completely freezing it.
+    /// </summary>
+    /// <param name="freezePosition"></param>
+    /// <param name="freezeRotation"></param>
+    private void FreezeRigid(bool freezePosition = true, bool freezeRotation = true)
+    {
+        ai.canMove = true;
+        //ai.canMove = !freezePosition;
+        
+        RigidbodyConstraints posCon;
+        RigidbodyConstraints rotCon;
+        //if (obstacle != null) obstacle.affectGraph = freezePosition; //should the minion act as a pathfinding obstacle?
+        //obstacleCollider.enabled = freezePosition;
+        /*if (freezePosition)
+        {
+            posCon = RigidbodyConstraints.FreezePosition;
+        }
+        else
+        {
+            posCon = RigidbodyConstraints.FreezePositionY;
+        }*/
+        posCon = RigidbodyConstraints.FreezePositionY;
+        if (freezeRotation)
+        {
+            rotCon = RigidbodyConstraints.FreezeRotation;
+        }
+        else
+        {
+            rotCon = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        }
+        if (rigid != null) rigid.constraints = posCon | rotCon;
+    }
     private void UpdateState()
     {
         UpdateHarvestables();
@@ -312,16 +356,17 @@ public class MinionController : NetworkBehaviour
             #region defaults
             case State.Spawn: //don't really do anything, just play the spawn animation
                 animator.Play("Spawn");
-                ai.canMove = false;
+                FreezeRigid();
                 destination = transform.position;
                 break;
             case State.Die:
                 animator.Play("Die");
+                FreezeRigid();
                 break;
             case State.Idle:
                 HideMoveIndicator();
                 animator.Play("Idle");
-                ai.canMove = false;
+                FreezeRigid();
                 destination = transform.position;
 
                 if (rallyPositionSet)
@@ -355,7 +400,7 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.Walk:
                 UpdateMoveIndicator();
-                ai.canMove = true;
+                FreezeRigid(false, false);
                 destination = orderedDestination;
                 animator.Play("Walk"); 
 
@@ -373,7 +418,7 @@ public class MinionController : NetworkBehaviour
                 }
                 break;
             case State.WalkToRally:
-                ai.canMove = true;
+                FreezeRigid(false, false);
                 UpdateMoveIndicator();
                 destination = orderedDestination;
                 animator.Play("Walk");
@@ -388,7 +433,7 @@ public class MinionController : NetworkBehaviour
             #region Attacking
             case State.WalkBeginFindEnemies: //"ATTACK MOVE" 
                 UpdateMoveIndicator();
-                ai.canMove = true;
+                FreezeRigid(false, false);
                 destination = orderedDestination;
 
                 if (!animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
@@ -422,7 +467,7 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.WalkContinueFindEnemies: 
                 UpdateMoveIndicator();
-                ai.canMove = true;
+                FreezeRigid(false, false);
                 destination = orderedDestination;
                 
                 if (TargetEnemyValid())
@@ -445,7 +490,7 @@ public class MinionController : NetworkBehaviour
                 }
                 break;
             case State.WalkToEnemy:
-                ai.canMove = true;
+                FreezeRigid(false, false);
                 if (TargetEnemyValid())
                 {
                     
@@ -488,8 +533,7 @@ public class MinionController : NetworkBehaviour
                 else if (Vector3.Distance(transform.position, targetEnemy.transform.position) <= attackRange)
                 {
                     UpdateAttackIndicator();
-                    ai.canMove = false;
-                    ai.canMove = canMoveWhileAttacking;
+                    FreezeRigid(!canMoveWhileAttacking, false);
                     rotationSpeed = ai.rotationSpeed / 60;
                     transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, targetEnemy.transform.position - transform.position, Time.deltaTime * rotationSpeed, 0));
 
@@ -542,6 +586,7 @@ public class MinionController : NetworkBehaviour
                 }
                 break;
             case State.AfterAttackCheck:
+                FreezeRigid();
                 if (attackType == AttackType.Gatling)
                 {
                     animator.SetFloat("AttackSpeed", 1);
@@ -560,6 +605,7 @@ public class MinionController : NetworkBehaviour
             #endregion
             #region Building
             case State.FindBuildable:
+                FreezeRigid();
                 if (buildTarget == null || buildTarget.fullyBuilt)
                 {
                     buildTarget = FindClosestBuildable();
@@ -570,7 +616,7 @@ public class MinionController : NetworkBehaviour
                 }
                 break;
             case State.WalkToBuildable:
-                ai.canMove = true;
+                FreezeRigid(false, false);
                 UpdateMoveIndicator();
                 if (buildTarget == null)
                 {
@@ -580,7 +626,6 @@ public class MinionController : NetworkBehaviour
                 {
                     if (Vector3.Distance(transform.position, buildTarget.transform.position) > attackRange)
                     {
-                        ai.canMove = true;
                         animator.Play("Walk");
                         destination = buildTarget.transform.position;
                     }
@@ -598,7 +643,7 @@ public class MinionController : NetworkBehaviour
                 }
                 else
                 {
-                    ai.canMove = false;
+                    FreezeRigid(true, false);
                     transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, buildTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
 
                     if (attackReady)
@@ -626,6 +671,7 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.AfterBuildCheck:
                 animator.Play("Idle");
+                FreezeRigid();
                 if (buildTarget != null)
                 {
                     if (buildTarget.fullyBuilt)
@@ -646,6 +692,7 @@ public class MinionController : NetworkBehaviour
             #endregion
             #region Harvestable 
             case State.FindHarvestable:
+                FreezeRigid();
                 if (selectableEntity.harvestTarget == null || !selectableEntity.harvestTarget.alive)
                 {
                     selectableEntity.harvestTarget = FindClosestHarvestable();
@@ -657,7 +704,7 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.WalkToHarvestable:
                 UpdateMoveIndicator();
-                ai.canMove = true;
+                FreezeRigid(false, false);
                 if (selectableEntity.harvestTarget == null)
                 {
                     state = State.FindHarvestable;
@@ -666,7 +713,6 @@ public class MinionController : NetworkBehaviour
                 {
                     if (Vector3.Distance(transform.position, selectableEntity.harvestTarget.transform.position) > attackRange) //if out of harvest range walk there
                     {
-                        ai.canMove = true;
                         animator.Play("Walk");
                         destination = selectableEntity.harvestTarget.transform.position;
                     }
@@ -684,7 +730,7 @@ public class MinionController : NetworkBehaviour
                 }
                 else
                 {
-                    ai.canMove = false;
+                    FreezeRigid(true, false);
                     transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, selectableEntity.harvestTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
 
                     if (attackReady)
@@ -712,6 +758,7 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.AfterHarvestCheck:
                 animator.Play("Idle");
+                FreezeRigid();
                 if (selectableEntity.harvestedResourceAmount >= selectableEntity.harvestCapacity)
                 {
                     state = State.FindDeposit;
@@ -727,6 +774,7 @@ public class MinionController : NetworkBehaviour
                 }
                 break;
             case State.FindDeposit:
+                FreezeRigid();
                 if (depositTarget == null)
                 {
                     depositTarget = FindClosestDeposit();
@@ -738,7 +786,7 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.WalkToDeposit:
                 UpdateMoveIndicator();
-                ai.canMove = true;
+                FreezeRigid(false, false);
                 if (depositTarget == null)
                 {
                     state = State.FindDeposit;
@@ -764,7 +812,7 @@ public class MinionController : NetworkBehaviour
                 }
                 else
                 {
-                    ai.canMove = false;
+                    FreezeRigid(true, false);
                     transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, depositTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
 
                     //anim.Play("Attack"); //replace with deposit animation
@@ -780,6 +828,7 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.AfterDepositCheck:
                 animator.Play("Idle");
+                FreezeRigid();
                 if (selectableEntity.harvestTarget != null)
                 {
                     stateTimer = 0;
@@ -794,7 +843,7 @@ public class MinionController : NetworkBehaviour
             #region Garrison
             case State.WalkToGarrisonable:
                 UpdateMoveIndicator();
-                ai.canMove = true;
+                FreezeRigid(false, false);
                 if (garrisonTarget == null)
                 {
                     state = State.FindGarrisonable; //later make this check for nearby garrisonables in the same target?
@@ -836,7 +885,7 @@ public class MinionController : NetworkBehaviour
                 }
                 else
                 {
-                    ai.canMove = false;
+                    FreezeRigid(true, false);
                     transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, garrisonTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
                     //garrison into
                     garrisonTarget.ReceivePassenger(this);
@@ -1163,31 +1212,11 @@ public class MinionController : NetworkBehaviour
 
     private void Explode(float explodeRadius)
     {
-        Vector3 center = transform.position;  
-        Collider[] hitColliders = new Collider[40];
-        int numColliders = Physics.OverlapSphereNonAlloc(center, explodeRadius, hitColliders, enemyMask);  
-        for (int i = 0; i < numColliders; i++)
-        {
-            if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self
-            {
-                continue;
-            }
-            SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
-            if (Global.Instance.localPlayer.ownedEntities.Contains(select)) //skip teammates
-            {
-                continue;
-            }
-            if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
-            {
-                continue;
-            }
-            DamageSpecifiedEnemy(select, damage);
-            //Debug.Log(i);
-        }
-        DamageSpecifiedEnemy(selectableEntity, damage); //kill this also
-        SimpleExplosion(transform.position);
+        Global.Instance.localPlayer.CreateExplosionAtPoint(transform.position, explodeRadius, damage);
+        DamageSpecifiedEnemy(selectableEntity, damage);
+        SimpleExplosionEffect(transform.position);
     }  
-    private void SimpleExplosion(Vector3 pos)
+    private void SimpleExplosionEffect(Vector3 pos)
     { 
         //spawn explosion prefab locally
         SpawnExplosion(pos);
@@ -1319,7 +1348,7 @@ public class MinionController : NetworkBehaviour
     private void SpawnProjectile(Vector3 spawnPos, Vector3 destination)
     { 
         //instantiate projectile
-        Projectile proj = Instantiate(Global.Instance.projectileGlobal, spawnPos, Quaternion.identity);
+        Projectile proj = Instantiate(Global.Instance.cannonBall, spawnPos, Quaternion.identity);
         //tell projectile where to go 
         proj.target = destination;
         proj.isLocal = IsOwner;

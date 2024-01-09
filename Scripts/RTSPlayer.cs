@@ -1005,14 +1005,25 @@ public class RTSPlayer : NetworkBehaviour
     /// <summary>
     /// Damages all in radius at point.
     /// </summary> 
-    public void CreateExplosionAtPoint(Vector3 center, float explodeRadius)
+    public void CreateExplosionAtPoint(Vector3 center, float explodeRadius, sbyte damage = 10)
     { 
-        sbyte damage = 10;
         Collider[] hitColliders = new Collider[40];
         int numColliders = Physics.OverlapSphereNonAlloc(center, explodeRadius, hitColliders, entityLayer);
-        for (int i = 0; i < numColliders; i++) //indiscriminate
+        for (int i = 0; i < numColliders; i++)
         {
             SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
+            if (Global.Instance.localPlayer.ownedEntities.Contains(select)) //skip teammates
+            {
+                continue;
+            }
+            if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
+            {
+                continue;
+            }
+            if (!select.isTargetable.Value)
+            {
+                continue;
+            }
             DamageEntity(select, damage); 
         } 
     }

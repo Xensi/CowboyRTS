@@ -397,7 +397,7 @@ PrefabInstance:
       objectReference: {fileID: 1931021185623499603}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: builderEntityIndices.Array.size
-      value: 3
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: builderEntityIndices.Array.data[0]

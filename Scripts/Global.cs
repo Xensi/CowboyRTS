@@ -32,7 +32,7 @@ public class Global : NetworkBehaviour
     public TMP_Text hpText;
 
     public TrailController gunTrailGlobal;
-    public Projectile projectileGlobal;
+    public Projectile cannonBall;
     public AudioClip explosion;
     public GameObject singleUnitInfoParent;
     public List<RTSPlayer> playerList = new();
