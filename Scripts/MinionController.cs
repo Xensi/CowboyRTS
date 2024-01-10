@@ -181,6 +181,15 @@ public class MinionController : NetworkBehaviour
                 _ => false,
             };
         }
+        if (selectableEntity.RVO != null)
+        {
+            selectableEntity.RVO.enabled = state switch
+            {
+                State.FindHarvestable or State.WalkToHarvestable or State.Harvesting or State.AfterHarvestCheck
+                or State.FindDeposit or State.WalkToDeposit or State.Depositing or State.AfterDepositCheck => false,
+                _ => true,
+            };
+        }
     }
     private void UpdateHarvestables()
     {

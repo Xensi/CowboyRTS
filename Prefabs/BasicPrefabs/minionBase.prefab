@@ -153,7 +153,6 @@ GameObject:
   - component: {fileID: 4721624654941951496}
   - component: {fileID: 801487402834003379}
   - component: {fileID: 2696319472600951783}
-  - component: {fileID: 6623273778471752628}
   m_Layer: 7
   m_Name: minionBase
   m_TagString: Untagged
@@ -196,7 +195,7 @@ MonoBehaviour:
   SynchronizeTransform: 1
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 1
-  DontDestroyWithOwner: 0
+  DontDestroyWithOwner: 1
   AutoObjectParentSync: 1
 --- !u!114 &2794094538110024962
 MonoBehaviour:
@@ -280,6 +279,7 @@ MonoBehaviour:
   selectIndicator: {fileID: 8821975901658637110}
   targetIndicator: {fileID: 3480814061053556006}
   teamRenderers: []
+  RVO: {fileID: 0}
   attackEffects: []
 --- !u!114 &1556607826778985850
 MonoBehaviour:
@@ -438,33 +438,6 @@ MonoBehaviour:
   raycastOffset: {x: 0, y: 0, z: 0}
   useGraphRaycasting: 1
   quality: 0
---- !u!114 &6623273778471752628
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5353858407141398554}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 560112f876f5746c780eca0d404e7139, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  version: 2
-  radiusBackingField: 0.5
-  heightBackingField: 2
-  centerBackingField: 1
-  locked: 0
-  lockWhenNotMoving: 1
-  agentTimeHorizon: 4
-  obstacleTimeHorizon: 2
-  maxNeighbours: 10
-  layer: 129
-  collidesWith: -1
-  wallAvoidForce: 1
-  wallAvoidFalloff: 1
-  priority: 1
-  debug: 0
 --- !u!1001 &4363772687689255031
 PrefabInstance:
   m_ObjectHideFlags: 0

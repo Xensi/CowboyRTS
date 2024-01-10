@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using Pathfinding;
+using Pathfinding.RVO;
 public class SelectableEntity : NetworkBehaviour
 {
     #region Enums
@@ -101,14 +102,29 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private GameObject selectIndicator;
     public GameObject targetIndicator;
     public List<MeshRenderer> teamRenderers;
+    private DynamicGridObstacle obstacle;
+    [HideInInspector] public RVOController RVO;
     #endregion
     #region NetworkSpawn
     private void Start()
     {
         net = GetComponent<NetworkObject>();
+        obstacle = GetComponent<DynamicGridObstacle>();
+        RVO = GetComponent<RVOController>();
         if (isKeystone && Global.Instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
         {
             Global.Instance.localPlayer.keystoneUnits.Add(this);
+        }
+        if (isBuildIndicator)
+        {
+            if (obstacle != null)
+            {
+                obstacle.enabled = false;
+            }
+            if (RVO != null)
+            {
+                RVO.enabled = false;
+            }
         }
     }
     public override void OnNetworkSpawn()
@@ -382,14 +398,26 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (physicalCollider != null)
         {
-            physicalCollider.enabled = false;
+            physicalCollider.enabled = false; //allows dynamic grid obstacle to update pathfinding nodes one last time
+        }
+        if (RVO != null)
+        {
+            Destroy(RVO);
         }
         if (minionController != null)
         {
             minionController.PrepareForDeath();
+
+            foreach (MeshRenderer item in allMeshes)
+            {
+                if (item != null && !teamRenderers.Contains(item))
+                {
+                    item.material.color = Color.gray;
+                }
+            }
         }
         else
-        {
+        {   
             StructureCosmeticDestruction();
         }
         Invoke(nameof(Die), deathDuration);
@@ -412,13 +440,6 @@ public class SelectableEntity : NetworkBehaviour
         }
 
         alive = false;
-        foreach (MeshRenderer item in allMeshes)
-        { 
-            if (item != null && !teamRenderers.Contains(item))
-            { 
-                item.material.color = Color.gray;
-            }
-        }
         CheckGameVictoryState();
     }
     private void CheckGameVictoryState()

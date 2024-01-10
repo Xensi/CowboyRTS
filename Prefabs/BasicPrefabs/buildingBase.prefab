@@ -143,6 +143,7 @@ MonoBehaviour:
   targetIndicator: {fileID: 0}
   teamRenderers:
   - {fileID: 0}
+  RVO: {fileID: 0}
   attackEffects: []
 --- !u!114 &3728683629940428650
 MonoBehaviour:
@@ -161,7 +162,7 @@ MonoBehaviour:
   SynchronizeTransform: 1
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 1
-  DontDestroyWithOwner: 0
+  DontDestroyWithOwner: 1
   AutoObjectParentSync: 1
 --- !u!114 &9003763492291605336
 MonoBehaviour:
