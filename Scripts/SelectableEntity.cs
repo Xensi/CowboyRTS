@@ -1,7 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Netcode; 
+using Unity.Netcode;
+using Pathfinding;
 public class SelectableEntity : NetworkBehaviour
 {
     #region Enums
@@ -57,6 +58,7 @@ public class SelectableEntity : NetworkBehaviour
 
     #endregion
     #region Variables
+    public Collider physicalCollider;
     [Header("Behavior Settings")]
     public string displayName = "name";
     [TextArea(2, 4)]
@@ -369,8 +371,28 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
+    private void StructureCosmeticDestruction()
+    {
+        foreach (MeshRenderer item in allMeshes)
+        {
+            item.enabled = false;
+        }
+    }
     public void ProperDestroyMinion()
     {
+        if (physicalCollider != null)
+        {
+            physicalCollider.enabled = false;
+        }
+        if (minionController != null)
+        {
+            minionController.PrepareForDeath();
+        }
+        else
+        {
+            StructureCosmeticDestruction();
+        }
+        Invoke(nameof(Die), deathDuration);
         foreach (GarrisonablePosition item in garrisonablePositions)
         {
             if (item != null)
@@ -378,12 +400,6 @@ public class SelectableEntity : NetworkBehaviour
                 if (item.passenger != null)
                 {
                     UnloadPassenger(item.passenger);
-                    /*if (item.passenger.selectableEntity != null)
-                    {
-                        item.passenger.selectableEntity.occupiedGarrison = null;
-                        item.passenger.selectableEntity.isTargetable.Value = true;
-                        item.passenger = null;
-                    }*/
                 }
             }
         }
@@ -404,19 +420,6 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
         CheckGameVictoryState();
-        if (type != EntityTypes.ProductionStructure && type != EntityTypes.HarvestableStructure)
-        {
-            if (minionController != null)
-            {
-                minionController.PrepareForDeath();
-            }
-            //Invoke("Die", deathDuration);
-            Invoke(nameof(Die), deathDuration);
-        }
-        else
-        {
-            Die();
-        }
     }
     private void CheckGameVictoryState()
     {

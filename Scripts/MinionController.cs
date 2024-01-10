@@ -53,7 +53,7 @@ public class MinionController : NetworkBehaviour
     private RaycastModifier rayMod;
     private Seeker seeker;
     private readonly float spawnDuration = .5f;
-    private readonly sbyte buildDelta = 1;
+    private readonly sbyte buildDelta = 5;
     private readonly sbyte harvestAmount = 1;
     private int stateTimer = 0;
     private float rotationSpeed = 10f;
@@ -64,7 +64,7 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] public bool followingMoveOrder = false;
     public Vector3 orderedDestination;
     private int basicallyIdleInstances = 0;
-    private readonly int idleThreshold = 30;
+    private readonly int idleThreshold = 60;
     private int attackReadyTimer = 0;
     private float change;
     private readonly float walkAnimThreshold = 0.01f;
@@ -315,22 +315,22 @@ public class MinionController : NetworkBehaviour
     /// <param name="freezeRotation"></param>
     private void FreezeRigid(bool freezePosition = true, bool freezeRotation = true)
     {
-        ai.canMove = true;
-        //ai.canMove = !freezePosition;
+        //ai.canMove = true;
+        ai.canMove = !freezePosition;
         
         RigidbodyConstraints posCon;
         RigidbodyConstraints rotCon;
         //if (obstacle != null) obstacle.affectGraph = freezePosition; //should the minion act as a pathfinding obstacle?
         //obstacleCollider.enabled = freezePosition;
-        /*if (freezePosition)
+        if (freezePosition)
         {
             posCon = RigidbodyConstraints.FreezePosition;
         }
         else
         {
             posCon = RigidbodyConstraints.FreezePositionY;
-        }*/
-        posCon = RigidbodyConstraints.FreezePositionY;
+        }
+        //posCon = RigidbodyConstraints.FreezePositionY;
         if (freezeRotation)
         {
             rotCon = RigidbodyConstraints.FreezeRotation;
@@ -340,6 +340,23 @@ public class MinionController : NetworkBehaviour
             rotCon = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         }
         if (rigid != null) rigid.constraints = posCon | rotCon;
+    }
+    private void LookAtTarget(Transform target)
+    {
+        transform.rotation = Quaternion.LookRotation(
+            Vector3.RotateTowards(transform.forward, target.position - transform.position, Time.deltaTime * rotationSpeed, 0));
+    }
+    private bool InRangeOfEntity(SelectableEntity target, float range)
+    {
+        if (target.physicalCollider != null)
+        {
+            Vector3 closest = target.physicalCollider.ClosestPoint(transform.position);
+            return Vector3.Distance(transform.position, closest) <= range;
+        }
+        else
+        {
+            return Vector3.Distance(transform.position, target.transform.position) <= range;
+        }
     }
     private void UpdateState()
     {
@@ -535,8 +552,8 @@ public class MinionController : NetworkBehaviour
                     UpdateAttackIndicator();
                     FreezeRigid(!canMoveWhileAttacking, false);
                     rotationSpeed = ai.rotationSpeed / 60;
-                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, targetEnemy.transform.position - transform.position, Time.deltaTime * rotationSpeed, 0));
-
+                    LookAtTarget(targetEnemy.transform);
+                    
                     if (attackReady && CheckFacingTowards(targetEnemy.transform.position))
                     { 
                         animator.Play("Attack");  
@@ -624,28 +641,28 @@ public class MinionController : NetworkBehaviour
                 }
                 else
                 {
-                    if (Vector3.Distance(transform.position, buildTarget.transform.position) > attackRange)
-                    {
-                        animator.Play("Walk");
-                        destination = buildTarget.transform.position;
-                    }
-                    else
+                    if (InRangeOfEntity(buildTarget, attackRange))
                     {
                         stateTimer = 0;
                         state = State.Building;
                     }
+                    else
+                    {
+                        animator.Play("Walk");
+                        destination = buildTarget.transform.position;
+                    }
                 }
                 break;
             case State.Building:
-                if (buildTarget == null)
+                if (buildTarget == null || !InRangeOfEntity(buildTarget, attackRange))
                 {
                     state = State.FindBuildable;
                 }
                 else
                 {
                     FreezeRigid(true, false);
-                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, buildTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
-
+                    LookAtTarget(buildTarget.transform);
+                    
                     if (attackReady)
                     {
                         animator.Play("Attack");
@@ -731,8 +748,9 @@ public class MinionController : NetworkBehaviour
                 else
                 {
                     FreezeRigid(true, false);
-                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, selectableEntity.harvestTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
 
+                    LookAtTarget(selectableEntity.harvestTarget.transform);
+                    
                     if (attackReady)
                     {
                         animator.Play("Attack");
@@ -813,8 +831,8 @@ public class MinionController : NetworkBehaviour
                 else
                 {
                     FreezeRigid(true, false);
-                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, depositTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
-
+                    LookAtTarget(depositTarget.transform);
+                    
                     //anim.Play("Attack"); //replace with deposit animation
                     //instant dropoff
                     if (selectableEntity != null)
@@ -886,7 +904,6 @@ public class MinionController : NetworkBehaviour
                 else
                 {
                     FreezeRigid(true, false);
-                    transform.rotation = Quaternion.LookRotation(Vector3.RotateTowards(transform.forward, garrisonTarget.transform.position - transform.position, Time.deltaTime * ai.rotationSpeed, 0));
                     //garrison into
                     garrisonTarget.ReceivePassenger(this);
                     state = State.Idle;
@@ -1490,7 +1507,7 @@ public class MinionController : NetworkBehaviour
                                 buildTarget = select;
                                 state = State.WalkToBuildable;
                             }
-                            else if (select.HasEmptyGarrisonablePosition() && selectableEntity.garrisonablePositions.Count <= 0) //target can be garrisoned, and passenger cannot garrison
+                            else if (select.fullyBuilt && select.HasEmptyGarrisonablePosition() && selectableEntity.garrisonablePositions.Count <= 0) //target can be garrisoned, and passenger cannot garrison
                             {
                                 if (justLeftGarrison != select) //not perfect, fails on multiple units
                                 {

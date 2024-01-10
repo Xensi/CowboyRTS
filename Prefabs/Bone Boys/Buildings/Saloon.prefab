@@ -359,6 +359,10 @@ PrefabInstance:
       propertyPath: m_Center.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8935554887271392799, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 9003763492291605336, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: uniqueID
       value: 6166863865653833115
