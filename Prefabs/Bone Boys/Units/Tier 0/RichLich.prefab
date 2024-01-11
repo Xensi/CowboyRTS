@@ -440,6 +440,10 @@ PrefabInstance:
       value: 1.25
       objectReference: {fileID: 0}
     - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: shouldAutoSeekOutEnemies
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: attackEffectSpawnPosition
       value: 
       objectReference: {fileID: 2808899218903162063}

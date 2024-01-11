@@ -4,9 +4,19 @@ using UnityEngine;
 using Unity.Netcode;
 using Pathfinding;
 using Pathfinding.RVO;
+using System.Linq;
 public class SelectableEntity : NetworkBehaviour
 {
     #region Enums
+    public enum RallyMission
+    {
+        None,
+        Move,
+        Harvest,
+        Build,
+        Garrison,
+        Attack
+    }
     public enum DepositType
     {
         None,
@@ -49,10 +59,10 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public bool isBuildIndicator = false;
     [HideInInspector] public bool tryingToTeleport = false;
     [HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
-    [HideInInspector] public SelectableEntity harvestTarget;
+    public SelectableEntity interactionTarget;
 
     [HideInInspector] public List<FactionEntityClass> buildQueue;
-    [HideInInspector] public List<SelectableEntity> interactors;
+    public List<SelectableEntity> interactors;
     private MeshRenderer[] allMeshes;
     private bool damaged = false;
     private readonly int delay = 50;
@@ -61,6 +71,9 @@ public class SelectableEntity : NetworkBehaviour
 
     #endregion
     #region Variables
+
+    public RallyMission rallyMission;
+    public SelectableEntity rallyTarget;
     public Collider physicalCollider;
     [Header("Behavior Settings")]
     public string displayName = "name";
@@ -305,7 +318,7 @@ public class SelectableEntity : NetworkBehaviour
             Global.Instance.localPlayer.UpdatePlacement();
         }
     } */
-    private void UpdateHarvesters()
+    private void UpdateInteractors()
     {
         if (interactors.Count > 0)
         { 
@@ -313,7 +326,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 if (interactors[i] != null)
                 {
-                    if (interactors[i].harvestTarget != this)
+                    if (interactors[i].interactionTarget != this)
                     {
                         interactors.RemoveAt(i);
                         break;
@@ -322,13 +335,21 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
+    private void Update()
+    {
+        if (rallyTarget != null)
+        {
+            rallyVisual.transform.position = rallyTarget.transform.position;
+            rallyPoint = rallyTarget.transform.position;
+        }
+    }
     private void FixedUpdate()
     { 
         if (IsSpawned)
         { 
             if (type == EntityTypes.HarvestableStructure)
             {
-                UpdateHarvesters();
+                UpdateInteractors();
             }
             if (!teamRenderersUpdated)
             {
@@ -513,12 +534,53 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void SetRally()
     {
-        rallyPoint = Global.Instance.localPlayer.cursorWorldPosition;
-        if (rallyVisual != null)
+        rallyMission = RallyMission.Move;
+        rallyTarget = null;
+        //determine if spawned units should be given a mission
+
+        Ray ray = Global.Instance.localPlayer.cam.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
         {
-            rallyVisual.transform.position = rallyPoint;
+            rallyPoint = hit.point;
+            if (rallyVisual != null)
+            {
+                rallyVisual.transform.position = rallyPoint;
+            }
+            SelectableEntity target = hit.collider.GetComponent<SelectableEntity>();
+            if (target != null)
+            {
+                if (target.teamBehavior == TeamBehavior.OwnerTeam)
+                {
+                    if (target.net.OwnerClientId == net.OwnerClientId) //same team
+                    { 
+                        if (target.fullyBuilt && target.HasEmptyGarrisonablePosition()) //target can be garrisoned
+                        {
+                            rallyMission = RallyMission.Garrison;
+                            rallyTarget = target; 
+                        }
+                        else //clicking on structure causes us to try to build
+                        { 
+                            rallyMission = RallyMission.Build;
+                            rallyTarget = target;
+                        }
+                    }
+                    else //enemy
+                    {
+                        rallyMission = RallyMission.Attack;
+                        rallyTarget = target;
+                    }
+                }
+                else if (target.teamBehavior == TeamBehavior.FriendlyNeutral)
+                {
+                    if (target.type == EntityTypes.HarvestableStructure)
+                    {
+                        rallyMission = RallyMission.Harvest;
+                        rallyTarget = target;
+                    }
+                }
+            }
         }
-    }
+    } 
     public MeshRenderer[] attackEffects;
 
     private readonly float attackEffectDuration = 0.1f;
@@ -592,13 +654,46 @@ public class SelectableEntity : NetworkBehaviour
             if (fac.timeCost <= 0 && populationAmount <= Global.Instance.localPlayer.maxPopulation - Global.Instance.localPlayer.population)
             {
                 //Debug.Log("spawn");
-                buildQueue.RemoveAt(0);
-                Debug.Log(fac.buildID);
-                Global.Instance.localPlayer.FromBuildingSpawn(this, rallyPoint, fac.buildID); //bug here
+
+                BuildQueueSpawn(fac.buildID);
             }
         }
         Global.Instance.localPlayer.UpdateBuildQueue();
     } 
+    private void BuildQueueSpawn(byte id)
+    {
+        buildQueue.RemoveAt(0);
+        Global.Instance.localPlayer.FromBuildingSpawn(this, rallyPoint, id); //bug here
+        //get last spawned
+        SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
+        MinionController controller = last.GetComponent<MinionController>();
+        if (controller != null)
+        {
+            controller.givenMission = rallyMission;
+            //assign mission to last
+            switch (rallyMission)
+            {
+                case RallyMission.None:
+                    break;
+                case RallyMission.Move:
+                    break;
+                case RallyMission.Harvest:
+                    last.interactionTarget = rallyTarget;
+                    break;
+                case RallyMission.Build:
+                    last.interactionTarget = rallyTarget;
+                    break;
+                case RallyMission.Garrison:
+                    last.interactionTarget = rallyTarget;
+                    break;
+                case RallyMission.Attack:
+                    controller.targetEnemy = rallyTarget;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
     private Vector3[] LineArray(Vector3 des)
     { 
         targetIndicator.transform.position = new Vector3(des.x, 0.05f, des.z);
