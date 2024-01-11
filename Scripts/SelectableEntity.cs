@@ -52,7 +52,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public SelectableEntity harvestTarget;
 
     [HideInInspector] public List<FactionEntityClass> buildQueue;
-    [HideInInspector] public List<SelectableEntity> harvesters;
+    [HideInInspector] public List<SelectableEntity> interactors;
     private MeshRenderer[] allMeshes;
     private bool damaged = false;
     private readonly int delay = 50;
@@ -81,7 +81,7 @@ public class SelectableEntity : NetworkBehaviour
 
     [Header("Harvester Only")]
     public bool isHarvester = false;
-    public int allowedHarvesters = 1; //only relevant if this is a resource
+    public int allowedInteractors = 1; //only relevant if this is a resource
     public HarvestType harvestType = HarvestType.None;
     public int harvestCapacity = 10;
 
@@ -307,15 +307,15 @@ public class SelectableEntity : NetworkBehaviour
     } */
     private void UpdateHarvesters()
     {
-        if (harvesters.Count > 0)
+        if (interactors.Count > 0)
         { 
-            for (int i = 0; i < harvesters.Count; i++)
+            for (int i = 0; i < interactors.Count; i++)
             {
-                if (harvesters[i] != null)
+                if (interactors[i] != null)
                 {
-                    if (harvesters[i].harvestTarget != this)
+                    if (interactors[i].harvestTarget != this)
                     {
-                        harvesters.RemoveAt(i);
+                        interactors.RemoveAt(i);
                         break;
                     }
                 }

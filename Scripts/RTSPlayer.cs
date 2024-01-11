@@ -5,6 +5,7 @@ using Unity.Netcode;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;// Required when using Event data.
 using TMPro;
+using System.Linq;
 
 public class RTSPlayer : NetworkBehaviour
 {
@@ -511,6 +512,17 @@ public class RTSPlayer : NetworkBehaviour
                             }
                         }
                     }
+                    else if (placingWall)
+                    {
+                        SelectableEntity last = ownedEntities.Last();
+                        if (last.type == SelectableEntity.EntityTypes.Wall)
+                        {
+                            endWall = last;
+                        }
+                        //fill in the gaps between start and endwall
+                        WallFill(startWall.transform.position, endWall.transform.position, id);
+                        
+                    }
                 }
                 else //if there's a linked building, we continue placing buildings so the player can place the next part of the building.
                 {
@@ -529,6 +541,14 @@ public class RTSPlayer : NetworkBehaviour
                             }
                         }
                     }
+                    else if (placingWall)
+                    {
+                        SelectableEntity last = ownedEntities.Last();
+                        if (last.type == SelectableEntity.EntityTypes.Wall)
+                        {
+                            startWall = last;
+                        }
+                    }
                 }
             }
             //if this is a wall, we should connect it to any adjacent nodes
@@ -539,6 +559,47 @@ public class RTSPlayer : NetworkBehaviour
 
         }
     }
+    private void WallFill(Vector3 start, Vector3 end, byte id) //fill between start and end
+    {
+        float distance = Vector3.Distance(start, end);
+        //greater distance means more walls
+        
+
+        for (int i = 0; i < distance; i++)
+        {
+            Vector3 spot = Vector3.Lerp(start, end, i/distance);
+            Vector3 mod = new Vector3(AlignToGrid(spot.x), AlignToGrid(spot.y), AlignToGrid(spot.z));
+            GenericSpawnMinion(mod, id); //followCursorObject.transform.position
+        }
+
+    }
+    private float AlignToGrid(float input)
+    {
+        //ex 1.7
+        float ceiling = Mathf.Ceil(input); //2
+        float floor = Mathf.Floor(input); //1
+        float middle = floor + 0.5f;
+
+        //float maxDiff = 0.25f;
+        return middle;
+/*
+        if (Mathf.Abs(ceiling - input) <= maxDiff) //if diff between ceiling and input is small
+        {
+            return ceiling;
+        }
+        else if (Mathf.Abs(floor - input) <= maxDiff)
+        {
+            return floor;
+        }
+        else
+        {
+            return middle;
+        }*/
+
+    }
+    private byte wallID = 0;
+    public SelectableEntity startWall;
+    public SelectableEntity endWall;
     private void StopPlacingBuilding()
     {
         Destroy(followCursorObject);
@@ -559,6 +620,7 @@ public class RTSPlayer : NetworkBehaviour
     public void UpdatePlacement()
     {
         placementBlocked = Physics.CheckBox(cursorWorldPosition, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.identity, entityLayer, QueryTriggerInteraction.Ignore);
+
         if (placementBlocked != oldPlacement)
         {
             oldPlacement = placementBlocked;
@@ -923,7 +985,12 @@ public class RTSPlayer : NetworkBehaviour
         {
             placingPortal = true;
         }
+        else if (entity.type == SelectableEntity.EntityTypes.Wall)
+        {
+            placingWall = true;
+        }
     }
+    public bool placingWall = false;
     public bool placingPortal = false;
     public List<byte> indices;
     private void SingleSelect()

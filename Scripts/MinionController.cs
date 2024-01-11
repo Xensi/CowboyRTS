@@ -179,7 +179,8 @@ public class MinionController : NetworkBehaviour
             rigid.isKinematic = state switch
             {
                 State.FindHarvestable or State.WalkToHarvestable or State.Harvesting or State.AfterHarvestCheck
-                or State.FindDeposit or State.WalkToDeposit or State.Depositing or State.AfterDepositCheck => true,
+                or State.FindDeposit or State.WalkToDeposit or State.Depositing or State.AfterDepositCheck 
+                or State.FindBuildable or State.WalkToBuildable or State.Building or State.AfterBuildCheck => true,
                 _ => false,
             };
         }
@@ -193,21 +194,40 @@ public class MinionController : NetworkBehaviour
             };
         }
     }
-    private void UpdateHarvestables()
+    private void EnsureNotHarvestingFromBusy()
     {
         if (selectableEntity.harvestTarget != null && selectableEntity.harvestTarget.alive) //if we have a harvest target
         {
-            if (!selectableEntity.harvestTarget.harvesters.Contains(selectableEntity)) //if we are not in harvester list
+            if (!selectableEntity.harvestTarget.interactors.Contains(selectableEntity)) //if we are not in harvester list
             {
-                if (selectableEntity.harvestTarget.harvesters.Count < selectableEntity.harvestTarget.allowedHarvesters) //if there is space
+                if (selectableEntity.harvestTarget.interactors.Count < selectableEntity.harvestTarget.allowedInteractors) //if there is space
                 {
                     //add us
-                    selectableEntity.harvestTarget.harvesters.Add(selectableEntity);
+                    selectableEntity.harvestTarget.interactors.Add(selectableEntity);
                 }
                 else //there is no space
                 {
                     //get a new harvest target
                     selectableEntity.harvestTarget = null;
+                }
+            }
+        }
+    }
+    private void EnsureNotBuildingBusy()
+    {
+        if (buildTarget != null && buildTarget.alive) //if we have a harvest target
+        {
+            if (!buildTarget.interactors.Contains(selectableEntity)) //if we are not in harvester list
+            {
+                if (buildTarget.interactors.Count < buildTarget.allowedInteractors) //if there is space
+                {
+                    //add us
+                    buildTarget.interactors.Add(selectableEntity);
+                }
+                else //there is no space
+                {
+                    //get a new harvest target
+                    buildTarget = null;
                 }
             }
         }
@@ -371,7 +391,8 @@ public class MinionController : NetworkBehaviour
     }
     private void UpdateState()
     {
-        UpdateHarvestables();
+        EnsureNotHarvestingFromBusy();
+        EnsureNotBuildingBusy();
         UpdateColliderStatus();
         UpdateAttackReadiness();
         if (attackType == AttackType.Gatling)
@@ -1023,7 +1044,7 @@ public class MinionController : NetworkBehaviour
         float distance = Mathf.Infinity;
         foreach (SelectableEntity item in list)
         {
-            if (item != null && !item.fullyBuilt)
+            if (item != null && !item.fullyBuilt && item.interactors.Count < item.allowedInteractors)
             {
                 float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position);
                 if (newDist < distance)
@@ -1125,7 +1146,7 @@ public class MinionController : NetworkBehaviour
         {
             if (item != null)
             {
-                if (item.harvesters.Count < item.allowedHarvesters) //there is space for a new harvester
+                if (item.interactors.Count < item.allowedInteractors) //there is space for a new harvester
                 {
                     float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position);
                     if (newDist < distance)
