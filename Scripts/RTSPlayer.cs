@@ -361,7 +361,7 @@ public class RTSPlayer : NetworkBehaviour
         Global.Instance.goldText.text = "Gold: " + gold; 
         if (Global.Instance.popText != null)
         {
-            Global.Instance.popText.text = population+"/100 Population";
+            Global.Instance.popText.text = population+"/"+maxPopulation+" Population";
         }
     }
     private void SelectWithinBounds() //rectangle select, finish drag select

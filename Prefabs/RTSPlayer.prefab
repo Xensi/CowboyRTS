@@ -57,6 +57,7 @@ MonoBehaviour:
   _faction: {fileID: 11400000, guid: 66749da4c40495e4780f36062d3a4f8b, type: 2}
   _entitiesIndex: 0
   cursorWorldPosition: {x: 0, y: 0, z: 0}
+  linkedState: 0
   mouseState: 0
   groundLayer:
     serializedVersion: 2
@@ -70,6 +71,14 @@ MonoBehaviour:
   endPortal: {fileID: 0}
   placingLinkedBuilding: 0
   starterUnitID: 8
+  population: 0
+  maxPopulation: 50
+  placementGhost:
+    serializedVersion: 2
+    m_Bits: 0
+  predictedWallPositions: []
+  predictedWallPositionsShouldBePlaced: 
+  wallGhosts: []
   placingPortal: 0
   indices: 
 --- !u!114 &1888051484682193116
