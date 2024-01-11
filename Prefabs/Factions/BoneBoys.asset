@@ -18,7 +18,7 @@ MonoBehaviour:
     prefabToSpawn: {fileID: 2545681379473208697, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
     linkedID: -1
     goldCost: 10
-    timeCost: 5
+    timeCost: 1
     buildID: 0
   - productionName: Dig Grave
     needsConstructing: 1

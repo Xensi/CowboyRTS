@@ -19,24 +19,18 @@ public class MinionController : NetworkBehaviour
         WalkToEnemy,
         Attacking,
         AfterAttackCheck,
-        FindBuildable,
-        WalkToBuildable,
+        FindInteractable,
+        WalkToInteractable,
         Building,
         AfterBuildCheck,
         Spawn,
         Die,
-        FindHarvestable,
-        WalkToHarvestable,
         Harvesting,
         AfterHarvestCheck,
-        FindDeposit,
-        WalkToDeposit,
         Depositing,
         AfterDepositCheck,
-        WalkToGarrisonable,
         Garrisoning,
         AfterGarrisonCheck,
-        FindGarrisonable,
         WalkToRally
     }
 
@@ -47,6 +41,7 @@ public class MinionController : NetworkBehaviour
         None
     }
     #endregion
+    public State lastState = State.Idle;
     #region Hidden
     LayerMask enemyMask;
     private Camera cam;
@@ -175,13 +170,12 @@ public class MinionController : NetworkBehaviour
         {
             rigid.isKinematic = state switch
             {
-                State.FindHarvestable or State.WalkToHarvestable or State.Harvesting or State.AfterHarvestCheck
-                or State.FindDeposit or State.WalkToDeposit or State.Depositing or State.AfterDepositCheck
-                or State.FindBuildable or State.WalkToBuildable or State.Building or State.AfterBuildCheck => true,
+                State.FindInteractable or State.WalkToInteractable or State.Harvesting or State.AfterHarvestCheck or State.Depositing or State.AfterDepositCheck
+                or State.Building or State.AfterBuildCheck => true,
                 _ => false,
             };
         }
-        if (selectableEntity.RVO != null)
+        /*if (selectableEntity.RVO != null)
         {
             selectableEntity.RVO.enabled = state switch
             {
@@ -189,7 +183,7 @@ public class MinionController : NetworkBehaviour
                 or State.FindDeposit or State.WalkToDeposit or State.Depositing or State.AfterDepositCheck => false,
                 _ => true,
             };
-        }
+        }*/
     }
     private void EnsureNotInteractingWithBusy()
     {
@@ -379,62 +373,6 @@ public class MinionController : NetworkBehaviour
         }
         switch (state)
         {
-            case State.Idle:
-                break;
-            case State.Walk:
-                selectableEntity.interactionTarget = null;
-                break;
-            case State.WalkBeginFindEnemies:
-                break;
-            case State.WalkContinueFindEnemies:
-                break;
-            case State.WalkToEnemy:
-                break;
-            case State.Attacking:
-                break;
-            case State.AfterAttackCheck:
-                break;
-            case State.FindBuildable:
-                break;
-            case State.WalkToBuildable:
-                break;
-            case State.Building:
-                break;
-            case State.AfterBuildCheck:
-                break;
-            case State.Spawn:
-                break;
-            case State.Die:
-                break;
-            case State.FindHarvestable:
-                break;
-            case State.WalkToHarvestable:
-                break;
-            case State.Harvesting:
-                break;
-            case State.AfterHarvestCheck:
-                break;
-            case State.FindDeposit:
-                break;
-            case State.WalkToDeposit:
-                break;
-            case State.Depositing:
-                break;
-            case State.AfterDepositCheck:
-                break;
-            case State.WalkToGarrisonable:
-                break;
-            case State.Garrisoning:
-                break;
-            case State.AfterGarrisonCheck:
-                break;
-            case State.FindGarrisonable:
-                break;
-            case State.WalkToRally:
-                break;
-        }
-        switch (state)
-        {
             #region defaults
             case State.Spawn: //don't really do anything, just play the spawn animation
                 animator.Play("Spawn");
@@ -474,7 +412,8 @@ public class MinionController : NetworkBehaviour
                             }
                             else
                             {
-                                state = State.WalkToBuildable;
+                                state = State.WalkToInteractable;
+                                lastState = State.Building;
                                 break;
                             }
                         }
@@ -485,7 +424,8 @@ public class MinionController : NetworkBehaviour
                         state = State.WalkToRally;
                         break;
                     case SelectableEntity.RallyMission.Harvest:
-                        state = State.WalkToHarvestable;
+                        state = State.WalkToInteractable;
+                        lastState = State.Harvesting;
                         break;
                     case SelectableEntity.RallyMission.Build:
                         if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
@@ -496,12 +436,14 @@ public class MinionController : NetworkBehaviour
                             }
                             else
                             {
-                                state = State.WalkToBuildable;
+                                state = State.WalkToInteractable;
+                                lastState = State.Building;
                             }
                         }
                         break;
                     case SelectableEntity.RallyMission.Garrison:
-                        state = State.WalkToGarrisonable;
+                        state = State.WalkToInteractable;
+                        lastState = State.Garrisoning;
                         break;
                     case SelectableEntity.RallyMission.Attack:
                         if (TargetEnemyValid())
@@ -724,42 +666,115 @@ public class MinionController : NetworkBehaviour
                 break;
             #endregion
             #region Building
-            case State.FindBuildable:
+            case State.FindInteractable:
                 FreezeRigid();
-                if (InvalidBuildable(selectableEntity.interactionTarget))
-                {
-                    selectableEntity.interactionTarget = FindClosestBuildable();
-                }
-                else
-                {
-                    state = State.WalkToBuildable;
+                //prioritize based on last state
+                switch (lastState)
+                { 
+                    case State.Building:
+                        if (InvalidBuildable(selectableEntity.interactionTarget))
+                        {
+                            selectableEntity.interactionTarget = FindClosestBuildable();
+                        }
+                        else
+                        {
+                            state = State.WalkToInteractable;
+                        }
+                        break; 
+                    case State.Harvesting: 
+                        if (InvalidHarvestable(selectableEntity.interactionTarget))
+                        {
+                            selectableEntity.interactionTarget = FindClosestHarvestable();
+                        }
+                        else
+                        {
+                            state = State.WalkToInteractable;
+                        }
+                        break; 
+                    case State.Depositing:
+                        if (InvalidDeposit(selectableEntity.interactionTarget))
+                        {
+                            selectableEntity.interactionTarget = FindClosestDeposit();
+                        }
+                        else
+                        {
+                            state = State.WalkToInteractable;
+                        }
+                        break; 
+                    default:
+                        break;
                 }
                 break;
-            case State.WalkToBuildable:
+            case State.WalkToInteractable:
                 FreezeRigid(false, false);
                 UpdateMoveIndicator();
-                if (InvalidBuildable(selectableEntity.interactionTarget))
-                {
-                    state = State.FindBuildable;
+                switch (lastState)
+                { 
+                    case State.Building:
+                        if (InvalidBuildable(selectableEntity.interactionTarget))
+                        {
+                            state = State.FindInteractable;
+                        }
+                        else
+                        {
+                            if (InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
+                            {
+                                stateTimer = 0;
+                                state = State.Building;
+                            }
+                            else
+                            {
+                                animator.Play("Walk");
+                                destination = selectableEntity.interactionTarget.transform.position;
+                            }
+                        }
+                        break; 
+                    case State.Harvesting: 
+                        if (InvalidHarvestable(selectableEntity.interactionTarget))
+                        {
+                            state = State.FindInteractable;
+                        }
+                        else
+                        {
+                            if (InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
+                            {
+                                stateTimer = 0;
+                                state = State.Harvesting;
+                            }
+                            else
+                            {
+                                animator.Play("Walk");
+                                destination = selectableEntity.interactionTarget.transform.position;
+                            }
+                        }
+                        break; 
+                    case State.Depositing: 
+                        if (InvalidDeposit(selectableEntity.interactionTarget))
+                        {
+                            state = State.FindInteractable;
+                        }
+                        else
+                        {
+                            if (InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
+                            { 
+                                state = State.Depositing;
+                            }
+                            else
+                            {  
+                                animator.Play("Walk");
+                                destination = selectableEntity.interactionTarget.transform.position;
+                            } 
+                        }
+                        break; 
+                    default:
+                        break;
                 }
-                else
-                {
-                    if (InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
-                    {
-                        stateTimer = 0;
-                        state = State.Building;
-                    }
-                    else
-                    {
-                        animator.Play("Walk");
-                        destination = selectableEntity.interactionTarget.transform.position;
-                    }
-                }
-                break;
+                break;  
             case State.Building:
                 if (InvalidBuildable(selectableEntity.interactionTarget) || !InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
                 {
-                    state = State.FindBuildable;
+                    state = State.FindInteractable;
+                    lastState = State.Building;
                 }
                 else
                 {
@@ -793,8 +808,9 @@ public class MinionController : NetworkBehaviour
                 animator.Play("Idle");
                 FreezeRigid();
                 if (InvalidBuildable(selectableEntity.interactionTarget))
-                { 
-                    state = State.FindBuildable;
+                {
+                    state = State.FindInteractable;
+                    lastState = State.Building;
                 }
                 else
                 {
@@ -803,43 +819,12 @@ public class MinionController : NetworkBehaviour
                 }
                 break;
             #endregion
-            #region Harvestable 
-            case State.FindHarvestable:
-                FreezeRigid();
-                if (InvalidHarvestable(selectableEntity.interactionTarget))
-                {
-                    selectableEntity.interactionTarget = FindClosestHarvestable();
-                }
-                else
-                {
-                    state = State.WalkToHarvestable;
-                }
-                break;
-            case State.WalkToHarvestable:
-                UpdateMoveIndicator();
-                FreezeRigid(false, false);
-                if (InvalidHarvestable(selectableEntity.interactionTarget))
-                {
-                    state = State.FindHarvestable;
-                }
-                else
-                {
-                    if (Vector3.Distance(transform.position, selectableEntity.interactionTarget.transform.position) > attackRange) //if out of harvest range walk there
-                    {
-                        animator.Play("Walk");
-                        destination = selectableEntity.interactionTarget.transform.position;
-                    }
-                    else
-                    {
-                        stateTimer = 0;
-                        state = State.Harvesting;
-                    }
-                }
-                break;
+            #region Harvestable  
             case State.Harvesting:
                 if (InvalidHarvestable(selectableEntity.interactionTarget))
                 {
-                    state = State.FindHarvestable;
+                    state = State.FindInteractable;
+                    lastState = State.Harvesting;
                 }
                 else
                 {
@@ -875,7 +860,8 @@ public class MinionController : NetworkBehaviour
                 FreezeRigid();
                 if (selectableEntity.harvestedResourceAmount >= selectableEntity.harvestCapacity)
                 {
-                    state = State.FindDeposit;
+                    state = State.FindInteractable;
+                    lastState = State.Depositing;
                 }
                 else if (InvalidHarvestable(selectableEntity.interactionTarget))
                 {
@@ -884,45 +870,15 @@ public class MinionController : NetworkBehaviour
                 }
                 else
                 {
-                    state = State.FindHarvestable;
+                    state = State.FindInteractable;
+                    lastState = State.Harvesting;
                 }
-                break;
-            case State.FindDeposit:
-                FreezeRigid();
-                if (InvalidDeposit(selectableEntity.interactionTarget))
-                {
-                    selectableEntity.interactionTarget = FindClosestDeposit();
-                }
-                else
-                {
-                    state = State.WalkToDeposit;
-                }
-                break;
-            case State.WalkToDeposit:
-                UpdateMoveIndicator();
-                FreezeRigid(false, false);
-                if (InvalidDeposit(selectableEntity.interactionTarget))
-                {
-                    state = State.FindDeposit;
-                }
-                else
-                {
-                    if (Vector3.Distance(transform.position, selectableEntity.interactionTarget.transform.position) > attackRange)
-                    {
-                        ai.canMove = true;
-                        animator.Play("Walk");
-                        destination = selectableEntity.interactionTarget.transform.position;
-                    }
-                    else
-                    {
-                        state = State.Depositing;
-                    }
-                }
-                break;
+                break;  
             case State.Depositing:
                 if (InvalidDeposit(selectableEntity.interactionTarget))
                 {
-                    state = State.FindDeposit;
+                    state = State.FindInteractable;
+                    lastState = State.Depositing;
                 }
                 else
                 {
@@ -946,16 +902,18 @@ public class MinionController : NetworkBehaviour
                 if (InvalidHarvestable(selectableEntity.interactionTarget))
                 {
                     stateTimer = 0;
-                    state = State.WalkToHarvestable;
+                    state = State.WalkToInteractable;
+                    lastState = State.Harvesting;
                 }
                 else
                 {
-                    state = State.FindHarvestable;
+                    state = State.FindInteractable; 
+                    lastState = State.Harvesting;
                 }
                 break;
             #endregion
             #region Garrison
-            case State.WalkToGarrisonable:
+            /*case State.WalkToGarrisonable:
                 UpdateMoveIndicator();
                 FreezeRigid(false, false);
                 if (selectableEntity.interactionTarget == null)
@@ -991,7 +949,7 @@ public class MinionController : NetworkBehaviour
                         }
                     }
                 }
-                break;
+                break;*/
             case State.Garrisoning:
                 if (selectableEntity.interactionTarget == null)
                 {
@@ -1584,7 +1542,9 @@ public class MinionController : NetworkBehaviour
     public void ForceBuildTarget(SelectableEntity target)
     {
         selectableEntity.interactionTarget = target;
-        state = State.WalkToBuildable;
+
+        state = State.WalkToInteractable;
+        lastState = State.Building;
     }
     public void SetDestinationRaycast(bool attackMoveVal = false)
     {
@@ -1619,12 +1579,14 @@ public class MinionController : NetworkBehaviour
                             if (select.depositType == SelectableEntity.DepositType.Gold && select.fullyBuilt) //if deposit point
                             {
                                 selectableEntity.interactionTarget = select;
-                                state = State.FindDeposit;
+                                state = State.WalkToInteractable;
+                                lastState = State.Depositing;
                             }
                             else if (selectableEntity.type == SelectableEntity.EntityTypes.Builder && !select.fullyBuilt) //if buildable and this is a builder
                             {
-                                selectableEntity.interactionTarget = select;
-                                state = State.WalkToBuildable;
+                                selectableEntity.interactionTarget = select; 
+                                state = State.WalkToInteractable;
+                                lastState = State.Building;
                             }
                             else if (select.fullyBuilt && select.HasEmptyGarrisonablePosition() && selectableEntity.garrisonablePositions.Count <= 0) //target can be garrisoned, and passenger cannot garrison
                             {
@@ -1633,12 +1595,14 @@ public class MinionController : NetworkBehaviour
                                     if (select.acceptsHeavy)
                                     {
                                         selectableEntity.interactionTarget = select;
-                                        state = State.WalkToGarrisonable;
+                                        state = State.WalkToInteractable;
+                                        lastState = State.Garrisoning;
                                     }
                                     else if (!selectableEntity.isHeavy)
                                     {
                                         selectableEntity.interactionTarget = select;
-                                        state = State.WalkToGarrisonable;
+                                        state = State.WalkToInteractable;
+                                        lastState = State.Garrisoning;
                                     }
                                     
                                 }
@@ -1647,7 +1611,8 @@ public class MinionController : NetworkBehaviour
                             {
                                 selectableEntity.tryingToTeleport = true;
                                 selectableEntity.interactionTarget = select;
-                                state = State.WalkToGarrisonable;
+                                state = State.WalkToInteractable;
+                                lastState = State.Garrisoning;
                             }
                         }
                         else //enemy
@@ -1667,11 +1632,13 @@ public class MinionController : NetworkBehaviour
                                 if (selectableEntity.harvestedResourceAmount < selectableEntity.harvestCapacity) //we could still harvest more
                                 { 
                                     selectableEntity.interactionTarget = select;
-                                    state = State.WalkToHarvestable;
+                                    state = State.WalkToInteractable;
+                                    lastState = State.Harvesting;
                                 }
                                 else
-                                { 
-                                    state = State.FindDeposit;
+                                {  
+                                    state = State.FindInteractable;
+                                    lastState = State.Depositing;
                                 }
                             }
                         }

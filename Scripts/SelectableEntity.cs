@@ -342,15 +342,9 @@ public class SelectableEntity : NetworkBehaviour
             rallyVisual.transform.position = rallyTarget.transform.position;
             rallyPoint = rallyTarget.transform.position;
         }
-    }
-    private void FixedUpdate()
-    { 
         if (IsSpawned)
-        { 
-            if (type == EntityTypes.HarvestableStructure)
-            {
-                UpdateInteractors();
-            }
+        {
+            UpdateInteractors();
             if (!teamRenderersUpdated)
             {
                 UpdateTeamRenderers();
@@ -375,6 +369,28 @@ public class SelectableEntity : NetworkBehaviour
             }
             else
             {
+                 
+                if (!damaged)
+                {
+                    CheckIfDamaged();
+                }
+                if (hitPoints.Value <= 0)
+                {
+                    ProperDestroyMinion();
+                }
+                
+            }
+        }
+    }
+    private void FixedUpdate()
+    { 
+        if (IsSpawned)
+        { 
+            if (!fullyBuilt)
+            { 
+            }
+            else
+            {
                 if (count < delay)
                 {
                     count++;
@@ -383,14 +399,6 @@ public class SelectableEntity : NetworkBehaviour
                 {
                     count = 0;
                     UpdateBuildQueue();
-                }
-                if (!damaged)
-                {
-                    CheckIfDamaged();
-                }
-                if (hitPoints.Value <= 0)
-                {
-                    ProperDestroyMinion();
                 }
                 //walking sounds
                 if (minionController != null)

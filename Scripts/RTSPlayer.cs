@@ -209,9 +209,7 @@ public class RTSPlayer : NetworkBehaviour
                     switch (item.minionController.state)
                     {
                         case MinionController.State.Idle:
-                        case MinionController.State.FindHarvestable:
-                        case MinionController.State.FindBuildable:
-                        case MinionController.State.FindDeposit:
+                        case MinionController.State.FindInteractable:
                             TrySelectEntity(item);
                             break;
                     }
