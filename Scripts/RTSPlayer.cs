@@ -30,6 +30,13 @@ public class RTSPlayer : NetworkBehaviour
         ReadyToPlace,
         ReadyToSetRallyPoint
     }
+    public enum LinkedState
+    {
+        Waiting,
+        PlacingStart,
+        PlacingEnd
+    }
+    public LinkedState linkedState = LinkedState.Waiting;
     public MouseState mouseState = MouseState.Waiting;
     public LayerMask groundLayer;
     public LayerMask entityLayer;
@@ -50,6 +57,7 @@ public class RTSPlayer : NetworkBehaviour
     private Transform camParent;
     public int population = 0;
     public int maxPopulation = 100;
+    public LayerMask placementGhost;
     public void LoseGame()
     {
         inTheGame.Value = false;
@@ -58,6 +66,7 @@ public class RTSPlayer : NetworkBehaviour
     { 
         groundLayer = LayerMask.GetMask("Ground");
         entityLayer = LayerMask.GetMask("Entity", "Obstacle");
+        placementGhost = LayerMask.GetMask("PlacementGhost");
         _offset = new Vector3(0.5f, 0, .5f);
         //_offset = new Vector3(0, 0, 0);
         cam = Camera.main;
@@ -280,6 +289,10 @@ public class RTSPlayer : NetworkBehaviour
                 GenericSpawnMinion(cursorWorldPosition, 8);
             }
 #endif
+            if (linkedState == LinkedState.PlacingEnd)
+            {
+                CalculateFillCost(startWallPosition, cursorWorldPosition, wallID);
+            }
             if (Input.GetMouseButtonDown(0)) //left click
             {
                 StartMousePosition = Input.mousePosition;
@@ -469,110 +482,277 @@ public class RTSPlayer : NetworkBehaviour
             item.minionController.ForceBuildTarget(item);
         }
     }
+    private Vector3 startWallPosition;
     private void PlaceBuilding(byte id = 0)
     {
         FactionEntityClass fac = _faction.entities[id];
-        if (gold >= fac.goldCost)
+        switch (linkedState)
         {
-            gold -= fac.goldCost;
-            Debug.Log("placing at " + cursorWorldPosition);
-            GenericSpawnMinion(cursorWorldPosition, id); //followCursorObject.transform.position
-            TellSelectedToBuild();
-            if (Input.GetKey(KeyCode.LeftShift) && gold >= fac.goldCost) 
-            {
-                //continue placing buildings
-            }
-            else if (!Input.GetKey(KeyCode.LeftShift) || gold < fac.goldCost) //if not holding shift or out of money for this building
-            {
-                if (fac.linkedID == -1) //if no linked building, stop after placing building
+            case LinkedState.Waiting:
+                break;
+            case LinkedState.PlacingStart:
+                linkedState = LinkedState.PlacingEnd;
+                startWallPosition = cursorWorldPosition;
+                wallID = id;
+                Destroy(followCursorObject);
+                break;
+            case LinkedState.PlacingEnd:
+                int cost = CalculateFillCost(startWallPosition, cursorWorldPosition, id);
+                if (gold >= cost)
                 {
+                    gold -= cost;
+                    //GenericSpawnMinion(cursorWorldPosition, id); //followCursorObject.transform.position
+                    WallFill(id);
                     StopPlacingBuilding();
-                    if (placingPortal)
+                }
+                break;
+            default:
+                break;
+        }
+        /*
+                if ()
+                {
+                }
+                else
+                {
+                    if (startWall != null) //if we are placing a wall
                     {
-                        foreach (SelectableEntity item in ownedEntities)
+
+                    }
+                    else if (gold >= fac.goldCost)
+                    {
+                        gold -= fac.goldCost;
+                        Debug.Log("placing at " + cursorWorldPosition);
+                        GenericSpawnMinion(cursorWorldPosition, id); //followCursorObject.transform.position
+                        TellSelectedToBuild();
+                        if (Input.GetKey(KeyCode.LeftShift) && gold >= fac.goldCost)
                         {
-                            if (item.type == SelectableEntity.EntityTypes.Portal)
+                            //continue placing buildings
+                        }
+                        else if (!Input.GetKey(KeyCode.LeftShift) || gold < fac.goldCost) //if not holding shift or out of money for this building
+                        {
+                            if (fac.linkedID == -1) //if no linked building, stop after placing building
                             {
-                                Portal portal = item.GetComponent<Portal>();
-                                if (portal != startPortal)
+                                StopPlacingBuilding();
+                                if (placingPortal)
                                 {
-                                    endPortal = portal;
+                                    foreach (SelectableEntity item in ownedEntities)
+                                    {
+                                        if (item.type == SelectableEntity.EntityTypes.Portal)
+                                        {
+                                            Portal portal = item.GetComponent<Portal>();
+                                            if (portal != startPortal)
+                                            {
+                                                endPortal = portal;
 
-                                    startPortal.destination = endPortal.transform.position;
-                                    endPortal.destination = startPortal.transform.position;
-                                    startPortal.hasLinkedPortal = true;
-                                    endPortal.hasLinkedPortal = true;
-                                    startPortal.linkedPortal = endPortal;
-                                    endPortal.linkedPortal = startPortal;
+                                                startPortal.destination = endPortal.transform.position;
+                                                endPortal.destination = startPortal.transform.position;
+                                                startPortal.hasLinkedPortal = true;
+                                                endPortal.hasLinkedPortal = true;
+                                                startPortal.linkedPortal = endPortal;
+                                                endPortal.linkedPortal = startPortal;
 
-                                    startPortal = null;
-                                    endPortal = null;
-                                    break;
+                                                startPortal = null;
+                                                endPortal = null;
+                                                placingPortal = false;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else //if there's a linked building, we continue placing buildings so the player can place the next part of the building.
+                            {
+                                buildingPlacingID = (byte)fac.linkedID;
+                                placingLinkedBuilding = true;
+
+
+                                if (placingPortal)
+                                {
+                                    foreach (SelectableEntity item in ownedEntities)
+                                    {
+                                        if (item.type == SelectableEntity.EntityTypes.Portal)
+                                        {
+                                            startPortal = item.GetComponent<Portal>();
+                                            break;
+                                        }
+                                    }
+                                }
+                                else if (placingWall)
+                                {
+                                    SelectableEntity last = ownedEntities.Last();
+                                    if (last.type == SelectableEntity.EntityTypes.Wall)
+                                    {
+                                        startWall = last;
+                                        wallID = id;
+                                    }
                                 }
                             }
                         }
                     }
-                    else if (placingWall)
-                    {
-                        SelectableEntity last = ownedEntities.Last();
-                        if (last.type == SelectableEntity.EntityTypes.Wall)
-                        {
-                            endWall = last;
-                        }
-                        //fill in the gaps between start and endwall
-                        WallFill(startWall.transform.position, endWall.transform.position, id);
-                        
-                    }
-                }
-                else //if there's a linked building, we continue placing buildings so the player can place the next part of the building.
-                {
-                    buildingPlacingID = (byte) fac.linkedID;
-                    placingLinkedBuilding = true;
+                }*/
 
 
-                    if (placingPortal)
-                    {
-                        foreach (SelectableEntity item in ownedEntities)
-                        {
-                            if (item.type == SelectableEntity.EntityTypes.Portal)
-                            {
-                                startPortal = item.GetComponent<Portal>();
-                                break;
-                            }
-                        }
+    }
+    public List<Vector3> predictedWallPositions = new();
+    public List<bool> predictedWallPositionsShouldBePlaced = new();
+    public List<GameObject> wallGhosts = new();
+    private int CalculateFillCost(Vector3 start, Vector3 end, byte id) //fill between start and end
+    {
+        FactionEntityClass fac = _faction.entities[id];
+        int cost = fac.goldCost;
+
+        float distance = Vector3.Distance(start, end);
+        //greater distance means more walls
+        predictedWallPositions.Clear();
+        predictedWallPositionsShouldBePlaced.Clear();
+        foreach (GameObject item in wallGhosts)
+        {
+            if (item != null)
+            {
+                Destroy(item);
+            }
+        }
+        wallGhosts.Clear();
+        if (distance > 0)
+        {
+            for (int i = 0; i <= distance; i++)
+            {
+                Vector3 spot = Vector3.Lerp(start, end, i / distance);
+                Vector3 mod = new Vector3(AlignToGrid(spot.x), 0, AlignToGrid(spot.z));
+                Debug.DrawLine(mod, mod + new Vector3(0, 1, 0));
+                if (!predictedWallPositions.Any(i => i == mod)) // && mod != cursorWorldPosition
+                { 
+                    if (Physics.CheckBox(mod, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Ignore)) //blocked
+                    { 
+                        predictedWallPositionsShouldBePlaced.Add(false);
                     }
-                    else if (placingWall)
-                    {
-                        SelectableEntity last = ownedEntities.Last();
-                        if (last.type == SelectableEntity.EntityTypes.Wall)
-                        {
-                            startWall = last;
-                        }
+                    else
+                    { 
+                        predictedWallPositionsShouldBePlaced.Add(true);
                     }
+                    predictedWallPositions.Add(mod); 
                 }
             }
-            //if this is a wall, we should connect it to any adjacent nodes
-
-            //find adjacent nodes
-
-            //place walls between this and those nodes
-
         }
+        else
+        { 
+            if (Physics.CheckBox(start, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Ignore)) //blocked
+            { 
+                predictedWallPositionsShouldBePlaced.Add(false);
+            }
+            else
+            { 
+                predictedWallPositionsShouldBePlaced.Add(true);
+            }
+            predictedWallPositions.Add(start); 
+        }
+        //count how many should be placed
+        int count = 0;
+        foreach (bool item in predictedWallPositionsShouldBePlaced)
+        {
+            if (item)
+            {
+                count++;
+            }
+        }
+        int realCost = cost * count;
+        if (gold < realCost) //not enough money
+        {
+            for (int i = 0; i < predictedWallPositions.Count; i++)
+            {
+                Vector3 pos = predictedWallPositions[i];
+                GameObject ghost = PlaceWallGhost(pos, id, true);
+                wallGhosts.Add(ghost);
+            }
+        }
+        else
+        {
+            for (int i = 0; i < predictedWallPositions.Count; i++)
+            {
+                Vector3 pos = predictedWallPositions[i];
+                bool shouldBePlaced = predictedWallPositionsShouldBePlaced[i];
+                GameObject ghost = PlaceWallGhost(pos, id, !shouldBePlaced);
+                wallGhosts.Add(ghost);
+            }
+        }
+
+        Debug.Log(realCost);
+        return realCost;
     }
-    private void WallFill(Vector3 start, Vector3 end, byte id) //fill between start and end
+    private GameObject PlaceWallGhost(Vector3 pos, byte id, bool blocked = false)
+    {
+        GameObject build = _faction.entities[id].prefabToSpawn;
+        GameObject spawn = Instantiate(build, pos, Quaternion.Euler(0, 180, 0)); //spawn locally  
+        SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
+
+        entity.isBuildIndicator = true;
+        meshes = spawn.GetComponentsInChildren<MeshRenderer>();
+        for (int i = 0; i < meshes.Length; i++)
+        {
+            if (meshes[i] != null)
+            {
+                if (blocked)
+                { 
+                    meshes[i].material = Global.Instance.blocked;
+                }
+                else
+                { 
+                    meshes[i].material = Global.Instance.transparent;
+                }
+            }
+        }
+        Collider[] colliders = spawn.GetComponentsInChildren<Collider>();
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            colliders[i].isTrigger = true;
+        }
+        return spawn;
+    }
+    private void WallFill(byte id)
+    {
+        foreach (GameObject item in wallGhosts)
+        {
+            if (item != null)
+            {
+                Destroy(item);
+            }
+        }
+        wallGhosts.Clear();
+        for (int i = 0; i < predictedWallPositions.Count; i++)
+        {
+            Vector3 pos = predictedWallPositions[i];
+            bool shouldBePlaced = predictedWallPositionsShouldBePlaced[i];
+            if (shouldBePlaced)
+            {
+                GenericSpawnMinion(pos, id);
+            }
+        }
+        predictedWallPositions.Clear();
+        predictedWallPositionsShouldBePlaced.Clear();
+    }
+    /*private void WallFill(Vector3 start, Vector3 end, byte id) //fill between start and end
     {
         float distance = Vector3.Distance(start, end);
         //greater distance means more walls
-        
 
-        for (int i = 0; i < distance; i++)
+
+        List<Vector3> positions = new List<Vector3>();
+        for (int i = 1; i < distance-1; i++)
         {
             Vector3 spot = Vector3.Lerp(start, end, i/distance);
             Vector3 mod = new Vector3(AlignToGrid(spot.x), AlignToGrid(spot.y), AlignToGrid(spot.z));
-            GenericSpawnMinion(mod, id); //followCursorObject.transform.position
+            if (!positions.Any(i => i == mod))
+            {
+                positions.Add(mod);
+                GenericSpawnMinion(mod, id); //followCursorObject.transform.position
+            }
+            //check if something is here already;
+            *//*if ()
+            {
+            }*//*
         }
-
-    }
+    }*/
     private float AlignToGrid(float input)
     {
         //ex 1.7
@@ -598,14 +778,22 @@ public class RTSPlayer : NetworkBehaviour
 
     }
     private byte wallID = 0;
-    public SelectableEntity startWall;
-    public SelectableEntity endWall;
     private void StopPlacingBuilding()
     {
         Destroy(followCursorObject);
         followCursorObject = null; 
         mouseState = MouseState.Waiting;
+        linkedState = LinkedState.Waiting;
         placingLinkedBuilding = false;
+
+        foreach (GameObject item in wallGhosts)
+        {
+            if (item != null)
+            {
+                Destroy(item);
+            }
+        }
+        wallGhosts.Clear();
     }
     private void OnDrawGizmos()
     {
@@ -967,30 +1155,36 @@ public class RTSPlayer : NetworkBehaviour
         GameObject build = _faction.entities[id].prefabToSpawn;
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn locally  
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
-        
-        entity.isBuildIndicator = true;
-        followCursorObject = spawn;
-        meshes = spawn.GetComponentsInChildren<MeshRenderer>();
-        for (int i = 0; i < meshes.Length; i++)
-        {
-            meshes[i].material = Global.Instance.transparent;
-        }
-        Collider[] colliders = spawn.GetComponentsInChildren<Collider>();
-        for (int i = 0; i < colliders.Length; i++)
-        {
-            colliders[i].isTrigger = true;
-        }
         buildingPlacingID = id;
+        bool ignore = false;
         if (entity.type == SelectableEntity.EntityTypes.Portal)
         {
             placingPortal = true;
         }
         else if (entity.type == SelectableEntity.EntityTypes.Wall)
         {
-            placingWall = true;
+            linkedState = LinkedState.PlacingStart;
+        }
+        if (ignore)
+        {
+            Destroy(spawn);
+        }
+        else
+        {
+            entity.isBuildIndicator = true;
+            followCursorObject = spawn;
+            meshes = spawn.GetComponentsInChildren<MeshRenderer>();
+            for (int i = 0; i < meshes.Length; i++)
+            {
+                meshes[i].material = Global.Instance.transparent;
+            }
+            Collider[] colliders = spawn.GetComponentsInChildren<Collider>();
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                colliders[i].isTrigger = true;
+            }
         }
     }
-    public bool placingWall = false;
     public bool placingPortal = false;
     public List<byte> indices;
     private void SingleSelect()
