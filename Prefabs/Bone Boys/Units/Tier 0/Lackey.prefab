@@ -513,9 +513,8 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: desc
-      value: 'Basic worker unit.
-
-        Digs graves from which the dead rise again.'
+      value: Worker that harvests gold, builds, and repairs. Has a pitiful melee
+        attack.
       objectReference: {fileID: 0}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: canGather
@@ -527,7 +526,7 @@ PrefabInstance:
       objectReference: {fileID: 1402130451776015957}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: displayName
-      value: Gravedigger
+      value: Goon
       objectReference: {fileID: 0}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: isHarvester
@@ -651,7 +650,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Name
-      value: Gravedigger
+      value: Lackey
       objectReference: {fileID: 0}
     - target: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Layer

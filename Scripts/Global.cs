@@ -36,6 +36,7 @@ public class Global : NetworkBehaviour
     public AudioClip explosion;
     public GameObject singleUnitInfoParent;
     public List<RTSPlayer> playerList = new();
+    public TMP_Text popText;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.

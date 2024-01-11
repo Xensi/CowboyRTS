@@ -28,7 +28,8 @@ public class SelectableEntity : NetworkBehaviour
         HarvestableStructure,
         DefensiveGarrison,
         Transport,
-        Portal
+        Portal,
+        Wall
     }
     public enum HarvestType
     {
@@ -56,6 +57,7 @@ public class SelectableEntity : NetworkBehaviour
     private bool damaged = false;
     private readonly int delay = 50;
     private int count = 0;
+    public int populationAmount = 1;
 
     #endregion
     #region Variables
@@ -142,6 +144,7 @@ public class SelectableEntity : NetworkBehaviour
                 RequestBuilders();
             }
             isTargetable.Value = true;
+            Global.Instance.localPlayer.population += populationAmount;
         }
         allMeshes = GetComponentsInChildren<MeshRenderer>();
         if (IsServer)
@@ -396,6 +399,10 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void ProperDestroyMinion()
     {
+        if (IsOwner)
+        {
+            Global.Instance.localPlayer.population -= populationAmount;
+        }
         if (physicalCollider != null)
         {
             physicalCollider.enabled = false; //allows dynamic grid obstacle to update pathfinding nodes one last time
@@ -578,8 +585,11 @@ public class SelectableEntity : NetworkBehaviour
         {
             // todo add ability to build multiple from one structure
             FactionEntityClass fac = buildQueue[0];
-            fac.timeCost--;
-            if (fac.timeCost <= 0)
+            if (fac.timeCost > 0)
+            {
+                fac.timeCost--;
+            }
+            if (fac.timeCost <= 0 && populationAmount <= Global.Instance.localPlayer.maxPopulation - Global.Instance.localPlayer.population)
             {
                 //Debug.Log("spawn");
                 buildQueue.RemoveAt(0);

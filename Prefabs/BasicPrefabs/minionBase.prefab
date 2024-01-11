@@ -245,6 +245,7 @@ MonoBehaviour:
   harvestTarget: {fileID: 0}
   buildQueue: []
   harvesters: []
+  populationAmount: 1
   physicalCollider: {fileID: 5114157818442103759}
   displayName: name
   desc: desc

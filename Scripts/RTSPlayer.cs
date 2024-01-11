@@ -47,6 +47,8 @@ public class RTSPlayer : NetworkBehaviour
     private readonly float camScroll = 0.5f;
     public byte starterUnitID = 0;
     private Transform camParent;
+    public int population = 0;
+    public int maxPopulation = 100;
     public void LoseGame()
     {
         inTheGame.Value = false;
@@ -343,6 +345,10 @@ public class RTSPlayer : NetworkBehaviour
             Global.Instance.selectionRect.gameObject.SetActive(false);
         }
         Global.Instance.goldText.text = "Gold: " + gold; 
+        if (Global.Instance.popText != null)
+        {
+            Global.Instance.popText.text = population+"/100 Population";
+        }
     }
     private void SelectWithinBounds() //rectangle select, finish drag select
     {
@@ -867,6 +873,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             if (gold < cost)
             {
+                Debug.Log("can't queue");
                 break;
             }
             if (select.fullyBuilt && select.builderEntityIndices.Contains(id))
