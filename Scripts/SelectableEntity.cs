@@ -124,6 +124,7 @@ public class SelectableEntity : NetworkBehaviour
     #region NetworkSpawn
     private void Start()
     {
+        allMeshes = GetComponentsInChildren<MeshRenderer>();
         net = GetComponent<NetworkObject>();
         obstacle = GetComponent<DynamicGridObstacle>();
         RVO = GetComponent<RVOController>();
@@ -160,7 +161,11 @@ public class SelectableEntity : NetworkBehaviour
             isTargetable.Value = true;
             Global.Instance.localPlayer.population += populationAmount;
         }
-        allMeshes = GetComponentsInChildren<MeshRenderer>();
+        else
+        {
+            //if we don't own this, then set its' hide fog team equal to our team
+            //hideFogTeam = (int) Global.Instance.localPlayer.OwnerClientId;
+        }
         if (IsServer)
         {
             hitPoints.Value = startingHP;
@@ -180,7 +185,10 @@ public class SelectableEntity : NetworkBehaviour
         minionController = GetComponent<MinionController>();
         fogUnit = GetComponent<FogOfWarUnit>();
         if (fogUnit != null) fogUnit.team = (int) OwnerClientId;
+        /*fogHide = GetComponent<HideInFog>();
+        if (fogHide != null) fogHide.team = (int)OwnerClientId;*/
     }
+    private HideInFog fogHide;
     private FogOfWarUnit fogUnit;
     private void OnHitPointsChanged(sbyte prev, sbyte current)
     {
@@ -339,8 +347,31 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
+    [Range(0.0f, 1.0f)]
+    public float minFogStrength = 0.2f;
+    public bool visibleInFog = false;
+    public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
+    private void HideInFog()
+    {
+        if (!IsOwner)
+        { 
+            FogOfWarTeam fow = FogOfWarTeam.GetTeam(hideFogTeam);
+            visibleInFog = fow.GetFogValue(transform.position) < minFogStrength * 255;
+
+            for (int i = 0; i < allMeshes.Length; i++)
+            {
+                if (allMeshes[i] != null) allMeshes[i].enabled = visibleInFog;
+            }
+        }
+        /*if (IsOwner && IsSpawned)
+        {
+            isTargetable.Value = visibleInFog;
+        }*/
+    }
     private void Update()
     {
+        HideInFog();
+
         if (rallyTarget != null)
         {
             rallyVisual.transform.position = rallyTarget.transform.position;
