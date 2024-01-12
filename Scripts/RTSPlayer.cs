@@ -6,6 +6,8 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;// Required when using Event data.
 using TMPro;
 using System.Linq;
+using FoW;
+using UnityEngine.Rendering;
 
 public class RTSPlayer : NetworkBehaviour
 {
@@ -97,29 +99,34 @@ public class RTSPlayer : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         Global.Instance.playerList.Add(this);
-        if (!IsOwner)
+        if (IsOwner) //spawn initial minions/buildings  
         {
-            //enabled = false;
-            active = false;
-        }
-        else
-        { //spawn initial minions/buildings 
             inTheGame.Value = true;
             Global.Instance.localPlayer = this;
             //SimpleSpawnMinion(Vector3.zero);
             int id = System.Convert.ToInt32(OwnerClientId);
             Vector3 spawn;
             if (id < Global.Instance.playerSpawn.Count)
-            {  
+            {
                 spawn = Global.Instance.playerSpawn[id].position;
             }
             else
             {
-                spawn = new Vector3(Random.Range(-9, 9),0, Random.Range(-9, 9));
+                spawn = new Vector3(Random.Range(-9, 9), 0, Random.Range(-9, 9));
             }
 
             GenericSpawnMinion(spawn, starterUnitID);
+
+            VolumeProfile profile = Global.Instance.fogVolume.sharedProfile;
+            if (profile != null && profile.TryGet(out FogOfWarURP fow))
+            { 
+                fow.team.value = id;
+            }
         }
+        else
+        { 
+            active = false;
+        } 
     }
     private bool MouseOverUI()
     {

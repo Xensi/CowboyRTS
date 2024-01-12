@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Unity.Netcode;
+using UnityEngine.Rendering;
 
 public class Global : NetworkBehaviour
 {
@@ -37,6 +38,7 @@ public class Global : NetworkBehaviour
     public GameObject singleUnitInfoParent;
     public List<RTSPlayer> playerList = new();
     public TMP_Text popText;
+    public Volume fogVolume;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.

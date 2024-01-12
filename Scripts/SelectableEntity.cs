@@ -5,6 +5,7 @@ using Unity.Netcode;
 using Pathfinding;
 using Pathfinding.RVO;
 using System.Linq;
+using FoW;
 public class SelectableEntity : NetworkBehaviour
 {
     #region Enums
@@ -177,7 +178,10 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (selectIndicator != null) selectIndicator.SetActive(selected);
         minionController = GetComponent<MinionController>();
+        fogUnit = GetComponent<FogOfWarUnit>();
+        if (fogUnit != null) fogUnit.team = (int) OwnerClientId;
     }
+    private FogOfWarUnit fogUnit;
     private void OnHitPointsChanged(sbyte prev, sbyte current)
     {
         if (selected)
