@@ -483,10 +483,10 @@ public class RTSPlayer : NetworkBehaviour
     private Vector3 startWallPosition;
     private void PlaceBuilding(byte id = 0)
     {
-        FactionEntityClass fac = _faction.entities[id];
         switch (linkedState)
         {
             case LinkedState.Waiting:
+                NormalPlaceBuilding(id);
                 break;
             case LinkedState.PlacingStart:
                 linkedState = LinkedState.PlacingEnd;
@@ -506,91 +506,72 @@ public class RTSPlayer : NetworkBehaviour
                 break;
             default:
                 break;
-        }
-        /*
-                if ()
+        } 
+    }
+    private void NormalPlaceBuilding(byte id)
+    {
+        FactionEntityClass fac = _faction.entities[id];
+        if (gold >= fac.goldCost)
+        {
+            gold -= fac.goldCost;
+            Debug.Log("placing at " + cursorWorldPosition);
+            GenericSpawnMinion(cursorWorldPosition, id); //followCursorObject.transform.position
+            TellSelectedToBuild();
+            if (Input.GetKey(KeyCode.LeftShift) && gold >= fac.goldCost)
+            {
+                //continue placing buildings
+            }
+            else if (!Input.GetKey(KeyCode.LeftShift) || gold < fac.goldCost) //if not holding shift or out of money for this building
+            {
+                if (fac.linkedID == -1) //if no linked building, stop after placing building
                 {
+                    StopPlacingBuilding();
+                    if (placingPortal)
+                    {
+                        foreach (SelectableEntity item in ownedEntities)
+                        {
+                            if (item.type == SelectableEntity.EntityTypes.Portal)
+                            {
+                                Portal portal = item.GetComponent<Portal>();
+                                if (portal != startPortal)
+                                {
+                                    endPortal = portal;
+
+                                    startPortal.destination = endPortal.transform.position;
+                                    endPortal.destination = startPortal.transform.position;
+                                    startPortal.hasLinkedPortal = true;
+                                    endPortal.hasLinkedPortal = true;
+                                    startPortal.linkedPortal = endPortal;
+                                    endPortal.linkedPortal = startPortal;
+
+                                    startPortal = null;
+                                    endPortal = null;
+                                    placingPortal = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
-                else
+                else //if there's a linked building, we continue placing buildings so the player can place the next part of the building.
                 {
-                    if (startWall != null) //if we are placing a wall
+                    buildingPlacingID = (byte)fac.linkedID;
+                    placingLinkedBuilding = true; 
+
+                    if (placingPortal)
                     {
-
-                    }
-                    else if (gold >= fac.goldCost)
-                    {
-                        gold -= fac.goldCost;
-                        Debug.Log("placing at " + cursorWorldPosition);
-                        GenericSpawnMinion(cursorWorldPosition, id); //followCursorObject.transform.position
-                        TellSelectedToBuild();
-                        if (Input.GetKey(KeyCode.LeftShift) && gold >= fac.goldCost)
+                        foreach (SelectableEntity item in ownedEntities)
                         {
-                            //continue placing buildings
-                        }
-                        else if (!Input.GetKey(KeyCode.LeftShift) || gold < fac.goldCost) //if not holding shift or out of money for this building
-                        {
-                            if (fac.linkedID == -1) //if no linked building, stop after placing building
+                            if (item.type == SelectableEntity.EntityTypes.Portal)
                             {
-                                StopPlacingBuilding();
-                                if (placingPortal)
-                                {
-                                    foreach (SelectableEntity item in ownedEntities)
-                                    {
-                                        if (item.type == SelectableEntity.EntityTypes.Portal)
-                                        {
-                                            Portal portal = item.GetComponent<Portal>();
-                                            if (portal != startPortal)
-                                            {
-                                                endPortal = portal;
-
-                                                startPortal.destination = endPortal.transform.position;
-                                                endPortal.destination = startPortal.transform.position;
-                                                startPortal.hasLinkedPortal = true;
-                                                endPortal.hasLinkedPortal = true;
-                                                startPortal.linkedPortal = endPortal;
-                                                endPortal.linkedPortal = startPortal;
-
-                                                startPortal = null;
-                                                endPortal = null;
-                                                placingPortal = false;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            else //if there's a linked building, we continue placing buildings so the player can place the next part of the building.
-                            {
-                                buildingPlacingID = (byte)fac.linkedID;
-                                placingLinkedBuilding = true;
-
-
-                                if (placingPortal)
-                                {
-                                    foreach (SelectableEntity item in ownedEntities)
-                                    {
-                                        if (item.type == SelectableEntity.EntityTypes.Portal)
-                                        {
-                                            startPortal = item.GetComponent<Portal>();
-                                            break;
-                                        }
-                                    }
-                                }
-                                else if (placingWall)
-                                {
-                                    SelectableEntity last = ownedEntities.Last();
-                                    if (last.type == SelectableEntity.EntityTypes.Wall)
-                                    {
-                                        startWall = last;
-                                        wallID = id;
-                                    }
-                                }
+                                startPortal = item.GetComponent<Portal>();
+                                break;
                             }
                         }
-                    }
-                }*/
-
-
+                    } 
+                }
+            }
+        }
     }
     public List<Vector3> predictedWallPositions = new();
     public List<bool> predictedWallPositionsShouldBePlaced = new();

@@ -404,17 +404,21 @@ public class MinionController : NetworkBehaviour
                                 targetEnemy = FindClosestEnemy();
                             }
                         }
-                        if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
+                        //only do this if not garrisoned
+                        if (selectableEntity.occupiedGarrison == null)
                         {
-                            if (selectableEntity.interactionTarget == null || selectableEntity.interactionTarget.fullyBuilt)
+                            if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
                             {
-                                selectableEntity.interactionTarget = FindClosestBuildable();
-                            }
-                            else
-                            {
-                                state = State.WalkToInteractable;
-                                lastState = State.Building;
-                                break;
+                                if (selectableEntity.interactionTarget == null || selectableEntity.interactionTarget.fullyBuilt)
+                                {
+                                    selectableEntity.interactionTarget = FindClosestBuildable();
+                                }
+                                else
+                                {
+                                    state = State.WalkToInteractable;
+                                    lastState = State.Building;
+                                    break;
+                                }
                             }
                         }
                         break;
@@ -668,6 +672,7 @@ public class MinionController : NetworkBehaviour
             #region Building
             case State.FindInteractable:
                 FreezeRigid();
+                animator.Play("Idle");
                 //prioritize based on last state
                 switch (lastState)
                 { 
@@ -704,8 +709,15 @@ public class MinionController : NetworkBehaviour
                     default:
                         break;
                 }
-                break;
+                break; 
             case State.WalkToInteractable:
+                //garrisoned units should not interact
+                if (selectableEntity.occupiedGarrison != null)
+                {
+                    selectableEntity.interactionTarget = null;
+                    state = State.Idle;
+                }
+
                 FreezeRigid(false, false);
                 UpdateMoveIndicator();
                 switch (lastState)
@@ -765,7 +777,40 @@ public class MinionController : NetworkBehaviour
                                 destination = selectableEntity.interactionTarget.transform.position;
                             } 
                         }
-                        break; 
+                        break;
+                    case State.Garrisoning: 
+                        if (selectableEntity.interactionTarget == null)
+                        {
+                            state = State.FindInteractable; //later make this check for nearby garrisonables in the same target?
+                        }
+                        else
+                        {
+                            if (selectableEntity.interactionTarget.type == SelectableEntity.EntityTypes.Portal) //walk into
+                            {
+                                if (selectableEntity.tryingToTeleport)
+                                { 
+                                    animator.Play("Walk");
+                                    destination = selectableEntity.interactionTarget.transform.position;
+                                }
+                                else
+                                {
+                                    state = State.Idle;
+                                }
+                            }
+                            else
+                            {
+                                if (InRangeOfEntity(selectableEntity.interactionTarget, garrisonRange))
+                                {
+                                    state = State.Garrisoning;
+                                }
+                                else
+                                { 
+                                    animator.Play("Walk");
+                                    destination = selectableEntity.interactionTarget.transform.position;
+                                }
+                            }
+                        }
+                        break;
                     default:
                         break;
                 }
@@ -913,47 +958,11 @@ public class MinionController : NetworkBehaviour
                 break;
             #endregion
             #region Garrison
-            /*case State.WalkToGarrisonable:
-                UpdateMoveIndicator();
-                FreezeRigid(false, false);
-                if (selectableEntity.interactionTarget == null)
-                {
-                    state = State.FindGarrisonable; //later make this check for nearby garrisonables in the same target?
-                }
-                else
-                {
-                    if (selectableEntity.interactionTarget.type == SelectableEntity.EntityTypes.Portal) //walk into
-                    {
-                        if (selectableEntity.tryingToTeleport)
-                        {
-                            ai.canMove = true;
-                            animator.Play("Walk");
-                            destination = selectableEntity.interactionTarget.transform.position;
-                        }
-                        else
-                        {
-                            state = State.Idle;
-                        }
-                    }
-                    else
-                    {
-                        if (Vector3.Distance(transform.position, selectableEntity.interactionTarget.transform.position) > garrisonRange)
-                        {
-                            ai.canMove = true;
-                            animator.Play("Walk");
-                            destination = selectableEntity.interactionTarget.transform.position;
-                        }
-                        else
-                        {
-                            state = State.Garrisoning;
-                        }
-                    }
-                }
-                break;*/
             case State.Garrisoning:
                 if (selectableEntity.interactionTarget == null)
                 {
-                    state = State.FindGarrisonable;
+                    state = State.FindInteractable;
+                    lastState = State.Garrisoning;
                 }
                 else
                 {
@@ -1189,7 +1198,7 @@ public class MinionController : NetworkBehaviour
         float distance = Mathf.Infinity;
         foreach (SelectableEntity item in list)
         {
-            if (item != null)
+            if (item != null && item.alive)
             {
                 if (item.interactors.Count < item.allowedInteractors) //there is space for a new harvester
                 {
@@ -1212,7 +1221,7 @@ public class MinionController : NetworkBehaviour
         float distance = Mathf.Infinity;
         foreach (SelectableEntity item in list)
         { 
-            if (item != null && item.depositType != SelectableEntity.DepositType.None && item.fullyBuilt)
+            if (item != null && item.depositType != SelectableEntity.DepositType.None && item.fullyBuilt && item.alive)
             {
                 float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position);
                 if (newDist < distance)
@@ -1514,9 +1523,7 @@ public class MinionController : NetworkBehaviour
     private void ResetAllTargets()
     { 
         targetEnemy = null;
-        selectableEntity.interactionTarget = null;
-        selectableEntity.interactionTarget = null;
-        selectableEntity.interactionTarget = null;
+        selectableEntity.interactionTarget = null; 
     }
     public void SetAttackMoveDestination()
     {
@@ -1576,7 +1583,7 @@ public class MinionController : NetworkBehaviour
                     {
                         if (select.net.OwnerClientId == selectableEntity.net.OwnerClientId) //same team
                         {
-                            if (select.depositType == SelectableEntity.DepositType.Gold && select.fullyBuilt) //if deposit point
+                            if ((select.depositType == SelectableEntity.DepositType.Gold || select.depositType == SelectableEntity.DepositType.All) && select.fullyBuilt) //if deposit point
                             {
                                 selectableEntity.interactionTarget = select;
                                 state = State.WalkToInteractable;
@@ -1587,8 +1594,8 @@ public class MinionController : NetworkBehaviour
                                 selectableEntity.interactionTarget = select; 
                                 state = State.WalkToInteractable;
                                 lastState = State.Building;
-                            }
-                            else if (select.fullyBuilt && select.HasEmptyGarrisonablePosition() && selectableEntity.garrisonablePositions.Count <= 0) //target can be garrisoned, and passenger cannot garrison
+                            } //target can be garrisoned, and passenger cannot garrison
+                            else if (select.fullyBuilt && select.HasEmptyGarrisonablePosition() && selectableEntity.garrisonablePositions.Count <= 0) 
                             {
                                 if (justLeftGarrison != select) //not perfect, fails on multiple units
                                 {
@@ -1603,8 +1610,26 @@ public class MinionController : NetworkBehaviour
                                         selectableEntity.interactionTarget = select;
                                         state = State.WalkToInteractable;
                                         lastState = State.Garrisoning;
+                                    } 
+                                }
+                            } //target is passenger of garrison
+                            else if (select.occupiedGarrison != null && select.occupiedGarrison.HasEmptyGarrisonablePosition())
+                            {
+                                SelectableEntity garrison = select.occupiedGarrison;
+                                if (justLeftGarrison != garrison) //not perfect, fails on multiple units
+                                {
+                                    if (garrison.acceptsHeavy)
+                                    {
+                                        selectableEntity.interactionTarget = garrison;
+                                        state = State.WalkToInteractable;
+                                        lastState = State.Garrisoning;
                                     }
-                                    
+                                    else if (!selectableEntity.isHeavy)
+                                    {
+                                        selectableEntity.interactionTarget = garrison;
+                                        state = State.WalkToInteractable;
+                                        lastState = State.Garrisoning;
+                                    }
                                 }
                             }
                             else if (select.type == SelectableEntity.EntityTypes.Portal)

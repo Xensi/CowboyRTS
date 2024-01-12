@@ -242,10 +242,12 @@ MonoBehaviour:
   isBuildIndicator: 0
   tryingToTeleport: 0
   harvestedResourceAmount: 0
-  harvestTarget: {fileID: 0}
+  interactionTarget: {fileID: 0}
   buildQueue: []
-  harvesters: []
+  interactors: []
   populationAmount: 1
+  rallyMission: 0
+  rallyTarget: {fileID: 0}
   physicalCollider: {fileID: 5114157818442103759}
   displayName: name
   desc: desc
@@ -260,7 +262,7 @@ MonoBehaviour:
   builderEntityIndices: 01000000
   spawnableAtOnce: 1
   isHarvester: 0
-  allowedHarvesters: 1
+  allowedInteractors: 999
   harvestType: 0
   harvestCapacity: 10
   garrisonablePositions: []
@@ -294,11 +296,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cba2131cba19af4c9d3a513f211d5ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  lastState: 0
   selectableEntity: {fileID: 0}
   attackMoving: 0
-  depositTarget: {fileID: 0}
-  buildTarget: {fileID: 0}
-  garrisonTarget: {fileID: 0}
   followingMoveOrder: 0
   orderedDestination: {x: 0, y: 0, z: 0}
   col: {fileID: 0}
@@ -306,6 +306,7 @@ MonoBehaviour:
   animator: {fileID: 0}
   targetEnemy: {fileID: 0}
   minionNetwork: {fileID: 0}
+  givenMission: 0
   state: 10
   attackType: 0
   directionalAttack: 0
@@ -316,7 +317,7 @@ MonoBehaviour:
   attackDuration: 1
   impactTime: 0.5
   selfDestructAreaOfEffect: 1
-  rallyPositionSet: 0
+  shouldAutoSeekOutEnemies: 1
 --- !u!54 &7586105387906439370
 Rigidbody:
   m_ObjectHideFlags: 0
