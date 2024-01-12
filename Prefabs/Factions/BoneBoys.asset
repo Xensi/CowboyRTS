@@ -125,3 +125,10 @@ MonoBehaviour:
     goldCost: 5
     timeCost: 0
     buildID: 0
+  - productionName: Build Armory
+    needsConstructing: 1
+    prefabToSpawn: {fileID: 371321480321102268, guid: 4633e3a65da2d4c4bb36477e222ddc61, type: 3}
+    linkedID: -1
+    goldCost: 200
+    timeCost: 0
+    buildID: 0

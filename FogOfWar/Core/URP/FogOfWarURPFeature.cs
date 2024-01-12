@@ -14,8 +14,11 @@ namespace FoW
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
-            _fowPass.Setup(renderer.cameraColorTarget);
             renderer.EnqueuePass(_fowPass);
+        } 
+        public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
+        {
+            _fowPass.Setup(renderer.cameraColorTargetHandle);
         }
     }
 }

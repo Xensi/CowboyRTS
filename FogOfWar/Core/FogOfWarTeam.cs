@@ -505,7 +505,7 @@ namespace FoW
                 onTextureChanged?.Invoke();
             }
             else if (fogTexture.width != mapResolution.x || fogTexture.height != mapResolution.y)
-                fogTexture.Resize(mapResolution.x, mapResolution.y, TextureFormat.Alpha8, false);
+                fogTexture.Reinitialize(mapResolution.x, mapResolution.y, TextureFormat.Alpha8, false);
             else
                 fogTexture.filterMode = filterMode;
             if (outputToTexture)
