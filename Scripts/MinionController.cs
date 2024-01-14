@@ -66,18 +66,12 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] AIPath ai;
     [HideInInspector] public Collider col;
     [HideInInspector] private Rigidbody rigid;
-    //controls where the AI will pathfind to
-    public NetworkVariable<Vector3> destination = new NetworkVariable<Vector3>(default,
-        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     [HideInInspector] public Animator animator;
     [HideInInspector] public SelectableEntity targetEnemy;
     [HideInInspector] public MinionNetwork minionNetwork;
     bool playedAttackMoveSound = false;
     #endregion
     #region Variables
-    public SelectableEntity.RallyMission givenMission = SelectableEntity.RallyMission.None;
-    [HideInInspector] public NetworkVariable<State> state = new NetworkVariable<State>(default,
-        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     [Header("Behavior Settings")]
     public AttackType attackType = AttackType.Instant;
@@ -97,6 +91,18 @@ public class MinionController : NetworkBehaviour
     [Header("Self-Destruct Only")]
     [SerializeField] private float selfDestructAreaOfEffect = 1; //ignore if not selfdestructer
     #endregion
+    #region NetworkVariables
+    //maybe optimize this as vector 2 later
+    public NetworkVariable<Vector3> realLocation = new NetworkVariable<Vector3>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    //controls where the AI will pathfind to
+    public NetworkVariable<Vector3> destination = new NetworkVariable<Vector3>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public SelectableEntity.RallyMission givenMission = SelectableEntity.RallyMission.None;
+    [HideInInspector]
+    public NetworkVariable<State> state = new NetworkVariable<State>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    #endregion
     #region Core
     //private MinionObstacle obstacle;
     //[SerializeField] private SphereCollider obstacleCollider;
@@ -115,11 +121,7 @@ public class MinionController : NetworkBehaviour
         // This is enough in theory, but this script will also update the destination every
         // frame as the destination is used for debugging and may be used for other things by other
         // scripts as well. So it makes sense that it is up to date every frame.
-        if (ai != null) ai.onSearchPath += Update; 
-    }
-    private void Update()
-    {
-        if (ai != null) ai.destination = destination.Value;
+        if (ai != null) ai.onSearchPath += Update;
     }
     void OnDisable()
     {
@@ -133,12 +135,13 @@ public class MinionController : NetworkBehaviour
         if (animator == null)
         {
             animator = GetComponentInChildren<Animator>();
-        } 
+        }
     }
     public override void OnNetworkSpawn()
     {
         if (IsOwner)
         {
+            realLocation.Value = transform.position;
             destination.Value = transform.position;
             state.Value = State.Spawn;
             Invoke(nameof(FinishSpawning), spawnDuration);
@@ -150,16 +153,100 @@ public class MinionController : NetworkBehaviour
               rayMod.enabled = false;
               seeker.enabled = false;*/
         }
-        if (true) //with local simulated movement:
-        {
-            rigid.isKinematic = false;
-            ai.enabled = true;
-            rayMod.enabled = true;
-            seeker.enabled = true;
-            enabled = true;
-        }
+        destination.OnValueChanged += OnDestinationChanged;
+        //realLocation.OnValueChanged += OnRealLocationChanged;
         //enabled = IsOwner;
-        oldPosition = transform.position;
+        oldPosition = transform.position; 
+    }
+    private void Update()
+    {
+        if (ai != null) ai.destination = destination.Value;
+        if (IsOwner)
+        {
+            float updateThreshold = 0.5f;
+            change = GetActualPositionChange();
+            if (change > updateThreshold)
+            { 
+                realLocation.Value = transform.position; //only update when different enough
+            }
+        }
+        if (!IsOwner)
+        {
+            CheckForLocationError();
+        }
+    }
+    /*private void OnRealLocationChanged(Vector3 previous, Vector3 current)
+    {
+        
+    }*/ 
+    private void FixedUpdate()
+    {
+        if (IsOwner)
+        {
+            OwnerUpdateState();
+        }
+        else
+        {
+            NonOwnerUpdateState();
+        }
+    } 
+    private void CheckForLocationError()
+    {
+        //owner can change real location with impunity
+        //other clients: when their value for real location syncs up with owner, check if it's different enough to warrant a teleport
+        //in future lerp to new location?
+        float allowedError = 0.5f;
+        if (!IsOwner)
+        {
+            if (Vector3.Distance(realLocation.Value, transform.position) > allowedError)
+            {
+                //Debug.Log("Telporting because distance too great");
+                //transform.position = realLocation.Value;
+                transform.position = LerpPosition(transform.position, realLocation.Value);
+            }
+        }
+    }
+    // Calculated start for the most recent interpolation
+    Vector3 m_LerpStart;
+
+    // Calculated time elapsed for the most recent interpolation
+    float m_CurrentLerpTime;
+
+    // The duration of the interpolation, in seconds
+    float m_LerpTime = 0.3f;
+
+    public Vector3 LerpPosition(Vector3 current, Vector3 target)
+    {
+        if (current != target)
+        {
+            m_LerpStart = current;
+            m_CurrentLerpTime = 0f;
+        }
+
+        m_CurrentLerpTime += Time.deltaTime;
+
+        /*//gentler lerp for shorter distances
+        float dist = Vector3.Distance(current, target);
+        float modifiedLerpTime = m_LerpTime * dist;
+
+        if (m_CurrentLerpTime > modifiedLerpTime)
+        {
+            m_CurrentLerpTime = modifiedLerpTime;
+        }
+
+        var lerpPercentage = m_CurrentLerpTime / modifiedLerpTime;*/
+        if (m_CurrentLerpTime > m_LerpTime)
+        {
+            m_CurrentLerpTime = m_LerpTime;
+        }
+
+        var lerpPercentage = m_CurrentLerpTime / m_LerpTime;
+
+        return Vector3.Lerp(m_LerpStart, target, lerpPercentage);
+    }
+    private void OnDestinationChanged(Vector3 previous, Vector3 current)
+    {
+        ai.canMove = true; //generally, if we have received a new destination then we can move there
     }
     private void OnDrawGizmos()
     {
@@ -169,44 +256,29 @@ public class MinionController : NetworkBehaviour
             Gizmos.DrawSphere(targetEnemy.transform.position, .1f);
         }
     }
-    private void FixedUpdate()
-    {
-        if (IsOwner)
-        { 
-            change = GetActualPositionChange();
-            OwnerUpdateState();
-        }
-        else
-        {
-            NonOwnerUpdateState();
-        }
-    }
     #endregion
     #region States
     private bool DetectEnemy(float attackRange) //check if an enemy is in range at all, from perspective of local enemy
     {  
         int maxColliders = Mathf.RoundToInt(20 * attackRange);
         Collider[] hitColliders = new Collider[maxColliders]; 
-        int numColliders = Physics.OverlapSphereNonAlloc(transform.position, attackRange, hitColliders, enemyMask);         //Debug.Log(numToCheck);
-        for (int i = 0; i < numColliders; i++) //this part is expensive
-        {
-            if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self and triggers
-            {
-                continue;
-            }
+        int numColliders = Physics.OverlapSphereNonAlloc(transform.position, attackRange, hitColliders, enemyMask); 
+        for (int i = 0; i < numColliders; i++) 
+        { 
             SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
-            if (select != null) //conditions that disqualify an entity from being targeted
+            if (select != null) 
             {
-                if (select.alive && select.isTargetable.Value && select.visibleInFog)
+                if (select.OwnerClientId != OwnerClientId)
+                {
+                    return true;
+                }
+                /*if (select.alive && select.isTargetable.Value && select.visibleInFog)
                 {
                     if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
                     {
-                        if (Global.Instance.localPlayer.ownedEntities.Contains(select))
-                        {
-                            return true;
-                        }
+                        
                     }
-                } 
+                } */
             } 
         } 
         return false;
@@ -227,6 +299,7 @@ public class MinionController : NetworkBehaviour
                 if (DetectEnemy(attackRange))
                 {
                     //default behavior is stopping when in range of enemy and trying to attack 
+                    //Debug.Log("Simulated detected enemy, should stop until owner tells us something else");
                     ai.canMove = false;
                 }
                 break;
@@ -1596,7 +1669,7 @@ public class MinionController : NetworkBehaviour
 
     private float GetActualPositionChange()
     {
-        float dist = Vector3.SqrMagnitude(transform.position - oldPosition);
+        float dist = Vector3.Distance(transform.position, oldPosition);
         oldPosition = transform.position;
         return dist/Time.deltaTime;
     }
