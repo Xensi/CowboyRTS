@@ -151,6 +151,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: net
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: desc
       value: Tough gold collector with a powerful weapon.
       objectReference: {fileID: 0}
@@ -300,7 +304,7 @@ PrefabInstance:
       objectReference: {fileID: 8029189886623376272}
     - target: {fileID: 2794094538110024962, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3480814061053556006, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_IsActive

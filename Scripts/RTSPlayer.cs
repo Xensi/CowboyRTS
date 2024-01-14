@@ -153,7 +153,29 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void SelectedSetDestination()
     {
-        foreach (SelectableEntity item in selectedEntities)
+        //when player right clicks, get position on map
+        //tell other clients that this happened
+        Vector3 clickedPosition;
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
+        {
+            //Debug.Log(hit.point);
+            clickedPosition = hit.point;
+            foreach (SelectableEntity item in selectedEntities)
+            {
+                if (item.minionController != null) //minion
+                {
+                    item.minionController.MoveTo(clickedPosition);
+                }
+            }
+        }
+        else
+        {
+            return;
+        }
+
+
+        /*foreach (SelectableEntity item in selectedEntities)
         {
             if (item.minionController != null) //minion
             {
@@ -163,7 +185,7 @@ public class RTSPlayer : NetworkBehaviour
             {
                 item.SetRally();
             }
-        }
+        }*/
     }
     public void ReadySetRallyPoint()
     {
@@ -213,7 +235,7 @@ public class RTSPlayer : NetworkBehaviour
             {
                 if (item.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
-                    switch (item.minionController.state)
+                    switch (item.minionController.state.Value)
                     {
                         case MinionController.State.Idle:
                         case MinionController.State.FindInteractable:

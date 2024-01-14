@@ -145,7 +145,6 @@ GameObject:
   m_Component:
   - component: {fileID: 6541845058422189605}
   - component: {fileID: 4126868118260038068}
-  - component: {fileID: 2794094538110024962}
   - component: {fileID: 1420444146532106229}
   - component: {fileID: 1556607826778985850}
   - component: {fileID: 7586105387906439370}
@@ -198,26 +197,6 @@ MonoBehaviour:
   SceneMigrationSynchronization: 1
   DontDestroyWithOwner: 1
   AutoObjectParentSync: 1
---- !u!114 &2794094538110024962
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5353858407141398554}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 411d4aaf62f123943a712bb3c7c66220, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rotationDifferenceThreshold: 30
-  positionDifferenceThreshold: 0.35
-  _interpolateTime: 0.2
-  _rotInterpolate: 0.2
-  _useServerAuthoritative: 1
-  _combinePackets: 0
-  verticalPosition:
-    m_InternalValue: 0
 --- !u!114 &1420444146532106229
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -246,7 +225,8 @@ MonoBehaviour:
   interactionTarget: {fileID: 0}
   buildQueue: []
   interactors: []
-  populationAmount: 1
+  consumePopulationAmount: 1
+  raisePopulationLimitBy: 0
   rallyMission: 0
   rallyTarget: {fileID: 0}
   physicalCollider: {fileID: 5114157818442103759}

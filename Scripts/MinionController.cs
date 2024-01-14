@@ -54,8 +54,8 @@ public class MinionController : NetworkBehaviour
     private int stateTimer = 0;
     private float rotationSpeed = 10f;
     [HideInInspector] public bool attackMoving = false;
-    [HideInInspector] public bool followingMoveOrder = false;
-    public Vector3 orderedDestination;
+    //[HideInInspector] public bool followingMoveOrder = false;
+    public Vector3 orderedDestination; //remembers where player told minion to go
     private int basicallyIdleInstances = 0;
     private readonly int idleThreshold = 60;
     private int attackReadyTimer = 0;
@@ -66,7 +66,9 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] AIPath ai;
     [HideInInspector] public Collider col;
     [HideInInspector] private Rigidbody rigid;
-    [HideInInspector] public Vector3 destination;
+    //controls where the AI will pathfind to
+    public NetworkVariable<Vector3> destination = new NetworkVariable<Vector3>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     [HideInInspector] public Animator animator;
     [HideInInspector] public SelectableEntity targetEnemy;
     [HideInInspector] public MinionNetwork minionNetwork;
@@ -74,7 +76,8 @@ public class MinionController : NetworkBehaviour
     #endregion
     #region Variables
     public SelectableEntity.RallyMission givenMission = SelectableEntity.RallyMission.None;
-    public State state = State.Spawn;
+    [HideInInspector] public NetworkVariable<State> state = new NetworkVariable<State>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     [Header("Behavior Settings")]
     public AttackType attackType = AttackType.Instant;
@@ -112,13 +115,11 @@ public class MinionController : NetworkBehaviour
         // This is enough in theory, but this script will also update the destination every
         // frame as the destination is used for debugging and may be used for other things by other
         // scripts as well. So it makes sense that it is up to date every frame.
-        if (ai != null) ai.onSearchPath += Update;
-
-
+        if (ai != null) ai.onSearchPath += Update; 
     }
     private void Update()
     {
-        if (ai != null) ai.destination = destination;
+        if (ai != null) ai.destination = destination.Value;
     }
     void OnDisable()
     {
@@ -132,26 +133,32 @@ public class MinionController : NetworkBehaviour
         if (animator == null)
         {
             animator = GetComponentInChildren<Animator>();
-        }
-        state = State.Spawn;
-        Invoke(nameof(FinishSpawning), spawnDuration);
-    }
-    private void FixedUpdate()
-    {
-        change = GetActualPositionChange();
-        UpdateState();
+        } 
     }
     public override void OnNetworkSpawn()
     {
-        if (!IsOwner)
+        if (IsOwner)
         {
-            rigid.isKinematic = true;
-            ai.enabled = false;
-            rayMod.enabled = false;
-            seeker.enabled = false;
+            destination.Value = transform.position;
+            state.Value = State.Spawn;
+            Invoke(nameof(FinishSpawning), spawnDuration);
         }
-        enabled = IsOwner;
-        destination = transform.position;
+        else
+        {
+            /*  rigid.isKinematic = true;
+              ai.enabled = false;
+              rayMod.enabled = false;
+              seeker.enabled = false;*/
+        }
+        if (true) //with local simulated movement:
+        {
+            rigid.isKinematic = false;
+            ai.enabled = true;
+            rayMod.enabled = true;
+            seeker.enabled = true;
+            enabled = true;
+        }
+        //enabled = IsOwner;
         oldPosition = transform.position;
     }
     private void OnDrawGizmos()
@@ -162,13 +169,720 @@ public class MinionController : NetworkBehaviour
             Gizmos.DrawSphere(targetEnemy.transform.position, .1f);
         }
     }
+    private void FixedUpdate()
+    {
+        if (IsOwner)
+        { 
+            change = GetActualPositionChange();
+            OwnerUpdateState();
+        }
+        else
+        {
+            NonOwnerUpdateState();
+        }
+    }
+    #endregion
+    #region States
+    private bool DetectEnemy(float attackRange) //check if an enemy is in range at all, from perspective of local enemy
+    {  
+        int maxColliders = Mathf.RoundToInt(20 * attackRange);
+        Collider[] hitColliders = new Collider[maxColliders]; 
+        int numColliders = Physics.OverlapSphereNonAlloc(transform.position, attackRange, hitColliders, enemyMask);         //Debug.Log(numToCheck);
+        for (int i = 0; i < numColliders; i++) //this part is expensive
+        {
+            if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self and triggers
+            {
+                continue;
+            }
+            SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
+            if (select != null) //conditions that disqualify an entity from being targeted
+            {
+                if (select.alive && select.isTargetable.Value && select.visibleInFog)
+                {
+                    if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
+                    {
+                        if (Global.Instance.localPlayer.ownedEntities.Contains(select))
+                        {
+                            return true;
+                        }
+                    }
+                } 
+            } 
+        } 
+        return false;
+    }
+    private void NonOwnerUpdateState()
+    {
+        switch (state.Value)
+        {
+            case State.Idle:
+                break;
+            case State.Walk:
+                break;
+            case State.WalkBeginFindEnemies: 
+            case State.WalkContinueFindEnemies:
+            case State.WalkToEnemy:
+            case State.Attacking:
+            case State.AfterAttackCheck:
+                if (DetectEnemy(attackRange))
+                {
+                    //default behavior is stopping when in range of enemy and trying to attack 
+                    ai.canMove = false;
+                }
+                break;
+            case State.FindInteractable:
+                break;
+            case State.WalkToInteractable:
+                break;
+            case State.Building:
+                break;
+            case State.AfterBuildCheck:
+                break;
+            case State.Spawn:
+                break;
+            case State.Die:
+                break;
+            case State.Harvesting:
+                break;
+            case State.AfterHarvestCheck:
+                break;
+            case State.Depositing:
+                break;
+            case State.AfterDepositCheck:
+                break;
+            case State.Garrisoning:
+                break;
+            case State.AfterGarrisonCheck:
+                break;
+            case State.WalkToRally:
+                break;
+            default:
+                break;
+        }
+    }
+    private void OwnerUpdateState()
+    {
+        EnsureNotInteractingWithBusy();
+        UpdateColliderStatus();
+        UpdateAttackReadiness();
+        if (attackType == AttackType.Gatling)
+        {
+            animator.SetFloat("AttackSpeed", 0);
+        }
+        switch (state.Value)
+        {
+            #region defaults
+            case State.Spawn: //don't really do anything, just play the spawn animation
+                animator.Play("Spawn");
+                FreezeRigid();
+                if (IsOwner) destination.Value = transform.position;
+                break;
+            case State.Die:
+                animator.Play("Die");
+                FreezeRigid();
+                break;
+            case State.Idle:
+                HideMoveIndicator();
+                animator.Play("Idle");
+                FreezeRigid();
+                if (IsOwner) destination.Value = transform.position; //stand still
+
+                switch (givenMission)
+                {
+                    case SelectableEntity.RallyMission.None:
+                        if (shouldAutoSeekOutEnemies)
+                        {
+                            if (TargetEnemyValid())
+                            {
+                                state.Value = State.WalkToEnemy;
+                                break;
+                            }
+                            else
+                            {
+                                targetEnemy = FindClosestEnemy();
+                            }
+                        }
+                        //only do this if not garrisoned
+                        if (selectableEntity.occupiedGarrison == null)
+                        {
+                            if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
+                            {
+                                if (selectableEntity.interactionTarget == null || selectableEntity.interactionTarget.fullyBuilt)
+                                {
+                                    selectableEntity.interactionTarget = FindClosestBuildable();
+                                }
+                                else
+                                {
+                                    state.Value = State.WalkToInteractable;
+                                    lastState = State.Building;
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                    case SelectableEntity.RallyMission.Move:
+                        basicallyIdleInstances = 0;
+                        if (IsOwner) destination.Value = orderedDestination;
+                        state.Value = State.WalkToRally;
+                        break;
+                    case SelectableEntity.RallyMission.Harvest:
+                        state.Value = State.WalkToInteractable;
+                        lastState = State.Harvesting;
+                        break;
+                    case SelectableEntity.RallyMission.Build:
+                        if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
+                        {
+                            if (selectableEntity.interactionTarget == null || selectableEntity.interactionTarget.fullyBuilt)
+                            {
+                                selectableEntity.interactionTarget = FindClosestBuildable();
+                            }
+                            else
+                            {
+                                state.Value = State.WalkToInteractable;
+                                lastState = State.Building;
+                            }
+                        }
+                        break;
+                    case SelectableEntity.RallyMission.Garrison:
+                        state.Value = State.WalkToInteractable;
+                        lastState = State.Garrisoning;
+                        break;
+                    case SelectableEntity.RallyMission.Attack:
+                        if (TargetEnemyValid())
+                        {
+                            state.Value = State.WalkToEnemy;
+                            break;
+                        }
+                        else
+                        {
+                            targetEnemy = FindClosestEnemy();
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case State.Walk:
+                UpdateMoveIndicator();
+                FreezeRigid(false, false);
+                destination.Value = orderedDestination;
+                animator.Play("Walk");
+
+                if (DetectIfStuck()) //!followingMoveOrder && !chasingEnemy && (selectableEntity.interactionTarget == null || selectableEntity.interactionTarget.fullyBuilt)
+                {
+                    //anim.ResetTrigger("Walk");
+                    //playedAttackMoveSound = false;
+                    state.Value = State.Idle;
+                    break;
+                }
+                if (selectableEntity.occupiedGarrison != null)
+                {
+                    state.Value = State.Idle;
+                    break;
+                }
+                break;
+            case State.WalkToRally:
+                FreezeRigid(false, false);
+                UpdateMoveIndicator();
+                if (IsOwner) destination.Value = orderedDestination;
+                animator.Play("Walk");
+                if (Vector3.Distance(transform.position, orderedDestination) <= 0.1f)
+                {
+                    state.Value = State.Idle;
+                    //rallyPositionSet = false;
+                    break;
+                }
+                break;
+            #endregion
+            #region Attacking
+            case State.WalkBeginFindEnemies: //"ATTACK MOVE" 
+                UpdateMoveIndicator();
+                FreezeRigid(false, false);
+                destination.Value = orderedDestination;
+
+                if (!animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
+                {
+                    if (!playedAttackMoveSound)
+                    {
+                        playedAttackMoveSound = true;
+                        selectableEntity.SimplePlaySound(2);
+                    }
+                    animator.Play("AttackWalkStart");
+                }
+
+                if (TargetEnemyValid())
+                {
+                    state.Value = State.WalkToEnemy;
+                }
+                else
+                {
+                    targetEnemy = FindClosestEnemy();
+                }
+
+                if (DetectIfStuck())
+                {
+                    state.Value = State.Idle;
+                }
+                if (selectableEntity.occupiedGarrison != null)
+                {
+                    state.Value = State.Idle;
+                    break;
+                }
+                break;
+            case State.WalkContinueFindEnemies:
+                UpdateMoveIndicator();
+                FreezeRigid(false, false);
+                destination.Value = orderedDestination;
+
+                if (TargetEnemyValid())
+                {
+                    state.Value = State.WalkToEnemy;
+                }
+                else
+                {
+                    targetEnemy = FindClosestEnemy();
+                }
+
+                if (DetectIfStuck())
+                {
+                    state.Value = State.Idle;
+                }
+                if (selectableEntity.occupiedGarrison != null)
+                {
+                    state.Value = State.Idle;
+                    break;
+                }
+                break;
+            case State.WalkToEnemy:
+                FreezeRigid(false, false);
+                if (TargetEnemyValid())
+                {
+
+                    UpdateAttackIndicator();
+                    if (!InRangeOfEntity(targetEnemy, attackRange))
+                    {
+                        if (selectableEntity.occupiedGarrison != null)
+                        {
+                            state.Value = State.Idle;
+                            break;
+                        }
+                        animator.Play("AttackWalk");
+                        if (IsOwner) destination.Value = targetEnemy.transform.position;
+                    }
+                    else
+                    {
+                        stateTimer = 0;
+                        state.Value = State.Attacking;
+                        break;
+                    }
+                }
+                else
+                {
+                    state.Value = State.WalkContinueFindEnemies;
+                }
+                break;
+            case State.Attacking:
+                if (attackType == AttackType.Gatling)
+                {
+                    animator.SetFloat("AttackSpeed", 1);
+                }
+                if (!TargetEnemyValid() && !attackReady)
+                {
+                    state.Value = State.Idle;
+                }
+                else if (!TargetEnemyValid() && attackReady)
+                {
+                    state.Value = State.WalkContinueFindEnemies;
+                }
+                else if (InRangeOfEntity(targetEnemy, attackRange))
+                {
+                    UpdateAttackIndicator();
+                    FreezeRigid(!canMoveWhileAttacking, false);
+                    if (IsOwner) destination.Value = transform.position; //stop in place
+                    rotationSpeed = ai.rotationSpeed / 60;
+                    LookAtTarget(targetEnemy.transform);
+
+                    if (attackReady && CheckFacingTowards(targetEnemy.transform.position))
+                    {
+                        animator.Play("Attack");
+                        if (AnimatorPlaying())
+                        {
+                            if (stateTimer < ConvertTimeToFrames(impactTime))
+                            {
+                                stateTimer++;
+                            }
+                            else if (attackReady)
+                            {
+                                attackReady = false;
+                                switch (attackType)
+                                {
+                                    case AttackType.Instant:
+                                        DamageSpecifiedEnemy(targetEnemy, damage);
+                                        break;
+                                    case AttackType.SelfDestruct:
+                                        Explode(selfDestructAreaOfEffect);
+                                        break;
+                                    case AttackType.Artillery:
+                                        ShootProjectileAtPosition(targetEnemy.transform.position);
+                                        break;
+                                    case AttackType.Gatling:
+                                        DamageSpecifiedEnemy(targetEnemy, damage);
+                                        break;
+                                    case AttackType.None:
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                        else //animation finished
+                        {
+                            state.Value = State.AfterAttackCheck;
+                        }
+                    }
+                    else if (!animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
+                    {
+                        animator.Play("Idle");
+                    }
+                }
+                else //walk to enemy if out of range
+                {
+                    state.Value = State.WalkToEnemy;
+                }
+                break;
+            case State.AfterAttackCheck:
+                FreezeRigid();
+                if (attackType == AttackType.Gatling)
+                {
+                    animator.SetFloat("AttackSpeed", 1);
+                }
+                animator.Play("Idle");
+                if (!TargetEnemyValid())
+                {
+                    state.Value = State.WalkContinueFindEnemies;
+                }
+                else //if target enemy is alive
+                {
+                    stateTimer = 0;
+                    state.Value = State.Attacking;
+                }
+                break;
+            #endregion
+            #region Building
+            case State.FindInteractable:
+                FreezeRigid();
+                animator.Play("Idle");
+                //prioritize based on last state.Value
+                switch (lastState)
+                {
+                    case State.Building:
+                        if (InvalidBuildable(selectableEntity.interactionTarget))
+                        {
+                            selectableEntity.interactionTarget = FindClosestBuildable();
+                        }
+                        else
+                        {
+                            state.Value = State.WalkToInteractable;
+                        }
+                        break;
+                    case State.Harvesting:
+                        if (InvalidHarvestable(selectableEntity.interactionTarget))
+                        {
+                            selectableEntity.interactionTarget = FindClosestHarvestable();
+                        }
+                        else
+                        {
+                            state.Value = State.WalkToInteractable;
+                        }
+                        break;
+                    case State.Depositing:
+                        if (InvalidDeposit(selectableEntity.interactionTarget))
+                        {
+                            selectableEntity.interactionTarget = FindClosestDeposit();
+                        }
+                        else
+                        {
+                            state.Value = State.WalkToInteractable;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case State.WalkToInteractable:
+                //garrisoned units should not interact
+                if (selectableEntity.occupiedGarrison != null)
+                {
+                    selectableEntity.interactionTarget = null;
+                    state.Value = State.Idle;
+                }
+
+                FreezeRigid(false, false);
+                UpdateMoveIndicator();
+                switch (lastState)
+                {
+                    case State.Building:
+                        if (InvalidBuildable(selectableEntity.interactionTarget))
+                        {
+                            state.Value = State.FindInteractable;
+                        }
+                        else
+                        {
+                            if (InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
+                            {
+                                stateTimer = 0;
+                                state.Value = State.Building;
+                            }
+                            else
+                            {
+                                animator.Play("Walk");
+                                if (IsOwner) destination.Value = selectableEntity.interactionTarget.transform.position;
+                            }
+                        }
+                        break;
+                    case State.Harvesting:
+                        if (InvalidHarvestable(selectableEntity.interactionTarget))
+                        {
+                            state.Value = State.FindInteractable;
+                        }
+                        else
+                        {
+                            if (InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
+                            {
+                                stateTimer = 0;
+                                state.Value = State.Harvesting;
+                            }
+                            else
+                            {
+                                animator.Play("Walk");
+                                if (IsOwner) destination.Value = selectableEntity.interactionTarget.transform.position;
+                            }
+                        }
+                        break;
+                    case State.Depositing:
+                        if (InvalidDeposit(selectableEntity.interactionTarget))
+                        {
+                            state.Value = State.FindInteractable;
+                        }
+                        else
+                        {
+                            if (InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
+                            {
+                                state.Value = State.Depositing;
+                            }
+                            else
+                            {
+                                animator.Play("Walk");
+                                if (IsOwner) destination.Value = selectableEntity.interactionTarget.transform.position;
+                            }
+                        }
+                        break;
+                    case State.Garrisoning:
+                        if (selectableEntity.interactionTarget == null)
+                        {
+                            state.Value = State.FindInteractable; //later make this check for nearby garrisonables in the same target?
+                        }
+                        else
+                        {
+                            if (selectableEntity.interactionTarget.type == SelectableEntity.EntityTypes.Portal) //walk into
+                            {
+                                if (selectableEntity.tryingToTeleport)
+                                {
+                                    animator.Play("Walk");
+                                    if (IsOwner) destination.Value = selectableEntity.interactionTarget.transform.position;
+                                }
+                                else
+                                {
+                                    state.Value = State.Idle;
+                                }
+                            }
+                            else
+                            {
+                                if (InRangeOfEntity(selectableEntity.interactionTarget, garrisonRange))
+                                {
+                                    state.Value = State.Garrisoning;
+                                }
+                                else
+                                {
+                                    animator.Play("Walk");
+                                    if (IsOwner) destination.Value = selectableEntity.interactionTarget.transform.position;
+                                }
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case State.Building:
+                if (InvalidBuildable(selectableEntity.interactionTarget) || !InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
+                {
+                    state.Value = State.FindInteractable;
+                    lastState = State.Building;
+                }
+                else
+                {
+                    FreezeRigid(true, false);
+                    LookAtTarget(selectableEntity.interactionTarget.transform);
+
+                    if (attackReady)
+                    {
+                        animator.Play("Attack");
+
+                        if (AnimatorPlaying())
+                        {
+                            if (stateTimer < ConvertTimeToFrames(impactTime))
+                            {
+                                stateTimer++;
+                            }
+                            else if (attackReady)
+                            {
+                                attackReady = false;
+                                BuildTarget(selectableEntity.interactionTarget);
+                            }
+                        }
+                        else //animation finished
+                        {
+                            state.Value = State.AfterBuildCheck;
+                        }
+                    }
+                }
+                break;
+            case State.AfterBuildCheck:
+                animator.Play("Idle");
+                FreezeRigid();
+                if (InvalidBuildable(selectableEntity.interactionTarget))
+                {
+                    state.Value = State.FindInteractable;
+                    lastState = State.Building;
+                }
+                else
+                {
+                    stateTimer = 0;
+                    state.Value = State.Building;
+                }
+                break;
+            #endregion
+            #region Harvestable  
+            case State.Harvesting:
+                if (InvalidHarvestable(selectableEntity.interactionTarget))
+                {
+                    state.Value = State.FindInteractable;
+                    lastState = State.Harvesting;
+                }
+                else
+                {
+                    FreezeRigid(true, false);
+
+                    LookAtTarget(selectableEntity.interactionTarget.transform);
+
+                    if (attackReady)
+                    {
+                        animator.Play("Attack");
+
+                        if (AnimatorPlaying())
+                        {
+                            if (stateTimer < ConvertTimeToFrames(impactTime))
+                            {
+                                stateTimer++;
+                            }
+                            else if (attackReady)
+                            {
+                                attackReady = false;
+                                HarvestTarget(selectableEntity.interactionTarget);
+                            }
+                        }
+                        else //animation finished
+                        {
+                            state.Value = State.AfterHarvestCheck;
+                        }
+                    }
+                }
+                break;
+            case State.AfterHarvestCheck:
+                animator.Play("Idle");
+                FreezeRigid();
+                if (selectableEntity.harvestedResourceAmount >= selectableEntity.harvestCapacity)
+                {
+                    state.Value = State.FindInteractable;
+                    lastState = State.Depositing;
+                }
+                else if (InvalidHarvestable(selectableEntity.interactionTarget))
+                {
+                    stateTimer = 0;
+                    state.Value = State.Harvesting;
+                }
+                else
+                {
+                    state.Value = State.FindInteractable;
+                    lastState = State.Harvesting;
+                }
+                break;
+            case State.Depositing:
+                if (InvalidDeposit(selectableEntity.interactionTarget))
+                {
+                    state.Value = State.FindInteractable;
+                    lastState = State.Depositing;
+                }
+                else
+                {
+                    FreezeRigid(true, false);
+                    LookAtTarget(selectableEntity.interactionTarget.transform);
+
+                    //anim.Play("Attack"); //replace with deposit animation
+                    //instant dropoff
+                    if (selectableEntity != null)
+                    {
+                        Global.Instance.localPlayer.gold += selectableEntity.harvestedResourceAmount;
+                        selectableEntity.harvestedResourceAmount = 0;
+                        Global.Instance.localPlayer.UpdateGUIFromSelections();
+                    }
+                    state.Value = State.AfterDepositCheck;
+                }
+                break;
+            case State.AfterDepositCheck:
+                animator.Play("Idle");
+                FreezeRigid();
+                if (InvalidHarvestable(selectableEntity.interactionTarget))
+                {
+                    stateTimer = 0;
+                    state.Value = State.WalkToInteractable;
+                    lastState = State.Harvesting;
+                }
+                else
+                {
+                    state.Value = State.FindInteractable;
+                    lastState = State.Harvesting;
+                }
+                break;
+            #endregion
+            #region Garrison
+            case State.Garrisoning:
+                if (selectableEntity.interactionTarget == null)
+                {
+                    state.Value = State.FindInteractable;
+                    lastState = State.Garrisoning;
+                }
+                else
+                {
+                    FreezeRigid(true, false);
+                    //garrison into
+                    selectableEntity.interactionTarget.ReceivePassenger(this);
+                    state.Value = State.Idle;
+                }
+                break;
+            #endregion
+            default:
+                break;
+        }
+    }
     #endregion
     #region UpdaterFunctions
     private void UpdateColliderStatus()
     {
         if (rigid != null)
         {
-            rigid.isKinematic = state switch
+            rigid.isKinematic = state.Value switch
             {
                 State.FindInteractable or State.WalkToInteractable or State.Harvesting or State.AfterHarvestCheck or State.Depositing or State.AfterDepositCheck
                 or State.Building or State.AfterBuildCheck => true,
@@ -211,7 +925,7 @@ public class MinionController : NetworkBehaviour
     {
         Global.Instance.localPlayer.selectedEntities.Remove(selectableEntity);
         selectableEntity.Select(false);
-        state = State.Die;
+        state.Value = State.Die;
         ai.enabled = false;
         rayMod.enabled = false;
         seeker.enabled = false;
@@ -221,11 +935,11 @@ public class MinionController : NetworkBehaviour
 
     private void FinishSpawning()
     {
-        state = State.Idle;
+        state.Value = State.Idle;
     }
     public void SetBuildDestination(Vector3 pos, SelectableEntity ent)
     {
-        destination = pos;
+        destination.Value = pos;
         selectableEntity.interactionTarget = ent;
     }
     #endregion
@@ -241,12 +955,11 @@ public class MinionController : NetworkBehaviour
             basicallyIdleInstances = 0;
         }
         if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
-        {
-            followingMoveOrder = false;
+        { 
             if (attackMoving)
             {
                 //Debug.Log("moving to ordered destination");
-                destination = orderedDestination;
+                destination.Value = orderedDestination;
             }
         }
     }
@@ -362,621 +1075,6 @@ public class MinionController : NetworkBehaviour
         }
     }
     public bool shouldAutoSeekOutEnemies = true;
-    private void UpdateState()
-    {
-        EnsureNotInteractingWithBusy();
-        UpdateColliderStatus();
-        UpdateAttackReadiness();
-        if (attackType == AttackType.Gatling)
-        {
-            animator.SetFloat("AttackSpeed", 0);
-        }
-        switch (state)
-        {
-            #region defaults
-            case State.Spawn: //don't really do anything, just play the spawn animation
-                animator.Play("Spawn");
-                FreezeRigid();
-                destination = transform.position;
-                break;
-            case State.Die:
-                animator.Play("Die");
-                FreezeRigid();
-                break;
-            case State.Idle:
-                HideMoveIndicator();
-                animator.Play("Idle");
-                FreezeRigid();
-                destination = transform.position; //stand still
-
-                switch (givenMission)
-                {
-                    case SelectableEntity.RallyMission.None:
-                        if (shouldAutoSeekOutEnemies)
-                        {
-                            if (TargetEnemyValid())
-                            {
-                                state = State.WalkToEnemy;
-                                break;
-                            }
-                            else
-                            {
-                                targetEnemy = FindClosestEnemy();
-                            }
-                        }
-                        //only do this if not garrisoned
-                        if (selectableEntity.occupiedGarrison == null)
-                        {
-                            if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
-                            {
-                                if (selectableEntity.interactionTarget == null || selectableEntity.interactionTarget.fullyBuilt)
-                                {
-                                    selectableEntity.interactionTarget = FindClosestBuildable();
-                                }
-                                else
-                                {
-                                    state = State.WalkToInteractable;
-                                    lastState = State.Building;
-                                    break;
-                                }
-                            }
-                        }
-                        break;
-                    case SelectableEntity.RallyMission.Move:
-                        basicallyIdleInstances = 0;
-                        destination = orderedDestination;
-                        state = State.WalkToRally;
-                        break;
-                    case SelectableEntity.RallyMission.Harvest:
-                        state = State.WalkToInteractable;
-                        lastState = State.Harvesting;
-                        break;
-                    case SelectableEntity.RallyMission.Build:
-                        if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
-                        {
-                            if (selectableEntity.interactionTarget == null || selectableEntity.interactionTarget.fullyBuilt)
-                            {
-                                selectableEntity.interactionTarget = FindClosestBuildable();
-                            }
-                            else
-                            {
-                                state = State.WalkToInteractable;
-                                lastState = State.Building;
-                            }
-                        }
-                        break;
-                    case SelectableEntity.RallyMission.Garrison:
-                        state = State.WalkToInteractable;
-                        lastState = State.Garrisoning;
-                        break;
-                    case SelectableEntity.RallyMission.Attack:
-                        if (TargetEnemyValid())
-                        {
-                            state = State.WalkToEnemy;
-                            break;
-                        }
-                        else
-                        {
-                            targetEnemy = FindClosestEnemy();
-                        }
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case State.Walk:
-                UpdateMoveIndicator();
-                FreezeRigid(false, false);
-                destination = orderedDestination;
-                animator.Play("Walk");
-
-                if (DetectIfStuck()) //!followingMoveOrder && !chasingEnemy && (selectableEntity.interactionTarget == null || selectableEntity.interactionTarget.fullyBuilt)
-                {
-                    //anim.ResetTrigger("Walk");
-                    //playedAttackMoveSound = false;
-                    state = State.Idle;
-                    break;
-                }
-                if (selectableEntity.occupiedGarrison != null)
-                {
-                    state = State.Idle;
-                    break;
-                }
-                break;
-            case State.WalkToRally:
-                FreezeRigid(false, false);
-                UpdateMoveIndicator();
-                destination = orderedDestination;
-                animator.Play("Walk");
-                if (Vector3.Distance(transform.position, orderedDestination) <= 0.1f)
-                {
-                    state = State.Idle;
-                    //rallyPositionSet = false;
-                    break;
-                }
-                break;
-            #endregion
-            #region Attacking
-            case State.WalkBeginFindEnemies: //"ATTACK MOVE" 
-                UpdateMoveIndicator();
-                FreezeRigid(false, false);
-                destination = orderedDestination;
-
-                if (!animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
-                {
-                    if (!playedAttackMoveSound)
-                    {
-                        playedAttackMoveSound = true;
-                        selectableEntity.SimplePlaySound(2);
-                    }
-                    animator.Play("AttackWalkStart");
-                }
-
-                if (TargetEnemyValid())
-                {
-                    state = State.WalkToEnemy;
-                }
-                else
-                {
-                    targetEnemy = FindClosestEnemy();
-                }
-
-                if (DetectIfStuck())
-                {
-                    state = State.Idle;
-                }
-                if (selectableEntity.occupiedGarrison != null)
-                {
-                    state = State.Idle;
-                    break;
-                }
-                break;
-            case State.WalkContinueFindEnemies:
-                UpdateMoveIndicator();
-                FreezeRigid(false, false);
-                destination = orderedDestination;
-
-                if (TargetEnemyValid())
-                {
-                    state = State.WalkToEnemy;
-                }
-                else
-                {
-                    targetEnemy = FindClosestEnemy();
-                }
-
-                if (DetectIfStuck())
-                {
-                    state = State.Idle;
-                }
-                if (selectableEntity.occupiedGarrison != null)
-                {
-                    state = State.Idle;
-                    break;
-                }
-                break;
-            case State.WalkToEnemy:
-                FreezeRigid(false, false);
-                if (TargetEnemyValid())
-                {
-
-                    UpdateAttackIndicator();
-                    if (Vector3.Distance(transform.position, targetEnemy.transform.position) > attackRange)
-                    {
-                        if (selectableEntity.occupiedGarrison != null)
-                        {
-                            state = State.Idle;
-                            break;
-                        }
-                        animator.Play("AttackWalk");
-                        destination = targetEnemy.transform.position;
-                    }
-                    else
-                    {
-                        stateTimer = 0;
-                        state = State.Attacking;
-                        break;
-                    }
-                }
-                else
-                {
-                    state = State.WalkContinueFindEnemies;
-                }
-                break;
-            case State.Attacking:
-                if (attackType == AttackType.Gatling)
-                {
-                    animator.SetFloat("AttackSpeed", 1);
-                }
-                if (!TargetEnemyValid() && !attackReady)
-                {
-                    state = State.Idle;
-                }
-                else if (!TargetEnemyValid() && attackReady)
-                {
-                    state = State.WalkContinueFindEnemies;
-                }
-                else if (Vector3.Distance(transform.position, targetEnemy.transform.position) <= attackRange)
-                {
-                    UpdateAttackIndicator();
-                    FreezeRigid(!canMoveWhileAttacking, false);
-                    rotationSpeed = ai.rotationSpeed / 60;
-                    LookAtTarget(targetEnemy.transform);
-
-                    if (attackReady && CheckFacingTowards(targetEnemy.transform.position))
-                    {
-                        animator.Play("Attack");
-                        if (AnimatorPlaying())
-                        {
-                            if (stateTimer < ConvertTimeToFrames(impactTime))
-                            {
-                                stateTimer++;
-                            }
-                            else if (attackReady)
-                            {
-                                attackReady = false;
-                                switch (attackType)
-                                {
-                                    case AttackType.Instant:
-                                        DamageSpecifiedEnemy(targetEnemy, damage);
-                                        break;
-                                    case AttackType.SelfDestruct:
-                                        Explode(selfDestructAreaOfEffect);
-                                        break;
-                                    case AttackType.Artillery:
-                                        ShootProjectileAtPosition(targetEnemy.transform.position);
-                                        break;
-                                    case AttackType.Gatling:
-                                        DamageSpecifiedEnemy(targetEnemy, damage);
-                                        break;
-                                    case AttackType.None:
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-                        }
-                        else //animation finished
-                        {
-                            state = State.AfterAttackCheck;
-                        }
-                    }
-                    else if (!animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
-                    {
-                        animator.Play("Idle");
-                    }
-                }
-                else //walk to enemy if out of range
-                {
-                    state = State.WalkToEnemy;
-                }
-                break;
-            case State.AfterAttackCheck:
-                FreezeRigid();
-                if (attackType == AttackType.Gatling)
-                {
-                    animator.SetFloat("AttackSpeed", 1);
-                }
-                animator.Play("Idle");
-                if (!TargetEnemyValid())
-                {
-                    state = State.WalkContinueFindEnemies;
-                }
-                else //if target enemy is alive
-                {
-                    stateTimer = 0;
-                    state = State.Attacking;
-                }
-                break;
-            #endregion
-            #region Building
-            case State.FindInteractable:
-                FreezeRigid();
-                animator.Play("Idle");
-                //prioritize based on last state
-                switch (lastState)
-                { 
-                    case State.Building:
-                        if (InvalidBuildable(selectableEntity.interactionTarget))
-                        {
-                            selectableEntity.interactionTarget = FindClosestBuildable();
-                        }
-                        else
-                        {
-                            state = State.WalkToInteractable;
-                        }
-                        break; 
-                    case State.Harvesting: 
-                        if (InvalidHarvestable(selectableEntity.interactionTarget))
-                        {
-                            selectableEntity.interactionTarget = FindClosestHarvestable();
-                        }
-                        else
-                        {
-                            state = State.WalkToInteractable;
-                        }
-                        break; 
-                    case State.Depositing:
-                        if (InvalidDeposit(selectableEntity.interactionTarget))
-                        {
-                            selectableEntity.interactionTarget = FindClosestDeposit();
-                        }
-                        else
-                        {
-                            state = State.WalkToInteractable;
-                        }
-                        break; 
-                    default:
-                        break;
-                }
-                break; 
-            case State.WalkToInteractable:
-                //garrisoned units should not interact
-                if (selectableEntity.occupiedGarrison != null)
-                {
-                    selectableEntity.interactionTarget = null;
-                    state = State.Idle;
-                }
-
-                FreezeRigid(false, false);
-                UpdateMoveIndicator();
-                switch (lastState)
-                { 
-                    case State.Building:
-                        if (InvalidBuildable(selectableEntity.interactionTarget))
-                        {
-                            state = State.FindInteractable;
-                        }
-                        else
-                        {
-                            if (InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
-                            {
-                                stateTimer = 0;
-                                state = State.Building;
-                            }
-                            else
-                            {
-                                animator.Play("Walk");
-                                destination = selectableEntity.interactionTarget.transform.position;
-                            }
-                        }
-                        break; 
-                    case State.Harvesting: 
-                        if (InvalidHarvestable(selectableEntity.interactionTarget))
-                        {
-                            state = State.FindInteractable;
-                        }
-                        else
-                        {
-                            if (InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
-                            {
-                                stateTimer = 0;
-                                state = State.Harvesting;
-                            }
-                            else
-                            {
-                                animator.Play("Walk");
-                                destination = selectableEntity.interactionTarget.transform.position;
-                            }
-                        }
-                        break; 
-                    case State.Depositing: 
-                        if (InvalidDeposit(selectableEntity.interactionTarget))
-                        {
-                            state = State.FindInteractable;
-                        }
-                        else
-                        {
-                            if (InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
-                            { 
-                                state = State.Depositing;
-                            }
-                            else
-                            {  
-                                animator.Play("Walk");
-                                destination = selectableEntity.interactionTarget.transform.position;
-                            } 
-                        }
-                        break;
-                    case State.Garrisoning: 
-                        if (selectableEntity.interactionTarget == null)
-                        {
-                            state = State.FindInteractable; //later make this check for nearby garrisonables in the same target?
-                        }
-                        else
-                        {
-                            if (selectableEntity.interactionTarget.type == SelectableEntity.EntityTypes.Portal) //walk into
-                            {
-                                if (selectableEntity.tryingToTeleport)
-                                { 
-                                    animator.Play("Walk");
-                                    destination = selectableEntity.interactionTarget.transform.position;
-                                }
-                                else
-                                {
-                                    state = State.Idle;
-                                }
-                            }
-                            else
-                            {
-                                if (InRangeOfEntity(selectableEntity.interactionTarget, garrisonRange))
-                                {
-                                    state = State.Garrisoning;
-                                }
-                                else
-                                { 
-                                    animator.Play("Walk");
-                                    destination = selectableEntity.interactionTarget.transform.position;
-                                }
-                            }
-                        }
-                        break;
-                    default:
-                        break;
-                }
-                break;  
-            case State.Building:
-                if (InvalidBuildable(selectableEntity.interactionTarget) || !InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
-                {
-                    state = State.FindInteractable;
-                    lastState = State.Building;
-                }
-                else
-                {
-                    FreezeRigid(true, false);
-                    LookAtTarget(selectableEntity.interactionTarget.transform);
-
-                    if (attackReady)
-                    {
-                        animator.Play("Attack");
-
-                        if (AnimatorPlaying())
-                        {
-                            if (stateTimer < ConvertTimeToFrames(impactTime))
-                            {
-                                stateTimer++;
-                            }
-                            else if (attackReady)
-                            {
-                                attackReady = false;
-                                BuildTarget(selectableEntity.interactionTarget);
-                            }
-                        }
-                        else //animation finished
-                        {
-                            state = State.AfterBuildCheck;
-                        }
-                    }
-                }
-                break;
-            case State.AfterBuildCheck:
-                animator.Play("Idle");
-                FreezeRigid();
-                if (InvalidBuildable(selectableEntity.interactionTarget))
-                {
-                    state = State.FindInteractable;
-                    lastState = State.Building;
-                }
-                else
-                {
-                    stateTimer = 0;
-                    state = State.Building;
-                }
-                break;
-            #endregion
-            #region Harvestable  
-            case State.Harvesting:
-                if (InvalidHarvestable(selectableEntity.interactionTarget))
-                {
-                    state = State.FindInteractable;
-                    lastState = State.Harvesting;
-                }
-                else
-                {
-                    FreezeRigid(true, false);
-
-                    LookAtTarget(selectableEntity.interactionTarget.transform);
-
-                    if (attackReady)
-                    {
-                        animator.Play("Attack");
-
-                        if (AnimatorPlaying())
-                        {
-                            if (stateTimer < ConvertTimeToFrames(impactTime))
-                            {
-                                stateTimer++;
-                            }
-                            else if (attackReady)
-                            {
-                                attackReady = false;
-                                HarvestTarget(selectableEntity.interactionTarget);
-                            }
-                        }
-                        else //animation finished
-                        {
-                            state = State.AfterHarvestCheck;
-                        }
-                    }
-                }
-                break;
-            case State.AfterHarvestCheck:
-                animator.Play("Idle");
-                FreezeRigid();
-                if (selectableEntity.harvestedResourceAmount >= selectableEntity.harvestCapacity)
-                {
-                    state = State.FindInteractable;
-                    lastState = State.Depositing;
-                }
-                else if (InvalidHarvestable(selectableEntity.interactionTarget))
-                {
-                    stateTimer = 0;
-                    state = State.Harvesting;
-                }
-                else
-                {
-                    state = State.FindInteractable;
-                    lastState = State.Harvesting;
-                }
-                break;  
-            case State.Depositing:
-                if (InvalidDeposit(selectableEntity.interactionTarget))
-                {
-                    state = State.FindInteractable;
-                    lastState = State.Depositing;
-                }
-                else
-                {
-                    FreezeRigid(true, false);
-                    LookAtTarget(selectableEntity.interactionTarget.transform);
-
-                    //anim.Play("Attack"); //replace with deposit animation
-                    //instant dropoff
-                    if (selectableEntity != null)
-                    {
-                        Global.Instance.localPlayer.gold += selectableEntity.harvestedResourceAmount;
-                        selectableEntity.harvestedResourceAmount = 0;
-                        Global.Instance.localPlayer.UpdateGUIFromSelections();
-                    }
-                    state = State.AfterDepositCheck;
-                }
-                break;
-            case State.AfterDepositCheck:
-                animator.Play("Idle");
-                FreezeRigid();
-                if (InvalidHarvestable(selectableEntity.interactionTarget))
-                {
-                    stateTimer = 0;
-                    state = State.WalkToInteractable;
-                    lastState = State.Harvesting;
-                }
-                else
-                {
-                    state = State.FindInteractable; 
-                    lastState = State.Harvesting;
-                }
-                break;
-            #endregion
-            #region Garrison
-            case State.Garrisoning:
-                if (selectableEntity.interactionTarget == null)
-                {
-                    state = State.FindInteractable;
-                    lastState = State.Garrisoning;
-                }
-                else
-                {
-                    FreezeRigid(true, false);
-                    //garrison into
-                    selectableEntity.interactionTarget.ReceivePassenger(this);
-                    state = State.Idle;
-                }
-                break;
-            #endregion
-            default:
-                break;
-        }
-    }
     private bool InvalidBuildable(SelectableEntity target)
     {
         return target == null || target.fullyBuilt || target.alive == false;
@@ -1112,7 +1210,7 @@ public class MinionController : NetworkBehaviour
     }*/
     private SelectableEntity FindClosestEnemy() //bottleneck for unit spawning
     {
-        float range = attackRange;// + 2;
+        float range = attackRange;
 
         int maxColliders = Mathf.RoundToInt(20 * range);
         Collider[] hitColliders = new Collider[maxColliders];
@@ -1244,7 +1342,7 @@ public class MinionController : NetworkBehaviour
         switch (attackType)
         {
             case AttackType.Instant:
-                state = State.Idle;
+                state.Value = State.Idle;
                 attackReady = true;
                 break;
             case AttackType.SelfDestruct:
@@ -1282,8 +1380,8 @@ public class MinionController : NetworkBehaviour
     private void StartAttack()
     {
         attackReady = false;
-        state = State.Attacking;
-        destination = transform.position;
+        state.Value = State.Attacking;
+        if (IsOwner) destination.Value = transform.position;
 
         switch (attackType)
         {
@@ -1355,6 +1453,7 @@ public class MinionController : NetworkBehaviour
     }
     public void DamageSpecifiedEnemy(SelectableEntity enemy, sbyte damage) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
+        return;
         if (enemy != null)
         {
             //fire locally
@@ -1505,7 +1604,7 @@ public class MinionController : NetworkBehaviour
     /*public void RallyToPos(Vector3 pos)
     {
         //followingMoveOrder = true;
-        destination = pos;
+        if (IsOwner) destination.Value = pos;
         orderedDestination = destination;
         //state = State.Walk;
     }*/
@@ -1515,23 +1614,22 @@ public class MinionController : NetworkBehaviour
         //rallyPositionSet = true;
         orderedDestination = pos;
     }
-    private void ResetAllTargets()
+    private void ClearTargets()
     { 
         targetEnemy = null;
         selectableEntity.interactionTarget = null; 
     }
-    public void SetAttackMoveDestination()
+    public void SetAttackMoveDestination() //called by local player
     {
-        ResetAllTargets(); 
-        basicallyIdleInstances = 0;
-        followingMoveOrder = true; 
-        state = State.WalkBeginFindEnemies; //default to walking state
+        ClearTargets(); 
+        basicallyIdleInstances = 0; 
+        state.Value = State.WalkBeginFindEnemies; //default to walking state
         playedAttackMoveSound = false;
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
         {
-            destination = hit.point;
-            orderedDestination = destination;   
+            destination.Value = hit.point;
+            orderedDestination = destination.Value;   
         }
     }
     private void PlaceOnGround()
@@ -1545,23 +1643,42 @@ public class MinionController : NetworkBehaviour
     {
         selectableEntity.interactionTarget = target;
 
-        state = State.WalkToInteractable;
+        state.Value = State.WalkToInteractable;
         lastState = State.Building;
     }
-    public void SetDestinationRaycast(bool attackMoveVal = false)
+    public void MoveTo(Vector3 target)
+    {
+        BasicWalkTo(target);
+    }
+    private void BasicWalkTo(Vector3 target)
+    {
+        ClearTargets();
+        BecomeUnstuck();
+        SetDestinations(target);
+        state.Value = State.Walk;
+    }
+    private void BecomeUnstuck()
+    { 
+        basicallyIdleInstances = 0; //we're not idle anymore
+    }
+    private void SetDestinations(Vector3 target)
+    {
+        destination.Value = target; //set destination
+        orderedDestination = target; //remember where we set destination 
+    }
+    /*public void SetDestinationRaycast(bool attackMoveVal = false)
     {
         if (state != State.Spawn)
         {
             ResetAllTargets(); 
-            basicallyIdleInstances = 0;
-            followingMoveOrder = true;
+            basicallyIdleInstances = 0; 
             attackMoving = attackMoveVal;
             state = State.Walk; //default to walking state
             selectableEntity.tryingToTeleport = false;
             Ray ray = cam.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
             {
-                destination = hit.point;
+                destination.Value = hit.point;
                 orderedDestination = destination;
                 //check if player right clicked on an entity and what behavior unit should have
                 SelectableEntity justLeftGarrison = null;
@@ -1667,6 +1784,6 @@ public class MinionController : NetworkBehaviour
                 CancelInvoke("SimpleDamageEnemy"); 
             }
         }
-    }
+    }*/
     #endregion
 }

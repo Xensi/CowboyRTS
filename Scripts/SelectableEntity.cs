@@ -225,7 +225,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 if (minionController != null)
                 {
-                    minionController.state = MinionController.State.Die;
+                    minionController.state.Value = MinionController.State.Die;
                 }
                 return;
             }
@@ -825,7 +825,7 @@ public class SelectableEntity : NetworkBehaviour
                 lineIndicator.enabled = selected;
                 if (selected)
                 { 
-                    lineIndicator.SetPositions(LineArray(minionController.destination));
+                    lineIndicator.SetPositions(LineArray(minionController.destination.Value));
                 }   
             }
             else //disable if dead
