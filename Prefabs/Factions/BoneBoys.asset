@@ -112,7 +112,7 @@ MonoBehaviour:
     timeCost: 0
     buildID: 0
   - productionName: Drunkard
-    needsConstructing: 1
+    needsConstructing: 0
     prefabToSpawn: {fileID: 2545681379473208697, guid: 1207c82d488d9984dbc660e0682325ed, type: 3}
     linkedID: -1
     goldCost: 20

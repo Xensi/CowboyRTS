@@ -7757,7 +7757,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 160, y: 30}
+  m_SizeDelta: {x: 82.71, y: 14.6}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1033573587
 MonoBehaviour:
@@ -8420,12 +8420,12 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
+  m_fontSize: 8.8
   m_fontSizeBase: 24
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 0
-  m_fontSizeMax: 0
+  m_fontSizeMax: 8.8
   m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
@@ -12199,9 +12199,9 @@ MonoBehaviour:
     Port: 7777
     ServerListenAddress: 127.0.0.1
   DebugSimulator:
-    PacketDelayMS: 10
-    PacketJitterMS: 3
-    PacketDropRate: 5
+    PacketDelayMS: 100
+    PacketJitterMS: 10
+    PacketDropRate: 10
 --- !u!114 &1873259844
 MonoBehaviour:
   m_ObjectHideFlags: 0

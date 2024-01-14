@@ -78,6 +78,7 @@ public class Global : NetworkBehaviour
     public void CheckIfAPlayerHasWon()
     {
         if (playerList.Count <= 1) return;
+        
         RTSPlayer potentialWinner = null;
         int inTheGameCount = 0;
         foreach (RTSPlayer item in playerList)
