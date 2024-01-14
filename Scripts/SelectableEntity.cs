@@ -68,8 +68,8 @@ public class SelectableEntity : NetworkBehaviour
     private bool damaged = false;
     private readonly int delay = 50;
     private int count = 0;
-    public int populationAmount = 1;
-
+    public int consumePopulationAmount = 1;
+    public int raisePopulationLimitBy = 0;
     #endregion
     #region Variables
 
@@ -143,6 +143,21 @@ public class SelectableEntity : NetworkBehaviour
                 RVO.enabled = false;
             }
         }
+
+        foreach (MeshRenderer item in finishedRenderers)
+        {
+            if (item != null)
+            {
+                item.enabled = false;
+            }
+        }
+        foreach (MeshRenderer item in unbuiltRenderers)
+        {
+            if (item != null)
+            {
+                item.enabled = true;
+            }
+        }
     }
     public override void OnNetworkSpawn()
     {
@@ -152,19 +167,19 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (IsOwner)
         {
-            Global.Instance.localPlayer.ownedEntities.Add(this);
-            Global.Instance.localPlayer.lastSpawnedEntity = this;
-            if (!fullyBuilt)
+            isTargetable.Value = true; //initialize value
+
+            if (teamBehavior == TeamBehavior.OwnerTeam)
             {
-                RequestBuilders();
+                Global.Instance.localPlayer.ownedEntities.Add(this);
+                Global.Instance.localPlayer.lastSpawnedEntity = this;
+                Global.Instance.localPlayer.population += consumePopulationAmount;
+
+                if (!fullyBuilt)
+                {
+                    RequestBuilders();
+                }
             }
-            isTargetable.Value = true;
-            Global.Instance.localPlayer.population += populationAmount;
-        }
-        else
-        {
-            //if we don't own this, then set its' hide fog team equal to our team
-            //hideFogTeam = (int) Global.Instance.localPlayer.OwnerClientId;
         }
         if (IsServer)
         {
@@ -187,6 +202,157 @@ public class SelectableEntity : NetworkBehaviour
         if (fogUnit != null) fogUnit.team = (int) OwnerClientId;
         /*fogHide = GetComponent<HideInFog>();
         if (fogHide != null) fogHide.team = (int)OwnerClientId;*/
+    }
+    private void Update()
+    {
+        SetHideFogTeam();
+        HideInFog();
+
+        if (rallyTarget != null)
+        {
+            rallyVisual.transform.position = rallyTarget.transform.position;
+            rallyPoint = rallyTarget.transform.position;
+        }
+        if (IsSpawned)
+        {
+            UpdateInteractors();
+            if (!teamRenderersUpdated)
+            {
+                UpdateTeamRenderers();
+            }
+
+            if (!alive)
+            {
+                if (minionController != null)
+                {
+                    minionController.state = MinionController.State.Die;
+                }
+                return;
+            }
+
+            if (!fullyBuilt)
+            {
+                CheckIfBuilt();
+                if (hitPoints.Value < 0)
+                {
+                    ProperDestroyMinion();
+                }
+            }
+            else
+            {
+
+                if (!damaged)
+                {
+                    CheckIfDamaged();
+                }
+                if (hitPoints.Value <= 0)
+                {
+                    ProperDestroyMinion();
+                }
+
+            }
+        }
+    }
+    private void FixedUpdate()
+    {
+        if (IsSpawned)
+        {
+            if (!fullyBuilt)
+            {
+            }
+            else
+            {
+                if (count < delay)
+                {
+                    count++;
+                }
+                else
+                {
+                    count = 0;
+                    UpdateBuildQueue();
+                }
+                //walking sounds
+                if (minionController != null)
+                {
+                    if (minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") || minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk") || minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
+                    {
+                        if (footstepCount < footstepThreshold)
+                        {
+                            footstepCount++;
+                        }
+                        else
+                        {
+                            footstepCount = 0;
+                            Global.Instance.PlayClipAtPoint(Global.Instance.footsteps[Random.Range(0, Global.Instance.footsteps.Length)], transform.position, .05f);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    public void ProperDestroyMinion()
+    {
+        if (IsOwner)
+        {
+            Global.Instance.localPlayer.population -= consumePopulationAmount;
+            Global.Instance.localPlayer.maxPopulation -= raisePopulationLimitBy;
+        }
+        if (physicalCollider != null)
+        {
+            physicalCollider.enabled = false; //allows dynamic grid obstacle to update pathfinding nodes one last time
+        }
+        if (RVO != null)
+        {
+            Destroy(RVO);
+        }
+        if (minionController != null)
+        {
+            minionController.PrepareForDeath();
+
+            foreach (MeshRenderer item in allMeshes)
+            {
+                if (item != null && !teamRenderers.Contains(item))
+                {
+                    item.material.color = Color.gray;
+                }
+            }
+        }
+        else
+        {
+            StructureCosmeticDestruction();
+        }
+        Invoke(nameof(Die), deathDuration);
+        foreach (GarrisonablePosition item in garrisonablePositions)
+        {
+            if (item != null)
+            {
+                if (item.passenger != null)
+                {
+                    UnloadPassenger(item.passenger);
+                }
+            }
+        }
+
+        if (targetIndicator != null)
+        {
+            targetIndicator.SetActive(false);
+            lineIndicator.enabled = false;
+            targetIndicator.transform.parent = transform;
+        }
+
+        alive = false;
+        CheckGameVictoryState();
+    }
+    private void CheckGameVictoryState()
+    {
+        if (isKeystone)
+        {
+            Global.Instance.localPlayer.keystoneUnits.Remove(this);
+            if (Global.Instance.localPlayer.keystoneUnits.Count <= 0)
+            {
+                Global.Instance.localPlayer.LoseGame();
+            }
+        }
     }
     private HideInFog fogHide;
     private FogOfWarUnit fogUnit;
@@ -351,105 +517,40 @@ public class SelectableEntity : NetworkBehaviour
     public float minFogStrength = 0.2f;
     public bool visibleInFog = false;
     public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
+    public bool shouldHideInFog = true; // gold should not be hidden
+
     private void HideInFog()
     {
-        if (!IsOwner)
-        { 
-            FogOfWarTeam fow = FogOfWarTeam.GetTeam(hideFogTeam);
-            visibleInFog = fow.GetFogValue(transform.position) < minFogStrength * 255;
-
-            for (int i = 0; i < allMeshes.Length; i++)
-            {
-                if (allMeshes[i] != null) allMeshes[i].enabled = visibleInFog;
-            }
-        }
-        /*if (IsOwner && IsSpawned)
-        {
-            isTargetable.Value = visibleInFog;
-        }*/
-    }
-    private void Update()
-    {
-        HideInFog();
-
-        if (rallyTarget != null)
-        {
-            rallyVisual.transform.position = rallyTarget.transform.position;
-            rallyPoint = rallyTarget.transform.position;
-        }
-        if (IsSpawned)
-        {
-            UpdateInteractors();
-            if (!teamRenderersUpdated)
-            {
-                UpdateTeamRenderers();
-            }
-
-            if (!alive)
-            {
-                if (minionController != null)
-                {
-                    minionController.state = MinionController.State.Die;
-                }
-                return;
-            }
-
-            if (!fullyBuilt)
-            {
-                CheckIfBuilt();
-                if (hitPoints.Value < 0)
-                {
-                    ProperDestroyMinion();
-                }
-            }
-            else
-            {
-                 
-                if (!damaged)
-                {
-                    CheckIfDamaged();
-                }
-                if (hitPoints.Value <= 0)
-                {
-                    ProperDestroyMinion();
-                }
-                
-            }
-        }
-    }
-    private void FixedUpdate()
-    { 
         if (IsSpawned)
         { 
-            if (!fullyBuilt)
+            if (!IsOwner)
             { 
-            }
-            else
-            {
-                if (count < delay)
-                {
-                    count++;
-                }
-                else
-                {
-                    count = 0;
-                    UpdateBuildQueue();
-                }
-                //walking sounds
-                if (minionController != null)
-                {
-                    if (minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") || minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk") || minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
+                if (shouldHideInFog)
+                { 
+                    FogOfWarTeam fow = FogOfWarTeam.GetTeam(hideFogTeam);
+                    visibleInFog = fow.GetFogValue(transform.position) < minFogStrength * 255;
+
+                    for (int i = 0; i < allMeshes.Length; i++)
                     {
-                        if (footstepCount < footstepThreshold)
-                        {
-                            footstepCount++;
-                        }
-                        else
-                        {
-                            footstepCount = 0;
-                            Global.Instance.PlayClipAtPoint(Global.Instance.footsteps[Random.Range(0, Global.Instance.footsteps.Length)], transform.position, .05f);
-                        }
+                        if (allMeshes[i] != null) allMeshes[i].enabled = visibleInFog;
                     }
+                }
+            }
+        }
+    }
+    bool hideFogTeamSet = false;
+    private void SetHideFogTeam()
+    {
+        if (hideFogTeamSet) return;
+        //if we don't own this, then set its' hide fog team equal to our team
+        if (IsSpawned)
+        {
+            if (!IsOwner)
+            {
+                if (Global.Instance.localPlayer != null)
+                {
+                    hideFogTeam = (int)Global.Instance.localPlayer.OwnerClientId;
+                    hideFogTeamSet = true;
                 }
             }
         }
@@ -461,69 +562,7 @@ public class SelectableEntity : NetworkBehaviour
             item.enabled = false;
         }
     }
-    public void ProperDestroyMinion()
-    {
-        if (IsOwner)
-        {
-            Global.Instance.localPlayer.population -= populationAmount;
-        }
-        if (physicalCollider != null)
-        {
-            physicalCollider.enabled = false; //allows dynamic grid obstacle to update pathfinding nodes one last time
-        }
-        if (RVO != null)
-        {
-            Destroy(RVO);
-        }
-        if (minionController != null)
-        {
-            minionController.PrepareForDeath();
 
-            foreach (MeshRenderer item in allMeshes)
-            {
-                if (item != null && !teamRenderers.Contains(item))
-                {
-                    item.material.color = Color.gray;
-                }
-            }
-        }
-        else
-        {   
-            StructureCosmeticDestruction();
-        }
-        Invoke(nameof(Die), deathDuration);
-        foreach (GarrisonablePosition item in garrisonablePositions)
-        {
-            if (item != null)
-            {
-                if (item.passenger != null)
-                {
-                    UnloadPassenger(item.passenger);
-                }
-            }
-        }
-
-        if (targetIndicator != null)
-        { 
-            targetIndicator.SetActive(false);
-            lineIndicator.enabled = false;
-            targetIndicator.transform.parent = transform;
-        }
-
-        alive = false;
-        CheckGameVictoryState();
-    }
-    private void CheckGameVictoryState()
-    {
-        if (isKeystone)
-        {
-            Global.Instance.localPlayer.keystoneUnits.Remove(this);
-            if (Global.Instance.localPlayer.keystoneUnits.Count <= 0)
-            {
-                Global.Instance.localPlayer.LoseGame();
-            }
-        }
-    }
     private int footstepCount = 0;
     private readonly int footstepThreshold = 12;
     private void CheckIfBuilt()
@@ -536,6 +575,7 @@ public class SelectableEntity : NetworkBehaviour
     private void BecomeFullyBuilt()
     {
         fullyBuilt = true;
+        
         Global.Instance.localPlayer.UpdateGUIFromSelections();
         foreach (MeshRenderer item in finishedRenderers)
         {
@@ -550,7 +590,9 @@ public class SelectableEntity : NetworkBehaviour
             {
                 item.enabled = false;
             }
-        }  
+        }
+        if (fogUnit != null) fogUnit.enabled = true;
+        Global.Instance.localPlayer.maxPopulation += raisePopulationLimitBy;
     } 
     private readonly float deathDuration = 10;
     private void Die()
@@ -694,7 +736,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 fac.timeCost--;
             }
-            if (fac.timeCost <= 0 && populationAmount <= Global.Instance.localPlayer.maxPopulation - Global.Instance.localPlayer.population)
+            if (fac.timeCost <= 0 && consumePopulationAmount <= Global.Instance.localPlayer.maxPopulation - Global.Instance.localPlayer.population)
             {
                 //Debug.Log("spawn");
 

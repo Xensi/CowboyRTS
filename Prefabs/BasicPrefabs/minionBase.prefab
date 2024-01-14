@@ -284,6 +284,10 @@ MonoBehaviour:
   targetIndicator: {fileID: 3480814061053556006}
   teamRenderers: []
   RVO: {fileID: 0}
+  minFogStrength: 0.05
+  visibleInFog: 0
+  hideFogTeam: 0
+  shouldHideInFog: 1
   attackEffects: []
 --- !u!114 &1556607826778985850
 MonoBehaviour:
@@ -459,8 +463,8 @@ MonoBehaviour:
   absoluteOffset: 0
   offset: {x: 0, y: 0}
   boxSize: {x: 5, y: 5}
-  circleRadius: 5
-  innerRadius: 0.5
+  circleRadius: 6
+  innerRadius: 0.9
   angle: 180
   texture: {fileID: 0}
   rotateToForward: 0

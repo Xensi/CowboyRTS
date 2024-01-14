@@ -598,15 +598,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: builderEntityIndices.Array.data[0]
-      value: 12
-      objectReference: {fileID: 0}
-    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
-      propertyPath: builderEntityIndices.Array.data[1]
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
-      propertyPath: builderEntityIndices.Array.data[2]
+      propertyPath: builderEntityIndices.Array.data[1]
       value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: builderEntityIndices.Array.data[2]
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: builderEntityIndices.Array.data[3]

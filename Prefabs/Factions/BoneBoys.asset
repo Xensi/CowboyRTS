@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: BoneBoys
   m_EditorClassIdentifier: 
   entities:
-  - productionName: Raise Gravedigger
+  - productionName: Raise Goon
     needsConstructing: 0
     prefabToSpawn: {fileID: 2545681379473208697, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
     linkedID: -1
@@ -24,7 +24,7 @@ MonoBehaviour:
     needsConstructing: 1
     prefabToSpawn: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
     linkedID: -1
-    goldCost: 50
+    goldCost: 20
     timeCost: 0
     buildID: 0
   - productionName: Raise Gunslinger

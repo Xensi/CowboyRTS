@@ -295,7 +295,7 @@ public class MinionController : NetworkBehaviour
     #endregion
     private bool TargetEnemyValid()
     {
-        if (targetEnemy == null || targetEnemy.alive == false || targetEnemy.isTargetable.Value == false)
+        if (targetEnemy == null || targetEnemy.alive == false || targetEnemy.isTargetable.Value == false || targetEnemy.visibleInFog == false)
         {
             return false;
         }
@@ -1141,6 +1141,10 @@ public class MinionController : NetworkBehaviour
                 {
                     continue;
                 }
+                if (select.visibleInFog == false) //we can't target those that are not visible
+                {
+                    continue;
+                }
                 if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
                     if (Global.Instance.localPlayer.ownedEntities.Contains(select))
@@ -1234,16 +1238,7 @@ public class MinionController : NetworkBehaviour
         return closest;
     }
     #endregion
-    #region Attacks
-    private void CancelAttack()
-    {
-        targetEnemy = null;
-        selectableEntity.interactionTarget = null;
-        state = State.Idle;
-        CancelInvoke("SimpleDamageEnemy");
-        CancelInvoke("SimpleBuildTarget");
-        selectableEntity.UpdateIndicator();
-    }
+    #region Attacks 
     private void ReturnState()
     {
         switch (attackType)

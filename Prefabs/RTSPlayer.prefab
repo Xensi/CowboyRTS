@@ -72,7 +72,7 @@ MonoBehaviour:
   placingLinkedBuilding: 0
   starterUnitID: 8
   population: 0
-  maxPopulation: 50
+  maxPopulation: 10
   placementGhost:
     serializedVersion: 2
     m_Bits: 0

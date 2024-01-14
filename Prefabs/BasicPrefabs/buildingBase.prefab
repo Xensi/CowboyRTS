@@ -111,7 +111,8 @@ MonoBehaviour:
   interactionTarget: {fileID: 0}
   buildQueue: []
   interactors: []
-  populationAmount: 0
+  consumePopulationAmount: 0
+  raisePopulationLimitBy: 0
   rallyMission: 0
   rallyTarget: {fileID: 0}
   physicalCollider: {fileID: 5804844811347733410}
@@ -148,6 +149,10 @@ MonoBehaviour:
   teamRenderers:
   - {fileID: 0}
   RVO: {fileID: 0}
+  minFogStrength: 0.05
+  visibleInFog: 0
+  hideFogTeam: 0
+  shouldHideInFog: 1
   attackEffects: []
 --- !u!114 &3728683629940428650
 MonoBehaviour:
@@ -191,7 +196,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2870261118279373742}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0b130f358dcb26548b2ff0923d496dc6, type: 3}
   m_Name: 
