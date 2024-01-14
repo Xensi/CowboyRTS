@@ -235,7 +235,7 @@ public class RTSPlayer : NetworkBehaviour
             {
                 if (item.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
-                    switch (item.minionController.state.Value)
+                    switch (item.minionController.state)
                     {
                         case MinionController.State.Idle:
                         case MinionController.State.FindInteractable:

@@ -47,14 +47,16 @@ public class SelectableEntity : NetworkBehaviour
         Gold, None
     }
     #endregion
+    #region NetworkVariables
+    [HideInInspector] public NetworkVariable<sbyte> hitPoints = new();
+    [HideInInspector] public NetworkVariable<bool> isTargetable = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    #endregion
     #region Hidden
     [HideInInspector] public MinionController minionController;
-    [HideInInspector] public NetworkVariable<sbyte> hitPoints = new();
     [HideInInspector] public bool selected = false;
     [HideInInspector] public NetworkObject net;
     public Vector3 rallyPoint;
     [HideInInspector] public bool alive = true;
-    [HideInInspector] public NetworkVariable<bool> isTargetable = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     [HideInInspector] public SelectableEntity occupiedGarrison;
     [HideInInspector] public bool isBuildIndicator = false;
@@ -225,7 +227,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 if (minionController != null)
                 {
-                    minionController.state.Value = MinionController.State.Die;
+                    minionController.state = MinionController.State.Die;
                 }
                 return;
             }
