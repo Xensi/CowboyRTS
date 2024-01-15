@@ -1597,7 +1597,7 @@ public class MinionController : NetworkBehaviour
         ProjectileClientRpc(star, dest);
     }
 
-    public void SimpleDamageEnemy() //since hp is a network variable, changing it on the server will propagate changes to clients as well
+    /*public void SimpleDamageEnemy() //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         if (targetEnemy != null)
         { 
@@ -1616,7 +1616,7 @@ public class MinionController : NetworkBehaviour
                 RequestDamageServerRpc(damage, targetEnemy);
             }
         }
-    }
+    }*/
     [ServerRpc]
     private void RequestDamageServerRpc(sbyte damage, NetworkBehaviourReference enemy)
     {
@@ -1679,19 +1679,24 @@ public class MinionController : NetworkBehaviour
         state = State.WalkToInteractable;
         lastState = State.Building;
     }
-    public void MoveTo(Vector3 target)
-    {
-        BasicWalkTo(target);
-    }
     private void BasicWalkTo(Vector3 target)
     {
+        //selectableEntity.tryingToTeleport = false;
         ClearTargets();
         BecomeUnstuck();
         SetDestinations(target);
         state = State.Walk;
+         
+        SelectableEntity justLeftGarrison = null;
+        if (selectableEntity.occupiedGarrison != null) //we are currently garrisoned
+        {
+            justLeftGarrison = selectableEntity.occupiedGarrison;
+            selectableEntity.occupiedGarrison.UnloadPassenger(this); //leave garrison by moving out of it
+            PlaceOnGround(); //snap to ground
+        }
     }
     private void BecomeUnstuck()
-    { 
+    {
         basicallyIdleInstances = 0; //we're not idle anymore
     }
     private void SetDestinations(Vector3 target)
@@ -1699,124 +1704,81 @@ public class MinionController : NetworkBehaviour
         destination.Value = target; //set destination
         orderedDestination = target; //remember where we set destination 
     }
-    /*public void SetDestinationRaycast(bool attackMoveVal = false)
-    {
+    public void MoveTo(Vector3 target)
+    { 
         if (state != State.Spawn)
         {
-            ResetAllTargets(); 
-            basicallyIdleInstances = 0; 
-            attackMoving = attackMoveVal;
-            state = State.Walk; //default to walking state
-            selectableEntity.tryingToTeleport = false;
-            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
+            BasicWalkTo(target);  
+        }
+    }
+    public void AttackTarget(SelectableEntity select)
+    { 
+        targetEnemy = select;
+        state = State.WalkToEnemy;
+    }
+    public void CommandHarvestTarget(SelectableEntity select)
+    {
+        if (selectableEntity.isHarvester)
+        {
+            if (selectableEntity.harvestedResourceAmount < selectableEntity.harvestCapacity) //we could still harvest more
             {
-                destination.Value = hit.point;
-                orderedDestination = destination;
-                //check if player right clicked on an entity and what behavior unit should have
-                SelectableEntity justLeftGarrison = null;
-                if (selectableEntity.occupiedGarrison != null) //we are currently garrisoned
-                {
-                    justLeftGarrison = selectableEntity.occupiedGarrison;
-                    selectableEntity.occupiedGarrison.UnloadPassenger(this); //leave garrison by moving out of it
-                    PlaceOnGround(); //snap to ground
-                }
-                SelectableEntity select = hit.collider.GetComponent<SelectableEntity>(); 
-                if (select != null)
-                {
-                    if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
-                    {
-                        if (select.net.OwnerClientId == selectableEntity.net.OwnerClientId) //same team
-                        {
-                            if ((select.depositType == SelectableEntity.DepositType.Gold || select.depositType == SelectableEntity.DepositType.All) && select.fullyBuilt) //if deposit point
-                            {
-                                selectableEntity.interactionTarget = select;
-                                state = State.WalkToInteractable;
-                                lastState = State.Depositing;
-                            }
-                            else if (selectableEntity.type == SelectableEntity.EntityTypes.Builder && !select.fullyBuilt) //if buildable and this is a builder
-                            {
-                                selectableEntity.interactionTarget = select; 
-                                state = State.WalkToInteractable;
-                                lastState = State.Building;
-                            } //target can be garrisoned, and passenger cannot garrison
-                            else if (select.fullyBuilt && select.HasEmptyGarrisonablePosition() && selectableEntity.garrisonablePositions.Count <= 0) 
-                            {
-                                if (justLeftGarrison != select) //not perfect, fails on multiple units
-                                {
-                                    if (select.acceptsHeavy)
-                                    {
-                                        selectableEntity.interactionTarget = select;
-                                        state = State.WalkToInteractable;
-                                        lastState = State.Garrisoning;
-                                    }
-                                    else if (!selectableEntity.isHeavy)
-                                    {
-                                        selectableEntity.interactionTarget = select;
-                                        state = State.WalkToInteractable;
-                                        lastState = State.Garrisoning;
-                                    } 
-                                }
-                            } //target is passenger of garrison
-                            else if (select.occupiedGarrison != null && select.occupiedGarrison.HasEmptyGarrisonablePosition())
-                            {
-                                SelectableEntity garrison = select.occupiedGarrison;
-                                if (justLeftGarrison != garrison) //not perfect, fails on multiple units
-                                {
-                                    if (garrison.acceptsHeavy)
-                                    {
-                                        selectableEntity.interactionTarget = garrison;
-                                        state = State.WalkToInteractable;
-                                        lastState = State.Garrisoning;
-                                    }
-                                    else if (!selectableEntity.isHeavy)
-                                    {
-                                        selectableEntity.interactionTarget = garrison;
-                                        state = State.WalkToInteractable;
-                                        lastState = State.Garrisoning;
-                                    }
-                                }
-                            }
-                            else if (select.type == SelectableEntity.EntityTypes.Portal)
-                            {
-                                selectableEntity.tryingToTeleport = true;
-                                selectableEntity.interactionTarget = select;
-                                state = State.WalkToInteractable;
-                                lastState = State.Garrisoning;
-                            }
-                        }
-                        else //enemy
-                        { //try to target this enemy specifically
-                            targetEnemy = select;
-                            state = State.WalkToEnemy; 
-                        }
-                    }
-                    else if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
-                    {
-                        if (select.type == SelectableEntity.EntityTypes.HarvestableStructure)
-                        {
-                            //check if clicked is resource
-                            //if it is, then tell resource collectors to gather it
-                            if (selectableEntity.isHarvester)
-                            {
-                                if (selectableEntity.harvestedResourceAmount < selectableEntity.harvestCapacity) //we could still harvest more
-                                { 
-                                    selectableEntity.interactionTarget = select;
-                                    state = State.WalkToInteractable;
-                                    lastState = State.Harvesting;
-                                }
-                                else
-                                {  
-                                    state = State.FindInteractable;
-                                    lastState = State.Depositing;
-                                }
-                            }
-                        }
-                    } 
-                } 
-                CancelInvoke("SimpleDamageEnemy"); 
+                selectableEntity.interactionTarget = select;
+                state = State.WalkToInteractable;
+                lastState = State.Harvesting;
+            }
+            else
+            {
+                state = State.FindInteractable;
+                lastState = State.Depositing;
             }
         }
-    }*/
+    }
+    public void DepositTo(SelectableEntity select)
+    {
+        selectableEntity.interactionTarget = select;
+        state = State.WalkToInteractable;
+        lastState = State.Depositing;
+    }
+    public void CommandBuildTarget(SelectableEntity select)
+    {
+        if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
+        { 
+            selectableEntity.interactionTarget = select;
+            state = State.WalkToInteractable;
+            lastState = State.Building;
+        }
+    }
+    public void GarrisonInto(SelectableEntity select)
+    {
+        SelectableEntity justLeftGarrison = null;
+        if (selectableEntity.occupiedGarrison != null) //we are currently garrisoned
+        {
+            justLeftGarrison = selectableEntity.occupiedGarrison;
+            selectableEntity.occupiedGarrison.UnloadPassenger(this); //leave garrison by moving out of it
+            PlaceOnGround(); //snap to ground
+        }
+        // && selectableEntity.garrisonablePositions.Count <= 0
+        if (justLeftGarrison != select) //not perfect, fails on multiple units
+        {
+            if (select.acceptsHeavy)
+            {
+                selectableEntity.interactionTarget = select;
+                state = State.WalkToInteractable;
+                lastState = State.Garrisoning;
+            }
+            else if (!selectableEntity.isHeavy)
+            {
+                selectableEntity.interactionTarget = select;
+                state = State.WalkToInteractable;
+                lastState = State.Garrisoning;
+            }
+        }
+        /*SelectableEntity garrison = select.occupiedGarrison;
+
+        selectableEntity.tryingToTeleport = true;
+        selectableEntity.interactionTarget = select;
+        state = State.WalkToInteractable;
+        lastState = State.Garrisoning;*/
+    }
     #endregion
 }

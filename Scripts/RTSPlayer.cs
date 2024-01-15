@@ -151,6 +151,11 @@ public class RTSPlayer : NetworkBehaviour
             } 
         }
     }
+    public enum ActionType
+    {
+        Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget
+    }
+    private ActionType actionType = ActionType.Move;
     private void SelectedSetDestination()
     {
         //when player right clicks, get position on map
@@ -159,22 +164,88 @@ public class RTSPlayer : NetworkBehaviour
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
         {
-            //Debug.Log(hit.point);
             clickedPosition = hit.point;
+            SelectableEntity select = hit.collider.GetComponent<SelectableEntity>();
+            if (select != null)
+            {
+                if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
+                {
+                    if (select.net.OwnerClientId == OwnerClientId) //same team
+                    {
+                        if ((select.depositType == SelectableEntity.DepositType.Gold || select.depositType == SelectableEntity.DepositType.All) 
+                            && select.fullyBuilt) //if deposit point
+                        {
+                            actionType = ActionType.Deposit;
+                        }
+                        else if (!select.fullyBuilt) //if buildable and this is a builder
+                        {
+                            actionType = ActionType.BuildTarget;
+                        } 
+                        else if (select.fullyBuilt && select.HasEmptyGarrisonablePosition())
+                        { //target can be garrisoned, and passenger cannot garrison, then enter
+                            actionType = ActionType.Garrison;
+                        } 
+                        else if (select.occupiedGarrison != null && select.occupiedGarrison.HasEmptyGarrisonablePosition())
+                        { //target is passenger of garrison, then enter garrison
+                            actionType = ActionType.Garrison;
+                            select = select.occupiedGarrison;
+                        }
+                        /*else if (select.type == SelectableEntity.EntityTypes.Portal)
+                        {
+                        }*/
+                    }
+                    else //enemy
+                    { //try to target this enemy specifically
+                        actionType = ActionType.AttackTarget;
+                    }
+                }
+                else if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
+                {
+                    if (select.type == SelectableEntity.EntityTypes.HarvestableStructure)
+                    { //harvest target
+                        actionType = ActionType.Harvest;
+                    }
+                }
+            }
+            else
+            {
+                actionType = ActionType.Move;
+            }
+
             foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.minionController != null) //minion
                 {
-                    item.minionController.MoveTo(clickedPosition);
+                    switch (actionType)
+                    {
+                        case ActionType.Move:
+                            item.minionController.MoveTo(clickedPosition);
+                            break;
+                        case ActionType.AttackTarget:
+                            item.minionController.AttackTarget(select);
+                            break;
+                        case ActionType.Harvest:
+                            item.minionController.CommandHarvestTarget(select);
+                            break;
+                        case ActionType.Deposit:
+                            item.minionController.DepositTo(select);
+                            break;
+                        case ActionType.Garrison:
+                            item.minionController.GarrisonInto(select);
+                            break;
+                        case ActionType.BuildTarget:
+                            item.minionController.CommandBuildTarget(select);
+                            break;
+                        default:
+                            break;
+                    }
                 }
-            }
+            } 
         }
         else
         {
             return;
-        }
-
-
+        } 
         /*foreach (SelectableEntity item in selectedEntities)
         {
             if (item.minionController != null) //minion
