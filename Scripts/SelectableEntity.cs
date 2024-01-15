@@ -59,7 +59,7 @@ public class SelectableEntity : NetworkBehaviour
     public Vector3 rallyPoint;
     [HideInInspector] public bool alive = true;
 
-    [HideInInspector] public SelectableEntity occupiedGarrison;
+    public SelectableEntity occupiedGarrison;
     [HideInInspector] public bool isBuildIndicator = false;
     [HideInInspector] public bool tryingToTeleport = false;
     [HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
@@ -168,8 +168,9 @@ public class SelectableEntity : NetworkBehaviour
             {
                 item.enabled = true;
             }
-        } 
-    }
+        }
+        if (rallyVisual != null) rallyVisual.enabled = false; 
+    } 
     public override void OnNetworkSpawn()
     {
         if (lineIndicator != null)
@@ -303,6 +304,10 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void ProperDestroyMinion()
     { 
+        if (fogUnit != null)
+        {
+            fogUnit.enabled = false;
+        }
         alive = false;
         ChangePopulation(-consumePopulationAmount);
         ChangeMaxPopulation(-raisePopulationLimitBy);
@@ -348,8 +353,7 @@ public class SelectableEntity : NetworkBehaviour
             lineIndicator.enabled = false;
             targetIndicator.transform.parent = transform;
         }
-
-        alive = false;
+         
         CheckGameVictoryState();
     }
     private void CheckGameVictoryState()
@@ -376,23 +380,29 @@ public class SelectableEntity : NetworkBehaviour
     {
         Destroy(targetIndicator);
     }
-    #endregion
+    #endregion 
     public void ReceivePassenger(MinionController newPassenger)
     {
         foreach (GarrisonablePosition item in garrisonablePositions)
         {
-            if (item.passenger == null)
-            {
-                item.passenger = newPassenger;
-                //newPassenger.transform.parent = item.transform;
-                newPassenger.selectableEntity.occupiedGarrison = this;
-                newPassenger.selectableEntity.isTargetable.Value = passengersAreTargetable;
-                newPassenger.col.isTrigger = true;
-                newPassenger.minionNetwork.verticalPosition.Value = item.transform.position.y;
-                Global.Instance.localPlayer.DeselectSpecific(newPassenger.selectableEntity);
-                //newPassenger.minionNetwork.positionDifferenceThreshold = .1f;
-                //newPassenger.minionNetwork.ForceUpdatePosition(); //update so that passengers are more in the correct y-position
-                break;
+            if (item != null)
+            { 
+                if (item.passenger == null)
+                {
+                    item.passenger = newPassenger; 
+                    //newPassenger.transform.parent = item.transform;
+                    newPassenger.selectableEntity.occupiedGarrison = this;
+                    newPassenger.selectableEntity.isTargetable.Value = passengersAreTargetable;
+                    newPassenger.col.isTrigger = true;
+                    if (newPassenger.minionNetwork != null)
+                    { 
+                        newPassenger.minionNetwork.verticalPosition.Value = item.transform.position.y;
+                    }
+                    Global.Instance.localPlayer.DeselectSpecific(newPassenger.selectableEntity);
+                    //newPassenger.minionNetwork.positionDifferenceThreshold = .1f;
+                    //newPassenger.minionNetwork.ForceUpdatePosition(); //update so that passengers are more in the correct y-position
+                    break;
+                }
             }
         }
     }
@@ -402,12 +412,13 @@ public class SelectableEntity : NetworkBehaviour
         {
             if (item.passenger == exiting)
             {
-                item.passenger = null;
+                item.passenger = null; 
                 //exiting.transform.parent = null;
                 exiting.selectableEntity.occupiedGarrison = null;
                 exiting.selectableEntity.isTargetable.Value = true;
                 exiting.col.isTrigger = false;
-                exiting.minionNetwork.verticalPosition.Value = 0;
+
+                if (exiting.minionNetwork != null) exiting.minionNetwork.verticalPosition.Value = 0;
                 //exiting.minionNetwork.positionDifferenceThreshold = exiting.minionNetwork.defaultPositionDifferenceThreshold;
                 break;
             }
@@ -785,6 +796,7 @@ public class SelectableEntity : NetworkBehaviour
                 case RallyMission.None:
                     break;
                 case RallyMission.Move:
+                    controller.rallyTarget = rallyPoint;
                     break;
                 case RallyMission.Harvest:
                     last.interactionTarget = rallyTarget;

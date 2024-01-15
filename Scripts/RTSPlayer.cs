@@ -240,23 +240,12 @@ public class RTSPlayer : NetworkBehaviour
                             break;
                     }
                 }
+                else
+                { 
+                    item.SetRally();
+                }
             } 
-        }
-        else
-        {
-            return;
         } 
-        /*foreach (SelectableEntity item in selectedEntities)
-        {
-            if (item.minionController != null) //minion
-            {
-                item.minionController.SetDestinationRaycast();
-            }
-            else //structure
-            {
-                item.SetRally();
-            }
-        }*/
     }
     public void ReadySetRallyPoint()
     {
@@ -370,7 +359,11 @@ public class RTSPlayer : NetworkBehaviour
             {
                 GenericSpawnMinion(cursorWorldPosition, 3);
             }
-            if (Input.GetKey(KeyCode.KeypadEnter))
+            if (Input.GetKey(KeyCode.UpArrow))
+            {
+                GenericSpawnMinion(cursorWorldPosition, 11);
+            }
+            /*if (Input.GetKey(KeyCode.KeypadEnter))
             {
                 GenericSpawnMinion(cursorWorldPosition, 5);
             }
@@ -385,7 +378,7 @@ public class RTSPlayer : NetworkBehaviour
             if (Input.GetKey(KeyCode.Keypad2))
             {
                 GenericSpawnMinion(cursorWorldPosition, 8);
-            }
+            }*/
 #endif
             if (linkedState == LinkedState.PlacingEnd)
             {
@@ -693,6 +686,7 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
         wallGhosts.Clear();
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
         if (distance > 0)
         {
             for (int i = 0; i <= distance; i++)
@@ -701,8 +695,9 @@ public class RTSPlayer : NetworkBehaviour
                 Vector3 mod = new Vector3(AlignToGrid(spot.x), 0, AlignToGrid(spot.z));
                 Debug.DrawLine(mod, mod + new Vector3(0, 1, 0));
                 if (!predictedWallPositions.Any(i => i == mod)) // && mod != cursorWorldPosition
-                { 
-                    if (Physics.CheckBox(mod, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Ignore)) //blocked
+                {
+                    if (Physics.CheckBox(mod, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Ignore) ||
+                        (fow.GetFogValue(mod) > 0.1f * 255)) //blocked
                     { 
                         predictedWallPositionsShouldBePlaced.Add(false);
                     }
@@ -716,7 +711,8 @@ public class RTSPlayer : NetworkBehaviour
         }
         else
         { 
-            if (Physics.CheckBox(start, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Ignore)) //blocked
+            if (Physics.CheckBox(start, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Ignore) ||
+                (fow.GetFogValue(start) > 0.1f * 255)) //blocked
             { 
                 predictedWallPositionsShouldBePlaced.Add(false);
             }
@@ -888,6 +884,12 @@ public class RTSPlayer : NetworkBehaviour
     {
         placementBlocked = Physics.CheckBox(cursorWorldPosition, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.identity, entityLayer, QueryTriggerInteraction.Ignore);
 
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
+        if (fow.GetFogValue(cursorWorldPosition) > 0.1f * 255)
+        {
+            placementBlocked = true;
+        }
+
         if (placementBlocked != oldPlacement)
         {
             oldPlacement = placementBlocked;
@@ -937,44 +939,48 @@ public class RTSPlayer : NetworkBehaviour
     /// <summary>
     /// Tell the server to spawn in a minion at a position.
     /// </summary> 
-    public void GenericSpawnMinion(Vector3 spawnPos, byte minionID = 0, bool useRally = false, Vector3 rallyPos = default)
-    {
-        /*sbyte xSpawn = (sbyte)spawnPos.x;
-        sbyte zSpawn = (sbyte)spawnPos.z;
-        sbyte xRally = (sbyte)rallyPos.x;
-        sbyte zRally = (sbyte)rallyPos.z;*/
-        Vector2 spawn = new Vector2(spawnPos.x, spawnPos.z);
-        //Vector2 rally = new Vector2(rallyPos.x, rallyPos.z);
-        /*if (useRally)
-        {
-            SpawnMinionRallyServerRpc(spawn, minionID, rally);
-        }
-        else
-        {
-            SpawnMinionServerRpc(spawn, minionID);
-        }*/
-        //local spawn first
-        //InternalSpawnMinion(spawn, minionID);
-        if (!IsServer) FakeClientSideSpawn(spawn, minionID);
-        SpawnMinionServerRpc(spawn, minionID);
-        //make this grab the reference and set rally point using SpawnedObjects list
-        //SpawnTargetServerRpc(entity.gameObject);
+    public void GenericSpawnMinion(Vector3 spawnPos, byte minionID = 0)
+    { 
+        Vector2 spawn = new Vector2(spawnPos.x, spawnPos.z);  
+        if (!IsServer) FakeClientSideSpawn(spawn, minionID); 
+        SpawnMinionServerRpc(spawn, minionID); 
         UpdateButtons();
     } 
     private void FakeClientSideSpawn(Vector2 spawn, byte minionID)
     { 
         Vector3 spawnPosition = new(spawn.x, 0, spawn.y); //get spawn position 
         FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
-        GameObject minion = Instantiate(fac.prefabToSpawn, spawnPosition, Quaternion.Euler(0, 180, 0)); //spawn locally
+        GameObject minion = Instantiate(fac.prefabToSpawn, spawnPosition, Quaternion.Euler(0, 180, 0)); //spawn locally 
+        /*MeshRenderer[] renderers = minion.GetComponentsInChildren<MeshRenderer>();
+        foreach (MeshRenderer item in renderers)
+        {
+            if (item != null)
+            { 
+                item.material.color = Global.Instance.teamColors[(int)Global.Instance.localPlayer.OwnerClientId];
+            }
+        }*/
+
         NetworkObject net = minion.GetComponent<NetworkObject>();
         Destroy(net);
         //Get components
         SelectableEntity select = minion.GetComponent<SelectableEntity>();
-        select.fakeSpawn = true; 
-        select.GetComponentInChildren<Animator>().SetBool("fakeSpawn", true);
+        foreach (MeshRenderer item in select.teamRenderers)
+        {
+            if (item != null)
+            {
+                item.material.color = Global.Instance.teamColors[(int)Global.Instance.localPlayer.OwnerClientId];
+            }
+        }
+        select.fakeSpawn = true;
+        Animator anim = select.GetComponentInChildren<Animator>();
+        if (anim != null)
+        {
+            anim.SetBool("fakeSpawn", true); 
+        }
+            
         fakeSpawns.Add(minion);
     }
-    private List<GameObject> fakeSpawns = new();
+    private List<GameObject> fakeSpawns = new(); 
     /// <summary>
     /// Any client (including host) tells server to spawn in a minion and grant ownership to the client.
     /// </summary> 
@@ -1036,37 +1042,7 @@ public class RTSPlayer : NetworkBehaviour
             Destroy(fakeSpawns[0]);
             fakeSpawns.RemoveAt(0);
         }
-    }
-    /// <summary>
-    /// Any client (including host) tells server to spawn in a minion and grant ownership to the client.
-    /// </summary> 
-    [ServerRpc]
-    private void SpawnMinionRallyServerRpc(Vector2 spawn, byte minionID, Vector2 rally, ServerRpcParams serverRpcParams = default)
-    {
-        SelectableEntity minion = InternalSpawnMinion(spawn, minionID, serverRpcParams);
-
-        var clientId = serverRpcParams.Receive.SenderClientId;
-        if (NetworkManager.ConnectedClients.ContainsKey(clientId))
-        {
-            ClientRpcParams clientRpcParams = new()
-            {
-                Send = new ClientRpcSendParams
-                {
-                    TargetClientIds = new ulong[] { clientId }
-                }
-            };
-            MinionRallyClientRpc(minion, rally, clientRpcParams);
-        }
-    }
-    [ClientRpc]
-    private void MinionRallyClientRpc(NetworkBehaviourReference minion, Vector2 rally, ClientRpcParams clientRpcParams)
-    {
-        if (minion.TryGet(out SelectableEntity select))
-        {
-            Vector3 rallyPos = new(rally.x, 0, rally.y); //get spawn position 
-            select.minionController.SetRally(rallyPos);
-        }
-    }
+    }  
     #endregion
     #region Selection
     private void DoNotDoubleSelect()
@@ -1280,7 +1256,8 @@ public class RTSPlayer : NetworkBehaviour
         {
             pos = select.transform.position;
         }
-        GenericSpawnMinion(pos, id, true, rally);
+        //GenericSpawnMinion(pos, id, true, rally);
+        GenericSpawnMinion(pos, id);
     }
     private void HoverBuildWithID(byte id = 0)
     {

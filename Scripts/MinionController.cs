@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Netcode;
 using Pathfinding;
 using System.Threading.Tasks;
+using FoW;
 
 //used for entities that can attack
 [RequireComponent(typeof(SelectableEntity))]
@@ -92,6 +93,7 @@ public class MinionController : NetworkBehaviour
     [SerializeField] private float selfDestructAreaOfEffect = 1; //ignore if not selfdestructer
     public State state = State.Spawn;
     public SelectableEntity.RallyMission givenMission = SelectableEntity.RallyMission.None;
+    public Vector3 rallyTarget;
     #endregion
     #region NetworkVariables
     //maybe optimize this as vector 2 later
@@ -160,27 +162,31 @@ public class MinionController : NetworkBehaviour
               seeker.enabled = false;*/
         }
         destination.OnValueChanged += OnDestinationChanged;
-        //realLocation.OnValueChanged += OnRealLocationChanged;
+        realLocation.OnValueChanged += OnRealLocationChanged;
         //enabled = IsOwner;
         oldPosition = transform.position; 
+    }
+    private void OnRealLocationChanged(Vector3 prev, Vector3 cur)
+    {
+        finishedInitializingRealLocation = true;
     }
     private bool finishedInitializingRealLocation = false;
     private void Update()
     {
         if (!selectableEntity.fakeSpawn && IsSpawned)
-        { 
+        {
             if (ai != null) ai.destination = destination.Value;
             if (IsOwner)
             {
                 change = GetActualPositionChange();
                 UpdateRealLocation();
             }
-            if (!IsOwner)
+            else if (finishedInitializingRealLocation)
             {
                 CatchUpIfHighError();
             }
         }
-    }
+    } 
     private void UpdateRealLocation()
     { 
         //float updateThreshold = 1f; //does not need to be equal to allowed error, but seems to work when it is
@@ -353,7 +359,7 @@ public class MinionController : NetworkBehaviour
                         //only do this if not garrisoned
                         if (selectableEntity.occupiedGarrison == null)
                         {
-                            if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
+                            /*if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
                             {
                                 if (selectableEntity.interactionTarget == null || selectableEntity.interactionTarget.fullyBuilt)
                                 {
@@ -365,12 +371,10 @@ public class MinionController : NetworkBehaviour
                                     lastState = State.Building;
                                     break;
                                 }
-                            }
+                            }*/
                         }
                         break;
                     case SelectableEntity.RallyMission.Move:
-                        basicallyIdleInstances = 0;
-                        if (IsOwner) destination.Value = orderedDestination;
                         state = State.WalkToRally;
                         break;
                     case SelectableEntity.RallyMission.Harvest:
@@ -431,15 +435,15 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.WalkToRally:
                 FreezeRigid(false, false);
-                UpdateMoveIndicator();
-                if (IsOwner) destination.Value = orderedDestination;
+                UpdateMoveIndicator(); 
+                if (IsOwner) destination.Value = rallyTarget; 
                 animator.Play("Walk");
-                if (Vector3.Distance(transform.position, orderedDestination) <= 0.1f)
+                /*if (Vector3.Distance(transform.position, orderedDestination) <= 0.1f)
                 {
                     state = State.Idle;
                     //rallyPositionSet = false;
                     break;
-                }
+                }*/
                 break;
             #endregion
             #region Attacking
@@ -936,16 +940,7 @@ public class MinionController : NetworkBehaviour
                 or State.Building or State.AfterBuildCheck => true,
                 _ => false,
             };
-        }
-        /*if (selectableEntity.RVO != null)
-        {
-            selectableEntity.RVO.enabled = state switch
-            {
-                State.FindHarvestable or State.WalkToHarvestable or State.Harvesting or State.AfterHarvestCheck
-                or State.FindDeposit or State.WalkToDeposit or State.Depositing or State.AfterDepositCheck => false,
-                _ => true,
-            };
-        }*/
+        } 
     }
     private void EnsureNotInteractingWithBusy()
     {
@@ -1258,6 +1253,8 @@ public class MinionController : NetworkBehaviour
     }*/
     private SelectableEntity FindClosestEnemy() //bottleneck for unit spawning
     {
+        if (attackType == AttackType.None) return null;
+
         float range = attackRange;
 
         int maxColliders = Mathf.RoundToInt(20 * range);
@@ -1342,13 +1339,14 @@ public class MinionController : NetworkBehaviour
     /// <returns></returns>
     private SelectableEntity FindClosestHarvestable()
     { 
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
         SelectableEntity[] list = Global.Instance.harvestableResources;
 
         SelectableEntity closest = null;
         float distance = Mathf.Infinity;
         foreach (SelectableEntity item in list)
         {
-            if (item != null && item.alive)
+            if (item != null && item.alive && fow.GetFogValue(item.transform.position) > 0.1f * 255) //item is visible to some degree
             {
                 if (item.interactors.Count < item.allowedInteractors) //there is space for a new harvester
                 {
