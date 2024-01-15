@@ -873,25 +873,44 @@ public class RTSPlayer : NetworkBehaviour
         sbyte xRally = (sbyte)rallyPos.x;
         sbyte zRally = (sbyte)rallyPos.z;*/
         Vector2 spawn = new Vector2(spawnPos.x, spawnPos.z);
-        Vector2 rally = new Vector2(rallyPos.x, rallyPos.z);
-        if (useRally)
+        //Vector2 rally = new Vector2(rallyPos.x, rallyPos.z);
+        /*if (useRally)
         {
             SpawnMinionRallyServerRpc(spawn, minionID, rally);
         }
         else
         {
             SpawnMinionServerRpc(spawn, minionID);
-        }
+        }*/
+        //local spawn first
+        //InternalSpawnMinion(spawn, minionID);
+        if (!IsServer) FakeClientSideSpawn(spawn, minionID);
+        SpawnMinionServerRpc(spawn, minionID);
+        //make this grab the reference and set rally point using SpawnedObjects list
         //SpawnTargetServerRpc(entity.gameObject);
         UpdateButtons();
-    }  
+    } 
+    private void FakeClientSideSpawn(Vector2 spawn, byte minionID)
+    { 
+        Vector3 spawnPosition = new(spawn.x, 0, spawn.y); //get spawn position 
+        FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
+        GameObject minion = Instantiate(fac.prefabToSpawn, spawnPosition, Quaternion.Euler(0, 180, 0)); //spawn locally
+        NetworkObject net = minion.GetComponent<NetworkObject>();
+        Destroy(net);
+        //Get components
+        SelectableEntity select = minion.GetComponent<SelectableEntity>();
+        select.fakeSpawn = true; 
+        select.GetComponentInChildren<Animator>().SetBool("fakeSpawn", true);
+        fakeSpawns.Add(minion);
+    }
+    private List<GameObject> fakeSpawns = new();
     /// <summary>
     /// Any client (including host) tells server to spawn in a minion and grant ownership to the client.
     /// </summary> 
     [ServerRpc]
     private void SpawnMinionServerRpc(Vector2 spawn, byte minionID, ServerRpcParams serverRpcParams = default)
     {
-        InternalSpawnMinion(spawn, minionID, serverRpcParams);
+        InternalSpawnMinion(spawn, minionID, serverRpcParams); //server runs this
     }
     private SelectableEntity InternalSpawnMinion(Vector2 spawn, byte minionID, ServerRpcParams serverRpcParams = default)
     {
@@ -906,9 +925,46 @@ public class RTSPlayer : NetworkBehaviour
         var clientId = serverRpcParams.Receive.SenderClientId;
         if (NetworkManager.ConnectedClients.ContainsKey(clientId))
         {
-            select.net.SpawnWithOwnership(clientId); 
+            select.net.SpawnWithOwnership(clientId);
+            ulong netID = select.NetworkObjectId;
+            //use client rpc to send this ID to client
+            ClientRpcParams clientRpcParams = new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams
+                {
+                    TargetClientIds = new ulong[] { clientId }
+                }
+            };
+            SendReferenceToSpawnedMinionClientRpc(netID, clientRpcParams);
         } 
         return select;
+    }
+    [ClientRpc]
+    private void SendReferenceToSpawnedMinionClientRpc(ulong netID, ClientRpcParams clientRpcParams = default)
+    {
+        //find minion from SpawnedObjects list of network manager;
+        List<NetworkObject> spawnedList = NetworkManager.SpawnManager.GetClientOwnedObjects(OwnerClientId);
+        NetworkObject justSpawned = null;
+        foreach (NetworkObject item in spawnedList)
+        {
+            if (item.NetworkObjectId == netID)
+            {
+                Debug.Log("found the same object: " + item.name); //later do rally
+                justSpawned = item;
+                break;
+            }
+        }
+        if (!IsServer)
+        { 
+            if (justSpawned != null)
+            {
+                justSpawned.transform.SetPositionAndRotation(fakeSpawns[0].transform.position, fakeSpawns[0].transform.rotation); 
+                SelectableEntity select = justSpawned.GetComponent<SelectableEntity>();
+                if (select.minionController != null) select.minionController.state = MinionController.State.Idle;
+            }
+            Destroy(fakeSpawns[0]);
+            fakeSpawns.RemoveAt(0);
+        }
     }
     /// <summary>
     /// Any client (including host) tells server to spawn in a minion and grant ownership to the client.

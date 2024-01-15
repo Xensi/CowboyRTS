@@ -8,6 +8,7 @@ using System.Linq;
 using FoW;
 public class SelectableEntity : NetworkBehaviour
 {
+    public bool fakeSpawn = false;
     #region Enums
     public enum RallyMission
     {
@@ -124,6 +125,14 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public RVOController RVO;
     #endregion
     #region NetworkSpawn
+    private void OnDrawGizmos()
+    {
+        if (fakeSpawn)
+        {
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawSphere(transform.position, .1f);
+        }
+    }
     private void Start()
     {
         allMeshes = GetComponentsInChildren<MeshRenderer>();
@@ -159,7 +168,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 item.enabled = true;
             }
-        }
+        } 
     }
     public override void OnNetworkSpawn()
     {
@@ -174,14 +183,14 @@ public class SelectableEntity : NetworkBehaviour
             if (teamBehavior == TeamBehavior.OwnerTeam)
             {
                 Global.Instance.localPlayer.ownedEntities.Add(this);
-                Global.Instance.localPlayer.lastSpawnedEntity = this;
-                Global.Instance.localPlayer.population += consumePopulationAmount;
+                Global.Instance.localPlayer.lastSpawnedEntity = this; 
 
                 if (!fullyBuilt)
                 {
                     RequestBuilders();
                 }
             }
+            ChangePopulation(consumePopulationAmount);
         }
         if (IsServer)
         {
@@ -257,7 +266,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void FixedUpdate()
     {
-        if (IsSpawned)
+        if (IsSpawned && IsOwner)
         {
             if (!fullyBuilt)
             {
@@ -295,11 +304,8 @@ public class SelectableEntity : NetworkBehaviour
     public void ProperDestroyMinion()
     { 
         alive = false;
-        if (IsOwner)
-        { 
-            Global.Instance.localPlayer.population -= consumePopulationAmount;
-            Global.Instance.localPlayer.maxPopulation -= raisePopulationLimitBy;
-        }
+        ChangePopulation(-consumePopulationAmount);
+        ChangeMaxPopulation(-raisePopulationLimitBy);
         if (physicalCollider != null)
         {
             physicalCollider.enabled = false; //allows dynamic grid obstacle to update pathfinding nodes one last time
@@ -525,11 +531,11 @@ public class SelectableEntity : NetworkBehaviour
     private void HideInFog()
     {
         if (IsSpawned)
-        { 
+        {
             if (!IsOwner)
-            { 
+            {
                 if (shouldHideInFog)
-                { 
+                {
                     FogOfWarTeam fow = FogOfWarTeam.GetTeam(hideFogTeam);
                     visibleInFog = fow.GetFogValue(transform.position) < minFogStrength * 255;
 
@@ -537,6 +543,10 @@ public class SelectableEntity : NetworkBehaviour
                     {
                         if (allMeshes[i] != null) allMeshes[i].enabled = visibleInFog;
                     }
+                }
+                else
+                {
+                    visibleInFog = true;
                 }
             }
         }
@@ -595,8 +605,19 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
         if (fogUnit != null) fogUnit.enabled = true;
-        Global.Instance.localPlayer.maxPopulation += raisePopulationLimitBy;
+        ChangeMaxPopulation(raisePopulationLimitBy);
     } 
+    private void ChangeMaxPopulation(int change)
+    { 
+        if (IsOwner && teamBehavior == TeamBehavior.OwnerTeam) Global.Instance.localPlayer.maxPopulation += change;
+    }
+    private void ChangePopulation(int change)
+    {
+        if (IsOwner && teamBehavior == TeamBehavior.OwnerTeam)
+        {
+            Global.Instance.localPlayer.population += change;
+        }
+    }
     private readonly float deathDuration = 10;
     private void Die()
     { 

@@ -120,6 +120,13 @@ public class MinionController : NetworkBehaviour
         // frame as the destination is used for debugging and may be used for other things by other
         // scripts as well. So it makes sense that it is up to date every frame.
         if (ai != null) ai.onSearchPath += Update;
+
+
+        if (selectableEntity.fakeSpawn)
+        { 
+            FreezeRigid();
+            ai.enabled = false;
+        }
     }
     void OnDisable()
     {
@@ -143,6 +150,7 @@ public class MinionController : NetworkBehaviour
             destination.Value = transform.position;
             state = State.Spawn;
             Invoke(nameof(FinishSpawning), spawnDuration);
+            finishedInitializingRealLocation = true;
         }
         else
         {
@@ -156,17 +164,21 @@ public class MinionController : NetworkBehaviour
         //enabled = IsOwner;
         oldPosition = transform.position; 
     }
+    private bool finishedInitializingRealLocation = false;
     private void Update()
     {
-        if (ai != null) ai.destination = destination.Value;
-        if (IsOwner)
-        {
-            change = GetActualPositionChange();
-            UpdateRealLocation();
-        }
-        if (!IsOwner)
-        {
-            CatchUpIfHighError();
+        if (!selectableEntity.fakeSpawn && IsSpawned)
+        { 
+            if (ai != null) ai.destination = destination.Value;
+            if (IsOwner)
+            {
+                change = GetActualPositionChange();
+                UpdateRealLocation();
+            }
+            if (!IsOwner)
+            {
+                CatchUpIfHighError();
+            }
         }
     }
     private void UpdateRealLocation()
@@ -182,12 +194,12 @@ public class MinionController : NetworkBehaviour
     } 
     private void FixedUpdate()
     {
-        if (IsOwner)
-        {
-            OwnerUpdateState();
-        }
-        else
+        if (!selectableEntity.fakeSpawn && IsSpawned)
         { 
+            if (IsOwner)
+            {
+                OwnerUpdateState();
+            } 
         }
     }
     private bool realLocationReached = false;
@@ -317,7 +329,7 @@ public class MinionController : NetworkBehaviour
                 animator.Play("Die");
                 FreezeRigid();
                 break;
-            case State.Idle:
+            case State.Idle: 
                 HideMoveIndicator();
                 animator.Play("Idle");
                 FreezeRigid();
