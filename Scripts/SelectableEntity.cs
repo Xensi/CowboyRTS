@@ -293,9 +293,10 @@ public class SelectableEntity : NetworkBehaviour
         }
     }
     public void ProperDestroyMinion()
-    {
+    { 
+        alive = false;
         if (IsOwner)
-        {
+        { 
             Global.Instance.localPlayer.population -= consumePopulationAmount;
             Global.Instance.localPlayer.maxPopulation -= raisePopulationLimitBy;
         }

@@ -326,7 +326,7 @@ public class MinionController : NetworkBehaviour
                 switch (givenMission)
                 {
                     case SelectableEntity.RallyMission.None:
-                        /*if (shouldAutoSeekOutEnemies)
+                        if (shouldAutoSeekOutEnemies)
                         {
                             if (TargetEnemyValid())
                             {
@@ -337,7 +337,7 @@ public class MinionController : NetworkBehaviour
                             {
                                 targetEnemy = FindClosestEnemy();
                             }
-                        }*/
+                        }
                         //only do this if not garrisoned
                         if (selectableEntity.occupiedGarrison == null)
                         {
@@ -455,10 +455,10 @@ public class MinionController : NetworkBehaviour
                     targetEnemy = FindClosestEnemy();
                 }
 
-                if (DetectIfStuck())
+                /*if (DetectIfStuck())
                 {
                     state = State.Idle;
-                }
+                }*/
                 if (selectableEntity.occupiedGarrison != null)
                 {
                     state = State.Idle;
@@ -479,10 +479,10 @@ public class MinionController : NetworkBehaviour
                     targetEnemy = FindClosestEnemy();
                 }
 
-                if (DetectIfStuck())
+                /*if (DetectIfStuck())
                 {
                     state = State.Idle;
-                }
+                }*/
                 if (selectableEntity.occupiedGarrison != null)
                 {
                     state = State.Idle;
@@ -556,7 +556,7 @@ public class MinionController : NetworkBehaviour
                                         DamageSpecifiedEnemy(targetEnemy, damage);
                                         break;
                                     case AttackType.SelfDestruct:
-                                        Explode(selfDestructAreaOfEffect);
+                                        SelfDestruct(selfDestructAreaOfEffect);
                                         break;
                                     case AttackType.Artillery:
                                         ShootProjectileAtPosition(targetEnemy.transform.position);
@@ -1412,26 +1412,7 @@ public class MinionController : NetworkBehaviour
         {
             select.BuildThis(buildDelta);
         }
-    }
-    private void StartAttack()
-    {
-        attackReady = false;
-        state = State.Attacking;
-        if (IsOwner) destination.Value = transform.position;
-
-        switch (attackType)
-        {
-            case AttackType.Instant:
-                Invoke(nameof(SimpleDamageEnemy), impactTime + Random.Range(-0.1f, 0.1f));
-                Invoke(nameof(ReturnState), attackDuration);
-                break;
-            case AttackType.SelfDestruct:
-                Explode(selfDestructAreaOfEffect);
-                break;
-            default:
-                break;
-        }
-    }
+    } 
     [ServerRpc]
     private void RequestHarvestServerRpc(sbyte amount, NetworkBehaviourReference target)
     {
@@ -1441,12 +1422,17 @@ public class MinionController : NetworkBehaviour
             select.Harvest(amount);
         }
     }
-
-    private void Explode(float explodeRadius)
+    bool hasSelfDestructed = false;
+    private void SelfDestruct(float explodeRadius)
     {
-        Global.Instance.localPlayer.CreateExplosionAtPoint(transform.position, explodeRadius, damage);
-        DamageSpecifiedEnemy(selectableEntity, damage);
-        SimpleExplosionEffect(transform.position);
+        if (!hasSelfDestructed)
+        {
+            hasSelfDestructed = true;
+            Global.Instance.localPlayer.CreateExplosionAtPoint(transform.position, explodeRadius, damage);
+            SimpleExplosionEffect(transform.position);
+            selectableEntity.ProperDestroyMinion();
+            //DamageSpecifiedEnemy(selectableEntity, damage);
+        }
     }  
     private void SimpleExplosionEffect(Vector3 pos)
     { 
