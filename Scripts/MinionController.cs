@@ -166,24 +166,20 @@ public class MinionController : NetworkBehaviour
         }
         if (!IsOwner)
         {
-            CheckForLocationError();
+            CatchUpIfHighError();
         }
     }
     private void UpdateRealLocation()
     { 
-        float updateThreshold = 0.5f;
+        //float updateThreshold = 1f; //does not need to be equal to allowed error, but seems to work when it is
         float dist = Vector3.Distance(transform.position, realLocation.Value);
 
-        if (dist > updateThreshold)
+        if (dist > updateRealLocThreshold)
         {
             realLocationReached = false;
             realLocation.Value = transform.position; //only update when different enough
         }
-    }
-    /*private void OnRealLocationChanged(Vector3 previous, Vector3 current)
-    {
-        
-    }*/ 
+    } 
     private void FixedUpdate()
     {
         if (IsOwner)
@@ -195,23 +191,28 @@ public class MinionController : NetworkBehaviour
         }
     }
     private bool realLocationReached = false;
-    private void CheckForLocationError()
+    private readonly float updateRealLocThreshold = 1;
+    private readonly float allowedNonOwnerError = 1.5f; //ideally higher than real loc update; don't want to lerp to old position
+    private void CatchUpIfHighError()
     {
         //owner can change real location with impunity
         //other clients: when their value for real location syncs up with owner, check if it's different enough to warrant a teleport
-        //in future lerp to new location?
-        float allowedError = 0.01f;//0.5f;
+        //in future lerp to new location? 
         if (!IsOwner)
         {
-            if (Vector3.Distance(realLocation.Value, transform.position) > allowedError && realLocationReached == false)
+            if (Vector3.Distance(realLocation.Value, transform.position) > allowedNonOwnerError) //&& realLocationReached == false
             {
                 //Debug.Log("Telporting because distance too great");
                 //transform.position = realLocation.Value;
                 transform.position = LerpPosition(transform.position, realLocation.Value);
+                if (rigid != null) rigid.isKinematic = true;
+                if (ai != null) ai.enabled = false;
             }
             else
             {
-                realLocationReached = true;
+                //realLocationReached = true;
+                if (rigid != null) rigid.isKinematic = false;
+                if (ai != null) ai.enabled = true;
             }
         }
     }
@@ -221,8 +222,8 @@ public class MinionController : NetworkBehaviour
     // Calculated time elapsed for the most recent interpolation
     float m_CurrentLerpTime;
 
-    // The duration of the interpolation, in seconds
-    float m_LerpTime = 0.3f;
+    // The duration of the interpolation, in seconds    
+    float m_LerpTime = .5f;
 
     public Vector3 LerpPosition(Vector3 current, Vector3 target)
     {
@@ -259,11 +260,21 @@ public class MinionController : NetworkBehaviour
     }
     private void OnDrawGizmos()
     {
-        Gizmos.DrawWireSphere(transform.position, attackRange);
+        if (Vector3.Distance(realLocation.Value, transform.position) <= allowedNonOwnerError)
+        {
+            Gizmos.color = Color.green; 
+        }
+        else
+        {
+            Gizmos.color = Color.red;
+        }
+        Gizmos.DrawWireSphere(realLocation.Value, .1f);
+        Gizmos.DrawLine(transform.position, realLocation.Value);
+        /*Gizmos.DrawWireSphere(transform.position, attackRange);
         if (targetEnemy != null)
         {
             Gizmos.DrawSphere(targetEnemy.transform.position, .1f);
-        }
+        }*/
     }
     #endregion
     #region States
@@ -315,7 +326,7 @@ public class MinionController : NetworkBehaviour
                 switch (givenMission)
                 {
                     case SelectableEntity.RallyMission.None:
-                        if (shouldAutoSeekOutEnemies)
+                        /*if (shouldAutoSeekOutEnemies)
                         {
                             if (TargetEnemyValid())
                             {
@@ -326,7 +337,7 @@ public class MinionController : NetworkBehaviour
                             {
                                 targetEnemy = FindClosestEnemy();
                             }
-                        }
+                        }*/
                         //only do this if not garrisoned
                         if (selectableEntity.occupiedGarrison == null)
                         {
@@ -393,13 +404,13 @@ public class MinionController : NetworkBehaviour
                 destination.Value = orderedDestination;
                 animator.Play("Walk");
 
-                if (DetectIfStuck()) //!followingMoveOrder && !chasingEnemy && (selectableEntity.interactionTarget == null || selectableEntity.interactionTarget.fullyBuilt)
+                /*if (DetectIfStuck()) //!followingMoveOrder && !chasingEnemy && (selectableEntity.interactionTarget == null || selectableEntity.interactionTarget.fullyBuilt)
                 {
                     //anim.ResetTrigger("Walk");
                     //playedAttackMoveSound = false;
                     state = State.Idle;
                     break;
-                }
+                }*/
                 if (selectableEntity.occupiedGarrison != null)
                 {
                     state = State.Idle;
@@ -905,7 +916,7 @@ public class MinionController : NetworkBehaviour
     #region UpdaterFunctions
     private void UpdateColliderStatus()
     {
-        if (rigid != null)
+        if (rigid != null && IsOwner)
         {
             rigid.isKinematic = state switch
             {
@@ -1478,7 +1489,6 @@ public class MinionController : NetworkBehaviour
     }
     public void DamageSpecifiedEnemy(SelectableEntity enemy, sbyte damage) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
-        return;
         if (enemy != null)
         {
             //fire locally
