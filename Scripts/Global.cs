@@ -39,7 +39,7 @@ public class Global : NetworkBehaviour
     public List<RTSPlayer> playerList = new();
     public TMP_Text popText;
     public Volume fogVolume;
-    public List<SelectableEntity> allFactionEntities = new(); 
+    public List<SelectableEntity> allFactionEntities = new();
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.
@@ -71,9 +71,25 @@ public class Global : NetworkBehaviour
         selectedParent.SetActive(false);
         resourcesParent.SetActive(false);
     }
+    private int indexer = 0;
     private void Update()
     {
         if (!playerHasWon) CheckIfAPlayerHasWon();
+
+        if (allFactionEntities.Count > 0)
+        {
+            if (indexer >= Instance.allFactionEntities.Count)
+            {
+                indexer = Instance.allFactionEntities.Count - 1;
+            }
+            SelectableEntity entity = allFactionEntities[indexer];
+            if (entity == null || !entity.alive)
+            {
+                allFactionEntities.RemoveAt(indexer);
+            }
+            indexer++;
+            if (indexer >= allFactionEntities.Count) indexer = 0;
+        }
     }
     public bool playerHasWon = false;
     public void CheckIfAPlayerHasWon()

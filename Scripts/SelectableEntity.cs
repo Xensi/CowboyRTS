@@ -248,7 +248,7 @@ public class SelectableEntity : NetworkBehaviour
                 CheckIfBuilt();
                 if (hitPoints.Value < 0)
                 {
-                    ProperDestroyMinion();
+                    ProperDestroyEntity();
                 }
             }
             else
@@ -260,7 +260,7 @@ public class SelectableEntity : NetworkBehaviour
                 }
                 if (hitPoints.Value <= 0)
                 {
-                    ProperDestroyMinion();
+                    ProperDestroyEntity();
                 }
 
             }
@@ -302,8 +302,8 @@ public class SelectableEntity : NetworkBehaviour
                 }
             }
         }
-    }
-    public void ProperDestroyMinion()
+    } 
+    public void ProperDestroyEntity()
     {
         Global.Instance.allFactionEntities.Remove(this);
         if (fogUnit != null)
