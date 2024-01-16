@@ -169,7 +169,8 @@ public class SelectableEntity : NetworkBehaviour
                 item.enabled = true;
             }
         }
-        if (rallyVisual != null) rallyVisual.enabled = false; 
+        if (rallyVisual != null) rallyVisual.enabled = false;
+        if (teamBehavior == TeamBehavior.OwnerTeam) Global.Instance.allFactionEntities.Add(this);
     } 
     public override void OnNetworkSpawn()
     {
@@ -303,7 +304,8 @@ public class SelectableEntity : NetworkBehaviour
         }
     }
     public void ProperDestroyMinion()
-    { 
+    {
+        Global.Instance.allFactionEntities.Remove(this);
         if (fogUnit != null)
         {
             fogUnit.enabled = false;

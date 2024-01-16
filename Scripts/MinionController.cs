@@ -143,7 +143,9 @@ public class MinionController : NetworkBehaviour
         {
             animator = GetComponentInChildren<Animator>();
         }
+        maxDetectable = Mathf.RoundToInt(20 * attackRange);
     }
+    private int maxDetectable;
     public override void OnNetworkSpawn()
     {
         if (IsOwner)
@@ -346,14 +348,14 @@ public class MinionController : NetworkBehaviour
                     case SelectableEntity.RallyMission.None:
                         if (shouldAutoSeekOutEnemies)
                         {
-                            if (TargetEnemyValid())
+                            if (TargetIsValidEnemy(targetEnemy))
                             {
                                 state = State.WalkToEnemy;
                                 break;
                             }
                             else
                             {
-                                targetEnemy = FindClosestEnemy();
+                                targetEnemy = FindClosestEnemy(attackRange);
                             }
                         }
                         //only do this if not garrisoned
@@ -400,14 +402,14 @@ public class MinionController : NetworkBehaviour
                         lastState = State.Garrisoning;
                         break;
                     case SelectableEntity.RallyMission.Attack:
-                        if (TargetEnemyValid())
+                        if (TargetIsValidEnemy(targetEnemy))
                         {
                             state = State.WalkToEnemy;
                             break;
                         }
                         else
                         {
-                            targetEnemy = FindClosestEnemy();
+                            targetEnemy = FindClosestEnemy(attackRange);
                         }
                         break;
                     default:
@@ -462,13 +464,13 @@ public class MinionController : NetworkBehaviour
                     animator.Play("AttackWalkStart");
                 }
 
-                if (TargetEnemyValid())
+                if (TargetIsValidEnemy(targetEnemy))
                 {
                     state = State.WalkToEnemy;
                 }
                 else
                 {
-                    targetEnemy = FindClosestEnemy();
+                    targetEnemy = FindClosestEnemy(attackRange);
                 }
 
                 /*if (DetectIfStuck())
@@ -486,13 +488,13 @@ public class MinionController : NetworkBehaviour
                 FreezeRigid(false, false);
                 destination.Value = orderedDestination;
 
-                if (TargetEnemyValid())
+                if (TargetIsValidEnemy(targetEnemy))
                 {
                     state = State.WalkToEnemy;
                 }
                 else
                 {
-                    targetEnemy = FindClosestEnemy();
+                    targetEnemy = FindClosestEnemy(attackRange);
                 }
 
                 /*if (DetectIfStuck())
@@ -507,9 +509,8 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.WalkToEnemy:
                 FreezeRigid(false, false);
-                if (TargetEnemyValid())
-                {
-
+                if (TargetIsValidEnemy(targetEnemy))
+                { 
                     UpdateAttackIndicator();
                     if (!InRangeOfEntity(targetEnemy, attackRange))
                     {
@@ -538,11 +539,11 @@ public class MinionController : NetworkBehaviour
                 {
                     animator.SetFloat("AttackSpeed", 1);
                 }
-                if (!TargetEnemyValid() && !attackReady)
+                if (!TargetIsValidEnemy(targetEnemy) && !attackReady)
                 {
                     state = State.Idle;
                 }
-                else if (!TargetEnemyValid() && attackReady)
+                else if (!TargetIsValidEnemy(targetEnemy) && attackReady)
                 {
                     state = State.WalkContinueFindEnemies;
                 }
@@ -609,7 +610,7 @@ public class MinionController : NetworkBehaviour
                     animator.SetFloat("AttackSpeed", 1);
                 }
                 animator.Play("Idle");
-                if (!TargetEnemyValid())
+                if (!TargetIsValidEnemy(targetEnemy))
                 {
                     state = State.WalkContinueFindEnemies;
                 }
@@ -1049,17 +1050,6 @@ public class MinionController : NetworkBehaviour
         }
     }
     #endregion
-    private bool TargetEnemyValid()
-    {
-        if (targetEnemy == null || targetEnemy.alive == false || targetEnemy.isTargetable.Value == false || targetEnemy.visibleInFog == false)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    }
     private void PlaceOnGroundIfNecessary()
     {
         if (selectableEntity.occupiedGarrison == null && (transform.position.y > 0.1f || transform.position.y < 0.1f))
@@ -1241,97 +1231,62 @@ public class MinionController : NetworkBehaviour
         return closest;
     }
     #region FindClosest
-    private Collider[] debugNearby = new Collider[100];
     //could try cycling through entire list of enemy units .. .
-
-   /* private async void AwaitableTest()
+    SelectableEntity currentClosestEnemy = null;
+    int nearbyIndexer = 0;
+    private bool TargetIsValidEnemy(SelectableEntity target)
     {
-        while (1)
+        if (target == null || target.alive == false || target.isTargetable.Value == false || target.visibleInFog == false)
         {
-            await Awaitable.
+            return false;
         }
-    }*/
-    private SelectableEntity FindClosestEnemy() //bottleneck for unit spawning
+        else
+        {
+            return true;
+        }
+    }
+    private SelectableEntity FindClosestEnemy(float range) //bottleneck for unit spawning
     {
         if (attackType == AttackType.None) return null;
+        /* Collider closest = null;
+         float distance = Mathf.Infinity;
+         float threshold = -Mathf.Infinity;
+         Vector3 forward = transform.TransformDirection(Vector3.forward).normalized;*/
 
-        float range = attackRange;
+        //check if current index is closer than current closest
+        SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range
 
-        int maxColliders = Mathf.RoundToInt(20 * range);
-        Collider[] hitColliders = new Collider[maxColliders];
-        debugNearby = hitColliders;
-        int numColliders = Physics.OverlapSphereNonAlloc(transform.position, range, hitColliders, enemyMask);
-        Collider closest = null;
-        float distance = Mathf.Infinity;
-        float threshold = -Mathf.Infinity;
-        Vector3 forward = transform.TransformDirection(Vector3.forward).normalized;
-        int numToCheck = Mathf.Clamp(numColliders, 0, maxColliders/2);
-        //Debug.Log(numToCheck);
-        for (int i = 0; i < numToCheck; i++) //this part is expensive
+        if (check.OwnerClientId != OwnerClientId && check.alive && check.isTargetable.Value && check.visibleInFog && InRangeOfEntity(check, range))
+            //only check on enemies that are alive, targetable, visible, and in range
         {
-            if (hitColliders[i].gameObject == gameObject || hitColliders[i].isTrigger) //skip self and triggers
+            if (currentClosestEnemy == null)
             {
-                continue;
-            }
-            SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
-            if (select != null) //conditions that disqualify an entity from being targeted
-            {
-                if (!select.alive)
-                {
-                    continue;
-                }
-                if (select.isTargetable.Value == false)
-                {
-                    continue;
-                }
-                if (select.visibleInFog == false) //we can't target those that are not visible
-                {
-                    continue;
-                }
-                if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
-                {
-                    if (Global.Instance.localPlayer.ownedEntities.Contains(select))
-                    {
-                        continue;
-                    }
-                }
-                else if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
-                {
-                    continue;
-                }
-            }
-
-            if (directionalAttack)
-            {
-                Vector3 heading = (hitColliders[i].transform.position - transform.position).normalized;
-                float dot = Vector3.Dot(forward, heading);
-                if (dot > threshold)
-                {
-                    closest = hitColliders[i];
-                    threshold = dot;
-                }
+                currentClosestEnemy = check;
             }
             else
             {
-                float newDist = Vector3.SqrMagnitude(transform.position - hitColliders[i].transform.position);
-                if (newDist < distance)
+                float distToOld = Vector3.SqrMagnitude(transform.position - currentClosestEnemy.transform.position);
+                float distToNew = Vector3.SqrMagnitude(transform.position - check.transform.position);
+                if (distToNew < distToOld)
                 {
-                    closest = hitColliders[i];
-                    distance = newDist;
+                    currentClosestEnemy = check;
                 }
             }
-        }
-        SelectableEntity enemy = null;
-        if (closest != null)
+        } 
+        nearbyIndexer++;
+        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0; 
+        /*
+        if (directionalAttack)
         {
-            enemy = closest.GetComponent<SelectableEntity>();
-            /*if (enemy.occupiedGarrison != null) //if garrisoned
+            Vector3 heading = (hitColliders[i].transform.position - transform.position).normalized;
+            float dot = Vector3.Dot(forward, heading);
+            if (dot > threshold)
             {
-                enemy = enemy.occupiedGarrison;
-            }*/
-        }
-
-        return enemy;
+                closest = hitColliders[i];
+                threshold = dot;
+            }
+        } */
+        return currentClosestEnemy;
     }
     /// <summary>
     /// Returns closest harvestable resource with space for new harvesters.

@@ -19,6 +19,7 @@ public class RTSPlayer : NetworkBehaviour
     private Vector3Int _gridPosition;
     public List<SelectableEntity> ownedEntities; //must be serialized or public
     public List<SelectableEntity> selectedEntities;
+    public List<SelectableEntity> enemyEntities;
 
     [SerializeField] private FactionScriptableObject _faction;
     [SerializeField] private int _entitiesIndex = 0; //used to pick a prefab from faction list

@@ -39,6 +39,7 @@ public class Global : NetworkBehaviour
     public List<RTSPlayer> playerList = new();
     public TMP_Text popText;
     public Volume fogVolume;
+    public List<SelectableEntity> allFactionEntities = new(); 
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.
