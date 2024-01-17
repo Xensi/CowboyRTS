@@ -325,6 +325,8 @@ public class RTSPlayer : NetworkBehaviour
     void Update()
     {
         if (!active) return;
+        /*FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
+        Debug.Log(fow.GetFogValue(cursorWorldPosition));*/
         UpdatePlacement();
         if (Global.Instance.gridVisual != null)
         { 
@@ -1028,11 +1030,11 @@ public class RTSPlayer : NetworkBehaviour
                 if (justSpawned != null)
                 {
                     justSpawned.transform.SetPositionAndRotation(fakeSpawns[0].transform.position, fakeSpawns[0].transform.rotation);
-                    SelectableEntity select = justSpawned.GetComponent<SelectableEntity>();
-                    if (select != null)
+                    //SelectableEntity select = justSpawned.GetComponent<SelectableEntity>();
+                    /*if (select != null)
                     {
                         select.minionController.state = MinionController.State.Idle;
-                    }
+                    }*/
                     /*SelectableEntity fake = fakeSpawns[0].GetComponent<SelectableEntity>();
                     MinionController fakeController = fakeSpawns[0].GetComponent<MinionController>();
                     if (select.minionController != null && fakeController != null)

@@ -327,7 +327,7 @@ public class MinionController : NetworkBehaviour
     }
     private bool realLocationReached = false;
     private readonly float updateRealLocThreshold = 1;
-    private readonly float allowedNonOwnerError = 1.5f; //ideally higher than real loc update; don't want to lerp to old position
+    private readonly float allowedNonOwnerError = 1f; //ideally higher than real loc update; don't want to lerp to old position
     private void CatchUpIfHighError()
     {
         //owner can change real location with impunity
@@ -804,7 +804,9 @@ public class MinionController : NetworkBehaviour
                             else
                             {
                                 animator.Play("Walk");
-                                if (IsOwner) destination.Value = selectableEntity.interactionTarget.transform.position;
+                                Vector3 closest = selectableEntity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
+                                if (IsOwner) destination.Value = closest;
+                                        /*selectableEntity.interactionTarget.transform.position;*/
                             }
                         }
                         break;
@@ -823,7 +825,8 @@ public class MinionController : NetworkBehaviour
                             else
                             {
                                 animator.Play("Walk");
-                                if (IsOwner) destination.Value = selectableEntity.interactionTarget.transform.position;
+                                Vector3 closest = selectableEntity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
+                                if (IsOwner) destination.Value = closest;
                             }
                         }
                         break;
@@ -841,7 +844,8 @@ public class MinionController : NetworkBehaviour
                             else
                             {
                                 animator.Play("Walk");
-                                if (IsOwner) destination.Value = selectableEntity.interactionTarget.transform.position;
+                                Vector3 closest = selectableEntity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
+                                if (IsOwner) destination.Value = closest;
                             }
                         }
                         break;
@@ -857,7 +861,8 @@ public class MinionController : NetworkBehaviour
                                 if (selectableEntity.tryingToTeleport)
                                 {
                                     animator.Play("Walk");
-                                    if (IsOwner) destination.Value = selectableEntity.interactionTarget.transform.position;
+                                    Vector3 closest = selectableEntity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
+                                    if (IsOwner) destination.Value = closest;
                                 }
                                 else
                                 {
@@ -873,7 +878,8 @@ public class MinionController : NetworkBehaviour
                                 else
                                 {
                                     animator.Play("Walk");
-                                    if (IsOwner) destination.Value = selectableEntity.interactionTarget.transform.position;
+                                    Vector3 closest = selectableEntity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
+                                    if (IsOwner) destination.Value = closest;
                                 }
                             }
                         }
@@ -1422,7 +1428,7 @@ public class MinionController : NetworkBehaviour
         float distance = Mathf.Infinity;
         foreach (SelectableEntity item in list)
         {
-            if (item != null && item.alive && fow.GetFogValue(item.transform.position) > 0.1f * 255) //item is visible to some degree
+            if (item != null && item.alive && fow.GetFogValue(item.transform.position) <= 0.5 * 255) //item is visible to some degree
             {
                 if (item.interactors.Count < item.allowedInteractors) //there is space for a new harvester
                 {

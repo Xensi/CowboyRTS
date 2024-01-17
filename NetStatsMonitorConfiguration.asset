@@ -51,7 +51,7 @@ MonoBehaviour:
     <Label>k__BackingField: 
     <Stats>k__BackingField:
     - <TypeIndex>k__BackingField: 0
-      <EnumValue>k__BackingField: 6
+      <EnumValue>k__BackingField: 55
     <CounterConfiguration>k__BackingField:
       <SmoothingMethod>k__BackingField: 0
       <AggregationMethod>k__BackingField: 1
@@ -64,7 +64,7 @@ MonoBehaviour:
         m_SampleCount: 64
         <SampleRate>k__BackingField: 0
     <GraphConfiguration>k__BackingField:
-      m_SampleCount: 256
+      m_SampleCount: 80
       <SampleRate>k__BackingField: 1
       <VariableColors>k__BackingField: []
       <XAxisType>k__BackingField: 0
@@ -73,4 +73,4 @@ MonoBehaviour:
     <SerializedStats>k__BackingField:
     - <TypeName>k__BackingField: Unity.Multiplayer.Tools.MetricTypes.DirectedMetricType,
         Unity.Multiplayer.Tools.MetricTypes, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-      <ValueName>k__BackingField: TotalBytesSent
+      <ValueName>k__BackingField: RttToServer
