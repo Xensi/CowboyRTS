@@ -49,7 +49,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     #endregion
     #region NetworkVariables
-    [HideInInspector] public NetworkVariable<sbyte> hitPoints = new();
+    public NetworkVariable<sbyte> hitPoints = new();
     [HideInInspector] public NetworkVariable<bool> isTargetable = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
     #region Hidden
@@ -303,23 +303,34 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     } 
+    private void FixPopulationOnDeath()
+    { 
+        ChangePopulation(-consumePopulationAmount);
+        ChangeMaxPopulation(-raisePopulationLimitBy);
+    }
     public void ProperDestroyEntity()
     {
         Global.Instance.allFactionEntities.Remove(this);
+        if (IsOwner)
+        {
+            FixPopulationOnDeath();
+        }
+        else
+        {
+            //play death animation right away
+            if (minionController != null)
+            {
+                minionController.animator.Play("Die");
+            }
+        }
         if (fogUnit != null)
         {
             fogUnit.enabled = false;
         }
         alive = false;
-        ChangePopulation(-consumePopulationAmount);
-        ChangeMaxPopulation(-raisePopulationLimitBy);
         if (physicalCollider != null)
         {
             physicalCollider.enabled = false; //allows dynamic grid obstacle to update pathfinding nodes one last time
-        }
-        if (RVO != null)
-        {
-            Destroy(RVO);
         }
         if (minionController != null)
         {
@@ -355,8 +366,9 @@ public class SelectableEntity : NetworkBehaviour
             lineIndicator.enabled = false;
             targetIndicator.transform.parent = transform;
         }
-         
+
         CheckGameVictoryState();
+
     }
     private void CheckGameVictoryState()
     {

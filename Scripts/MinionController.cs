@@ -11,6 +11,10 @@ using FoW;
 public class MinionController : NetworkBehaviour
 {
     #region Enums
+    public enum CommandTypes
+    {
+        Move, AttackMove, AttackSpecific, InteractWith
+    }
     public enum State
     {
         Idle,
@@ -167,6 +171,7 @@ public class MinionController : NetworkBehaviour
         realLocation.OnValueChanged += OnRealLocationChanged;
         //enabled = IsOwner;
         oldPosition = transform.position;
+        lastCommand.Value = CommandTypes.Move;
     }
     private void OnRealLocationChanged(Vector3 prev, Vector3 cur)
     {
@@ -178,16 +183,115 @@ public class MinionController : NetworkBehaviour
         if (!selectableEntity.fakeSpawn && IsSpawned)
         {
             if (ai != null) ai.destination = destination.Value;
+            change = GetActualPositionChange();
             if (IsOwner)
             {
-                change = GetActualPositionChange();
                 UpdateRealLocation();
             }
             else if (finishedInitializingRealLocation)
             {
                 CatchUpIfHighError();
+                NonOwnerUpdateAnimationBasedOnContext();
             }
         }
+    }
+    private void IdleOrWalkContextually()
+    {   
+        if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
+        {
+            basicallyIdleInstances++;
+        }
+        if (change > walkAnimThreshold)
+        {
+            basicallyIdleInstances = 0;
+        }
+
+        if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
+        {
+            animator.Play("Idle");
+        }
+        else
+        { 
+            animator.Play("Walk");
+        }
+    }
+    private void OnDrawGizmosSelected()
+    {
+        if (EnemyInRangeIsValid(clientSideEnemyInRange))
+        {
+            Gizmos.DrawLine(transform.position, clientSideEnemyInRange.transform.position);
+        }
+    }
+    private void NonOwnerUpdateAnimationBasedOnContext()
+    {
+        if (selectableEntity.alive)
+        { 
+            switch (lastCommand.Value)
+            {
+                case CommandTypes.Move:
+                    IdleOrWalkContextually();
+                    break;
+                case CommandTypes.AttackMove:
+                    //nonowner does not know if this has a targetenemy
+                    
+                    if (EnemyInRangeIsValid(clientSideEnemyInRange))
+                    {
+                        animator.Play("Attack");
+                        ai.canMove = false;
+                    }
+                    else
+                    {
+                        clientSideEnemyInRange = RelaxedFindEnemyInRange(attackRange);
+                        ai.canMove = true;
+                        if (!animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
+                        {
+                            animator.Play("AttackWalkStart");
+                        }
+                    }
+                    break;
+                case CommandTypes.AttackSpecific:
+                    break;
+                case CommandTypes.InteractWith:
+                    break;
+                default:
+                    break;
+            }
+        }
+        else
+        {
+            animator.Play("Die");
+        }
+    }
+    private bool EnemyInRangeIsValid(SelectableEntity target)
+    {
+        if (target == null || target.alive == false || target.isTargetable.Value == false || target.visibleInFog == false || !InRangeOfEntity(target, attackRange))
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        } 
+    }
+    private SelectableEntity clientSideEnemyInRange = null;
+    private SelectableEntity RelaxedFindEnemyInRange(float range)
+    {
+        if (attackType == AttackType.None) return null;
+        SelectableEntity valid = null;
+        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count)
+        {
+            nearbyIndexer = Global.Instance.allFactionEntities.Count - 1;
+        }
+
+        SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range
+        if (check.OwnerClientId != OwnerClientId && check.alive && check.isTargetable.Value && check.visibleInFog && InRangeOfEntity(check, range))
+        //only check on enemies that are alive, targetable, visible, and in range
+        {
+            valid = check;
+        }
+        nearbyIndexer++;
+        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0; 
+        return valid;
     }
     private void UpdateRealLocation()
     {
@@ -205,9 +309,9 @@ public class MinionController : NetworkBehaviour
         if (!selectableEntity.fakeSpawn && IsSpawned)
         {
             if (IsOwner)
-            {
-                OwnerUpdateState();
-            }
+            { 
+                OwnerUpdateState(); //needs to be in fixed update atm since timers depend on it
+            } 
         }
     }
     private bool realLocationReached = false;
@@ -355,7 +459,7 @@ public class MinionController : NetworkBehaviour
                             }
                             else
                             {
-                                targetEnemy = FindClosestEnemy(attackRange);
+                                targetEnemy = FindEnemyInRange(attackRange);
                             }
                         }
                         //only do this if not garrisoned
@@ -409,7 +513,7 @@ public class MinionController : NetworkBehaviour
                         }
                         else
                         {
-                            targetEnemy = FindClosestEnemy(attackRange);
+                            targetEnemy = FindEnemyInRange(attackRange);
                         }
                         break;
                     default:
@@ -470,7 +574,7 @@ public class MinionController : NetworkBehaviour
                 }
                 else
                 {
-                    targetEnemy = FindClosestEnemy(attackRange);
+                    targetEnemy = FindEnemyInRange(attackRange);
                 }
 
                 /*if (DetectIfStuck())
@@ -494,7 +598,7 @@ public class MinionController : NetworkBehaviour
                 }
                 else
                 {
-                    targetEnemy = FindClosestEnemy(attackRange);
+                    targetEnemy = FindEnemyInRange(attackRange);
                 }
 
                 /*if (DetectIfStuck())
@@ -1097,12 +1201,13 @@ public class MinionController : NetworkBehaviour
     }
     private bool InRangeOfEntity(SelectableEntity target, float range)
     {
-        if (target.physicalCollider != null)
+        if (target == null) return false;
+        if (target.physicalCollider != null) //get closest point on collider
         {
             Vector3 closest = target.physicalCollider.ClosestPoint(transform.position);
             return Vector3.Distance(transform.position, closest) <= range;
         }
-        else
+        else //check dist to center
         {
             return Vector3.Distance(transform.position, target.transform.position) <= range;
         }
@@ -1245,43 +1350,53 @@ public class MinionController : NetworkBehaviour
             return true;
         }
     }
-    private SelectableEntity FindClosestEnemy(float range) //bottleneck for unit spawning
+    private SelectableEntity FindEnemyInRange(float range) //bottleneck for unit spawning
     {
         if (attackType == AttackType.None) return null;
-
-        if (currentClosestEnemy != null && (!currentClosestEnemy.alive || !currentClosestEnemy.isTargetable.Value || !currentClosestEnemy.visibleInFog 
-            || !InRangeOfEntity(currentClosestEnemy, range))) //if invalid enemy remove
-        {
-            currentClosestEnemy = null;
-        } 
-        //check if current index is closer than current closest 
+        SelectableEntity valid = null;
         if (nearbyIndexer >= Global.Instance.allFactionEntities.Count)
         {
             nearbyIndexer = Global.Instance.allFactionEntities.Count - 1;
         }
-        SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range
-
-        if (check.OwnerClientId != OwnerClientId && check.alive && check.isTargetable.Value && check.visibleInFog && InRangeOfEntity(check, range))
+        //guarantee a target within .5 seconds
+        int maxExpectedUnits = 200;
+        int maxFramesToFindTarget = 30;
+        int indexesToRunPerFrame = maxExpectedUnits / maxFramesToFindTarget;
+        for (int i = 0; i < indexesToRunPerFrame; i++)
+        { 
+            SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range
+            if (check.OwnerClientId != OwnerClientId && check.alive && check.isTargetable.Value && check.visibleInFog && InRangeOfEntity(check, range))
             //only check on enemies that are alive, targetable, visible, and in range
-        {
-            if (currentClosestEnemy == null)
             {
-                currentClosestEnemy = check;
+                valid = check;
             }
-            else
-            {
-                float distToOld = Vector3.SqrMagnitude(transform.position - currentClosestEnemy.transform.position);
-                float distToNew = Vector3.SqrMagnitude(transform.position - check.transform.position);
-                if (distToNew < distToOld)
-                {
-                    currentClosestEnemy = check;
-                }
-            }
-        } 
-        nearbyIndexer++;
-        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0;  
-        return currentClosestEnemy;
+            nearbyIndexer++;
+            if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0;
+            if (valid != null) return valid;
+        }
+        return valid;
     }
+    /*
+    if (currentClosestEnemy == null)
+    {
+        currentClosestEnemy = check;
+    }
+    else
+    {
+        float distToOld = Vector3.SqrMagnitude(transform.position - currentClosestEnemy.transform.position);
+        float distToNew = Vector3.SqrMagnitude(transform.position - check.transform.position);
+        if (distToNew < distToOld)
+        {
+            currentClosestEnemy = check;
+        }
+    }*/
+    /*if (currentClosestEnemy != null && (!currentClosestEnemy.alive || !currentClosestEnemy.isTargetable.Value || !currentClosestEnemy.visibleInFog 
+        || !InRangeOfEntity(currentClosestEnemy, range))) //if invalid enemy remove
+    {
+        currentClosestEnemy = null;
+    } 
+    //check if current index is closer than current closest 
+     */
     /// <summary>
     /// Returns closest harvestable resource with space for new harvesters.
     /// </summary>
@@ -1455,15 +1570,26 @@ public class MinionController : NetworkBehaviour
                 }
                 SimpleTrail(spawnPos, enemy.transform.position);
             }
+
             if (IsServer)
             {
                 enemy.TakeDamage(damage);
             }
             else //client tell server to change the network variable
             {
+                //if we know that this attack will kill that unit, we can kill it client side
+                if (damage >= enemy.hitPoints.Value)
+                {
+                    Debug.Log("can kill early" + enemy.hitPoints.Value);
+                    KillClientSide(enemy);
+                }
                 RequestDamageServerRpc(damage, enemy);
             }
         }
+    }
+    private void KillClientSide(SelectableEntity enemy)
+    {
+        enemy.ProperDestroyEntity();
     }
     private void SimpleTrail(Vector3 star, Vector3 dest)
     {
@@ -1599,8 +1725,11 @@ public class MinionController : NetworkBehaviour
         targetEnemy = null;
         selectableEntity.interactionTarget = null; 
     }
+    public NetworkVariable<CommandTypes> lastCommand = new NetworkVariable<CommandTypes>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public void SetAttackMoveDestination() //called by local player
     {
+        lastCommand.Value = CommandTypes.AttackMove;
         ClearTargets(); 
         basicallyIdleInstances = 0; 
         state = State.WalkBeginFindEnemies; //default to walking state

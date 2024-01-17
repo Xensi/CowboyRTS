@@ -410,7 +410,7 @@ public class RTSPlayer : NetworkBehaviour
                         break;
                 }
             }
-            if (Input.GetMouseButtonDown(2)) //middle click
+            if (Input.GetMouseButtonDown(2) || Input.GetKeyDown(KeyCode.R)) //middle click
             {
                 SelectedAttackMove();
             }
