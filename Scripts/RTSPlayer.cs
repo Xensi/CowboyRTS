@@ -363,23 +363,7 @@ public class RTSPlayer : NetworkBehaviour
             if (Input.GetKey(KeyCode.UpArrow))
             {
                 GenericSpawnMinion(cursorWorldPosition, 11);
-            }
-            /*if (Input.GetKey(KeyCode.KeypadEnter))
-            {
-                GenericSpawnMinion(cursorWorldPosition, 5);
-            }
-            if (Input.GetKey(KeyCode.Keypad0))
-            {
-                GenericSpawnMinion(cursorWorldPosition, 6);
-            }
-            if (Input.GetKey(KeyCode.Keypad1))
-            {
-                GenericSpawnMinion(cursorWorldPosition, 7);
-            }
-            if (Input.GetKey(KeyCode.Keypad2))
-            {
-                GenericSpawnMinion(cursorWorldPosition, 8);
-            }*/
+            } 
 #endif
             if (linkedState == LinkedState.PlacingEnd)
             {
@@ -454,7 +438,7 @@ public class RTSPlayer : NetworkBehaviour
         if (Global.Instance.popText != null)
         {
             Global.Instance.popText.text = population+"/"+maxPopulation+" Population";
-        }
+        }  
     }
     private void SelectWithinBounds() //rectangle select, finish drag select
     {
@@ -1003,8 +987,8 @@ public class RTSPlayer : NetworkBehaviour
         var clientId = serverRpcParams.Receive.SenderClientId;
         if (NetworkManager.ConnectedClients.ContainsKey(clientId))
         {
+            Debug.Log("Spawning" + minion.name);  
             select.net.SpawnWithOwnership(clientId);
-            ulong netID = select.NetworkObjectId;
             //use client rpc to send this ID to client
             ClientRpcParams clientRpcParams = new ClientRpcParams
             {
@@ -1013,37 +997,59 @@ public class RTSPlayer : NetworkBehaviour
                     TargetClientIds = new ulong[] { clientId }
                 }
             };
-            SendReferenceToSpawnedMinionClientRpc(netID, clientRpcParams);
+            SendReferenceToSpawnedMinionClientRpc(select.NetworkObjectId, clientRpcParams);
         } 
         return select;
     }
     [ClientRpc]
-    private void SendReferenceToSpawnedMinionClientRpc(ulong netID, ClientRpcParams clientRpcParams = default)
+    public void SendReferenceToSpawnedMinionClientRpc(ulong netID, ClientRpcParams clientRpcParams = default)
     {
-        //find minion from SpawnedObjects list of network manager;
-        List<NetworkObject> spawnedList = NetworkManager.SpawnManager.GetClientOwnedObjects(OwnerClientId);
-        NetworkObject justSpawned = null;
-        foreach (NetworkObject item in spawnedList)
-        {
-            if (item.NetworkObjectId == netID)
-            {
-                Debug.Log("found the same object: " + item.name); //later do rally
-                justSpawned = item;
-                break;
-            }
-        }
         if (!IsServer)
-        { 
-            if (justSpawned != null)
+        {
+            if (fakeSpawns.Count < 0)
             {
-                justSpawned.transform.SetPositionAndRotation(fakeSpawns[0].transform.position, fakeSpawns[0].transform.rotation); 
-                SelectableEntity select = justSpawned.GetComponent<SelectableEntity>();
-                if (select.minionController != null) select.minionController.state = MinionController.State.Idle;
+                Debug.Log("error; no fake spawns");
             }
-            Destroy(fakeSpawns[0]);
-            fakeSpawns.RemoveAt(0);
+            else
+            {
+                Debug.Log("Sent reference to " + netID);
+                //find minion from SpawnedObjects list of network manager;
+                List<NetworkObject> spawnedList = NetworkManager.SpawnManager.GetClientOwnedObjects(OwnerClientId);
+                NetworkObject justSpawned = null;
+                foreach (NetworkObject item in spawnedList)
+                {
+                    if (item.NetworkObjectId == netID)
+                    {
+                        Debug.Log("found the same object: " + item.name); //later do rally
+                        justSpawned = item;
+                        break;
+                    }
+                }
+                if (justSpawned != null)
+                {
+                    justSpawned.transform.SetPositionAndRotation(fakeSpawns[0].transform.position, fakeSpawns[0].transform.rotation);
+                    SelectableEntity select = justSpawned.GetComponent<SelectableEntity>();
+                    if (select != null)
+                    {
+                        select.minionController.state = MinionController.State.Idle;
+                    }
+                    /*SelectableEntity fake = fakeSpawns[0].GetComponent<SelectableEntity>();
+                    MinionController fakeController = fakeSpawns[0].GetComponent<MinionController>();
+                    if (select.minionController != null && fakeController != null)
+                    {
+                        select.minionController.state = fakeController.state;
+                    }
+                    if (select != null && fake != null)
+                    {
+                        select.selected = fake.selected;
+                        //select.ChangeHitPointsServerRpc(fake.hitPoints.Value);
+                    }*/
+                    Destroy(fakeSpawns[0]);
+                    fakeSpawns.RemoveAt(0);
+                }
+            } 
         }
-    }  
+    }
     #endregion
     #region Selection
     private void DoNotDoubleSelect()
@@ -1191,10 +1197,10 @@ public class RTSPlayer : NetworkBehaviour
                     Global.Instance.queueButtons[i].gameObject.SetActive(false);
                     if (i < num)
                     {
-                        UpdateButton(select, i); 
+                        UpdateButton(select, i);
                     }
-                }  
-            } 
+                }
+            }
         }
     }
     private void UpdateButton(SelectableEntity select, int i = 0)
@@ -1405,10 +1411,10 @@ public class RTSPlayer : NetworkBehaviour
             {
                 continue;
             }
-            DamageEntity(select, damage); 
-        } 
+            DamageEntity(damage, select); 
+        }
     }
-    public void DamageEntity(SelectableEntity enemy, sbyte damage) //since hp is a network variable, changing it on the server will propagate changes to clients as well
+    public void DamageEntity(sbyte damage, SelectableEntity enemy) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         if (enemy != null)
         {
@@ -1419,12 +1425,34 @@ public class RTSPlayer : NetworkBehaviour
             }
             else //client tell server to change the network variable
             {
-                RequestDamageServerRpc(damage, enemy);
+                PredictAndRequestDamage(damage, enemy);
             }
         }
     }
+    /*private void DamageUmbrella(sbyte damage, SelectableEntity enemy)
+    {
+        if (IsServer)
+        {
+            enemy.TakeDamage(damage);
+        }
+        else //client tell server to change the network variable
+        {
+            PredictAndRequestDamage(damage, enemy);
+        }
+    }*/
+    private void PredictAndRequestDamage(sbyte damage, SelectableEntity enemy)
+    {
+        //if we know that this attack will kill that unit, we can kill it client side
+        if (damage >= enemy.hitPoints.Value)
+        {
+            Debug.Log("can kill early" + enemy.hitPoints.Value);
+            enemy.ProperDestroyEntity();
+        }
+        Global.Instance.localPlayer.RequestDamageServerRpc(damage, enemy);
+    } 
+
     [ServerRpc]
-    private void RequestDamageServerRpc(sbyte damage, NetworkBehaviourReference enemy)
+    public void RequestDamageServerRpc(sbyte damage, NetworkBehaviourReference enemy)
     {
         //server must handle damage! 
         if (enemy.TryGet(out SelectableEntity select))

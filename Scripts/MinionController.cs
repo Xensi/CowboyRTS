@@ -214,14 +214,7 @@ public class MinionController : NetworkBehaviour
         { 
             animator.Play("Walk");
         }
-    }
-    private void OnDrawGizmosSelected()
-    {
-        if (EnemyInRangeIsValid(clientSideEnemyInRange))
-        {
-            Gizmos.DrawLine(transform.position, clientSideEnemyInRange.transform.position);
-        }
-    }
+    } 
     private void NonOwnerUpdateAnimationBasedOnContext()
     {
         if (selectableEntity.alive)
@@ -233,21 +226,39 @@ public class MinionController : NetworkBehaviour
                     break;
                 case CommandTypes.AttackMove:
                     //nonowner does not know if this has a targetenemy
-                    
-                    if (EnemyInRangeIsValid(clientSideEnemyInRange))
+                    //this does not work!
+
+                    /*if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
+                    {
+                        basicallyIdleInstances++;
+                    }
+                    if (change > walkAnimThreshold)
+                    {
+                        basicallyIdleInstances = 0;
+                    }
+
+                    if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
                     {
                         animator.Play("Attack");
-                        ai.canMove = false;
                     }
                     else
-                    {
-                        clientSideEnemyInRange = RelaxedFindEnemyInRange(attackRange);
-                        ai.canMove = true;
+                    { 
                         if (!animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
                         {
                             animator.Play("AttackWalkStart");
                         }
+                    }*/
+
+
+
+                    
+                    /*if (EnemyInRangeIsValid(clientSideEnemyInRange))
+                    {
                     }
+                    else
+                    {
+                        clientSideEnemyInRange = RelaxedFindEnemyInRange(attackRange);
+                    }*/
                     break;
                 case CommandTypes.AttackSpecific:
                     break;
@@ -306,7 +317,7 @@ public class MinionController : NetworkBehaviour
     }
     private void FixedUpdate()
     {
-        if (!selectableEntity.fakeSpawn && IsSpawned)
+        if (IsSpawned)
         {
             if (IsOwner)
             { 
@@ -1166,7 +1177,7 @@ public class MinionController : NetworkBehaviour
     /// </summary>
     /// <param name="freezePosition"></param>
     /// <param name="freezeRotation"></param>
-    private void FreezeRigid(bool freezePosition = true, bool freezeRotation = true)
+    public void FreezeRigid(bool freezePosition = true, bool freezeRotation = true)
     {
         //ai.canMove = true;
         ai.canMove = !freezePosition;
@@ -1365,7 +1376,8 @@ public class MinionController : NetworkBehaviour
         for (int i = 0; i < indexesToRunPerFrame; i++)
         { 
             SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range
-            if (check.OwnerClientId != OwnerClientId && check.alive && check.isTargetable.Value && check.visibleInFog && InRangeOfEntity(check, range))
+            if (check.teamNumber.Value != selectableEntity.teamNumber.Value && check.alive && check.isTargetable.Value 
+                && check.visibleInFog && InRangeOfEntity(check, range))
             //only check on enemies that are alive, targetable, visible, and in range
             {
                 valid = check;
@@ -1504,7 +1516,8 @@ public class MinionController : NetworkBehaviour
             hasSelfDestructed = true;
             Global.Instance.localPlayer.CreateExplosionAtPoint(transform.position, explodeRadius, damage);
             SimpleExplosionEffect(transform.position);
-            selectableEntity.ProperDestroyEntity();
+            Global.Instance.localPlayer.DamageEntity(damage, selectableEntity);
+            //selectableEntity.ProperDestroyEntity();
             //DamageSpecifiedEnemy(selectableEntity, damage);
         }
     }  
@@ -1570,27 +1583,24 @@ public class MinionController : NetworkBehaviour
                 }
                 SimpleTrail(spawnPos, enemy.transform.position);
             }
-
-            if (IsServer)
-            {
-                enemy.TakeDamage(damage);
-            }
-            else //client tell server to change the network variable
-            {
-                //if we know that this attack will kill that unit, we can kill it client side
-                if (damage >= enemy.hitPoints.Value)
-                {
-                    Debug.Log("can kill early" + enemy.hitPoints.Value);
-                    KillClientSide(enemy);
-                }
-                RequestDamageServerRpc(damage, enemy);
-            }
+            Global.Instance.localPlayer.DamageEntity(damage, enemy);
+            //DamageUmbrella(damage, enemy);
         }
     }
-    private void KillClientSide(SelectableEntity enemy)
+    
+    /*[ServerRpc]
+    private void RequestDamageServerRpc(sbyte damage, NetworkBehaviourReference enemy)
+    {
+        //server must handle damage! 
+        if (enemy.TryGet(out SelectableEntity select))
+        {
+            select.TakeDamage(damage);
+        }
+    }*/
+    /*private void KillClientSide(SelectableEntity enemy)
     {
         enemy.ProperDestroyEntity();
-    }
+    }*/
     private void SimpleTrail(Vector3 star, Vector3 dest)
     {
         SpawnTrail(star, dest); //spawn effect locally
@@ -1690,15 +1700,6 @@ public class MinionController : NetworkBehaviour
             }
         }
     }*/
-    [ServerRpc]
-    private void RequestDamageServerRpc(sbyte damage, NetworkBehaviourReference enemy)
-    {
-        //server must handle damage! 
-        if (enemy.TryGet(out SelectableEntity select))
-        {
-            select.TakeDamage(damage);
-        }  
-    }
 
     private float GetActualPositionChange()
     {
@@ -1781,7 +1782,8 @@ public class MinionController : NetworkBehaviour
         orderedDestination = target; //remember where we set destination 
     }
     public void MoveTo(Vector3 target)
-    { 
+    {
+        lastCommand.Value = CommandTypes.Move;
         if (state != State.Spawn)
         {
             BasicWalkTo(target);  

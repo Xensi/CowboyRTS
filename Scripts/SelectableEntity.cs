@@ -123,6 +123,8 @@ public class SelectableEntity : NetworkBehaviour
     public List<MeshRenderer> teamRenderers;
     private DynamicGridObstacle obstacle;
     [HideInInspector] public RVOController RVO;
+    public NetworkVariable<byte> teamNumber = new NetworkVariable<byte>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
     #region NetworkSpawn
     private void OnDrawGizmos()
@@ -180,6 +182,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (IsOwner)
         {
+            teamNumber.Value = (byte)OwnerClientId;
             isTargetable.Value = true; //initialize value
 
             if (teamBehavior == TeamBehavior.OwnerTeam)
@@ -214,8 +217,8 @@ public class SelectableEntity : NetworkBehaviour
         fogUnit = GetComponent<FogOfWarUnit>();
         if (fogUnit != null) fogUnit.team = (int) OwnerClientId;
         /*fogHide = GetComponent<HideInFog>();
-        if (fogHide != null) fogHide.team = (int)OwnerClientId;*/
-    }
+        if (fogHide != null) fogHide.team = (int)OwnerClientId;*/ 
+    } 
     private void Update()
     {
         SetHideFogTeam();
@@ -302,7 +305,13 @@ public class SelectableEntity : NetworkBehaviour
                 }
             }
         }
-    } 
+    }
+
+    [ServerRpc]
+    public void ChangeHitPointsServerRpc(sbyte value)
+    {
+        hitPoints.Value = value;
+    }
     private void FixPopulationOnDeath()
     { 
         ChangePopulation(-consumePopulationAmount);
@@ -334,6 +343,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (minionController != null)
         {
+            minionController.FreezeRigid();
             minionController.PrepareForDeath();
 
             foreach (MeshRenderer item in allMeshes)
