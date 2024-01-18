@@ -472,10 +472,6 @@ PrefabInstance:
       propertyPath: attackEffectSpawnPosition
       value: 
       objectReference: {fileID: 8680162356123721132}
-    - target: {fileID: 1965146877331169390, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
-      propertyPath: circleRadius
-      value: 11
-      objectReference: {fileID: 0}
     - target: {fileID: 2794094538110024962, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Enabled
       value: 1

@@ -204,7 +204,8 @@ public class SelectableEntity : NetworkBehaviour
         hitPoints.OnValueChanged += OnHitPointsChanged;
         damagedThreshold = (sbyte)(maxHP / 2);
         rallyPoint = transform.position;
-        SimplePlaySound(0);
+        //SimplePlaySound(0);
+        Global.Instance.PlayClipAtPoint(sounds[0], transform.position, .01f); //play spawning sound
         //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
         UpdateTeamRenderers();
 
@@ -290,7 +291,9 @@ public class SelectableEntity : NetworkBehaviour
                 //walking sounds
                 if (minionController != null)
                 {
-                    if (minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") || minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk") || minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
+                    if (minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") 
+                        || minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk") 
+                        || minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
                     {
                         if (footstepCount < footstepThreshold)
                         {
@@ -299,7 +302,7 @@ public class SelectableEntity : NetworkBehaviour
                         else
                         {
                             footstepCount = 0;
-                            Global.Instance.PlayClipAtPoint(Global.Instance.footsteps[Random.Range(0, Global.Instance.footsteps.Length)], transform.position, .05f);
+                            Global.Instance.PlayClipAtPoint(Global.Instance.footsteps[Random.Range(0, Global.Instance.footsteps.Length)], transform.position, .01f);
                         }
                     }
                 }
@@ -767,7 +770,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         //fire locally 
         AudioClip clip = sounds[id];
-        Global.Instance.PlayClipAtPoint(clip, transform.position, 0.25f);
+        Global.Instance.PlayClipAtPoint(clip, transform.position, 0.1f);
         //request server to send to other clients
         RequestSoundServerRpc(id);
     }
