@@ -41,7 +41,7 @@ public class SelectableEntity : NetworkBehaviour
         DefensiveGarrison,
         Transport,
         Portal,
-        Wall
+        ExtendableWall
     }
     public enum ResourceType
     {
@@ -594,7 +594,7 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     } 
-    public readonly float minFogStrength = 0.4f;
+    public readonly float minFogStrength = 0.45f;
     public bool visibleInFog = false;
     public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
     public bool shouldHideInFog = true; // gold should not be hidden

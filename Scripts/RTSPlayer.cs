@@ -578,28 +578,35 @@ public class RTSPlayer : NetworkBehaviour
                         break;
                     case SelectableEntity.EntityTypes.DefensiveGarrison:
                         break;
+                    case SelectableEntity.EntityTypes.Portal:
+                        break;
+                    case SelectableEntity.EntityTypes.ExtendableWall:
+                        break;
                     default:
                         break;
                 }
             }
-            SelectableEntity.EntityTypes privileged = SelectableEntity.EntityTypes.Melee;
-            SelectableEntity.EntityTypes privilegedSecondary = SelectableEntity.EntityTypes.Ranged;
+            SelectableEntity.EntityTypes privileged1 = SelectableEntity.EntityTypes.Melee;
+            SelectableEntity.EntityTypes privileged2 = SelectableEntity.EntityTypes.Ranged;
+            SelectableEntity.EntityTypes privileged3 = SelectableEntity.EntityTypes.Transport;
             if (military > 0 || builder > 0) //these take precedent over production always
             {
                 if (military < builder)
                 {
-                    privileged = SelectableEntity.EntityTypes.Builder;
-                    privilegedSecondary = SelectableEntity.EntityTypes.Builder;
+                    privileged1 = SelectableEntity.EntityTypes.Builder;
+                    privileged2 = SelectableEntity.EntityTypes.Builder;
+                    privileged3 = SelectableEntity.EntityTypes.Builder;
                 }
             }
             else
             {
-                privileged = SelectableEntity.EntityTypes.ProductionStructure;
-                privilegedSecondary = SelectableEntity.EntityTypes.ProductionStructure;
+                privileged1 = SelectableEntity.EntityTypes.ProductionStructure;
+                privileged2 = SelectableEntity.EntityTypes.ProductionStructure;
+                privileged3 = SelectableEntity.EntityTypes.ProductionStructure;
             }
             foreach (SelectableEntity item in evaluation)
             {
-                if ((item.type == privileged || item.type == privilegedSecondary) && item.occupiedGarrison == null)
+                if ((item.type == privileged1 || item.type == privileged2 || item.type == privileged3) && item.occupiedGarrison == null)
                 {
                     selectedEntities.Add(item);
                     item.Select(true);
@@ -626,7 +633,7 @@ public class RTSPlayer : NetworkBehaviour
         }
         Global.Instance.selectionRect.gameObject.SetActive(false);
         finishedSelection = true;
-    } 
+    }
     private bool UnitIsInSelectionBox(Vector2 Position, Bounds Bounds)
     {
         return Position.x > Bounds.min.x && Position.x < Bounds.max.x
@@ -1371,7 +1378,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             placingPortal = true;
         }
-        else if (entity.type == SelectableEntity.EntityTypes.Wall)
+        else if (entity.type == SelectableEntity.EntityTypes.ExtendableWall)
         {
             linkedState = LinkedState.PlacingStart;
         }
@@ -1555,5 +1562,5 @@ public class RTSPlayer : NetworkBehaviour
     {
         GameObject prefab = Global.Instance.explosionPrefab;
         _ = Instantiate(prefab, pos, Quaternion.identity);
-    } 
+    }
 }
