@@ -43,7 +43,7 @@ public class SelectableEntity : NetworkBehaviour
         Portal,
         Wall
     }
-    public enum HarvestType
+    public enum ResourceType
     {
         Gold, None
     }
@@ -99,7 +99,7 @@ public class SelectableEntity : NetworkBehaviour
     [Header("Harvester Only")]
     public bool isHarvester = false;
     public int allowedInteractors = 1; //only relevant if this is a resource
-    public HarvestType harvestType = HarvestType.None;
+    public ResourceType resourceType = ResourceType.None;
     public int harvestCapacity = 10;
 
     [Header("Garrison Only")]

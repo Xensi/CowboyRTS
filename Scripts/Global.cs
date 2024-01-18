@@ -62,7 +62,7 @@ public class Global : NetworkBehaviour
         int j = 0;
         for (int i = 0; i < array.Length; i++)
         {
-            if (array[i] != null && array[i].harvestType == SelectableEntity.HarvestType.Gold)
+            if (array[i] != null && array[i].resourceType == SelectableEntity.ResourceType.Gold)
             {
                 harvestableResources[j] = array[i];
                 j++;

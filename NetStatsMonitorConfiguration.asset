@@ -33,7 +33,7 @@ MonoBehaviour:
         m_SampleCount: 64
         <SampleRate>k__BackingField: 0
     <GraphConfiguration>k__BackingField:
-      m_SampleCount: 80
+      m_SampleCount: 20
       <SampleRate>k__BackingField: 1
       <VariableColors>k__BackingField: []
       <XAxisType>k__BackingField: 0

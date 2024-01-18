@@ -101,10 +101,10 @@ public class MinionController : NetworkBehaviour
     #endregion
     #region NetworkVariables
     //maybe optimize this as vector 2 later
-    public NetworkVariable<Vector3> realLocation = new NetworkVariable<Vector3>(default,
+    [HideInInspector] public NetworkVariable<Vector3> realLocation = new NetworkVariable<Vector3>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     //controls where the AI will pathfind to
-    public NetworkVariable<Vector3> destination = new NetworkVariable<Vector3>(default,
+    [HideInInspector] public NetworkVariable<Vector3> destination = new NetworkVariable<Vector3>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
     #region Core
@@ -326,8 +326,8 @@ public class MinionController : NetworkBehaviour
         }
     }
     private bool realLocationReached = false;
-    private readonly float updateRealLocThreshold = 1;
-    private readonly float allowedNonOwnerError = 1f; //ideally higher than real loc update; don't want to lerp to old position
+    private readonly float updateRealLocThreshold = 1f; //1
+    private readonly float allowedNonOwnerError = 1.5f; //1.5 ideally higher than real loc update; don't want to lerp to old position
     private void CatchUpIfHighError()
     {
         //owner can change real location with impunity
@@ -358,7 +358,7 @@ public class MinionController : NetworkBehaviour
     float m_CurrentLerpTime;
 
     // The duration of the interpolation, in seconds    
-    float m_LerpTime = .5f;
+    float m_LerpTime = .1f;
 
     public Vector3 LerpPosition(Vector3 current, Vector3 target)
     {
@@ -456,7 +456,7 @@ public class MinionController : NetworkBehaviour
                 HideMoveIndicator();
                 animator.Play("Idle");
                 FreezeRigid();
-                if (IsOwner) destination.Value = transform.position; //stand still
+                if (IsOwner) destination.Value = orderedDestination;//transform.position; //stand still
 
                 switch (givenMission)
                 {
@@ -656,7 +656,7 @@ public class MinionController : NetworkBehaviour
                 }
                 if (!TargetIsValidEnemy(targetEnemy) && !attackReady)
                 {
-                    state = State.Idle;
+                    state = State.WalkContinueFindEnemies;
                 }
                 else if (!TargetIsValidEnemy(targetEnemy) && attackReady)
                 {
@@ -1240,7 +1240,7 @@ public class MinionController : NetworkBehaviour
     }
     private bool InvalidHarvestable(SelectableEntity target)
     {
-        return target == null || target.harvestType == SelectableEntity.HarvestType.None || target.alive == false;
+        return target == null || target.resourceType == SelectableEntity.ResourceType.None || target.alive == false;
     }
     private bool CheckFacingTowards(Vector3 pos)
     {
@@ -1732,6 +1732,7 @@ public class MinionController : NetworkBehaviour
         targetEnemy = null;
         selectableEntity.interactionTarget = null; 
     }
+    [HideInInspector]
     public NetworkVariable<CommandTypes> lastCommand = new NetworkVariable<CommandTypes>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public void SetAttackMoveDestination() //called by local player
@@ -1792,7 +1793,7 @@ public class MinionController : NetworkBehaviour
         lastCommand.Value = CommandTypes.Move;
         if (state != State.Spawn)
         {
-            BasicWalkTo(target);  
+            BasicWalkTo(target);
         }
     }
     public void AttackTarget(SelectableEntity select)

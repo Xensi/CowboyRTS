@@ -139,3 +139,10 @@ MonoBehaviour:
     goldCost: 0
     timeCost: 0
     buildID: 0
+  - productionName: Ranger
+    needsConstructing: 0
+    prefabToSpawn: {fileID: 6726110510975844004, guid: 1527c5971cf72a748b5a17eb8a1d7b39, type: 3}
+    linkedID: -1
+    goldCost: 0
+    timeCost: 0
+    buildID: 0
