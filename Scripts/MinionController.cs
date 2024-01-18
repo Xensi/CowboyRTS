@@ -156,7 +156,7 @@ public class MinionController : NetworkBehaviour
             destination.Value = transform.position;
             state = State.Spawn;
             Invoke(nameof(FinishSpawning), spawnDuration);
-            finishedInitializingRealLocation = true;
+            finishedInitializingRealLocation = true; 
         }
         else
         {
@@ -170,7 +170,7 @@ public class MinionController : NetworkBehaviour
         //enabled = IsOwner;
         oldPosition = transform.position;
         lastCommand.Value = CommandTypes.Move;
-        orderedDestination = transform.position;
+        orderedDestination = transform.position; 
     }
     private void OnRealLocationChanged(Vector3 prev, Vector3 cur)
     {
@@ -191,9 +191,9 @@ public class MinionController : NetworkBehaviour
             {
                 CatchUpIfHighError();
                 NonOwnerUpdateAnimationBasedOnContext();
-            }
+            } 
         }
-    }
+    }  
     private void IdleOrWalkContextually()
     {   
         if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
@@ -214,89 +214,107 @@ public class MinionController : NetworkBehaviour
             animator.Play("Walk");
         }
     } 
+    private void ClientSeekEnemy()
+    {
+        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count)
+        {
+            nearbyIndexer = Global.Instance.allFactionEntities.Count - 1;
+        }
+        SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range 
+        if (clientSideEnemyInRange == null)
+        {
+            if (check != null && check.alive && check.teamNumber.Value != selectableEntity.teamNumber.Value && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
+            { //only check on enemies that are alive, targetable, visible, and in range  
+                clientSideEnemyInRange = check;
+            }
+        }
+        nearbyIndexer++;
+        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0;
+
+        if (clientSideEnemyInRange != null)
+        {
+            FreezeRigid();
+        }
+    }
     private void NonOwnerUpdateAnimationBasedOnContext()
     {
         if (selectableEntity.alive)
         { 
-            switch (lastCommand.Value)
+            if (selectableEntity.occupiedGarrison != null)
             {
-                case CommandTypes.Move:
-                    IdleOrWalkContextually();
-                    break;
-                case CommandTypes.AttackMove: 
-                    if (nearbyIndexer >= Global.Instance.allFactionEntities.Count)
-                    {
-                        nearbyIndexer = Global.Instance.allFactionEntities.Count - 1;
-                    } 
-                    SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range
-                    /*check != null && check.teamNumber.Value != selectableEntity.teamNumber.Value && check.alive && check.isTargetable.Value
-                        && check.visibleInFog && InRangeOfEntity(check, attackRange)*/
-                    if (clientSideEnemyInRange == null)
-                    {
-                        if (check != null && check.alive && check.teamNumber.Value != selectableEntity.teamNumber.Value && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
-                        { //only check on enemies that are alive, targetable, visible, and in range 
-                          //Debug.Log(check);
-                            clientSideEnemyInRange = check;
-                        }
-                    } 
-                    nearbyIndexer++;
-                    if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0;
-
-                    if (clientSideEnemyInRange != null)
-                    {
-                        FreezeRigid();
-                    }
-
-                    //nonowner does not know if this has a targetenemy
-                    //this does not work!
-                    if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
-                    {
-                        basicallyIdleInstances++;
-                    }
-                    if (change > walkAnimThreshold)
-                    {
-                        basicallyIdleInstances = 0;
-                    } 
-                    if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
-                    { 
-                        if (clientSideEnemyInRange != null)
-                        {
-                            //Debug.DrawLine(transform.position, clientSideEnemyInRange.transform.position, Color.red, 0.1f);
-                            animator.Play("Attack");
-                            LookAtTarget(clientSideEnemyInRange.transform);
-                        }
-                    }
-                    else
-                    {
-                        if (!animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
-                        {
-                            animator.Play("AttackWalkStart");
-                        }
-                    }
-                    /**/
-                    //Debug.Log("attack moving nonowner");
-
-                    /*clientSideEnemyInRange = RelaxedFindEnemyInRange(attackRange);
-                    if (clientSideEnemyInRange != null)
-                    { 
-                        Debug.Log(clientSideEnemyInRange);
-                    }*/
-
-
-                    /*if (EnemyInRangeIsValid(clientSideEnemyInRange))
-                    {
-                    }
-                    else
-                    {
-                    }*/
-                    break;
-                case CommandTypes.AttackSpecific:
-                    break;
-                case CommandTypes.InteractWith:
-                    break;
-                default:
-                    break;
+                ClientSeekEnemy();
+                if (clientSideEnemyInRange != null)
+                {
+                    //Debug.DrawLine(transform.position, clientSideEnemyInRange.transform.position, Color.red, 0.1f);
+                    animator.Play("Attack");
+                    LookAtTarget(clientSideEnemyInRange.transform);
+                }
+                else
+                {
+                    animator.Play("Idle");
+                }
             }
+            else
+            { 
+                switch (lastCommand.Value)
+                {
+                    case CommandTypes.Move:
+                        IdleOrWalkContextually();
+                        break;
+                    case CommandTypes.AttackMove:
+                        ClientSeekEnemy();  
+                        //nonowner does not know if this has a targetenemy
+                        //this does not work!
+                        if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
+                        {
+                            basicallyIdleInstances++;
+                        }
+                        if (change > walkAnimThreshold)
+                        {
+                            basicallyIdleInstances = 0;
+                        }
+                        if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
+                        {
+                            if (clientSideEnemyInRange != null)
+                            {
+                                //Debug.DrawLine(transform.position, clientSideEnemyInRange.transform.position, Color.red, 0.1f);
+                                animator.Play("Attack");
+                                LookAtTarget(clientSideEnemyInRange.transform);
+                            }
+                        }
+                        else
+                        {
+                            if (!animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
+                            {
+                                animator.Play("AttackWalkStart");
+                            }
+                        }
+                        /**/
+                        //Debug.Log("attack moving nonowner");
+
+                        /*clientSideEnemyInRange = RelaxedFindEnemyInRange(attackRange);
+                        if (clientSideEnemyInRange != null)
+                        { 
+                            Debug.Log(clientSideEnemyInRange);
+                        }*/
+
+
+                        /*if (EnemyInRangeIsValid(clientSideEnemyInRange))
+                        {
+                        }
+                        else
+                        {
+                        }*/
+                        break;
+                    case CommandTypes.AttackSpecific:
+                        break;
+                    case CommandTypes.InteractWith:
+                        break;
+                    default:
+                        break;
+                }
+            }
+
         }
         else
         {
@@ -1031,7 +1049,7 @@ public class MinionController : NetworkBehaviour
                 {
                     FreezeRigid(true, false);
                     //garrison into
-                    selectableEntity.interactionTarget.ReceivePassenger(this);
+                    LoadPassengerInto(selectableEntity.interactionTarget);
                     state = State.Idle;
                 }
                 break;
@@ -1717,12 +1735,9 @@ public class MinionController : NetworkBehaviour
             orderedDestination = destination.Value;   
         }
     }
-    private void PlaceOnGround()
+    public void PlaceOnGround()
     {
-        if (Physics.Raycast(transform.position + (new Vector3 (0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
-        {
-            transform.position = hit.point;
-        }
+        selectableEntity.PlaceOnGround();
     }
     public void ForceBuildTarget(SelectableEntity target)
     {
@@ -1743,7 +1758,7 @@ public class MinionController : NetworkBehaviour
         if (selectableEntity.occupiedGarrison != null) //we are currently garrisoned
         {
             justLeftGarrison = selectableEntity.occupiedGarrison;
-            selectableEntity.occupiedGarrison.UnloadPassenger(this); //leave garrison by moving out of it
+            RemovePassengerFrom(selectableEntity.occupiedGarrison);
             PlaceOnGround(); //snap to ground
         }
     }
@@ -1801,7 +1816,7 @@ public class MinionController : NetworkBehaviour
             lastState = State.Building;
         }
     }
-    public void GarrisonInto(SelectableEntity select)
+    public void GarrisonInto(SelectableEntity garrison)
     {
         SelectableEntity justLeftGarrison = null;
         if (selectableEntity.occupiedGarrison != null) //we are currently garrisoned
@@ -1811,17 +1826,17 @@ public class MinionController : NetworkBehaviour
             PlaceOnGround(); //snap to ground
         }
         // && selectableEntity.garrisonablePositions.Count <= 0
-        if (justLeftGarrison != select) //not perfect, fails on multiple units
+        if (justLeftGarrison != garrison) //not perfect, fails on multiple units
         {
-            if (select.acceptsHeavy)
+            if (garrison.acceptsHeavy)
             {
-                selectableEntity.interactionTarget = select;
+                selectableEntity.interactionTarget = garrison;
                 state = State.WalkToInteractable;
                 lastState = State.Garrisoning;
             }
             else if (!selectableEntity.isHeavy)
             {
-                selectableEntity.interactionTarget = select;
+                selectableEntity.interactionTarget = garrison;
                 state = State.WalkToInteractable;
                 lastState = State.Garrisoning;
             }
@@ -1832,6 +1847,67 @@ public class MinionController : NetworkBehaviour
         selectableEntity.interactionTarget = select;
         state = State.WalkToInteractable;
         lastState = State.Garrisoning;*/
+    }
+    private void LoadPassengerInto(SelectableEntity garrison)
+    {
+        garrison.ReceivePassenger(this);
+        //we should tell other players that we're locked to a certain passenger seat
+        if (IsServer)
+        {
+            LockToSeatClientRpc(garrison);
+        }
+        else
+        { 
+            LockToSeatServerRpc(garrison);
+        }
+    }
+    [ServerRpc]
+    private void LockToSeatServerRpc(NetworkBehaviourReference reference)
+    {
+        LockToSeatClientRpc(reference);
+    }
+    [ClientRpc]
+    private void LockToSeatClientRpc(NetworkBehaviourReference reference)
+    {
+        if (!IsOwner)
+        {
+            if (reference.TryGet(out SelectableEntity select))
+            {
+                //select
+                select.ReceivePassenger(this);
+            }
+        }
+    }
+    private void RemovePassengerFrom(SelectableEntity garrison)
+    { 
+        garrison.UnloadPassenger(this); //leave garrison by moving out of it
+
+        if (IsServer)
+        {
+            FreeFromSeatClientRpc(garrison);
+        }
+        else
+        {
+            FreeFromSeatServerRpc(garrison);
+        }
+    }
+
+    [ServerRpc]
+    private void FreeFromSeatServerRpc(NetworkBehaviourReference reference)
+    {
+        FreeFromSeatClientRpc(reference);
+    }
+    [ClientRpc]
+    private void FreeFromSeatClientRpc(NetworkBehaviourReference reference)
+    {
+        if (!IsOwner)
+        { 
+            if (reference.TryGet(out SelectableEntity select))
+            {
+                //select
+                select.UnloadPassenger(this);
+            }
+        }
     }
     #endregion
 }

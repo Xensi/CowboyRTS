@@ -419,12 +419,15 @@ public class SelectableEntity : NetworkBehaviour
                     item.passenger = newPassenger; 
                     //newPassenger.transform.parent = item.transform;
                     newPassenger.selectableEntity.occupiedGarrison = this;
-                    newPassenger.selectableEntity.isTargetable.Value = passengersAreTargetable;
-                    newPassenger.col.isTrigger = true;
-                    if (newPassenger.minionNetwork != null)
+                    if (IsOwner)
                     { 
-                        newPassenger.minionNetwork.verticalPosition.Value = item.transform.position.y;
+                        newPassenger.selectableEntity.isTargetable.Value = passengersAreTargetable; 
+                        /*if (newPassenger.minionNetwork != null)
+                        {
+                            newPassenger.minionNetwork.verticalPosition.Value = item.transform.position.y;
+                        }*/
                     }
+                    newPassenger.col.isTrigger = true;
                     Global.Instance.localPlayer.DeselectSpecific(newPassenger.selectableEntity);
                     //newPassenger.minionNetwork.positionDifferenceThreshold = .1f;
                     //newPassenger.minionNetwork.ForceUpdatePosition(); //update so that passengers are more in the correct y-position
@@ -442,13 +445,44 @@ public class SelectableEntity : NetworkBehaviour
                 item.passenger = null; 
                 //exiting.transform.parent = null;
                 exiting.selectableEntity.occupiedGarrison = null;
-                exiting.selectableEntity.isTargetable.Value = true;
+                if (IsOwner)
+                { 
+                    exiting.selectableEntity.isTargetable.Value = true;
+                    exiting.selectableEntity.PlaceOnGround();
+                    if (IsServer)
+                    {
+                        exiting.selectableEntity.PlaceOnGroundClientRpc();
+                    }
+                    else
+                    {
+                        exiting.selectableEntity.PlaceOnGroundServerRpc();
+                    }
+
+                    /*if (exiting.minionNetwork != null) exiting.minionNetwork.verticalPosition.Value = 0;*/
+                }
                 exiting.col.isTrigger = false;
 
-                if (exiting.minionNetwork != null) exiting.minionNetwork.verticalPosition.Value = 0;
                 //exiting.minionNetwork.positionDifferenceThreshold = exiting.minionNetwork.defaultPositionDifferenceThreshold;
                 break;
             }
+        }
+    }
+    [ServerRpc]
+    private void PlaceOnGroundServerRpc()
+    {
+        PlaceOnGroundClientRpc();
+    }
+    [ClientRpc]
+    private void PlaceOnGroundClientRpc()
+    {
+        if (!IsOwner) PlaceOnGround();
+    }
+    public void PlaceOnGround()
+    { 
+        if (Physics.Raycast(transform.position + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
+        {
+            transform.position = hit.point;
+            Debug.Log(gameObject.name + "trying to place on ground");
         }
     }
     public bool HasEmptyGarrisonablePosition()
@@ -559,9 +593,8 @@ public class SelectableEntity : NetworkBehaviour
                 }
             }
         }
-    }
-    [Range(0.0f, 1.0f)]
-    public float minFogStrength = 0.2f;
+    } 
+    public readonly float minFogStrength = 0.4f;
     public bool visibleInFog = false;
     public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
     public bool shouldHideInFog = true; // gold should not be hidden
