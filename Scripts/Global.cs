@@ -72,6 +72,19 @@ public class Global : NetworkBehaviour
         resourcesParent.SetActive(false);
     }
     private int indexer = 0;
+    public SelectableEntity FindEntityFromObject(GameObject obj)
+    {
+        SelectableEntity entity = obj.GetComponent<SelectableEntity>();
+        if (entity == null)
+        {
+            entity = obj.GetComponentInParent<SelectableEntity>();
+        }
+        if (entity == null)
+        {
+            entity = obj.GetComponentInChildren<SelectableEntity>();
+        }
+        return entity;
+    }
     private void Update()
     {
         if (!playerHasWon) CheckIfAPlayerHasWon();

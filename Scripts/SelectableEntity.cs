@@ -49,6 +49,8 @@ public class SelectableEntity : NetworkBehaviour
     }
     #endregion
     #region NetworkVariables
+    //public ushort fakeSpawnNetID = 0;
+    public GameObject fakeSpawnObject;
     public NetworkVariable<sbyte> hitPoints = new();
     [HideInInspector] public NetworkVariable<bool> isTargetable = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
@@ -126,7 +128,7 @@ public class SelectableEntity : NetworkBehaviour
     public NetworkVariable<byte> teamNumber = new NetworkVariable<byte>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
-    #region NetworkSpawn
+    #region NetworkSpawn 
     private void OnDrawGizmos()
     {
         if (fakeSpawn)
@@ -136,7 +138,7 @@ public class SelectableEntity : NetworkBehaviour
         }
     }
     private void Start()
-    {
+    { 
         allMeshes = GetComponentsInChildren<MeshRenderer>();
         net = GetComponent<NetworkObject>();
         obstacle = GetComponent<DynamicGridObstacle>();
@@ -218,13 +220,13 @@ public class SelectableEntity : NetworkBehaviour
         fogUnit = GetComponent<FogOfWarUnit>();
         if (fogUnit != null) fogUnit.team = (int) OwnerClientId;
         /*fogHide = GetComponent<HideInFog>();
-        if (fogHide != null) fogHide.team = (int)OwnerClientId;*/ 
+        if (fogHide != null) fogHide.team = (int)OwnerClientId;*/
+        Debug.Log(name + " finished spawning.");
     } 
     private void Update()
     {
         SetHideFogTeam();
-        HideInFog();
-
+        HideInFog(); 
         if (rallyTarget != null)
         {
             rallyVisual.transform.position = rallyTarget.transform.position;
@@ -726,7 +728,8 @@ public class SelectableEntity : NetworkBehaviour
             {
                 rallyVisual.transform.position = rallyPoint;
             }
-            SelectableEntity target = hit.collider.GetComponent<SelectableEntity>();
+            SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
+            //SelectableEntity target = hit.collider.GetComponent<SelectableEntity>();
             if (target != null)
             {
                 if (target.teamBehavior == TeamBehavior.OwnerTeam)

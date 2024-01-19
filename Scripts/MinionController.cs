@@ -442,25 +442,7 @@ public class MinionController : NetworkBehaviour
         }*/
     }
     #endregion
-    #region States
-    private bool DetectEnemy(float attackRange) //check if an enemy is in range at all, from perspective of local enemy
-    {
-        int maxColliders = Mathf.RoundToInt(20 * attackRange);
-        Collider[] hitColliders = new Collider[maxColliders];
-        int numColliders = Physics.OverlapSphereNonAlloc(transform.position, attackRange, hitColliders, enemyMask);
-        for (int i = 0; i < numColliders; i++)
-        {
-            SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
-            if (select != null)
-            {
-                if (select.OwnerClientId != OwnerClientId)
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+    #region States 
     private void OwnerUpdateState()
     {
         EnsureNotInteractingWithBusy();
@@ -1740,7 +1722,11 @@ public class MinionController : NetworkBehaviour
         selectableEntity.PlaceOnGround();
     }
     public void ForceBuildTarget(SelectableEntity target)
-    {
+    { 
+        if (target.interactors.Count < target.allowedInteractors)
+        {
+            target.interactors.Add(selectableEntity);
+        }
         selectableEntity.interactionTarget = target;
 
         state = State.WalkToInteractable;
@@ -1772,7 +1758,7 @@ public class MinionController : NetworkBehaviour
         orderedDestination = target; //remember where we set destination 
     }
     public void MoveTo(Vector3 target)
-    {
+    { 
         lastCommand.Value = CommandTypes.Move;
         if (state != State.Spawn)
         {

@@ -15,133 +15,133 @@ MonoBehaviour:
   entities:
   - productionName: Raise Goon
     needsConstructing: 0
-    prefabToSpawn: {fileID: 2545681379473208697, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+    prefabToSpawn: {fileID: 8840218674408280726, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
     linkedID: -1
     goldCost: 10
     timeCost: 1
     buildID: 0
   - productionName: Dig Grave
     needsConstructing: 1
-    prefabToSpawn: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
+    prefabToSpawn: {fileID: 9132968045737705940, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
     linkedID: -1
     goldCost: 20
     timeCost: 0
     buildID: 0
   - productionName: Raise Gunslinger
     needsConstructing: 0
-    prefabToSpawn: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+    prefabToSpawn: {fileID: 336967781961341259, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
     linkedID: -1
     goldCost: 30
     timeCost: 5
     buildID: 0
   - productionName: Raise Desperado
     needsConstructing: 0
-    prefabToSpawn: {fileID: 3247805216466599197, guid: 14aa9348e444d404baea8d5cf76f8398, type: 3}
+    prefabToSpawn: {fileID: 8424073353632160498, guid: 14aa9348e444d404baea8d5cf76f8398, type: 3}
     linkedID: -1
     goldCost: 40
     timeCost: 5
     buildID: 0
   - productionName: Place Wall
     needsConstructing: 1
-    prefabToSpawn: {fileID: 3798861697192735719, guid: 0469ba43681a07247aef51cf6ccb8ef9, type: 3}
+    prefabToSpawn: {fileID: 776634543507809315, guid: 0469ba43681a07247aef51cf6ccb8ef9, type: 3}
     linkedID: 15
     goldCost: 5
     timeCost: 0
     buildID: 0
   - productionName: Raise Gatling
     needsConstructing: 0
-    prefabToSpawn: {fileID: 2622178954450660567, guid: 2d424a28e19378c4d921d6906353559c, type: 3}
+    prefabToSpawn: {fileID: 9050280781648988984, guid: 2d424a28e19378c4d921d6906353559c, type: 3}
     linkedID: -1
     goldCost: 100
     timeCost: 10
     buildID: 0
   - productionName: Raise Artillery
     needsConstructing: 0
-    prefabToSpawn: {fileID: 3558417108367348550, guid: cf3423804651bfe4188c21f8446cf567, type: 3}
+    prefabToSpawn: {fileID: 7537018306974872745, guid: cf3423804651bfe4188c21f8446cf567, type: 3}
     linkedID: -1
     goldCost: 100
     timeCost: 10
     buildID: 0
   - productionName: Raise Cannon
     needsConstructing: 0
-    prefabToSpawn: {fileID: 2296978872636195903, guid: e09fd5d67d137c64ba4bb85e80c024bf, type: 3}
+    prefabToSpawn: {fileID: 5051444127095071696, guid: e09fd5d67d137c64ba4bb85e80c024bf, type: 3}
     linkedID: -1
-    goldCost: 100
+    goldCost: 70
     timeCost: 10
     buildID: 0
   - productionName: Lich Starter
     needsConstructing: 0
-    prefabToSpawn: {fileID: 277787794319671239, guid: 27bf33d358ef0194aa8fa42cf69b6502, type: 3}
+    prefabToSpawn: {fileID: 6494244748879861800, guid: 27bf33d358ef0194aa8fa42cf69b6502, type: 3}
     linkedID: -1
     goldCost: 0
     timeCost: 0
     buildID: 0
   - productionName: Smoke Portal
     needsConstructing: 1
-    prefabToSpawn: {fileID: 6960648852560355660, guid: 7b30b838627cfe8449fe5d8f21682979, type: 3}
+    prefabToSpawn: {fileID: 6838255159156487816, guid: 7b30b838627cfe8449fe5d8f21682979, type: 3}
     linkedID: 10
     goldCost: 0
     timeCost: 0
     buildID: 0
   - productionName: Smoke Portal End
     needsConstructing: 1
-    prefabToSpawn: {fileID: 4756355450301298893, guid: f2fe34ee6c415c4488bdeed110872d95, type: 3}
+    prefabToSpawn: {fileID: 8970771894599266057, guid: f2fe34ee6c415c4488bdeed110872d95, type: 3}
     linkedID: -1
     goldCost: 0
     timeCost: 0
     buildID: 0
   - productionName: Pallbearers
     needsConstructing: 0
-    prefabToSpawn: {fileID: 8532064031720343334, guid: a0161a0a83f36a64cbeabb6fc555ca3d, type: 3}
+    prefabToSpawn: {fileID: 3430947686447505609, guid: a0161a0a83f36a64cbeabb6fc555ca3d, type: 3}
     linkedID: -1
     goldCost: 40
     timeCost: 5
     buildID: 0
   - productionName: Fort
     needsConstructing: 1
-    prefabToSpawn: {fileID: 8795742978982568552, guid: c0363a0cf8391ed498d2b8f91cc1b324, type: 3}
+    prefabToSpawn: {fileID: 4931349463042258348, guid: c0363a0cf8391ed498d2b8f91cc1b324, type: 3}
     linkedID: -1
-    goldCost: 50
+    goldCost: 15
     timeCost: 0
     buildID: 0
   - productionName: deprec
     needsConstructing: 1
-    prefabToSpawn: {fileID: 371321480321102268, guid: b0715be9245d1e042876795d6254f659, type: 3}
+    prefabToSpawn: {fileID: 4276272840926619256, guid: b0715be9245d1e042876795d6254f659, type: 3}
     linkedID: -1
     goldCost: 0
     timeCost: 0
     buildID: 0
   - productionName: Drunkard
     needsConstructing: 0
-    prefabToSpawn: {fileID: 2545681379473208697, guid: 1207c82d488d9984dbc660e0682325ed, type: 3}
+    prefabToSpawn: {fileID: 8840218674408280726, guid: 1207c82d488d9984dbc660e0682325ed, type: 3}
     linkedID: -1
     goldCost: 20
     timeCost: 0
     buildID: 0
   - productionName: Wall End
     needsConstructing: 1
-    prefabToSpawn: {fileID: 3798861697192735719, guid: 0469ba43681a07247aef51cf6ccb8ef9, type: 3}
+    prefabToSpawn: {fileID: 776634543507809315, guid: 0469ba43681a07247aef51cf6ccb8ef9, type: 3}
     linkedID: -1
     goldCost: 5
     timeCost: 0
     buildID: 0
   - productionName: Build Armory
     needsConstructing: 1
-    prefabToSpawn: {fileID: 371321480321102268, guid: 4633e3a65da2d4c4bb36477e222ddc61, type: 3}
+    prefabToSpawn: {fileID: 4276272840926619256, guid: 4633e3a65da2d4c4bb36477e222ddc61, type: 3}
     linkedID: -1
-    goldCost: 0
+    goldCost: 100
     timeCost: 0
     buildID: 0
   - productionName: Saloon
     needsConstructing: 1
-    prefabToSpawn: {fileID: 3798861697192735719, guid: b4e9f923a3dbe1441ad535f64f46abf9, type: 3}
+    prefabToSpawn: {fileID: 776634543507809315, guid: b4e9f923a3dbe1441ad535f64f46abf9, type: 3}
     linkedID: -1
-    goldCost: 0
+    goldCost: 50
     timeCost: 0
     buildID: 0
   - productionName: Ranger
     needsConstructing: 0
-    prefabToSpawn: {fileID: 6726110510975844004, guid: 1527c5971cf72a748b5a17eb8a1d7b39, type: 3}
+    prefabToSpawn: {fileID: 336967781961341259, guid: 1527c5971cf72a748b5a17eb8a1d7b39, type: 3}
     linkedID: -1
     goldCost: 0
     timeCost: 0

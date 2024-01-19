@@ -209,15 +209,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ef37b2b8ba8e084dae003beb732c07c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minionController: {fileID: 0}
+  fakeSpawn: 0
+  fakeSpawnObject: {fileID: 0}
   hitPoints:
     m_InternalValue: 0
+  isTargetable:
+    m_InternalValue: 0
+  minionController: {fileID: 0}
   selected: 0
   net: {fileID: 4126868118260038068}
   rallyPoint: {x: 0, y: 0, z: 0}
   alive: 1
-  isTargetable:
-    m_InternalValue: 0
   occupiedGarrison: {fileID: 0}
   isBuildIndicator: 0
   tryingToTeleport: 0
@@ -244,7 +246,7 @@ MonoBehaviour:
   spawnableAtOnce: 1
   isHarvester: 0
   allowedInteractors: 999
-  harvestType: 0
+  resourceType: 1
   harvestCapacity: 10
   garrisonablePositions: []
   passengersAreTargetable: 0
@@ -264,7 +266,8 @@ MonoBehaviour:
   targetIndicator: {fileID: 3480814061053556006}
   teamRenderers: []
   RVO: {fileID: 0}
-  minFogStrength: 0.05
+  teamNumber:
+    m_InternalValue: 0
   visibleInFog: 0
   hideFogTeam: 0
   shouldHideInFog: 1
@@ -284,15 +287,11 @@ MonoBehaviour:
   lastState: 0
   selectableEntity: {fileID: 0}
   attackMoving: 0
-  followingMoveOrder: 0
   orderedDestination: {x: 0, y: 0, z: 0}
   col: {fileID: 0}
-  destination: {x: 0, y: 0, z: 0}
   animator: {fileID: 0}
   targetEnemy: {fileID: 0}
   minionNetwork: {fileID: 0}
-  givenMission: 0
-  state: 10
   attackType: 0
   directionalAttack: 0
   attackRange: 1
@@ -302,7 +301,16 @@ MonoBehaviour:
   attackDuration: 1
   impactTime: 0.5
   selfDestructAreaOfEffect: 1
+  state: 10
+  givenMission: 0
+  rallyTarget: {x: 0, y: 0, z: 0}
+  realLocation:
+    m_InternalValue: {x: 0, y: 0, z: 0}
+  destination:
+    m_InternalValue: {x: 0, y: 0, z: 0}
   shouldAutoSeekOutEnemies: 1
+  lastCommand:
+    m_InternalValue: 0
 --- !u!54 &7586105387906439370
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -330,8 +338,8 @@ SphereCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.25
-  m_Center: {x: 0, y: 0.25, z: 0}
+  m_Radius: 0.2
+  m_Center: {x: 0, y: 0.2, z: 0}
 --- !u!114 &4721624654941951496
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -356,7 +364,7 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 4294967295
     useGraphRaycasting: 0
-  traversableTags: -1
+  traversableTags: -3
   tagPenalties: 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
   graphMask:
     value: -1
@@ -373,8 +381,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   version: 5
-  radius: 0.25
-  height: 1
+  radius: 0.2
+  height: 0.73
   canMove: 1
   maxSpeed: 2
   gravity: {x: 0, y: 0, z: 0}
@@ -393,15 +401,15 @@ MonoBehaviour:
     maximumPeriod: 2
     visualizeSensitivity: 0
   targetCompatibility: {fileID: 0}
-  maxAcceleration: -2.5
+  maxAcceleration: 999
   rotationSpeed: 360
-  slowdownDistance: 0.6
-  pickNextWaypointDist: 2
-  endReachedDistance: 0.2
+  slowdownDistance: 0
+  pickNextWaypointDist: 0.25
+  endReachedDistance: 0.1
   alwaysDrawGizmos: 0
-  slowWhenNotFacingTarget: 1
-  whenCloseToDestination: 0
-  constrainInsideGraph: 0
+  slowWhenNotFacingTarget: 0
+  whenCloseToDestination: 1
+  constrainInsideGraph: 1
 --- !u!114 &2696319472600951783
 MonoBehaviour:
   m_ObjectHideFlags: 0
