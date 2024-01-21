@@ -14,7 +14,7 @@ public class RTSPlayer : NetworkBehaviour
     public NetworkVariable<bool> inTheGame = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public List<SelectableEntity> keystoneUnits = new();
     public int gold = 100;
-    public Camera cam;   
+    public Camera cam;
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
     public List<SelectableEntity> ownedEntities; //must be serialized or public
@@ -26,7 +26,7 @@ public class RTSPlayer : NetworkBehaviour
     private Vector3 _mousePosition;
     private Vector3 _offset;
     public Vector3 cursorWorldPosition;
-    bool _doubleSelect = false; 
+    bool _doubleSelect = false;
     public enum MouseState
     {
         Waiting,
@@ -66,7 +66,7 @@ public class RTSPlayer : NetworkBehaviour
         inTheGame.Value = false;
     }
     void Start()
-    { 
+    {
         groundLayer = LayerMask.GetMask("Ground");
         entityLayer = LayerMask.GetMask("Entity", "Obstacle");
         placementGhost = LayerMask.GetMask("PlacementGhost");
@@ -120,14 +120,14 @@ public class RTSPlayer : NetworkBehaviour
 
             VolumeProfile profile = Global.Instance.fogVolume.sharedProfile;
             if (profile != null && profile.TryGet(out FogOfWarURP fow))
-            { 
+            {
                 fow.team.value = id;
             }
         }
         else
-        { 
+        {
             active = false;
-        } 
+        }
     }
     private bool MouseOverUI()
     {
@@ -139,17 +139,17 @@ public class RTSPlayer : NetworkBehaviour
         camParent.transform.Translate(camSpeed * Time.deltaTime * motion); //reordered operands for better performance
         //from 0 to 10
         cam.orthographicSize -= Input.mouseScrollDelta.y * camScroll;
-        
+
         cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, 1, 10);
-    } 
+    }
     private void SelectedAttackMove()
-    { 
+    {
         foreach (SelectableEntity item in selectedEntities)
         {
             if (item.minionController != null) //minion
             {
-                item.minionController.SetAttackMoveDestination(); 
-            } 
+                item.minionController.SetAttackMoveDestination();
+            }
         }
     }
     public enum ActionType
@@ -175,7 +175,7 @@ public class RTSPlayer : NetworkBehaviour
                 {
                     if (select.net.OwnerClientId == OwnerClientId) //same team
                     {
-                        if ((select.depositType == SelectableEntity.DepositType.Gold || select.depositType == SelectableEntity.DepositType.All) 
+                        if ((select.depositType == SelectableEntity.DepositType.Gold || select.depositType == SelectableEntity.DepositType.All)
                             && select.fullyBuilt) //if deposit point
                         {
                             actionType = ActionType.Deposit;
@@ -183,11 +183,11 @@ public class RTSPlayer : NetworkBehaviour
                         else if (!select.fullyBuilt) //if buildable and this is a builder
                         {
                             actionType = ActionType.BuildTarget;
-                        } 
+                        }
                         else if (select.fullyBuilt && select.HasEmptyGarrisonablePosition())
                         { //target can be garrisoned, and passenger cannot garrison, then enter
                             actionType = ActionType.Garrison;
-                        } 
+                        }
                         else if (select.occupiedGarrison != null && select.occupiedGarrison.HasEmptyGarrisonablePosition())
                         { //target is passenger of garrison, then enter garrison
                             actionType = ActionType.Garrison;
@@ -252,8 +252,8 @@ public class RTSPlayer : NetworkBehaviour
                 Debug.Log("Server telling client about the order");
                 ReportOrderClientRpc(actionType, clickedPosition);
             }*/
-        } 
-        
+        }
+
         /*else
         { 
             Debug.Log("client tells server about order but doesn't execute it yet");
@@ -337,7 +337,7 @@ public class RTSPlayer : NetworkBehaviour
     { 
         Debug.Log("clients receive server acknowledgement and original client can run order");
     } */
-    
+
 
     public void ReadySetRallyPoint()
     {
@@ -356,7 +356,7 @@ public class RTSPlayer : NetworkBehaviour
         foreach (SelectableEntity item in ownedEntities)
         {
             if (item != null && item.type != SelectableEntity.EntityTypes.ProductionStructure && item.type != SelectableEntity.EntityTypes.Builder)
-            { 
+            {
                 if (item.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
                     TrySelectEntity(item);
@@ -420,7 +420,7 @@ public class RTSPlayer : NetworkBehaviour
         Debug.Log(fow.GetFogValue(cursorWorldPosition));*/
         UpdatePlacement();
         if (Global.Instance.gridVisual != null)
-        { 
+        {
             Global.Instance.gridVisual.SetActive(mouseState == MouseState.ReadyToPlace);
         }
         if (Input.GetKey(KeyCode.Q))
@@ -436,7 +436,7 @@ public class RTSPlayer : NetworkBehaviour
             SelectAllIdleBuilders();
         }
         CameraMove();
-        if (!MouseOverUI()) 
+        if (!MouseOverUI())
         {
             GetMouseWorldPosition();
 
@@ -456,7 +456,7 @@ public class RTSPlayer : NetworkBehaviour
             if (Input.GetKey(KeyCode.UpArrow))
             {
                 GenericSpawnMinion(cursorWorldPosition, 11);
-            } 
+            }
 #endif
             if (linkedState == LinkedState.PlacingEnd)
             {
@@ -473,10 +473,10 @@ public class RTSPlayer : NetworkBehaviour
                         TryToSelectOne();
                         break;
                     case MouseState.ReadyToPlace:
-
+                        PlaceBuilding(buildingPlacingID);
                         if (!placementBlocked)
                         {
-                            PlaceBuilding(buildingPlacingID);
+
                         }
                         break;
                     case MouseState.ReadyToSetRallyPoint:
@@ -524,13 +524,13 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
         if (!Input.GetMouseButton(0) && finishedSelection)
-        { 
+        {
             Global.Instance.selectionRect.gameObject.SetActive(false);
         }
-        Global.Instance.goldText.text = "Gold: " + gold; 
+        Global.Instance.goldText.text = "Gold: " + gold;
         if (Global.Instance.popText != null)
         {
-            Global.Instance.popText.text = population+"/"+maxPopulation+" Population";
+            Global.Instance.popText.text = population + "/" + maxPopulation + " Population";
         }
         //TryReplaceFakeSpawn();
     }
@@ -651,13 +651,13 @@ public class RTSPlayer : NetworkBehaviour
 
         SelectionBox.anchoredPosition = StartMousePosition + new Vector2(width / 2, height / 2);
         SelectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
-    } 
+    }
     private void TellSelectedToBuild(SelectableEntity last)
     {
         foreach (SelectableEntity item in selectedEntities)
         {
             if (item.minionController != null)
-            { 
+            {
                 item.minionController.ForceBuildTarget(item);
             }
         }
@@ -688,7 +688,7 @@ public class RTSPlayer : NetworkBehaviour
                 break;
             default:
                 break;
-        } 
+        }
     }
     private void NormalPlaceBuilding(byte id)
     {
@@ -740,7 +740,7 @@ public class RTSPlayer : NetworkBehaviour
                 else //if there's a linked building, we continue placing buildings so the player can place the next part of the building.
                 {
                     buildingPlacingID = (byte)fac.linkedID;
-                    placingLinkedBuilding = true; 
+                    placingLinkedBuilding = true;
 
                     if (placingPortal)
                     {
@@ -752,7 +752,7 @@ public class RTSPlayer : NetworkBehaviour
                                 break;
                             }
                         }
-                    } 
+                    }
                 }
             }
         }
@@ -789,29 +789,29 @@ public class RTSPlayer : NetworkBehaviour
                 {
                     if (Physics.CheckBox(mod, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Ignore) ||
                         (fow.GetFogValue(mod) > 0.1f * 255)) //blocked
-                    { 
+                    {
                         predictedWallPositionsShouldBePlaced.Add(false);
                     }
                     else
-                    { 
+                    {
                         predictedWallPositionsShouldBePlaced.Add(true);
                     }
-                    predictedWallPositions.Add(mod); 
+                    predictedWallPositions.Add(mod);
                 }
             }
         }
         else
-        { 
+        {
             if (Physics.CheckBox(start, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Ignore) ||
                 (fow.GetFogValue(start) > 0.1f * 255)) //blocked
-            { 
+            {
                 predictedWallPositionsShouldBePlaced.Add(false);
             }
             else
-            { 
+            {
                 predictedWallPositionsShouldBePlaced.Add(true);
             }
-            predictedWallPositions.Add(start); 
+            predictedWallPositions.Add(start);
         }
         //count how many should be placed
         int count = 0;
@@ -859,11 +859,11 @@ public class RTSPlayer : NetworkBehaviour
             if (meshes[i] != null)
             {
                 if (blocked)
-                { 
+                {
                     meshes[i].material = Global.Instance.blocked;
                 }
                 else
-                { 
+                {
                     meshes[i].material = Global.Instance.transparent;
                 }
             }
@@ -896,29 +896,7 @@ public class RTSPlayer : NetworkBehaviour
         }
         predictedWallPositions.Clear();
         predictedWallPositionsShouldBePlaced.Clear();
-    }
-    /*private void WallFill(Vector3 start, Vector3 end, byte id) //fill between start and end
-    {
-        float distance = Vector3.Distance(start, end);
-        //greater distance means more walls
-
-
-        List<Vector3> positions = new List<Vector3>();
-        for (int i = 1; i < distance-1; i++)
-        {
-            Vector3 spot = Vector3.Lerp(start, end, i/distance);
-            Vector3 mod = new Vector3(AlignToGrid(spot.x), AlignToGrid(spot.y), AlignToGrid(spot.z));
-            if (!positions.Any(i => i == mod))
-            {
-                positions.Add(mod);
-                GenericSpawnMinion(mod, id); //followCursorObject.transform.position
-            }
-            //check if something is here already;
-            *//*if ()
-            {
-            }*//*
-        }
-    }*/
+    } 
     private float AlignToGrid(float input)
     {
         //ex 1.7
@@ -928,26 +906,26 @@ public class RTSPlayer : NetworkBehaviour
 
         //float maxDiff = 0.25f;
         return middle;
-/*
-        if (Mathf.Abs(ceiling - input) <= maxDiff) //if diff between ceiling and input is small
-        {
-            return ceiling;
-        }
-        else if (Mathf.Abs(floor - input) <= maxDiff)
-        {
-            return floor;
-        }
-        else
-        {
-            return middle;
-        }*/
+        /*
+                if (Mathf.Abs(ceiling - input) <= maxDiff) //if diff between ceiling and input is small
+                {
+                    return ceiling;
+                }
+                else if (Mathf.Abs(floor - input) <= maxDiff)
+                {
+                    return floor;
+                }
+                else
+                {
+                    return middle;
+                }*/
 
     }
     private byte wallID = 0;
     private void StopPlacingBuilding()
     {
         Destroy(followCursorObject);
-        followCursorObject = null; 
+        followCursorObject = null;
         mouseState = MouseState.Waiting;
         linkedState = LinkedState.Waiting;
         placingLinkedBuilding = false;
@@ -986,7 +964,7 @@ public class RTSPlayer : NetworkBehaviour
             oldPlacement = placementBlocked;
             UpdatePlacementMeshes();
         }
-        
+
     }
     private void UpdatePlacementMeshes()
     {
@@ -1031,8 +1009,8 @@ public class RTSPlayer : NetworkBehaviour
     /// Tell the server to spawn in a minion at a position.
     /// </summary> 
     public void GenericSpawnMinion(Vector3 spawnPos, byte minionID = 0)
-    { 
-        Vector2 spawn = new Vector2(spawnPos.x, spawnPos.z);   
+    {
+        Vector2 spawn = new Vector2(spawnPos.x, spawnPos.z);
         if (IsServer)
         {
             ServerSpawnMinion(spawn, minionID, (byte)OwnerClientId);
@@ -1110,10 +1088,11 @@ public class RTSPlayer : NetworkBehaviour
                 select = minion.GetComponent<SelectableEntity>();
             }
             if (select != null)
-            { 
+            {
                 //grant ownership 
                 if (NetworkManager.ConnectedClients.ContainsKey(clientID))
                 {
+                    select.clientIDToSpawnUnder = clientID;
                     Debug.Log("Granting ownership of " + select.name + " to client " + clientID);
                     //select.net.ChangeOwnership(clientID);
                     select.net.SpawnWithOwnership(clientID);
@@ -1218,7 +1197,7 @@ public class RTSPlayer : NetworkBehaviour
         _doubleSelect = false;
     }
     private void TryToSelectOne()
-    { 
+    {
         if (!_doubleSelect)
         {
             _doubleSelect = true;
@@ -1252,7 +1231,6 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void UpdateIndices()
     {
-
         indices.Clear();
 
         if (selectedEntities.Count > 0) //at least one unit selected
@@ -1260,7 +1238,7 @@ public class RTSPlayer : NetworkBehaviour
             //show gui elements based on unit type selected
             foreach (SelectableEntity item in selectedEntities)
             {
-                if (!item.fullyBuilt)
+                if (!item.fullyBuilt || !item.net.IsSpawned) //if not built or spawned, skip
                 {
                     continue;
                 }
@@ -1344,23 +1322,22 @@ public class RTSPlayer : NetworkBehaviour
     public void UpdateBuildQueue()
     {
         Global.Instance.queueParent.gameObject.SetActive(false);
-        if (selectedEntities.Count == 1)
-        {
-            SelectableEntity select = selectedEntities[0];
-            if (select.type == SelectableEntity.EntityTypes.ProductionStructure && select.fullyBuilt)
-            {
-                Global.Instance.queueParent.gameObject.SetActive(true);
-                int num = Mathf.Clamp(select.buildQueue.Count, 0, Global.Instance.queueButtons.Count);
-                //enable a button for each indices
+        if (selectedEntities.Count != 1) return; //only works with a single unit for now
 
-                for (int i = 0; i < Global.Instance.queueButtons.Count; i++)
-                {
-                    Global.Instance.queueButtons[i].gameObject.SetActive(false);
-                    if (i < num)
-                    {
-                        UpdateButton(select, i);
-                    }
-                }
+        SelectableEntity select = selectedEntities[0];
+        //only works if is production structure, fully built, and spawned
+        if (select.type != SelectableEntity.EntityTypes.ProductionStructure || !select.fullyBuilt || !select.net.IsSpawned) return;
+        
+        Global.Instance.queueParent.gameObject.SetActive(true);
+        int num = Mathf.Clamp(select.buildQueue.Count, 0, Global.Instance.queueButtons.Count);
+        //enable a button for each indices
+
+        for (int i = 0; i < Global.Instance.queueButtons.Count; i++)
+        {
+            Global.Instance.queueButtons[i].gameObject.SetActive(false);
+            if (i < num)
+            {
+                UpdateButton(select, i);
             }
         }
     }
@@ -1387,7 +1364,8 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void QueueBuildingSpawn(byte id = 0)
     {
-        FactionEntityClass fac = new()
+        //necessary to create new so we don't accidentally affect the files
+        FactionEntityClass newFac = new()
         {
             productionName = _faction.entities[id].prefabToSpawn.name,
             timeCost = _faction.entities[id].timeCost,
@@ -1396,20 +1374,14 @@ public class RTSPlayer : NetworkBehaviour
             buildID = id
         };
 
-        int cost = fac.goldCost;
+        int cost = newFac.goldCost;
         //try to spawn from all selected buildings if possible 
         foreach (SelectableEntity select in selectedEntities)
-        {
-            if (gold < cost)
-            {
-                Debug.Log("can't queue");
-                break;
-            }
-            if (select.fullyBuilt && select.builderEntityIndices.Contains(id))
-            { 
-                gold -= cost;
-                select.buildQueue.Add(fac);
-            }
+        { 
+            if (gold < cost || !select.net.IsSpawned || !select.fullyBuilt || !select.builderEntityIndices.Contains(id)) break;
+            //if requirements fulfilled
+            gold -= cost;
+            select.buildQueue.Add(newFac); 
         }
         UpdateBuildQueue();
     }
@@ -1429,14 +1401,12 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void HoverBuildWithID(byte id = 0)
     {
-        //Debug.Log(id);
-        placementBlocked = false;
         mouseState = MouseState.ReadyToPlace;
+        placementBlocked = false;
+        buildingPlacingID = id;
         GameObject build = _faction.entities[id].prefabToSpawn.gameObject;
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn locally  
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
-        buildingPlacingID = id;
-        bool ignore = false;
         if (entity.type == SelectableEntity.EntityTypes.Portal)
         {
             placingPortal = true;
@@ -1445,24 +1415,17 @@ public class RTSPlayer : NetworkBehaviour
         {
             linkedState = LinkedState.PlacingStart;
         }
-        if (ignore)
+        entity.isBuildIndicator = true;
+        followCursorObject = spawn;
+        meshes = spawn.GetComponentsInChildren<MeshRenderer>();
+        for (int i = 0; i < meshes.Length; i++)
         {
-            Destroy(spawn);
+            meshes[i].material = Global.Instance.transparent;
         }
-        else
+        Collider[] colliders = spawn.GetComponentsInChildren<Collider>();
+        for (int i = 0; i < colliders.Length; i++)
         {
-            entity.isBuildIndicator = true;
-            followCursorObject = spawn;
-            meshes = spawn.GetComponentsInChildren<MeshRenderer>();
-            for (int i = 0; i < meshes.Length; i++)
-            {
-                meshes[i].material = Global.Instance.transparent;
-            }
-            Collider[] colliders = spawn.GetComponentsInChildren<Collider>();
-            for (int i = 0; i < colliders.Length; i++)
-            {
-                colliders[i].isTrigger = true;
-            }
+            colliders[i].isTrigger = true;
         }
     }
     public bool placingPortal = false;
@@ -1593,18 +1556,7 @@ public class RTSPlayer : NetworkBehaviour
                 PredictAndRequestDamage(damage, enemy);
             }
         }
-    }
-    /*private void DamageUmbrella(sbyte damage, SelectableEntity enemy)
-    {
-        if (IsServer)
-        {
-            enemy.TakeDamage(damage);
-        }
-        else //client tell server to change the network variable
-        {
-            PredictAndRequestDamage(damage, enemy);
-        }
-    }*/
+    } 
     private void PredictAndRequestDamage(sbyte damage, SelectableEntity enemy)
     {
         //if we know that this attack will kill that unit, we can kill it client side

@@ -6,6 +6,7 @@ using Pathfinding;
 using Pathfinding.RVO;
 using System.Linq;
 using FoW;
+using UnityEditor.PackageManager;
 public class SelectableEntity : NetworkBehaviour
 {
     public bool fakeSpawn = false;
@@ -129,6 +130,7 @@ public class SelectableEntity : NetworkBehaviour
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
     #region NetworkSpawn 
+    public byte clientIDToSpawnUnder = 0;
     private void OnDrawGizmos()
     {
         if (fakeSpawn)
@@ -137,12 +139,54 @@ public class SelectableEntity : NetworkBehaviour
             Gizmos.DrawSphere(transform.position, .1f);
         }
     }
+    public override void OnNetworkSpawn() //invoked before start()
+    {
+        Initialize();
+        if (lineIndicator != null)
+        {
+            lineIndicator.enabled = false;
+        }
+        if (IsOwner)
+        {
+            teamNumber.Value = (byte)OwnerClientId;
+            isTargetable.Value = true; //initialize value
+
+            if (teamBehavior == TeamBehavior.OwnerTeam)
+            {
+                Global.Instance.localPlayer.ownedEntities.Add(this);
+                Global.Instance.localPlayer.lastSpawnedEntity = this;
+
+                if (!fullyBuilt)
+                {
+                    RequestBuilders();
+                }
+            }
+            ChangePopulation(consumePopulationAmount);
+        }
+        if (IsServer)
+        {
+            hitPoints.Value = startingHP;
+        }
+        hitPoints.OnValueChanged += OnHitPointsChanged;
+        damagedThreshold = (sbyte)(maxHP / 2);
+        rallyPoint = transform.position;
+        //SimplePlaySound(0);
+        Global.Instance.PlayClipAtPoint(sounds[0], transform.position, .01f); //play spawning sound
+        //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
+        UpdateTeamRenderers();
+
+        if (targetIndicator != null)
+        {
+            targetIndicator.transform.parent = null;
+        }
+        if (selectIndicator != null) selectIndicator.SetActive(selected);
+        if (fogUnit != null) fogUnit.team = (int)OwnerClientId;
+        /*fogHide = GetComponent<HideInFog>();
+        if (fogHide != null) fogHide.team = (int)OwnerClientId;*/
+    }
     private void Start()
-    { 
-        allMeshes = GetComponentsInChildren<MeshRenderer>();
-        net = GetComponent<NetworkObject>();
-        obstacle = GetComponent<DynamicGridObstacle>();
-        RVO = GetComponent<RVOController>();
+    {
+        Initialize();
         if (isKeystone && Global.Instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
         {
             Global.Instance.localPlayer.keystoneUnits.Add(this);
@@ -176,53 +220,16 @@ public class SelectableEntity : NetworkBehaviour
         if (rallyVisual != null) rallyVisual.enabled = false;
         if (teamBehavior == TeamBehavior.OwnerTeam) Global.Instance.allFactionEntities.Add(this);
     } 
-    public override void OnNetworkSpawn()
+    private void Initialize()
     {
-        if (lineIndicator != null)
-        {
-            lineIndicator.enabled = false;
-        }
-        if (IsOwner)
-        {
-            teamNumber.Value = (byte)OwnerClientId;
-            isTargetable.Value = true; //initialize value
-
-            if (teamBehavior == TeamBehavior.OwnerTeam)
-            {
-                Global.Instance.localPlayer.ownedEntities.Add(this);
-                Global.Instance.localPlayer.lastSpawnedEntity = this; 
-
-                if (!fullyBuilt)
-                {
-                    RequestBuilders();
-                }
-            }
-            ChangePopulation(consumePopulationAmount);
-        }
-        if (IsServer)
-        {
-            hitPoints.Value = startingHP;
-        }
-        hitPoints.OnValueChanged += OnHitPointsChanged;
-        damagedThreshold = (sbyte)(maxHP / 2);
-        rallyPoint = transform.position;
-        //SimplePlaySound(0);
-        Global.Instance.PlayClipAtPoint(sounds[0], transform.position, .01f); //play spawning sound
-        //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
-        UpdateTeamRenderers();
-
-        if (targetIndicator != null)
-        {
-            targetIndicator.transform.parent = null;
-        }
-        if (selectIndicator != null) selectIndicator.SetActive(selected);
-        minionController = GetComponent<MinionController>();
-        fogUnit = GetComponent<FogOfWarUnit>();
-        if (fogUnit != null) fogUnit.team = (int) OwnerClientId;
-        /*fogHide = GetComponent<HideInFog>();
-        if (fogHide != null) fogHide.team = (int)OwnerClientId;*/
-        Debug.Log(name + " finished spawning.");
-    } 
+        if (minionController == null ) minionController = GetComponent<MinionController>();
+        if (fogUnit == null) fogUnit = GetComponent<FogOfWarUnit>();
+        if (allMeshes.Length == 0) allMeshes = GetComponentsInChildren<MeshRenderer>();
+        if (net == null) net = GetComponent<NetworkObject>();
+        if (obstacle == null) obstacle = GetComponent<DynamicGridObstacle>();
+        if (RVO == null) RVO = GetComponent<RVOController>(); 
+    }
+    
     private void Update()
     {
         SetHideFogTeam();

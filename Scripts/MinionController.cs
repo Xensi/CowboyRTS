@@ -1168,6 +1168,8 @@ public class MinionController : NetworkBehaviour
             PlaceOnGround();
         }
     }
+
+
     /// <summary>
     /// Freeze rigidbody. Defaults to completely freezing it.
     /// </summary>
@@ -1182,6 +1184,11 @@ public class MinionController : NetworkBehaviour
         if (freezePosition)
         { 
             ForceUpdateRealLocation();
+            BecomeObstacle();
+        }
+        else
+        {
+            ClearObstacle();
         }
 
         RigidbodyConstraints posCon;
@@ -1206,6 +1213,17 @@ public class MinionController : NetworkBehaviour
             rotCon = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         }
         if (rigid != null) rigid.constraints = posCon | rotCon;
+
+    }
+    private GraphUpdateScene graphUpdateScene;
+
+    private void BecomeObstacle()
+    {
+        //tell graph update scene to start blocking
+    }
+    private void ClearObstacle()
+    {
+        //tell graph update scene to stop blocking
     }
     private void ForceUpdateRealLocation()
     {
