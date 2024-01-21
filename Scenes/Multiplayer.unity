@@ -9052,7 +9052,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1033573586
 RectTransform:
   m_ObjectHideFlags: 0
@@ -14876,7 +14876,7 @@ MonoBehaviour:
     Port: 7777
     ServerListenAddress: 127.0.0.1
   DebugSimulator:
-    PacketDelayMS: 100
+    PacketDelayMS: 200
     PacketJitterMS: 10
     PacketDropRate: 10
 --- !u!114 &1873259844
@@ -14908,7 +14908,7 @@ MonoBehaviour:
     TimeResyncInterval: 30
     EnsureNetworkVariableLengthSafety: 0
     EnableSceneManagement: 1
-    ForceSamePrefabs: 0
+    ForceSamePrefabs: 1
     RecycleNetworkIds: 1
     NetworkIdRecycleDelay: 120
     RpcHashSize: 0
@@ -14943,7 +14943,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7a01b70b0bd13949baf2cbf10c6ecac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enable: 0
+  enable: 1
 --- !u!114 &1873259847
 MonoBehaviour:
   m_ObjectHideFlags: 0

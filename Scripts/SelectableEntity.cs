@@ -5,8 +5,7 @@ using Unity.Netcode;
 using Pathfinding;
 using Pathfinding.RVO;
 using System.Linq;
-using FoW;
-using UnityEditor.PackageManager;
+using FoW; 
 public class SelectableEntity : NetworkBehaviour
 {
     public bool fakeSpawn = false;
@@ -52,7 +51,6 @@ public class SelectableEntity : NetworkBehaviour
     #region NetworkVariables
     //public ushort fakeSpawnNetID = 0;
     public GameObject fakeSpawnObject;
-    public NetworkVariable<sbyte> hitPoints = new();
     [HideInInspector] public NetworkVariable<bool> isTargetable = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
     #region Hidden
@@ -86,8 +84,9 @@ public class SelectableEntity : NetworkBehaviour
     public string displayName = "name";
     [TextArea(2, 4)]
     public string desc = "desc";
-    [SerializeField] private sbyte startingHP = 10; //buildings usually don't start with full HP
-    public byte maxHP = 10;
+    public NetworkVariable<short> hitPoints = new();
+    [SerializeField] private short startingHP = 10; //buildings usually don't start with full HP
+    public short maxHP = 10;
     public DepositType depositType = DepositType.None;
     public TeamBehavior teamBehavior = TeamBehavior.OwnerTeam;
     public EntityTypes type = EntityTypes.Melee;
@@ -228,10 +227,11 @@ public class SelectableEntity : NetworkBehaviour
         if (net == null) net = GetComponent<NetworkObject>();
         if (obstacle == null) obstacle = GetComponent<DynamicGridObstacle>();
         if (RVO == null) RVO = GetComponent<RVOController>(); 
-    }
-    
+    } 
     private void Update()
-    {
+    { 
+
+
         SetHideFogTeam();
         HideInFog(); 
         if (rallyTarget != null)
@@ -405,7 +405,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     private HideInFog fogHide;
     private FogOfWarUnit fogUnit;
-    private void OnHitPointsChanged(sbyte prev, sbyte current)
+    private void OnHitPointsChanged(short prev, short current)
     {
         if (selected)
         {

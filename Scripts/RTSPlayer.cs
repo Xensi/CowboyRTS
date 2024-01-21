@@ -359,7 +359,7 @@ public class RTSPlayer : NetworkBehaviour
         DeselectAll();
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item != null && item.type != SelectableEntity.EntityTypes.ProductionStructure && item.type != SelectableEntity.EntityTypes.Builder)
+            if (item != null && (item.type == SelectableEntity.EntityTypes.Melee || item.type == SelectableEntity.EntityTypes.Ranged))
             {
                 if (item.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
@@ -1009,26 +1009,7 @@ public class RTSPlayer : NetworkBehaviour
         }
     }
     #region SpawnMinion
-    /// <summary>
-    /// Tell the server to spawn in a minion at a position.
-    /// </summary> 
-    public void GenericSpawnMinion(Vector3 spawnPos, byte minionID = 0)
-    {
-        Vector2 spawn = new Vector2(spawnPos.x, spawnPos.z);
-        if (IsServer)
-        {
-            ServerSpawnMinion(spawn, minionID, (byte)OwnerClientId);
-        }
-        else //clients ask server to spawn it
-        {
-            //FakeClientSideSpawn(spawn, minionID);
-            FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
-            Debug.Log("CLIENT: sending request to spawn " + fac.productionName);
-            //SpawnMinionServerRpc(spawn, minionID);
-            RequestSpawnMinionServerRpc(spawn, minionID, (byte)OwnerClientId);
-        }
-        UpdateButtons();
-    }
+
     //private List<GameObject> fakeSpawns = new(); 
     /*private void FakeClientSideSpawn(Vector2 spawn, byte minionID)
     {
@@ -1069,6 +1050,26 @@ public class RTSPlayer : NetworkBehaviour
         }*//*
         //select.fakeSpawnNetID.
     }*/
+    /// <summary>
+    /// Tell the server to spawn in a minion at a position.
+    /// </summary> 
+    public void GenericSpawnMinion(Vector3 spawnPos, byte minionID = 0)
+    {
+        Vector2 spawn = new Vector2(spawnPos.x, spawnPos.z);
+        if (IsServer)
+        {
+            ServerSpawnMinion(spawn, minionID, (byte)OwnerClientId);
+        }
+        else //clients ask server to spawn it
+        {
+            //FakeClientSideSpawn(spawn, minionID);
+            FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
+            Debug.Log("CLIENT: sending request to spawn " + fac.productionName);
+            //SpawnMinionServerRpc(spawn, minionID);
+            RequestSpawnMinionServerRpc(spawn, minionID, (byte)OwnerClientId);
+        }
+        UpdateButtons();
+    }
     [ServerRpc]
     private void RequestSpawnMinionServerRpc(Vector2 spawn, byte minionID, byte clientID) //ok to use byte because 0-244
     {
@@ -1099,6 +1100,7 @@ public class RTSPlayer : NetworkBehaviour
                     select.clientIDToSpawnUnder = clientID;
                     Debug.Log("Granting ownership of " + select.name + " to client " + clientID);
                     //select.net.ChangeOwnership(clientID);
+                    //select.net.Spawn(); 
                     select.net.SpawnWithOwnership(clientID);
                     //use client rpc to send this ID to client
                     /*ClientRpcParams clientRpcParams = new ClientRpcParams

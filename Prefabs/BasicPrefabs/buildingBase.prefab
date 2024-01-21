@@ -72,8 +72,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fakeSpawn: 0
-  hitPoints:
-    m_InternalValue: 0
+  fakeSpawnObject: {fileID: 0}
   isTargetable:
     m_InternalValue: 0
   minionController: {fileID: 0}
@@ -95,6 +94,8 @@ MonoBehaviour:
   physicalCollider: {fileID: 1740862975100282267}
   displayName: name
   desc: desc
+  hitPoints:
+    m_InternalValue: 0
   startingHP: 1
   maxHP: 50
   depositType: 0
@@ -106,7 +107,7 @@ MonoBehaviour:
   builderEntityIndices: 
   spawnableAtOnce: 1
   isHarvester: 0
-  allowedInteractors: 1
+  allowedInteractors: 4
   resourceType: 1
   harvestCapacity: 10
   garrisonablePositions: []
@@ -128,6 +129,7 @@ MonoBehaviour:
   RVO: {fileID: 0}
   teamNumber:
     m_InternalValue: 0
+  clientIDToSpawnUnder: 0
   visibleInFog: 0
   hideFogTeam: 0
   shouldHideInFog: 1
@@ -141,8 +143,8 @@ Rigidbody:
   m_GameObject: {fileID: 2870261118279373742}
   serializedVersion: 2
   m_Mass: 1
-  m_Drag: 1
-  m_AngularDrag: 1
+  m_Drag: Infinity
+  m_AngularDrag: Infinity
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
