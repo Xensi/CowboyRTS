@@ -61,6 +61,7 @@ public class RTSPlayer : NetworkBehaviour
     public int population = 0;
     public int maxPopulation = 100;
     public LayerMask placementGhost;
+    public LayerMask groundEntityLayer;
     public void LoseGame()
     {
         inTheGame.Value = false;
@@ -69,6 +70,7 @@ public class RTSPlayer : NetworkBehaviour
     {
         groundLayer = LayerMask.GetMask("Ground");
         entityLayer = LayerMask.GetMask("Entity", "Obstacle");
+        groundEntityLayer = LayerMask.GetMask("Entity", "Ground");
         placementGhost = LayerMask.GetMask("PlacementGhost");
         _offset = new Vector3(0.5f, 0, .5f);
         //_offset = new Vector3(0, 0, 0);
@@ -163,7 +165,7 @@ public class RTSPlayer : NetworkBehaviour
         //tell other clients that this happened
         Vector3 clickedPosition;
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundEntityLayer))
         {
             clickedPosition = hit.point;
 
@@ -1437,7 +1439,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             DeselectAll();
         }
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, entityLayer))
         {
             //SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
 
@@ -1456,7 +1458,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             DeselectAll();
         }
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, entityLayer))
         {
             //SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
 

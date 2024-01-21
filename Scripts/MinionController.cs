@@ -132,6 +132,10 @@ public class MinionController : NetworkBehaviour
             ai.enabled = false;
         }
     }
+    private void Initialize()
+    {
+
+    }
     void OnDisable()
     {
         if (ai != null) ai.onSearchPath -= Update;
@@ -170,7 +174,31 @@ public class MinionController : NetworkBehaviour
         //enabled = IsOwner;
         oldPosition = transform.position;
         lastCommand.Value = CommandTypes.Move;
-        orderedDestination = transform.position; 
+        orderedDestination = transform.position;
+        if (Global.Instance.graphUpdateScenePrefab != null)
+            graphUpdateScene = Instantiate(Global.Instance.graphUpdateScenePrefab, transform.position, Quaternion.identity);
+        if (graphUpdateScene != null && ai != null)
+        {
+            SphereCollider collider = graphUpdateScene.GetComponent<SphereCollider>();
+            collider.radius = ai.radius;
+        }
+    }
+    private float moveTimer = 0;
+    private readonly float moveTimerMax = 0.5f;
+    private void GetActualPositionChange()
+    { 
+        //float dist = Vector3.Distance(transform.position, oldPosition);
+        //oldPosition = transform.position;
+        moveTimer += Time.deltaTime;
+        if (moveTimer >= moveTimerMax)
+        {
+            moveTimer = 0;
+            Vector3 offset = transform.position - oldPosition;
+            float sqrLen = offset.sqrMagnitude;
+            change = sqrLen;
+            oldPosition = transform.position;
+            //Debug.Log(change);
+        }
     }
     private void OnRealLocationChanged(Vector3 prev, Vector3 cur)
     {
@@ -182,7 +210,7 @@ public class MinionController : NetworkBehaviour
         if (!selectableEntity.fakeSpawn && IsSpawned)
         {
             if (ai != null) ai.destination = destination.Value;
-            change = GetActualPositionChange();
+            GetActualPositionChange();
             if (IsOwner)
             {
                 UpdateRealLocation();
@@ -194,7 +222,7 @@ public class MinionController : NetworkBehaviour
             } 
         }
     }  
-    private void IdleOrWalkContextually()
+    private void IdleOrWalkContextuallyAnimationOnly()
     {   
         if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
         {
@@ -259,7 +287,7 @@ public class MinionController : NetworkBehaviour
                 switch (lastCommand.Value)
                 {
                     case CommandTypes.Move:
-                        IdleOrWalkContextually();
+                        IdleOrWalkContextuallyAnimationOnly();
                         break;
                     case CommandTypes.AttackMove:
                         ClientSeekEnemy();  
@@ -466,9 +494,10 @@ public class MinionController : NetworkBehaviour
                 break;
             case State.Idle:
                 HideMoveIndicator();
-                IdleOrWalkContextually();
+                IdleOrWalkContextuallyAnimationOnly();
                 //animator.Play("Idle");
                 FreezeRigid();
+                //todo here: if we detect that there is a path to our ordered destination then we should go there
                 if (IsOwner) destination.Value = orderedDestination;//transform.position; //stand still
 
                 switch (givenMission)
@@ -548,7 +577,12 @@ public class MinionController : NetworkBehaviour
                 UpdateMoveIndicator();
                 FreezeRigid(false, false);
                 destination.Value = orderedDestination;
-                IdleOrWalkContextually();
+
+                IdleOrWalkContextuallyAnimationOnly();  
+                if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
+                {
+                    state = State.Idle;
+                }
                 //animator.Play("Walk");
 
                 /*if (DetectIfStuck()) //!followingMoveOrder && !chasingEnemy && (selectableEntity.interactionTarget == null || selectableEntity.interactionTarget.fullyBuilt)
@@ -1167,24 +1201,29 @@ public class MinionController : NetworkBehaviour
         {
             PlaceOnGround();
         }
-    }
-
-
+    } 
     /// <summary>
     /// Freeze rigidbody. Defaults to completely freezing it.
     /// </summary>
     /// <param name="freezePosition"></param>
     /// <param name="freezeRotation"></param>
-    public void FreezeRigid(bool freezePosition = true, bool freezeRotation = true)
+    public void FreezeRigid(bool freezePosition = true, bool freezeRotation = true, bool canCreateObstacle = true)
     {
         //ai.canMove = true;
         ai.canMove = !freezePosition;
 
         highPrecisionMovement = freezePosition;
-        if (freezePosition)
+        if (canCreateObstacle)
         { 
-            ForceUpdateRealLocation();
-            BecomeObstacle();
+            if (freezePosition)
+            {
+                ForceUpdateRealLocation();
+                BecomeObstacle();
+            }
+            else
+            {
+                ClearObstacle();
+            }
         }
         else
         {
@@ -1220,10 +1259,26 @@ public class MinionController : NetworkBehaviour
     private void BecomeObstacle()
     {
         //tell graph update scene to start blocking
+        if (graphUpdateScene != null)
+        {
+            graphUpdateScene.transform.position = transform.position;
+            graphUpdateScene.modifyTag = true;
+            graphUpdateScene.setTag = 1;
+            graphUpdateScene.Apply();
+            graphUpdateScene.modifyTag = false;
+        }
     }
     private void ClearObstacle()
     {
         //tell graph update scene to stop blocking
+        if (graphUpdateScene != null)
+        {
+            graphUpdateScene.transform.position = transform.position;
+            graphUpdateScene.modifyTag = true;
+            graphUpdateScene.setTag = 0;
+            graphUpdateScene.Apply();
+            graphUpdateScene.modifyTag = false;
+        }
     }
     private void ForceUpdateRealLocation()
     {
@@ -1707,12 +1762,6 @@ public class MinionController : NetworkBehaviour
         ProjectileClientRpc(star, dest);
     } 
 
-    private float GetActualPositionChange()
-    {
-        float dist = Vector3.Distance(transform.position, oldPosition);
-        oldPosition = transform.position;
-        return dist/Time.deltaTime;
-    }  
     private void ClearTargets()
     { 
         targetEnemy = null;

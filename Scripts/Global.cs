@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine.Rendering;
+using Pathfinding;
 
 public class Global : NetworkBehaviour
 {
@@ -40,6 +41,7 @@ public class Global : NetworkBehaviour
     public TMP_Text popText;
     public Volume fogVolume;
     public List<SelectableEntity> allFactionEntities = new();
+    public GraphUpdateScene graphUpdateScenePrefab;
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.

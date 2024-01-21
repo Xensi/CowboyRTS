@@ -721,26 +721,6 @@ PrefabInstance:
       value: -2.5
       objectReference: {fileID: 0}
     - target: {fileID: 801487402834003379, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
-      propertyPath: slowdownDistance
-      value: 0.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 801487402834003379, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
-      propertyPath: endReachedDistance
-      value: 0.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 801487402834003379, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
-      propertyPath: constrainInsideGraph
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 801487402834003379, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
-      propertyPath: pickNextWaypointDist
-      value: 0.25
-      objectReference: {fileID: 0}
-    - target: {fileID: 801487402834003379, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
-      propertyPath: whenCloseToDestination
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 801487402834003379, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: slowWhenNotFacingTarget
       value: 1
       objectReference: {fileID: 0}

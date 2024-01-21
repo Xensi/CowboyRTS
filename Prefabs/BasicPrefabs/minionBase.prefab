@@ -151,8 +151,9 @@ GameObject:
   - component: {fileID: 5114157818442103759}
   - component: {fileID: 4721624654941951496}
   - component: {fileID: 801487402834003379}
-  - component: {fileID: 2696319472600951783}
   - component: {fileID: 1965146877331169390}
+  - component: {fileID: 2075051146131870707}
+  - component: {fileID: 5816248487321000701}
   m_Layer: 7
   m_Name: minionBase
   m_TagString: Untagged
@@ -268,6 +269,7 @@ MonoBehaviour:
   RVO: {fileID: 0}
   teamNumber:
     m_InternalValue: 0
+  clientIDToSpawnUnder: 0
   visibleInFog: 0
   hideFogTeam: 0
   shouldHideInFog: 1
@@ -321,7 +323,7 @@ Rigidbody:
   serializedVersion: 2
   m_Mass: 10
   m_Drag: Infinity
-  m_AngularDrag: 10
+  m_AngularDrag: Infinity
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
@@ -354,7 +356,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 1
   drawGizmos: 1
-  detailedGizmos: 0
+  detailedGizmos: 1
   startEndModifier:
     addPoints: 0
     exactStartPoint: 3
@@ -365,7 +367,7 @@ MonoBehaviour:
       m_Bits: 4294967295
     useGraphRaycasting: 0
   traversableTags: -3
-  tagPenalties: 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  tagPenalties: 00000000e7030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
   graphMask:
     value: -1
 --- !u!114 &801487402834003379
@@ -403,36 +405,13 @@ MonoBehaviour:
   targetCompatibility: {fileID: 0}
   maxAcceleration: 999
   rotationSpeed: 360
-  slowdownDistance: 0
+  slowdownDistance: 0.01
   pickNextWaypointDist: 0.25
-  endReachedDistance: 0.1
+  endReachedDistance: 0.01
   alwaysDrawGizmos: 0
   slowWhenNotFacingTarget: 0
   whenCloseToDestination: 1
-  constrainInsideGraph: 1
---- !u!114 &2696319472600951783
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5353858407141398554}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b090bec917bbe4c3bbc612ef13f7c4a1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  version: 1
-  useRaycasting: 1
-  mask:
-    serializedVersion: 2
-    m_Bits: 8
-  thickRaycast: 0
-  thickRaycastRadius: 0
-  use2DPhysics: 0
-  raycastOffset: {x: 0, y: 0, z: 0}
-  useGraphRaycasting: 1
-  quality: 0
+  constrainInsideGraph: 0
 --- !u!114 &1965146877331169390
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -468,6 +447,44 @@ MonoBehaviour:
   multithreading: 0
   cellBased: 0
   snapToPixelCenter: 0
+--- !u!114 &2075051146131870707
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5353858407141398554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64ffa084e9f3d48b59e691352d40eb68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 1
+  radius: 0.2
+  detail: 5
+--- !u!114 &5816248487321000701
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5353858407141398554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b090bec917bbe4c3bbc612ef13f7c4a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 1
+  useRaycasting: 0
+  mask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  thickRaycast: 0
+  thickRaycastRadius: 0
+  use2DPhysics: 0
+  raycastOffset: {x: 0, y: 0, z: 0}
+  useGraphRaycasting: 1
+  quality: 0
 --- !u!1001 &4363772687689255031
 PrefabInstance:
   m_ObjectHideFlags: 0

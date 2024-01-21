@@ -224,7 +224,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (minionController == null ) minionController = GetComponent<MinionController>();
         if (fogUnit == null) fogUnit = GetComponent<FogOfWarUnit>();
-        if (allMeshes.Length == 0) allMeshes = GetComponentsInChildren<MeshRenderer>();
+        allMeshes = GetComponentsInChildren<MeshRenderer>();
         if (net == null) net = GetComponent<NetworkObject>();
         if (obstacle == null) obstacle = GetComponent<DynamicGridObstacle>();
         if (RVO == null) RVO = GetComponent<RVOController>(); 
@@ -355,7 +355,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (minionController != null)
         {
-            minionController.FreezeRigid();
+            minionController.FreezeRigid(true, true, false);
             minionController.PrepareForDeath();
 
             foreach (MeshRenderer item in allMeshes)
@@ -728,7 +728,7 @@ public class SelectableEntity : NetworkBehaviour
         //determine if spawned units should be given a mission
 
         Ray ray = Global.Instance.localPlayer.cam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundEntityLayer))
         {
             rallyPoint = hit.point;
             if (rallyVisual != null)
