@@ -570,10 +570,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1123810511653194625, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
     - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
-      propertyPath: state
-      value: 11
-      objectReference: {fileID: 0}
-    - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: damage
       value: 10
       objectReference: {fileID: 0}
@@ -591,7 +587,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: attackRange
-      value: 1
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: areaOfEffect

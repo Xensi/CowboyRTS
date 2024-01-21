@@ -396,7 +396,7 @@ public class MinionController : NetworkBehaviour
         //owner can change real location with impunity
         //other clients: when their value for real location syncs up with owner, check if it's different enough to warrant a teleport
         //in future lerp to new location? 
-        if (!IsOwner)
+        if (!IsOwner && selectableEntity.alive) //prevents dead units from teleporting
         {
             if (Vector3.Distance(realLocation.Value, transform.position) > allowedNonOwnerError || highPrecisionMovement) //&& realLocationReached == false
             {

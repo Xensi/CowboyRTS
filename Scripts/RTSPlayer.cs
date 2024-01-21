@@ -536,7 +536,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             Global.Instance.popText.text = population + "/" + maxPopulation + " Population";
         }
-        //TryReplaceFakeSpawn();
+        TryReplaceFakeSpawn();
     }
     private void SelectWithinBounds() //rectangle select, finish drag select
     {
@@ -1010,46 +1010,45 @@ public class RTSPlayer : NetworkBehaviour
     }
     #region SpawnMinion
 
-    //private List<GameObject> fakeSpawns = new(); 
-    /*private void FakeClientSideSpawn(Vector2 spawn, byte minionID)
+    private List<SelectableEntity> fakeSpawns = new(); 
+    private void FakeClientSideSpawn(Vector2 spawn, byte minionID)
     {
         Vector3 spawnPosition = new(spawn.x, 0, spawn.y); //get spawn position 
         FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
-        if (fac.prefabToSpawn != null && fac.prefabToSpawn.fakeSpawnObject != null)
+        if (fac.prefabToSpawn != null) // && fac.prefabToSpawn.fakeSpawnObject != null
         {
-            GameObject fakeSpawn = Instantiate(fac.prefabToSpawn.fakeSpawnObject, spawnPosition, Quaternion.Euler(0, 180, 0)); //spawn locally 
-            fakeSpawns.Add(fakeSpawn);
+            SelectableEntity select = Instantiate(fac.prefabToSpawn, spawnPosition, Quaternion.Euler(0, 180, 0)); //spawn locally  
+            Animator anim = select.GetComponentInChildren<Animator>();
+            MeshRenderer[] renderers = select.GetComponentsInChildren<MeshRenderer>();
+            NetworkObject net = select.GetComponent<NetworkObject>();
+            Destroy(net);
+            select.fakeSpawn = true;
+            //select.fakeSpawnNetID.
+            foreach (MeshRenderer item in renderers)
+            {
+                if (item != null)
+                {
+                    item.material.color = Global.Instance.teamColors[(int)Global.Instance.localPlayer.OwnerClientId];
+                }
+            }
+            foreach (MeshRenderer item in select.teamRenderers)
+            {
+                if (item != null)
+                {
+                    item.material.color = Global.Instance.teamColors[(int)Global.Instance.localPlayer.OwnerClientId];
+                }
+            }
+            if (anim != null)
+            {
+                anim.SetBool("fakeSpawn", true);
+            }
+            fakeSpawns.Add(select);
         }
         //
-        *//*minion.name = "FAKE SPAWN";
-        MeshRenderer[] renderers = minion.GetComponentsInChildren<MeshRenderer>();
-        foreach (MeshRenderer item in renderers)
-        {
-            if (item != null)
-            {
-                item.material.color = Global.Instance.teamColors[(int)Global.Instance.localPlayer.OwnerClientId];
-            }
-        }*//*
+        //minion.name = "FAKE SPAWN";
 
-        //NetworkObject net = minion.GetComponent<NetworkObject>();
-        //Destroy(net);
         //Get components
-        //SelectableEntity select = minion.GetComponent<SelectableEntity>();
-        *//*foreach (MeshRenderer item in select.teamRenderers)
-        {
-            if (item != null)
-            {
-                item.material.color = Global.Instance.teamColors[(int)Global.Instance.localPlayer.OwnerClientId];
-            }
-        }*//*
-        //select.fakeSpawn = true;
-        //Animator anim = select.GetComponentInChildren<Animator>();
-        *//*if (anim != null)
-        {
-            anim.SetBool("fakeSpawn", true);
-        }*//*
-        //select.fakeSpawnNetID.
-    }*/
+    }
     /// <summary>
     /// Tell the server to spawn in a minion at a position.
     /// </summary> 
@@ -1062,7 +1061,7 @@ public class RTSPlayer : NetworkBehaviour
         }
         else //clients ask server to spawn it
         {
-            //FakeClientSideSpawn(spawn, minionID);
+            FakeClientSideSpawn(spawn, minionID);
             FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
             Debug.Log("CLIENT: sending request to spawn " + fac.productionName);
             //SpawnMinionServerRpc(spawn, minionID);
@@ -1101,21 +1100,23 @@ public class RTSPlayer : NetworkBehaviour
                     Debug.Log("Granting ownership of " + select.name + " to client " + clientID);
                     //select.net.ChangeOwnership(clientID);
                     //select.net.Spawn(); 
+                    if (select.net == null) select.net = select.GetComponent<NetworkObject>();
+
                     select.net.SpawnWithOwnership(clientID);
                     //use client rpc to send this ID to client
-                    /*ClientRpcParams clientRpcParams = new ClientRpcParams
+                    ClientRpcParams clientRpcParams = new ClientRpcParams
                     {
                         Send = new ClientRpcSendParams
                         {
                             TargetClientIds = new ulong[] { clientID }
                         }
                     };
-                    SendReferenceToSpawnedMinionClientRpc((ushort)select.NetworkObjectId, clientRpcParams);*/
+                    SendReferenceToSpawnedMinionClientRpc((ushort)select.NetworkObjectId, clientRpcParams);
                 }
             }
         }
     }
-    /*private List<ushort> fakeSpawnsReadyForReplacement = new();
+    private List<ushort> fakeSpawnsReadyForReplacement = new();
     /// <summary>
     /// Tell client that their fake spawn is ready to be replaced with the real thing
     /// </summary>
@@ -1127,12 +1128,11 @@ public class RTSPlayer : NetworkBehaviour
         if (!IsServer)
         {
             Debug.Log("CLIENT: received confirmation of thing being spawned: " + netID);
-            fakeSpawnsReadyForReplacement.Add(netID);
-            //fakeSpawnsReadyForReplacement++;
+            fakeSpawnsReadyForReplacement.Add(netID); 
         }
-    } */
-    /*private void TryReplaceFakeSpawn()
-    { 
+    }
+    private void TryReplaceFakeSpawn()
+    {
         if (fakeSpawns.Count > 0 && fakeSpawnsReadyForReplacement.Count > 0) //fakeSpawnsReadyForReplacement.Count > 0 && 
         {
             ushort fakeSpawnNetID = fakeSpawnsReadyForReplacement[0];
@@ -1159,14 +1159,14 @@ public class RTSPlayer : NetworkBehaviour
                         select.selected = fake.selected;
                         //select.ChangeHitPointsServerRpc(fake.hitPoints.Value);
                     }
-                    Destroy(fakeSpawns[0]);
-                    fakeSpawns.RemoveAt(0); 
+                    Destroy(fakeSpawns[0].gameObject);
+                    fakeSpawns.RemoveAt(0);
                     fakeSpawnsReadyForReplacement.RemoveAt(0);
                     break;
                 }
-            }   
-        } 
-    }*/
+            }
+        }
+    }
     /*private void InternalSpawnMinion(Vector2 spawn, byte minionID, ServerRpcParams serverRpcParams = default)
     {
         *//*Vector3 spawnPosition = new(spawn.x, 0, spawn.y); //get spawn position
@@ -1532,7 +1532,9 @@ public class RTSPlayer : NetworkBehaviour
         int numColliders = Physics.OverlapSphereNonAlloc(center, explodeRadius, hitColliders, entityLayer);
         for (int i = 0; i < numColliders; i++)
         {
+            if (hitColliders[i] == null) continue;
             SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
+            if (select == null) continue;
             if (Global.Instance.localPlayer.ownedEntities.Contains(select)) //skip teammates
             {
                 continue;
@@ -1569,7 +1571,7 @@ public class RTSPlayer : NetworkBehaviour
         if (damage >= enemy.hitPoints.Value)
         {
             Debug.Log("can kill early" + enemy.hitPoints.Value);
-            enemy.ProperDestroyEntity();
+            enemy.PrepareForEntityDestruction();
         }
         Global.Instance.localPlayer.RequestDamageServerRpc(damage, enemy);
     } 

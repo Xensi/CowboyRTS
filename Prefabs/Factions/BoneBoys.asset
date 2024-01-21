@@ -105,11 +105,11 @@ MonoBehaviour:
     timeCost: 0
     buildID: 0
   - productionName: Enforcer
-    needsConstructing: 1
+    needsConstructing: 0
     prefabToSpawn: {fileID: 2902938188131716622, guid: 40375cf243cfc42459780e3b3e34a3e8, type: 3}
     linkedID: -1
     goldCost: 200
-    timeCost: 0
+    timeCost: 5
     buildID: 0
   - productionName: Drunkard
     needsConstructing: 0

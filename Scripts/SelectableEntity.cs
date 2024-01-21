@@ -49,14 +49,13 @@ public class SelectableEntity : NetworkBehaviour
     }
     #endregion
     #region NetworkVariables
-    //public ushort fakeSpawnNetID = 0;
-    public GameObject fakeSpawnObject;
+    //public ushort fakeSpawnNetID = 0; 
     [HideInInspector] public NetworkVariable<bool> isTargetable = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
     #region Hidden
     [HideInInspector] public MinionController minionController;
     [HideInInspector] public bool selected = false;
-    [HideInInspector] public NetworkObject net;
+    public NetworkObject net;
     public Vector3 rallyPoint;
     [HideInInspector] public bool alive = true;
 
@@ -261,7 +260,7 @@ public class SelectableEntity : NetworkBehaviour
                 CheckIfBuilt();
                 if (hitPoints.Value < 0)
                 {
-                    ProperDestroyEntity();
+                    PrepareForEntityDestruction();
                 }
             }
             else
@@ -273,7 +272,7 @@ public class SelectableEntity : NetworkBehaviour
                 }
                 if (hitPoints.Value <= 0)
                 {
-                    ProperDestroyEntity();
+                    PrepareForEntityDestruction();
                 }
 
             }
@@ -329,7 +328,7 @@ public class SelectableEntity : NetworkBehaviour
         ChangePopulation(-consumePopulationAmount);
         ChangeMaxPopulation(-raisePopulationLimitBy);
     }
-    public void ProperDestroyEntity()
+    public void PrepareForEntityDestruction()
     {
         Global.Instance.allFactionEntities.Remove(this);
         if (IsOwner)
@@ -353,24 +352,6 @@ public class SelectableEntity : NetworkBehaviour
         {
             physicalCollider.enabled = false; //allows dynamic grid obstacle to update pathfinding nodes one last time
         }
-        if (minionController != null)
-        {
-            minionController.FreezeRigid(true, true, false);
-            minionController.PrepareForDeath();
-
-            foreach (MeshRenderer item in allMeshes)
-            {
-                if (item != null && !teamRenderers.Contains(item))
-                {
-                    item.material.color = Color.gray;
-                }
-            }
-        }
-        else
-        {
-            StructureCosmeticDestruction();
-        }
-        Invoke(nameof(Die), deathDuration);
         foreach (GarrisonablePosition item in garrisonablePositions)
         {
             if (item != null)
@@ -391,6 +372,25 @@ public class SelectableEntity : NetworkBehaviour
         CheckGameVictoryState();
         if (minionController != null) minionController.DestroyObstacle();
 
+        if (minionController != null)
+        {
+            minionController.FreezeRigid(true, true, false);
+            minionController.PrepareForDeath();
+
+            foreach (MeshRenderer item in allMeshes)
+            {
+                if (item != null && !teamRenderers.Contains(item))
+                {
+                    item.material.color = Color.gray;
+                }
+            }
+            Invoke(nameof(Die), deathDuration);
+        }
+        else
+        {
+            StructureCosmeticDestruction();
+            Die(); //structures can be deleted immediately. in future add some kind of cosmetic effect
+        }
     }
     private void CheckGameVictoryState()
     {
