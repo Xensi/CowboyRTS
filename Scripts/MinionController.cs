@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Netcode;
 using Pathfinding; 
 using FoW;
+using UnityEngine.Rendering;
 
 //used for entities that can attack
 [RequireComponent(typeof(SelectableEntity))]
@@ -131,6 +132,7 @@ public class MinionController : NetworkBehaviour
             FreezeRigid();
             ai.enabled = false;
         }
+        nearbyIndexer = Random.Range(0, Global.Instance.allFactionEntities.Count);
     }
     private void Initialize()
     {
@@ -175,12 +177,15 @@ public class MinionController : NetworkBehaviour
         oldPosition = transform.position;
         lastCommand.Value = CommandTypes.Move;
         orderedDestination = transform.position;
-        if (Global.Instance.graphUpdateScenePrefab != null)
-            graphUpdateScene = Instantiate(Global.Instance.graphUpdateScenePrefab, transform.position, Quaternion.identity);
-        if (graphUpdateScene != null && ai != null)
-        {
-            SphereCollider collider = graphUpdateScene.GetComponent<SphereCollider>();
-            collider.radius = ai.radius;
+        if (IsOwner)
+        { 
+            if (Global.Instance.graphUpdateScenePrefab != null)
+                graphUpdateScene = Instantiate(Global.Instance.graphUpdateScenePrefab, transform.position, Quaternion.identity);
+            if (graphUpdateScene != null && ai != null)
+            {
+                graphUpdateSceneCollider = graphUpdateScene.GetComponent<SphereCollider>();
+                graphUpdateSceneCollider.radius = ai.radius;
+            }
         }
     }
     private float moveTimer = 0;
@@ -1255,29 +1260,36 @@ public class MinionController : NetworkBehaviour
 
     }
     private GraphUpdateScene graphUpdateScene;
+    private SphereCollider graphUpdateSceneCollider;
 
     private void BecomeObstacle()
     {
         //tell graph update scene to start blocking
         if (graphUpdateScene != null)
         {
+            graphUpdateSceneCollider.radius = ai.radius;
             graphUpdateScene.transform.position = transform.position;
-            graphUpdateScene.modifyTag = true;
-            graphUpdateScene.setTag = 1;
-            graphUpdateScene.Apply();
-            graphUpdateScene.modifyTag = false;
+            graphUpdateScene.setTag = 1; 
+            graphUpdateScene.Apply(); 
         }
     }
-    private void ClearObstacle()
+    public void ClearObstacle()
     {
         //tell graph update scene to stop blocking
         if (graphUpdateScene != null)
         {
-            graphUpdateScene.transform.position = transform.position;
-            graphUpdateScene.modifyTag = true;
+            graphUpdateSceneCollider.radius = ai.radius + 0.1f;
+            graphUpdateScene.transform.position = transform.position; 
             graphUpdateScene.setTag = 0;
-            graphUpdateScene.Apply();
-            graphUpdateScene.modifyTag = false;
+            graphUpdateScene.Apply(); 
+        }
+    }
+    public void DestroyObstacle()
+    {
+        ClearObstacle();
+        if (graphUpdateScene != null)
+        { 
+            Destroy(graphUpdateScene.gameObject);
         }
     }
     private void ForceUpdateRealLocation()

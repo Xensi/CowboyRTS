@@ -388,8 +388,8 @@ public class SelectableEntity : NetworkBehaviour
             lineIndicator.enabled = false;
             targetIndicator.transform.parent = transform;
         }
-
         CheckGameVictoryState();
+        if (minionController != null) minionController.DestroyObstacle();
 
     }
     private void CheckGameVictoryState()
@@ -728,7 +728,7 @@ public class SelectableEntity : NetworkBehaviour
         //determine if spawned units should be given a mission
 
         Ray ray = Global.Instance.localPlayer.cam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundEntityLayer))
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.gameLayer))
         {
             rallyPoint = hit.point;
             if (rallyVisual != null)

@@ -58,7 +58,7 @@ MonoBehaviour:
   updatePhysics: 0
   resetPenaltyOnPhysics: 1
   updateErosion: 0
-  modifyTag: 0
+  modifyTag: 1
   setTag: 0
   legacyMode: 0
   serializedVersion: 1

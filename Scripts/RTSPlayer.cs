@@ -61,7 +61,7 @@ public class RTSPlayer : NetworkBehaviour
     public int population = 0;
     public int maxPopulation = 100;
     public LayerMask placementGhost;
-    public LayerMask groundEntityLayer;
+    public LayerMask gameLayer;
     public void LoseGame()
     {
         inTheGame.Value = false;
@@ -70,7 +70,7 @@ public class RTSPlayer : NetworkBehaviour
     {
         groundLayer = LayerMask.GetMask("Ground");
         entityLayer = LayerMask.GetMask("Entity", "Obstacle");
-        groundEntityLayer = LayerMask.GetMask("Entity", "Ground");
+        gameLayer = LayerMask.GetMask("Entity", "Obstacle", "Ground");
         placementGhost = LayerMask.GetMask("PlacementGhost");
         _offset = new Vector3(0.5f, 0, .5f);
         //_offset = new Vector3(0, 0, 0);
@@ -165,7 +165,7 @@ public class RTSPlayer : NetworkBehaviour
         //tell other clients that this happened
         Vector3 clickedPosition;
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundEntityLayer))
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.gameLayer))
         {
             clickedPosition = hit.point;
 
@@ -209,6 +209,7 @@ public class RTSPlayer : NetworkBehaviour
                     if (select.type == SelectableEntity.EntityTypes.HarvestableStructure)
                     { //harvest target
                         actionType = ActionType.Harvest;
+                        Debug.Log("HARVEST");
                     }
                 }
             }
@@ -229,6 +230,7 @@ public class RTSPlayer : NetworkBehaviour
                             item.minionController.AttackTarget(select);
                             break;
                         case ActionType.Harvest:
+                            Debug.Log("Commanding harvest");
                             item.minionController.CommandHarvestTarget(select);
                             break;
                         case ActionType.Deposit:
