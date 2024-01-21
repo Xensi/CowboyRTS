@@ -13,7 +13,7 @@ public class MinionController : NetworkBehaviour
     #region Enums
     public enum CommandTypes
     {
-        Move, AttackMove, AttackSpecific, InteractWith
+        Move, Attack, Harvest, Build, Deposit
     }
     public enum State
     {
@@ -228,16 +228,7 @@ public class MinionController : NetworkBehaviour
         }
     }  
     private void IdleOrWalkContextuallyAnimationOnly()
-    {   
-        if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
-        {
-            basicallyIdleInstances++;
-        }
-        if (change > walkAnimThreshold)
-        {
-            basicallyIdleInstances = 0;
-        }
-
+    {     
         if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
         {
             animator.Play("Idle");
@@ -254,19 +245,30 @@ public class MinionController : NetworkBehaviour
             nearbyIndexer = Global.Instance.allFactionEntities.Count - 1;
         }
         SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range 
-        if (clientSideEnemyInRange == null)
+        if (clientSideTargetInRange == null)
         {
             if (check != null && check.alive && check.teamNumber.Value != selectableEntity.teamNumber.Value && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
             { //only check on enemies that are alive, targetable, visible, and in range  
-                clientSideEnemyInRange = check;
+                clientSideTargetInRange = check;
             }
         }
         nearbyIndexer++;
         if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0;
 
-        if (clientSideEnemyInRange != null)
+        if (clientSideTargetInRange != null)
         {
             FreezeRigid();
+        }
+    }
+    private void UpdateIdleCount()
+    { 
+        if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
+        {
+            basicallyIdleInstances++;
+        }
+        if (change > walkAnimThreshold)
+        {
+            basicallyIdleInstances = 0;
         }
     }
     private void NonOwnerUpdateAnimationBasedOnContext()
@@ -276,11 +278,11 @@ public class MinionController : NetworkBehaviour
             if (selectableEntity.occupiedGarrison != null)
             {
                 ClientSeekEnemy();
-                if (clientSideEnemyInRange != null)
+                if (clientSideTargetInRange != null)
                 {
                     //Debug.DrawLine(transform.position, clientSideEnemyInRange.transform.position, Color.red, 0.1f);
                     animator.Play("Attack");
-                    LookAtTarget(clientSideEnemyInRange.transform);
+                    LookAtTarget(clientSideTargetInRange.transform);
                 }
                 else
                 {
@@ -288,73 +290,116 @@ public class MinionController : NetworkBehaviour
                 }
             }
             else
-            { 
+            {
+                UpdateIdleCount();
                 switch (lastCommand.Value)
                 {
                     case CommandTypes.Move:
+                    case CommandTypes.Deposit:
                         IdleOrWalkContextuallyAnimationOnly();
+                        break; 
+                    case CommandTypes.Attack:
+                        ClientSeekEnemy();
+                        ContextualIdleOrAttack();
                         break;
-                    case CommandTypes.AttackMove:
-                        ClientSeekEnemy();  
-                        //nonowner does not know if this has a targetenemy
-                        //this does not work!
-                        if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
-                        {
-                            basicallyIdleInstances++;
-                        }
-                        if (change > walkAnimThreshold)
-                        {
-                            basicallyIdleInstances = 0;
-                        }
-                        if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
-                        {
-                            if (clientSideEnemyInRange != null)
-                            {
-                                //Debug.DrawLine(transform.position, clientSideEnemyInRange.transform.position, Color.red, 0.1f);
-                                animator.Play("Attack");
-                                LookAtTarget(clientSideEnemyInRange.transform);
-                            }
-                        }
-                        else
-                        {
-                            if (!animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
-                            {
-                                animator.Play("AttackWalkStart");
-                            }
-                        }
-                        /**/
-                        //Debug.Log("attack moving nonowner");
-
-                        /*clientSideEnemyInRange = RelaxedFindEnemyInRange(attackRange);
-                        if (clientSideEnemyInRange != null)
-                        { 
-                            Debug.Log(clientSideEnemyInRange);
-                        }*/
-
-
-                        /*if (EnemyInRangeIsValid(clientSideEnemyInRange))
-                        {
-                        }
-                        else
-                        {
-                        }*/
+                    case CommandTypes.Harvest:
+                        ClientSeekHarvestable();
+                        ContextualIdleOrHarvestBuild();
                         break;
-                    case CommandTypes.AttackSpecific:
-                        break;
-                    case CommandTypes.InteractWith:
-                        break;
-                    default:
-                        break;
+                    case CommandTypes.Build:
+                        ClientSeekBuildable();
+                        ContextualIdleOrHarvestBuild(); 
+                        break;  
                 }
-            }
-
+            } 
         }
         else
         {
             animator.Play("Die");
         }
     }
-    private SelectableEntity clientSideEnemyInRange = null; 
+    private void ContextualIdleOrHarvestBuild()
+    {
+        if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
+        {
+            if (clientSideTargetInRange != null)
+            {
+                //Debug.DrawLine(transform.position, clientSideEnemyInRange.transform.position, Color.red, 0.1f);
+                animator.Play("Attack");
+                LookAtTarget(clientSideTargetInRange.transform);
+            }
+        }
+        else
+        {
+            animator.Play("Walk");
+        }
+    }
+    private void ContextualIdleOrAttack()
+    { 
+        if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
+        {
+            if (clientSideTargetInRange != null)
+            {
+                //Debug.DrawLine(transform.position, clientSideEnemyInRange.transform.position, Color.red, 0.1f);
+                animator.Play("Attack");
+                LookAtTarget(clientSideTargetInRange.transform);
+            }
+        }
+        else
+        {
+            if (!animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
+            {
+                animator.Play("AttackWalkStart");
+            }
+        }
+    }
+    private void ClientSeekHarvestable()
+    {
+        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count)
+        {
+            nearbyIndexer = Global.Instance.allFactionEntities.Count - 1;
+        }
+        SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range 
+        if (clientSideTargetInRange == null)
+        {
+            if (check != null && check.alive && check.resourceType == SelectableEntity.ResourceType.Gold && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
+            { //only check on enemies that are alive, targetable, visible, and in range  
+                clientSideTargetInRange = check;
+            }
+        }
+        nearbyIndexer++;
+        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0;
+
+        if (clientSideTargetInRange != null)
+        {
+            FreezeRigid();
+        }
+    }
+
+    private void ClientSeekBuildable()
+    {
+        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count)
+        {
+            nearbyIndexer = Global.Instance.allFactionEntities.Count - 1;
+        }
+        SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range 
+        if (clientSideTargetInRange == null)
+        {
+            if (check != null && check.alive && check.teamNumber == selectableEntity.teamNumber &&
+                !check.fullyBuilt && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
+            { //only check on enemies that are alive, targetable, visible, and in range  
+                clientSideTargetInRange = check;
+            }
+        }
+        nearbyIndexer++;
+        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0;
+
+        if (clientSideTargetInRange != null)
+        {
+            FreezeRigid();
+        }
+    }
+    private SelectableEntity clientSideTargetInRange = null; 
     private bool EnemyInRangeIsValid(SelectableEntity target)
     {
         if (target == null || target.alive == false || target.isTargetable.Value == false || target.visibleInFog == false || !InRangeOfEntity(target, attackRange))
@@ -1784,7 +1829,7 @@ public class MinionController : NetworkBehaviour
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public void SetAttackMoveDestination() //called by local player
     {
-        lastCommand.Value = CommandTypes.AttackMove;
+        lastCommand.Value = CommandTypes.Attack;
         ClearTargets(); 
         basicallyIdleInstances = 0; 
         state = State.WalkBeginFindEnemies; //default to walking state
@@ -1845,7 +1890,8 @@ public class MinionController : NetworkBehaviour
         }
     }
     public void AttackTarget(SelectableEntity select)
-    { 
+    {
+        lastCommand.Value = CommandTypes.Attack;
         targetEnemy = select;
         state = State.WalkToEnemy;
     }
@@ -1855,12 +1901,14 @@ public class MinionController : NetworkBehaviour
         {
             if (selectableEntity.harvestedResourceAmount < selectableEntity.harvestCapacity) //we could still harvest more
             {
+                lastCommand.Value = CommandTypes.Harvest;
                 selectableEntity.interactionTarget = select;
                 state = State.WalkToInteractable;
                 lastState = State.Harvesting;
             }
             else
             {
+                lastCommand.Value = CommandTypes.Deposit;
                 state = State.FindInteractable;
                 lastState = State.Depositing;
             }
@@ -1868,6 +1916,7 @@ public class MinionController : NetworkBehaviour
     }
     public void DepositTo(SelectableEntity select)
     {
+        lastCommand.Value = CommandTypes.Deposit;
         selectableEntity.interactionTarget = select;
         state = State.WalkToInteractable;
         lastState = State.Depositing;
@@ -1875,7 +1924,8 @@ public class MinionController : NetworkBehaviour
     public void CommandBuildTarget(SelectableEntity select)
     {
         if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
-        { 
+        {
+            lastCommand.Value = CommandTypes.Build;
             selectableEntity.interactionTarget = select;
             state = State.WalkToInteractable;
             lastState = State.Building;
@@ -1906,6 +1956,7 @@ public class MinionController : NetworkBehaviour
                 lastState = State.Garrisoning;
             }
         }
+        lastCommand.Value = CommandTypes.Move;
         /*SelectableEntity garrison = select.occupiedGarrison;
 
         selectableEntity.tryingToTeleport = true;
