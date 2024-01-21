@@ -162,7 +162,8 @@ public class MinionController : NetworkBehaviour
             destination.Value = transform.position;
             state = State.Spawn;
             Invoke(nameof(FinishSpawning), spawnDuration);
-            finishedInitializingRealLocation = true; 
+            finishedInitializingRealLocation = true;
+            lastCommand.Value = CommandTypes.Move;
         }
         else
         {
@@ -175,7 +176,6 @@ public class MinionController : NetworkBehaviour
         realLocation.OnValueChanged += OnRealLocationChanged;
         //enabled = IsOwner;
         oldPosition = transform.position;
-        lastCommand.Value = CommandTypes.Move;
         orderedDestination = transform.position;
         if (IsOwner)
         { 
@@ -521,6 +521,14 @@ public class MinionController : NetworkBehaviour
     }
     #endregion
     #region States 
+    private void BecomeIdleIfInGarrison()
+    { 
+        if (selectableEntity.occupiedGarrison != null)
+        {
+            selectableEntity.interactionTarget = null;
+            state = State.Idle;
+        }
+    }
     private void OwnerUpdateState()
     {
         EnsureNotInteractingWithBusy();
@@ -546,25 +554,32 @@ public class MinionController : NetworkBehaviour
                 HideMoveIndicator();
                 IdleOrWalkContextuallyAnimationOnly();
                 //animator.Play("Idle");
-                FreezeRigid();
-                //todo here: if we detect that there is a path to our ordered destination then we should go there
-                if (IsOwner) destination.Value = orderedDestination;//transform.position; //stand still
+                FreezeRigid(); 
+                if (selectableEntity.occupiedGarrison == null)
+                {
 
+                }
+                else
+                {
+
+                }
+                if (IsOwner && selectableEntity.occupiedGarrison == null) destination.Value = orderedDestination;//transform.position; //stand still
+
+                if (shouldAutoSeekOutEnemies)
+                {
+                    if (TargetIsValidEnemy(targetEnemy))
+                    {
+                        state = State.WalkToEnemy;
+                        break;
+                    }
+                    else
+                    {
+                        targetEnemy = FindEnemyInRange(attackRange);
+                    }
+                }
                 switch (givenMission)
                 {
                     case SelectableEntity.RallyMission.None:
-                        if (shouldAutoSeekOutEnemies)
-                        {
-                            if (TargetIsValidEnemy(targetEnemy))
-                            {
-                                state = State.WalkToEnemy;
-                                break;
-                            }
-                            else
-                            {
-                                targetEnemy = FindEnemyInRange(attackRange);
-                            }
-                        }
                         //only do this if not garrisoned
                         if (selectableEntity.occupiedGarrison == null)
                         {
@@ -641,12 +656,7 @@ public class MinionController : NetworkBehaviour
                     //playedAttackMoveSound = false;
                     state = State.Idle;
                     break;
-                }*/
-                if (selectableEntity.occupiedGarrison != null)
-                {
-                    state = State.Idle;
-                    break;
-                }
+                }*/  
                 break;
             case State.WalkToRally:
                 FreezeRigid(false, false);
@@ -658,7 +668,7 @@ public class MinionController : NetworkBehaviour
                     state = State.Idle;
                     //rallyPositionSet = false;
                     break;
-                }*/
+                }*/ 
                 break;
             #endregion
             #region Attacking
@@ -689,12 +699,7 @@ public class MinionController : NetworkBehaviour
                 /*if (DetectIfStuck())
                 {
                     state = State.Idle;
-                }*/
-                if (selectableEntity.occupiedGarrison != null)
-                {
-                    state = State.Idle;
-                    break;
-                }
+                }*/ 
                 break; 
             case State.WalkToEnemy:
                 FreezeRigid(false, false);
@@ -721,7 +726,7 @@ public class MinionController : NetworkBehaviour
                 else
                 {
                     state = State.WalkBeginFindEnemies;
-                }
+                } 
                 break;
             case State.Attacking:
                 if (attackType == AttackType.Gatling)
@@ -849,16 +854,9 @@ public class MinionController : NetworkBehaviour
                         break;
                     default:
                         break;
-                }
+                } 
                 break;
-            case State.WalkToInteractable:
-                //garrisoned units should not interact
-                if (selectableEntity.occupiedGarrison != null)
-                {
-                    selectableEntity.interactionTarget = null;
-                    state = State.Idle;
-                }
-
+            case State.WalkToInteractable:  
                 FreezeRigid(false, false);
                 UpdateMoveIndicator();
                 switch (lastState)
@@ -960,7 +958,7 @@ public class MinionController : NetworkBehaviour
                         break;
                     default:
                         break;
-                }
+                } 
                 break;
             case State.Building:
                 if (InvalidBuildable(selectableEntity.interactionTarget) || !InRangeOfEntity(selectableEntity.interactionTarget, attackRange))
@@ -1122,6 +1120,27 @@ public class MinionController : NetworkBehaviour
             #endregion
             default:
                 break;
+        }
+        switch (state)
+        {
+            case State.WalkToInteractable:
+            case State.AfterBuildCheck:
+            case State.Building:
+            case State.Spawn:
+            case State.Idle:
+            case State.Walk:
+            case State.WalkBeginFindEnemies:
+            case State.WalkToEnemy:
+            case State.WalkToRally:
+            case State.Harvesting:
+            case State.AfterHarvestCheck:
+            case State.Depositing:
+            case State.AfterDepositCheck:
+            case State.FindInteractable:
+            case State.Garrisoning:
+            case State.AfterGarrisonCheck:
+                BecomeIdleIfInGarrison();     
+                break;  
         }
     }
     #endregion

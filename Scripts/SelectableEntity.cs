@@ -178,10 +178,9 @@ public class SelectableEntity : NetworkBehaviour
             targetIndicator.transform.parent = null;
         }
         if (selectIndicator != null) selectIndicator.SetActive(selected);
-        if (fogUnit != null) fogUnit.team = (int)OwnerClientId;
-        /*fogHide = GetComponent<HideInFog>();
-        if (fogHide != null) fogHide.team = (int)OwnerClientId;*/
+        if (fogUnit != null) fogUnit.team = (int)OwnerClientId; 
     }
+    private bool hasRegisteredRallyMission = false;
     private void Start()
     {
         Initialize();
@@ -229,7 +228,39 @@ public class SelectableEntity : NetworkBehaviour
     } 
     private void Update()
     { 
-
+        if (!hasRegisteredRallyMission)
+        {
+            hasRegisteredRallyMission = true;
+            if (spawnerThatSpawnedThis != null && minionController != null)
+            {
+                Debug.Log("mission registered");
+                RallyMission spawnerRallyMission = spawnerThatSpawnedThis.rallyMission;
+                SelectableEntity rallyTarget = spawnerThatSpawnedThis.rallyTarget;
+                Vector3 rallyPoint = spawnerThatSpawnedThis.rallyPoint;
+                minionController.givenMission = spawnerRallyMission;
+                //assign mission to last
+                switch (spawnerRallyMission)
+                {
+                    case RallyMission.None:
+                        break;
+                    case RallyMission.Move:
+                        minionController.rallyTarget = rallyPoint;
+                        break;
+                    case RallyMission.Harvest:
+                        interactionTarget = rallyTarget;
+                        break;
+                    case RallyMission.Build:
+                        interactionTarget = rallyTarget;
+                        break;
+                    case RallyMission.Garrison:
+                        interactionTarget = rallyTarget;
+                        break;
+                    case RallyMission.Attack:
+                        minionController.targetEnemy = rallyTarget;
+                        break; 
+                }
+            }
+        }
 
         SetHideFogTeam();
         HideInFog(); 
@@ -853,37 +884,23 @@ public class SelectableEntity : NetworkBehaviour
     private void BuildQueueSpawn(byte id)
     {
         buildQueue.RemoveAt(0);
-        Global.Instance.localPlayer.FromBuildingSpawn(this, rallyPoint, id); //bug here
-        //get last spawned
-        SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
-        MinionController controller = last.GetComponent<MinionController>();
-        if (controller != null)
+        SpawnFromSpawner(this, rallyPoint, id);
+    }
+    public SelectableEntity spawnerThatSpawnedThis;
+    public void SpawnFromSpawner(SelectableEntity select, Vector3 rally, byte id)
+    {
+        //spawner is this
+        Vector3 pos;
+        if (select.positionToSpawnMinions != null)
         {
-            controller.givenMission = rallyMission;
-            //assign mission to last
-            switch (rallyMission)
-            {
-                case RallyMission.None:
-                    break;
-                case RallyMission.Move:
-                    controller.rallyTarget = rallyPoint;
-                    break;
-                case RallyMission.Harvest:
-                    last.interactionTarget = rallyTarget;
-                    break;
-                case RallyMission.Build:
-                    last.interactionTarget = rallyTarget;
-                    break;
-                case RallyMission.Garrison:
-                    last.interactionTarget = rallyTarget;
-                    break;
-                case RallyMission.Attack:
-                    controller.targetEnemy = rallyTarget;
-                    break;
-                default:
-                    break;
-            }
+            pos = new Vector3(select.positionToSpawnMinions.position.x, 0, select.positionToSpawnMinions.position.z);
         }
+        else
+        {
+            pos = select.transform.position;
+        }
+        //GenericSpawnMinion(pos, id, true, rally);
+        Global.Instance.localPlayer.GenericSpawnMinion(pos, id, this);
     }
     private Vector3[] LineArray(Vector3 des)
     { 

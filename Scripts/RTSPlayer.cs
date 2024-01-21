@@ -118,7 +118,7 @@ public class RTSPlayer : NetworkBehaviour
                 spawn = new Vector3(Random.Range(-9, 9), 0, Random.Range(-9, 9));
             }
 
-            GenericSpawnMinion(spawn, starterUnitID);
+            GenericSpawnMinion(spawn, starterUnitID, this);
 
             VolumeProfile profile = Global.Instance.fogVolume.sharedProfile;
             if (profile != null && profile.TryGet(out FogOfWarURP fow))
@@ -447,19 +447,19 @@ public class RTSPlayer : NetworkBehaviour
 #if UNITY_EDITOR
             if (Input.GetKey(KeyCode.RightShift))
             {
-                GenericSpawnMinion(cursorWorldPosition, 0);
+                GenericSpawnMinion(cursorWorldPosition, 0, this);
             }
             if (Input.GetKey(KeyCode.RightAlt))
             {
-                GenericSpawnMinion(cursorWorldPosition, 2);
+                GenericSpawnMinion(cursorWorldPosition, 2, this);
             }
             if (Input.GetKey(KeyCode.RightControl))
             {
-                GenericSpawnMinion(cursorWorldPosition, 3);
+                GenericSpawnMinion(cursorWorldPosition, 3, this);
             }
             if (Input.GetKey(KeyCode.UpArrow))
             {
-                GenericSpawnMinion(cursorWorldPosition, 11);
+                GenericSpawnMinion(cursorWorldPosition, 11, this);
             }
 #endif
             if (linkedState == LinkedState.PlacingEnd)
@@ -701,7 +701,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             gold -= fac.goldCost;
             Debug.Log("placing at " + cursorWorldPosition);
-            GenericSpawnMinion(cursorWorldPosition, id); //followCursorObject.transform.position
+            GenericSpawnMinion(cursorWorldPosition, id, this); //followCursorObject.transform.position
 
             SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
             TellSelectedToBuild(last);
@@ -895,7 +895,7 @@ public class RTSPlayer : NetworkBehaviour
             bool shouldBePlaced = predictedWallPositionsShouldBePlaced[i];
             if (shouldBePlaced)
             {
-                GenericSpawnMinion(pos, id);
+                GenericSpawnMinion(pos, id, this);
             }
         }
         predictedWallPositions.Clear();
@@ -1052,12 +1052,12 @@ public class RTSPlayer : NetworkBehaviour
     /// <summary>
     /// Tell the server to spawn in a minion at a position.
     /// </summary> 
-    public void GenericSpawnMinion(Vector3 spawnPos, byte minionID = 0)
+    public void GenericSpawnMinion(Vector3 spawnPos, byte minionID, NetworkBehaviourReference spawner)
     {
         Vector2 spawn = new Vector2(spawnPos.x, spawnPos.z);
         if (IsServer)
         {
-            ServerSpawnMinion(spawn, minionID, (byte)OwnerClientId);
+            ServerSpawnMinion(spawn, minionID, (byte)OwnerClientId, spawner);
         }
         else //clients ask server to spawn it
         {
@@ -1065,20 +1065,21 @@ public class RTSPlayer : NetworkBehaviour
             FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
             Debug.Log("CLIENT: sending request to spawn " + fac.productionName);
             //SpawnMinionServerRpc(spawn, minionID);
-            RequestSpawnMinionServerRpc(spawn, minionID, (byte)OwnerClientId);
+            RequestSpawnMinionServerRpc(spawn, minionID, (byte)OwnerClientId, spawner);
         }
         UpdateButtons();
     }
     [ServerRpc]
-    private void RequestSpawnMinionServerRpc(Vector2 spawn, byte minionID, byte clientID) //ok to use byte because 0-244
+    private void RequestSpawnMinionServerRpc(Vector2 spawn, byte minionID, byte clientID, NetworkBehaviourReference spawner) //ok to use byte because 0-244
     {
         FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
         Debug.Log("SERVER: received request to spawn " + fac.productionName);
-        ServerSpawnMinion(spawn, minionID, clientID);
+        ServerSpawnMinion(spawn, minionID, clientID, spawner);
     }
-    private void ServerSpawnMinion(Vector2 spawn, byte minionID, byte clientID)
+    private void ServerSpawnMinion(Vector2 spawn, byte minionID, byte clientID, NetworkBehaviourReference spawner)
     {
         if (!IsServer) return;
+
         Vector3 spawnPosition = new(spawn.x, 0, spawn.y); //get spawn position
 
         FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
@@ -1093,6 +1094,10 @@ public class RTSPlayer : NetworkBehaviour
             }
             if (select != null)
             {
+                if (spawner.TryGet(out SelectableEntity spawnerEntity))
+                {
+                    select.spawnerThatSpawnedThis = spawnerEntity;
+                }
                 //grant ownership 
                 if (NetworkManager.ConnectedClients.ContainsKey(clientID))
                 {
@@ -1111,7 +1116,7 @@ public class RTSPlayer : NetworkBehaviour
                             TargetClientIds = new ulong[] { clientID }
                         }
                     };
-                    SendReferenceToSpawnedMinionClientRpc((ushort)select.NetworkObjectId, clientRpcParams);
+                    SendReferenceToSpawnedMinionClientRpc((ushort)select.NetworkObjectId, spawner, clientRpcParams);
                 }
             }
         }
@@ -1123,14 +1128,19 @@ public class RTSPlayer : NetworkBehaviour
     /// <param name="netID"></param>
     /// <param name="clientRpcParams"></param>
     [ClientRpc]
-    public void SendReferenceToSpawnedMinionClientRpc(ushort netID, ClientRpcParams clientRpcParams = default)
+    public void SendReferenceToSpawnedMinionClientRpc(ushort netID, NetworkBehaviourReference spawner, ClientRpcParams clientRpcParams = default)
     {
         if (!IsServer)
         {
             Debug.Log("CLIENT: received confirmation of thing being spawned: " + netID);
-            fakeSpawnsReadyForReplacement.Add(netID); 
+            fakeSpawnsReadyForReplacement.Add(netID);
+            if (spawner.TryGet(out SelectableEntity spawnerEntity))
+            {
+                newSpawnsSpawnerList.Add(spawnerEntity);
+            }
         }
     }
+    private List<SelectableEntity> newSpawnsSpawnerList = new();
     private void TryReplaceFakeSpawn()
     {
         if (fakeSpawns.Count > 0 && fakeSpawnsReadyForReplacement.Count > 0) //fakeSpawnsReadyForReplacement.Count > 0 && 
@@ -1158,6 +1168,11 @@ public class RTSPlayer : NetworkBehaviour
                     {
                         select.selected = fake.selected;
                         //select.ChangeHitPointsServerRpc(fake.hitPoints.Value);
+                    }
+                    if (select != null && newSpawnsSpawnerList.Count > 0)
+                    {
+                        select.spawnerThatSpawnedThis = newSpawnsSpawnerList[0];
+                        newSpawnsSpawnerList.RemoveAt(0);
                     }
                     Destroy(fakeSpawns[0].gameObject);
                     fakeSpawns.RemoveAt(0);
@@ -1390,20 +1405,6 @@ public class RTSPlayer : NetworkBehaviour
             select.buildQueue.Add(newFac); 
         }
         UpdateBuildQueue();
-    }
-    public void FromBuildingSpawn(SelectableEntity select, Vector3 rally, byte id = 0)
-    { 
-        Vector3 pos;
-        if (select.positionToSpawnMinions != null)
-        {
-            pos = new Vector3(select.positionToSpawnMinions.position.x, 0, select.positionToSpawnMinions.position.z);
-        }
-        else
-        {
-            pos = select.transform.position;
-        }
-        //GenericSpawnMinion(pos, id, true, rally);
-        GenericSpawnMinion(pos, id);
     }
     private void HoverBuildWithID(byte id = 0)
     {
