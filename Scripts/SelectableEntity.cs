@@ -223,7 +223,7 @@ public class SelectableEntity : NetworkBehaviour
         if (fogUnit == null) fogUnit = GetComponent<FogOfWarUnit>();
         allMeshes = GetComponentsInChildren<MeshRenderer>();
         if (net == null) net = GetComponent<NetworkObject>();
-        if (obstacle == null) obstacle = GetComponent<DynamicGridObstacle>();
+        if (obstacle == null) obstacle = GetComponentInChildren<DynamicGridObstacle>();
         if (RVO == null) RVO = GetComponent<RVOController>(); 
     } 
     private void Update()
@@ -288,11 +288,7 @@ public class SelectableEntity : NetworkBehaviour
 
             if (!fullyBuilt)
             {
-                CheckIfBuilt();
-                if (hitPoints.Value < 0)
-                {
-                    PrepareForEntityDestruction();
-                }
+                CheckIfBuilt(); 
             }
             else
             {
@@ -301,11 +297,17 @@ public class SelectableEntity : NetworkBehaviour
                 {
                     CheckIfDamaged();
                 }
-                if (hitPoints.Value <= 0)
+            }
+            if (hitPoints.Value <= 0)
+            {
+                PrepareForEntityDestruction();
+            }
+            else
+            {
+                if (fullyBuilt && !isBuildIndicator && obstacle != null && !obstacle.enabled)
                 {
-                    PrepareForEntityDestruction();
+                    obstacle.enabled = true;
                 }
-
             }
         }
     }
@@ -379,10 +381,6 @@ public class SelectableEntity : NetworkBehaviour
             fogUnit.enabled = false;
         }
         alive = false;
-        if (physicalCollider != null)
-        {
-            physicalCollider.enabled = false; //allows dynamic grid obstacle to update pathfinding nodes one last time
-        }
         foreach (GarrisonablePosition item in garrisonablePositions)
         {
             if (item != null)
@@ -401,26 +399,31 @@ public class SelectableEntity : NetworkBehaviour
             targetIndicator.transform.parent = transform;
         }
         CheckGameVictoryState();
+        if (physicalCollider != null)
+        {
+            physicalCollider.enabled = false; //allows dynamic grid obstacle to update pathfinding nodes one last time
+        }
         if (minionController != null) minionController.DestroyObstacle();
 
+        foreach (MeshRenderer item in allMeshes)
+        {
+            if (item != null && !teamRenderers.Contains(item))
+            {
+                item.material.color = Color.gray;
+            }
+        }
         if (minionController != null)
         {
             minionController.FreezeRigid(true, true, false);
             minionController.PrepareForDeath();
 
-            foreach (MeshRenderer item in allMeshes)
-            {
-                if (item != null && !teamRenderers.Contains(item))
-                {
-                    item.material.color = Color.gray;
-                }
-            }
             Invoke(nameof(Die), deathDuration);
         }
         else
         {
-            StructureCosmeticDestruction();
-            Die(); //structures can be deleted immediately. in future add some kind of cosmetic effect
+            //StructureCosmeticDestruction();
+            Invoke(nameof(Die), deathDuration); //structures cannot be deleted immediately because we need some time
+            //for values to updated. better method is to destroy cosmetically
         }
     }
     private void CheckGameVictoryState()
@@ -732,25 +735,39 @@ public class SelectableEntity : NetworkBehaviour
     private readonly float deathDuration = 10;
     private void Die()
     { 
-        if (IsOwner)
+        if (IsOwner) //only the owner does this
         { 
             Global.Instance.localPlayer.ownedEntities.Remove(this);
             Global.Instance.localPlayer.selectedEntities.Remove(this);
             if (IsServer) //only the server may destroy networkobjects
             {
-                Destroy(gameObject);
+                net.Despawn(gameObject);
+                //Destroy(gameObject);
             }
             else
             {
-                DestroyObjectServerRpc(gameObject);
+                DespawnServerRpc(gameObject);
+            }
+        }
+        else //destroy clientside representation
+        { 
+            //experimental
+            if (!IsSpawned)
+            {
+                Destroy(gameObject);
+            }
+            else
+            { 
+                DespawnServerRpc(gameObject);
             }
         }
     }
-    [ServerRpc]
-    private void DestroyObjectServerRpc(NetworkObjectReference obj)
+    [ServerRpc (RequireOwnership = false)]
+    private void DespawnServerRpc(NetworkObjectReference obj)
     {
         GameObject game = obj;
-        Destroy(game);
+        //Destroy(game);
+        net.Despawn(game);
     }
     public void SetRally()
     {

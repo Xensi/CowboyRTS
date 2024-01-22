@@ -338,10 +338,6 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
-      propertyPath: allowedInteractors
-      value: 999
-      objectReference: {fileID: 0}
-    - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: garrisonablePositions.Array.size
       value: 4
       objectReference: {fileID: 0}

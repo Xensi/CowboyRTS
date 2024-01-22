@@ -72,7 +72,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fakeSpawn: 0
-  fakeSpawnObject: {fileID: 0}
   isTargetable:
     m_InternalValue: 0
   minionController: {fileID: 0}
@@ -134,6 +133,7 @@ MonoBehaviour:
   hideFogTeam: 0
   shouldHideInFog: 1
   attackEffects: []
+  spawnerThatSpawnedThis: {fileID: 0}
 --- !u!54 &6443730291645010253
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -245,7 +245,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   version: 1
   uniqueID: 4041554652388759286
-  updateError: 1
+  updateError: 0.2
   checkTime: 0.2
 --- !u!65 &1740862975100282267
 BoxCollider:
