@@ -169,9 +169,10 @@ public class RTSPlayer : NetworkBehaviour
         {
             clickedPosition = hit.point;
 
+            FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
             SelectableEntity select = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
             //SelectableEntity select = hit.collider.GetComponent<SelectableEntity>();
-            if (select != null)
+            if (select != null && fow.GetFogValue(select.transform.position) <= 0.51f * 255) //if exists and is explored at least
             {
                 if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
