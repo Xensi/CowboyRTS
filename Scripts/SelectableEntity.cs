@@ -124,11 +124,13 @@ public class SelectableEntity : NetworkBehaviour
     public List<MeshRenderer> teamRenderers;
     private DynamicGridObstacle obstacle;
     [HideInInspector] public RVOController RVO;
-    public NetworkVariable<byte> teamNumber = new NetworkVariable<byte>(default,
-        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); //negative team numbers are AI controlled
+    public sbyte desiredTeamNumber = 0; //only matters if negative
     #endregion
     #region NetworkSpawn 
     public byte clientIDToSpawnUnder = 0;
+    public bool aiControlled = false;
     private void OnDrawGizmos()
     {
         if (fakeSpawn)
@@ -146,20 +148,26 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (IsOwner)
         {
-            teamNumber.Value = (byte)OwnerClientId;
-            isTargetable.Value = true; //initialize value
-
-            if (teamBehavior == TeamBehavior.OwnerTeam)
+            if (desiredTeamNumber < 0) //AI controlled
             {
-                Global.Instance.localPlayer.ownedEntities.Add(this);
-                Global.Instance.localPlayer.lastSpawnedEntity = this;
-
-                if (!fullyBuilt)
+                teamNumber.Value = desiredTeamNumber;
+            }
+            else
+            { 
+                teamNumber.Value = (sbyte)OwnerClientId;
+                if (teamBehavior == TeamBehavior.OwnerTeam)
                 {
-                    RequestBuilders();
+                    Global.Instance.localPlayer.ownedEntities.Add(this);
+                    Global.Instance.localPlayer.lastSpawnedEntity = this;
+
+                    if (!fullyBuilt)
+                    {
+                        RequestBuilders();
+                    }
+                    ChangePopulation(consumePopulationAmount);
                 }
             }
-            ChangePopulation(consumePopulationAmount);
+            isTargetable.Value = true; //initialize value 
         }
         if (IsServer)
         {
@@ -178,12 +186,14 @@ public class SelectableEntity : NetworkBehaviour
             targetIndicator.transform.parent = null;
         }
         if (selectIndicator != null) selectIndicator.SetActive(selected);
-        if (fogUnit != null) fogUnit.team = (int)OwnerClientId; 
+        if (fogUnit != null) fogUnit.team = teamNumber.Value;
     }
     private bool hasRegisteredRallyMission = false;
     private void Start()
     {
         Initialize();
+        if (fogUnit != null) fogUnit.team = desiredTeamNumber;
+        aiControlled = desiredTeamNumber < 0;
         if (isKeystone && Global.Instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
         {
             Global.Instance.localPlayer.keystoneUnits.Add(this);
@@ -438,7 +448,7 @@ public class SelectableEntity : NetworkBehaviour
         }
     }
     private HideInFog fogHide;
-    private FogOfWarUnit fogUnit;
+    public FogOfWarUnit fogUnit;
     private void OnHitPointsChanged(short prev, short current)
     {
         if (selected)
@@ -564,13 +574,27 @@ public class SelectableEntity : NetworkBehaviour
     private bool teamRenderersUpdated = false;
     private void UpdateTeamRenderers()
     {
-        int id = System.Convert.ToInt32(net.OwnerClientId);
-        foreach (MeshRenderer item in teamRenderers)
+        int id = Mathf.Abs(System.Convert.ToInt32(teamNumber.Value)); //net.OwnerClientId
+        if (teamNumber.Value < 0)
         {
-            if (item != null)
+            foreach (MeshRenderer item in teamRenderers)
             {
-                ///item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
-                item.material.color = Global.Instance.teamColors[id];
+                if (item != null)
+                {
+                    ///item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
+                    item.material.color = Global.Instance.aiTeamColors[id];
+                }
+            }
+        }
+        else
+        { 
+            foreach (MeshRenderer item in teamRenderers)
+            {
+                if (item != null)
+                {
+                    ///item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
+                    item.material.color = Global.Instance.teamColors[id];
+                }
             }
         }
         teamRenderersUpdated = true;
@@ -646,7 +670,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (IsSpawned)
         {
-            if (!IsOwner)
+            if (!IsOwner || aiControlled) //not owner, or is ai controlled
             {
                 if (shouldHideInFog)
                 {

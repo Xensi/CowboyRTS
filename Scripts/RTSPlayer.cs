@@ -362,7 +362,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             if (item != null && (item.type == SelectableEntity.EntityTypes.Melee || item.type == SelectableEntity.EntityTypes.Ranged))
             {
-                if (item.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
+                if (item.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam && item.occupiedGarrison == null) //only select ungarrisoned
                 {
                     TrySelectEntity(item);
                 }

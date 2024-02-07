@@ -211,9 +211,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fakeSpawn: 0
-  fakeSpawnObject: {fileID: 0}
-  hitPoints:
-    m_InternalValue: 0
   isTargetable:
     m_InternalValue: 0
   minionController: {fileID: 0}
@@ -235,6 +232,8 @@ MonoBehaviour:
   physicalCollider: {fileID: 5114157818442103759}
   displayName: name
   desc: desc
+  hitPoints:
+    m_InternalValue: 0
   startingHP: 10
   maxHP: 10
   depositType: 0
@@ -269,11 +268,13 @@ MonoBehaviour:
   RVO: {fileID: 0}
   teamNumber:
     m_InternalValue: 0
+  desiredTeamNumber: 0
   clientIDToSpawnUnder: 0
   visibleInFog: 0
   hideFogTeam: 0
   shouldHideInFog: 1
   attackEffects: []
+  spawnerThatSpawnedThis: {fileID: 0}
 --- !u!114 &1556607826778985850
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -410,7 +411,7 @@ MonoBehaviour:
   endReachedDistance: 0.01
   alwaysDrawGizmos: 0
   slowWhenNotFacingTarget: 0
-  whenCloseToDestination: 1
+  whenCloseToDestination: 0
   constrainInsideGraph: 0
 --- !u!114 &1965146877331169390
 MonoBehaviour:

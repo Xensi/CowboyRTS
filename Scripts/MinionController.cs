@@ -60,11 +60,11 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] public bool attackMoving = false;
     //[HideInInspector] public bool followingMoveOrder = false;
     public Vector3 orderedDestination; //remembers where player told minion to go
-    private int basicallyIdleInstances = 0;
-    private readonly int idleThreshold = 60;
+    private float basicallyIdleInstances = 0;
+    private readonly int idleThreshold = 3; //seconds of being stuck
     private int attackReadyTimer = 0;
     private float change;
-    private readonly float walkAnimThreshold = 0.01f;
+    public readonly float walkAnimThreshold = 0.0001f;
     private Vector3 oldPosition;
     private bool attackReady = true;
     [HideInInspector] AIPath ai;
@@ -103,7 +103,7 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] public NetworkVariable<Vector3> realLocation = new NetworkVariable<Vector3>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     //controls where the AI will pathfind to
-    [HideInInspector] public NetworkVariable<Vector3> destination = new NetworkVariable<Vector3>(default,
+    public NetworkVariable<Vector3> destination = new NetworkVariable<Vector3>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
     #region Core
@@ -189,7 +189,7 @@ public class MinionController : NetworkBehaviour
         }
     }
     private float moveTimer = 0;
-    private readonly float moveTimerMax = 0.1f;
+    private readonly float moveTimerMax = 0.01f;
     private void GetActualPositionChange()
     { 
         //float dist = Vector3.Distance(transform.position, oldPosition);
@@ -216,6 +216,7 @@ public class MinionController : NetworkBehaviour
         {
             if (ai != null) ai.destination = destination.Value;
             GetActualPositionChange();
+            UpdateIdleCount();
             if (IsOwner)
             {
                 UpdateRealLocation();
@@ -264,7 +265,7 @@ public class MinionController : NetworkBehaviour
     { 
         if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
         {
-            basicallyIdleInstances++;
+            basicallyIdleInstances += Time.deltaTime;
         }
         if (change > walkAnimThreshold)
         {
@@ -291,7 +292,6 @@ public class MinionController : NetworkBehaviour
             }
             else
             {
-                UpdateIdleCount();
                 switch (lastCommand.Value)
                 {
                     case CommandTypes.Move:
@@ -1524,7 +1524,7 @@ public class MinionController : NetworkBehaviour
     int nearbyIndexer = 0;
     private bool TargetIsValidEnemy(SelectableEntity target)
     {
-        if (target == null || target.alive == false || target.isTargetable.Value == false || target.visibleInFog == false)
+        if (target == null || !target.alive || !target.isTargetable.Value || (!selectableEntity.aiControlled && !target.visibleInFog))
         {
             return false;
         }
@@ -1559,11 +1559,17 @@ public class MinionController : NetworkBehaviour
         for (int i = 0; i < indexesToRunPerFrame; i++)
         { 
             SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range
-            if (check.teamNumber.Value != selectableEntity.teamNumber.Value && check.alive && check.isTargetable.Value 
-                && check.visibleInFog && InRangeOfEntity(check, range))
+            if (IsEnemy(check) && check.alive && check.isTargetable.Value)
             //only check on enemies that are alive, targetable, visible, and in range
             {
-                valid = check;
+                if (selectableEntity.aiControlled && InRangeOfEntity(check, selectableEntity.fogUnit.circleRadius) && InRangeOfEntity(check, range)) //ai controlled doesn't care about fog
+                { 
+                    valid = check;
+                }
+                else if (check.visibleInFog && InRangeOfEntity(check, range))
+                { 
+                    valid = check;
+                }
             }
             nearbyIndexer++;
             if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0;
@@ -1571,6 +1577,10 @@ public class MinionController : NetworkBehaviour
         }
         return valid;
     } 
+    private bool IsEnemy(SelectableEntity target)
+    {
+        return target.teamNumber.Value != selectableEntity.teamNumber.Value;
+    }
     private SelectableEntity FindEnemyToAttack(float range) //bottleneck for unit spawning
     {
         if (attackType == AttackType.None) return null; 
