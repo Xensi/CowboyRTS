@@ -673,6 +673,7 @@ public class RTSPlayer : NetworkBehaviour
         switch (linkedState)
         {
             case LinkedState.Waiting:
+                //PlaceBuildingGuide(id);
                 NormalPlaceBuilding(id);
                 break;
             case LinkedState.PlacingStart:
@@ -694,6 +695,10 @@ public class RTSPlayer : NetworkBehaviour
             default:
                 break;
         }
+    }
+    private void PlaceBuildingGuide(byte id)
+    {
+
     }
     private void NormalPlaceBuilding(byte id)
     {
