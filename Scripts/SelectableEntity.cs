@@ -151,9 +151,13 @@ public class SelectableEntity : NetworkBehaviour
             if (desiredTeamNumber < 0) //AI controlled
             {
                 teamNumber.Value = desiredTeamNumber;
+                if (teamBehavior == TeamBehavior.OwnerTeam)
+                {
+                    Global.Instance.aiTeamControllers[Mathf.Abs(desiredTeamNumber)-1].ownedEntities.Add(this);
+                }
             }
             else
-            { 
+            {
                 teamNumber.Value = (sbyte)OwnerClientId;
                 if (teamBehavior == TeamBehavior.OwnerTeam)
                 {

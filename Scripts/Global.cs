@@ -43,6 +43,8 @@ public class Global : NetworkBehaviour
     public Volume fogVolume;
     public List<SelectableEntity> allFactionEntities = new();
     public GraphUpdateScene graphUpdateScenePrefab;
+    public List<AITeamController> aiTeamControllers = new();
+    public int maxMapSize = 25; //radius
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.

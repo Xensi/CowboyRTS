@@ -132,7 +132,7 @@ public class MinionController : NetworkBehaviour
             FreezeRigid();
             ai.enabled = false;
         }
-        nearbyIndexer = Random.Range(0, Global.Instance.allFactionEntities.Count);
+        nearbyIndexer = 0;// Random.Range(0, Global.Instance.allFactionEntities.Count);
     }
     private void Initialize()
     {
@@ -1909,6 +1909,22 @@ public class MinionController : NetworkBehaviour
     [HideInInspector]
     public NetworkVariable<CommandTypes> lastCommand = new NetworkVariable<CommandTypes>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public void AIAttackMove(Vector3 target)
+    { 
+        lastCommand.Value = CommandTypes.Attack;
+        ClearTargets();
+        basicallyIdleInstances = 0;
+        state = State.WalkBeginFindEnemies; //default to walking state
+        playedAttackMoveSound = false;
+        /* Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
+         {
+             destination.Value = hit.point;
+             orderedDestination = destination.Value;
+         }*/
+        destination.Value = target;
+        orderedDestination = target;
+    }
     public void SetAttackMoveDestination() //called by local player
     {
         lastCommand.Value = CommandTypes.Attack;
