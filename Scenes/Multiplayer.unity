@@ -17185,6 +17185,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunslinger (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 8469314644261872258, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
@@ -17202,6 +17206,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 891381400279729872, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1964934240766585940, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3125225680182305688, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3341350644678958858, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}

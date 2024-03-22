@@ -68,6 +68,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public List<FactionEntityClass> buildQueue;
     public List<SelectableEntity> interactors;
     private MeshRenderer[] allMeshes;
+    //when fog of war changes, check if we should hide or show attack effects
     private bool damaged = false;
     private readonly int delay = 50;
     private int count = 0;
@@ -239,52 +240,58 @@ public class SelectableEntity : NetworkBehaviour
         if (net == null) net = GetComponent<NetworkObject>();
         if (obstacle == null) obstacle = GetComponentInChildren<DynamicGridObstacle>();
         if (RVO == null) RVO = GetComponent<RVOController>(); 
-    } 
+    }
+    private void TryToRegisterRallyMission()
+    {
+        if (spawnerThatSpawnedThis != null && minionController != null)
+        {
+            //Debug.Log("mission registered");
+            RallyMission spawnerRallyMission = spawnerThatSpawnedThis.rallyMission;
+            SelectableEntity rallyTarget = spawnerThatSpawnedThis.rallyTarget;
+            Vector3 rallyPoint = spawnerThatSpawnedThis.rallyPoint;
+            minionController.givenMission = spawnerRallyMission;
+            //assign mission to last
+            switch (spawnerRallyMission)
+            {
+                case RallyMission.None:
+                    break;
+                case RallyMission.Move:
+                    minionController.rallyTarget = rallyPoint;
+                    break;
+                case RallyMission.Harvest:
+                    interactionTarget = rallyTarget;
+                    break;
+                case RallyMission.Build:
+                    interactionTarget = rallyTarget;
+                    break;
+                case RallyMission.Garrison:
+                    interactionTarget = rallyTarget;
+                    break;
+                case RallyMission.Attack:
+                    minionController.targetEnemy = rallyTarget;
+                    break;
+            }
+        }
+    }
     private void Update()
     { 
         if (!hasRegisteredRallyMission)
         {
             hasRegisteredRallyMission = true;
-            if (spawnerThatSpawnedThis != null && minionController != null)
-            {
-                Debug.Log("mission registered");
-                RallyMission spawnerRallyMission = spawnerThatSpawnedThis.rallyMission;
-                SelectableEntity rallyTarget = spawnerThatSpawnedThis.rallyTarget;
-                Vector3 rallyPoint = spawnerThatSpawnedThis.rallyPoint;
-                minionController.givenMission = spawnerRallyMission;
-                //assign mission to last
-                switch (spawnerRallyMission)
-                {
-                    case RallyMission.None:
-                        break;
-                    case RallyMission.Move:
-                        minionController.rallyTarget = rallyPoint;
-                        break;
-                    case RallyMission.Harvest:
-                        interactionTarget = rallyTarget;
-                        break;
-                    case RallyMission.Build:
-                        interactionTarget = rallyTarget;
-                        break;
-                    case RallyMission.Garrison:
-                        interactionTarget = rallyTarget;
-                        break;
-                    case RallyMission.Attack:
-                        minionController.targetEnemy = rallyTarget;
-                        break; 
-                }
-            }
+            TryToRegisterRallyMission();
         }
 
         SetHideFogTeam();
-        HideInFog(); 
+        UpdateVisibilityFromFogOfWar(); 
         if (rallyTarget != null)
         {
             rallyVisual.transform.position = rallyTarget.transform.position;
             rallyPoint = rallyTarget.transform.position;
         }
+
         if (IsSpawned)
         {
+            UpdateTimers();
             UpdateInteractors();
             if (!teamRenderersUpdated)
             {
@@ -325,6 +332,7 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
+    private float attackEffectTimer = 0;
     private void FixedUpdate()
     {
         if (IsSpawned && IsOwner)
@@ -667,32 +675,51 @@ public class SelectableEntity : NetworkBehaviour
     } 
     public readonly float minFogStrength = 0.45f;
     public bool visibleInFog = false;
+    public bool oldVisibleInFog = false;
     public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
     public bool shouldHideInFog = true; // gold should not be hidden
 
-    private void HideInFog()
+    private void UpdateVisibilityFromFogOfWar()
     {
-        if (IsSpawned)
+        if (IsSpawned && (!IsOwner || aiControlled)) //only hide in fog if not owner, or is ai controlled
         {
-            if (!IsOwner || aiControlled) //not owner, or is ai controlled
+            if (shouldHideInFog)
             {
-                if (shouldHideInFog)
+                FogOfWarTeam fow = FogOfWarTeam.GetTeam(hideFogTeam);
+                visibleInFog = fow.GetFogValue(transform.position) < minFogStrength * 255;
+                if (visibleInFog != oldVisibleInFog) //update if ther is a change
                 {
-                    FogOfWarTeam fow = FogOfWarTeam.GetTeam(hideFogTeam);
-                    visibleInFog = fow.GetFogValue(transform.position) < minFogStrength * 255;
+                    oldVisibleInFog = visibleInFog;
 
                     for (int i = 0; i < allMeshes.Length; i++)
                     {
                         if (allMeshes[i] != null) allMeshes[i].enabled = visibleInFog;
                     }
                 }
-                else
+                for (int i = 0; i < attackEffects.Length; i++)
                 {
-                    visibleInFog = true;
+                    attackEffects[i].enabled = showAttackEffects && visibleInFog;
                 }
             }
+            else
+            {
+                visibleInFog = true;
+            } 
+        }
+    } 
+    private void UpdateTimers()
+    {
+        if (attackEffectTimer > 0) //if not zero display attack effect
+        {
+            attackEffectTimer -= Time.deltaTime;
+            showAttackEffects = true;
+        }
+        else
+        {
+            showAttackEffects = false;
         }
     }
+
     bool hideFogTeamSet = false;
     private void SetHideFogTeam()
     {
@@ -849,18 +876,15 @@ public class SelectableEntity : NetworkBehaviour
     } 
     public MeshRenderer[] attackEffects;
 
-    private readonly float attackEffectDuration = 0.1f;
+    private readonly float attackEffectDuration = 0.1f; 
     public void DisplayAttackEffects()
     {
-        //fire locally
-        for (int i = 0; i < attackEffects.Length; i++)
-        {
-            attackEffects[i].enabled = true;
-        }
-        Invoke(nameof(HideAttackEffects), attackEffectDuration);
+        attackEffectTimer = attackEffectDuration;  
         //request server to send to other clients
-        RequestEffectServerRpc();
+        //RequestEffectServerRpc();
     }
+    private bool showAttackEffects = false;
+
     [ServerRpc]
     private void RequestEffectServerRpc()
     {
