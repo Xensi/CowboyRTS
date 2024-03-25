@@ -1040,6 +1040,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunslinger (35)
       objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
@@ -1191,7 +1195,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 10.71
+      value: 20.080002
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1199,7 +1203,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 13.43
+      value: 16.080002
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1232,6 +1236,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (25)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -1498,6 +1506,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunslinger (34)
       objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
@@ -1696,6 +1708,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (21)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -2152,7 +2168,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 11.48
+      value: 20.85
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -2160,7 +2176,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 12.410001
+      value: 15.060001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -2194,6 +2210,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunslinger (31)
       objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
@@ -2223,7 +2243,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 12.910001
+      value: 22.280003
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -2231,7 +2251,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 11.879999
+      value: 14.53
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -2264,6 +2284,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (12)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -2663,7 +2687,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 13.62
+      value: 22.990002
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -2671,7 +2695,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 12.59
+      value: 15.240001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -2704,6 +2728,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (2)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -3624,6 +3652,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunslinger (26)
       objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
@@ -4280,7 +4312,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 11.37
+      value: 20.740002
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -4288,7 +4320,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 13.47
+      value: 16.12
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -4321,6 +4353,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (18)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -5351,7 +5387,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 13.64
+      value: 23.010002
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -5359,7 +5395,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 11.429999
+      value: 14.08
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -5392,6 +5428,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (11)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -5625,7 +5665,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 12.18
+      value: 21.550001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -5633,7 +5673,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 11.809999
+      value: 14.46
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -5666,6 +5706,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (16)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -6347,6 +6391,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunslinger (33)
       objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
@@ -6418,6 +6466,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunslinger (20)
       objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
@@ -6447,7 +6499,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 12.19
+      value: 21.560001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -6455,7 +6507,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 13.05
+      value: 15.700001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -6488,6 +6540,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (6)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -7317,6 +7373,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (23)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -8929,6 +8989,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunslinger (27)
       objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
@@ -9209,7 +9273,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 11.44
+      value: 20.810001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -9217,7 +9281,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 12.9800005
+      value: 15.630001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -9250,6 +9314,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (24)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -9321,6 +9389,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (29)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -10027,6 +10099,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunslinger (22)
       objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
@@ -10312,7 +10388,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 10.78
+      value: 20.150002
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -10320,7 +10396,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 12.940001
+      value: 15.590001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -10354,6 +10430,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunslinger (32)
       objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
@@ -10383,7 +10463,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 12.85
+      value: 22.220001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -10391,7 +10471,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 13.61
+      value: 16.26
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -10424,6 +10504,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (3)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -10631,6 +10715,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunslinger (30)
       objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
@@ -10660,7 +10748,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 12.25
+      value: 21.62
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -10668,7 +10756,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 11.32
+      value: 13.97
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -10701,6 +10789,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (13)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -11080,7 +11172,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 12.9800005
+      value: 22.350002
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -11088,7 +11180,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 11.389999
+      value: 14.04
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -11121,6 +11213,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (15)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -12487,7 +12583,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 12.12
+      value: 21.490002
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -12495,7 +12591,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 13.54
+      value: 16.19
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -12528,6 +12624,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (8)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -14729,7 +14829,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 13.68
+      value: 23.050001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -14737,7 +14837,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 10.86
+      value: 13.51
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -14770,6 +14870,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (14)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -15001,7 +15105,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 12.92
+      value: 22.29
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -15009,7 +15113,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 13.12
+      value: 15.77
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -15042,6 +15146,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (4)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -15569,6 +15677,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (28)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -16659,7 +16771,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 12.29
+      value: 21.66
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -16667,7 +16779,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 10.75
+      value: 13.400001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -16700,6 +16812,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (17)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -16929,7 +17045,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 12.96
+      value: 22.330002
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -16937,7 +17053,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 12.55
+      value: 15.200001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -16970,6 +17086,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (5)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -17072,7 +17192,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 10.82
+      value: 20.19
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -17080,7 +17200,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 12.370001
+      value: 15.020001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -17114,6 +17234,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunslinger (19)
       objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
@@ -17143,7 +17267,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 13.51
+      value: 22.880001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -17151,7 +17275,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 13.65
+      value: 16.3
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -17184,6 +17308,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8469314644261872258, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Enabled
@@ -17226,7 +17354,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 13.58
+      value: 22.95
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -17234,7 +17362,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 13.16
+      value: 15.81
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -17268,6 +17396,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gunslinger
       objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
   m_SourcePrefab: {fileID: 100100000, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
@@ -17297,7 +17429,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 13.570001
+      value: 22.940002
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -17305,7 +17437,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 11.919999
+      value: 14.57
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -17338,6 +17470,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (9)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -19001,7 +19137,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 12.23
+      value: 21.6
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -19009,7 +19145,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 12.4800005
+      value: 15.130001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -19042,6 +19178,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (7)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []
@@ -19522,7 +19662,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 13.02
+      value: 22.390001
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.y
@@ -19530,7 +19670,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 10.82
+      value: 13.47
       objectReference: {fileID: 0}
     - target: {fileID: 5607550459712407707, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -19563,6 +19703,10 @@ PrefabInstance:
     - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
       propertyPath: m_Name
       value: Gunslinger (10)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_AddedGameObjects: []

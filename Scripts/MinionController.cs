@@ -62,7 +62,7 @@ public class MinionController : NetworkBehaviour
     public Vector3 orderedDestination; //remembers where player told minion to go
     private float basicallyIdleInstances = 0;
     private readonly int idleThreshold = 3; //seconds of being stuck
-    private int attackReadyTimer = 0;
+    private float attackReadyTimer = 0;
     private float change;
     public readonly float walkAnimThreshold = 0.0001f;
     private Vector3 oldPosition;
@@ -371,7 +371,7 @@ public class MinionController : NetworkBehaviour
         SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range 
         if (clientSideTargetInRange == null)
         {
-            if (check != null && check.alive && check.resourceType == SelectableEntity.ResourceType.Gold && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
+            if (check != null && check.alive && check.selfHarvestableType == SelectableEntity.ResourceType.Gold && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
             { //only check on enemies that are alive, targetable, visible, and in range  
                 clientSideTargetInRange = check;
             }
@@ -1401,7 +1401,7 @@ public class MinionController : NetworkBehaviour
     }
     private bool InvalidHarvestable(SelectableEntity target)
     {
-        return target == null || target.resourceType == SelectableEntity.ResourceType.None || target.alive == false;
+        return target == null || target.selfHarvestableType == SelectableEntity.ResourceType.None || target.alive == false;
     }
     private bool CheckFacingTowards(Vector3 pos)
     {
@@ -1452,9 +1452,9 @@ public class MinionController : NetworkBehaviour
     {
         if (!attackReady)
         {
-            if (attackReadyTimer < ConvertTimeToFrames(attackDuration - impactTime))
+            if (attackReadyTimer < attackDuration - impactTime)
             {
-                attackReadyTimer++;
+                attackReadyTimer += Time.deltaTime;
             }
             else
             {
@@ -1489,7 +1489,7 @@ public class MinionController : NetworkBehaviour
                 RequestHarvestServerRpc(harvestAmount, target);
             }
 
-            selectableEntity.harvestedResourceAmount += actualHarvested;
+            selectableEntity.harvestedResourceAmount += actualHarvested; 
             Global.Instance.localPlayer.UpdateGUIFromSelections();
         }
         else if (target != null && !target.IsSpawned)

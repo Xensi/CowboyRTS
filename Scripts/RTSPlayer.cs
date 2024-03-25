@@ -548,9 +548,8 @@ public class RTSPlayer : NetworkBehaviour
         {
             if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
             {
-                selectedEntities.Clear();
-            }
-            //DeselectAll();
+                DeselectAll();
+            } 
             //evaluate which should actually be selected based on priority
             //count types
             List<SelectableEntity> evaluation = new();
@@ -669,7 +668,7 @@ public class RTSPlayer : NetworkBehaviour
     }
     private Vector3 startWallPosition;
     private void PlaceBuilding(byte id = 0)
-    {
+    { 
         switch (linkedState)
         {
             case LinkedState.Waiting:
@@ -695,11 +694,7 @@ public class RTSPlayer : NetworkBehaviour
             default:
                 break;
         }
-    }
-    private void PlaceBuildingGuide(byte id)
-    {
-
-    }
+    } 
     private void NormalPlaceBuilding(byte id)
     {
         FactionEntityClass fac = _faction.entities[id];
