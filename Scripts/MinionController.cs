@@ -233,7 +233,8 @@ public class MinionController : NetworkBehaviour
         {
             if (IsOwner)
             {
-                OwnerUpdateState(); 
+                OwnerUpdateState();
+                PlaceOnGround();
             }
         }
     }
@@ -619,7 +620,7 @@ public class MinionController : NetworkBehaviour
     private void OwnerUpdateState()
     {
         EnsureNotInteractingWithBusy();
-        UpdateColliderStatus();
+        //UpdateColliderStatus();
         UpdateAttackReadiness();
         /*if (attackType == AttackType.Gatling)
         {
@@ -1191,7 +1192,7 @@ public class MinionController : NetworkBehaviour
         selectableEntity.Select(false);
         state = State.Die;
         ai.enabled = false;
-        rayMod.enabled = false;
+        if (rayMod != null) rayMod.enabled = false;
         seeker.enabled = false;
         Destroy(rigid);
         Destroy(col);
@@ -1315,8 +1316,8 @@ public class MinionController : NetworkBehaviour
         }
         else
         {
-            posCon = RigidbodyConstraints.None;
-            //posCon = RigidbodyConstraints.FreezePositionY;
+            //posCon = RigidbodyConstraints.None;
+            posCon = RigidbodyConstraints.FreezePositionY;
         }
         //posCon = RigidbodyConstraints.FreezePositionY;
         if (freezeRotation)
