@@ -80,7 +80,7 @@ public class SelectableEntity : NetworkBehaviour
 
     public RallyMission rallyMission;
     public SelectableEntity rallyTarget;
-    public Collider physicalCollider;
+    [HideInInspector] public Collider physicalCollider;
     [Header("Behavior Settings")]
     public string displayName = "name";
     [TextArea(2, 4)]
@@ -284,6 +284,7 @@ public class SelectableEntity : NetworkBehaviour
         if (net == null) net = GetComponent<NetworkObject>();
         if (obstacle == null) obstacle = GetComponentInChildren<DynamicGridObstacle>();
         if (RVO == null) RVO = GetComponent<RVOController>();
+        if (physicalCollider == null) physicalCollider = GetComponent<Collider>();
     }
     private void TryToRegisterRallyMission()
     {

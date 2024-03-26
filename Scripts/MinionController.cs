@@ -1311,11 +1311,12 @@ public class MinionController : NetworkBehaviour
         //obstacleCollider.enabled = freezePosition;
         if (freezePosition)
         {
-            posCon = RigidbodyConstraints.FreezePosition;
+            posCon = RigidbodyConstraints.FreezePositionX | RigidbodyConstraints.FreezePositionZ;
         }
         else
         {
-            posCon = RigidbodyConstraints.FreezePositionY;
+            posCon = RigidbodyConstraints.None;
+            //posCon = RigidbodyConstraints.FreezePositionY;
         }
         //posCon = RigidbodyConstraints.FreezePositionY;
         if (freezeRotation)
