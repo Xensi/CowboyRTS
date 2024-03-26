@@ -14217,7 +14217,7 @@ GameObject:
   - component: {fileID: 1427630717}
   - component: {fileID: 1427630716}
   m_Layer: 0
-  m_Name: GameObject (6)
+  m_Name: RVO
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -14242,7 +14242,7 @@ MonoBehaviour:
   hardCollisions: 1
   symmetryBreakingBias: 0.1
   movementPlane: 0
-  useNavmeshAsObstacle: 0
+  useNavmeshAsObstacle: 1
   drawQuadtree: 0
 --- !u!4 &1427630717
 Transform:
