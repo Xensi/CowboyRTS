@@ -146,7 +146,7 @@ public class MinionController : NetworkBehaviour
             setter.target = target;
         }
     }
-    private Transform target; 
+    private Transform target;
     void OnDisable()
     {
         if (ai != null) ai.onSearchPath -= Update;
@@ -247,7 +247,7 @@ public class MinionController : NetworkBehaviour
         {
             if (IsOwner)
             {
-                OwnerUpdateState();
+                OwnerUpdateState(); 
             }
         }
     }
@@ -643,7 +643,7 @@ public class MinionController : NetworkBehaviour
         {
             #region defaults
             case State.Spawn: //play the spawn animation 
-                
+
                 animator.Play("Spawn");
                 //FreezeRigid();
                 if (IsOwner) SetDestination(transform.position);//destination.Value = transform.position;
@@ -1301,6 +1301,21 @@ public class MinionController : NetworkBehaviour
             PlaceOnGround();
         }
     }
+    private void FleeFromPosition(Vector3 position)
+    {
+        if (ai == null) return;
+        // The path will be returned when the path is over a specified length (or more accurately when the traversal cost is greater than a specified value).
+        // A score of 1000 is approximately equal to the cost of moving one world unit.
+        int fleeAmount = 1000*1;
+
+        // Create a path object
+        FleePath path = FleePath.Construct(transform.position, position, fleeAmount);
+        // This is how strongly it will try to flee, if you set it to 0 it will behave like a RandomPath
+        path.aimStrength = 1;
+        // Determines the variation in path length that is allowed
+        path.spread = 4000;   
+        ai.SetPath(path);
+    } 
     /// <summary>
     /// Freeze rigidbody. Defaults to completely freezing it.
     /// </summary>

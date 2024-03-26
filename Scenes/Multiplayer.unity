@@ -5086,7 +5086,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!23 &421003418
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -8910,7 +8910,7 @@ MonoBehaviour:
   harvestableResources: []
   resourcesParent: {fileID: 1101601873}
   resourceText: {fileID: 2015271441}
-  gridVisual: {fileID: 421003417}
+  gridVisual: {fileID: 1344594817}
   hpText: {fileID: 830991040}
   gunTrailGlobal: {fileID: 3867023542017964721, guid: 7beb53985a2959a4e92721b60820683e, type: 3}
   cannonBall: {fileID: 4931648679904400479, guid: ff26c0b7fbc2c1e439bd021472664b90, type: 3}
