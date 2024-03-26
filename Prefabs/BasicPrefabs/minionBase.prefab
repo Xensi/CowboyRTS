@@ -151,9 +151,7 @@ GameObject:
   - component: {fileID: 1965146877331169390}
   - component: {fileID: 4721624654941951496}
   - component: {fileID: 801487402834003379}
-  - component: {fileID: 2075051146131870707}
   - component: {fileID: 2350746098491832441}
-  - component: {fileID: 4545743209171610123}
   m_Layer: 7
   m_Name: minionBase
   m_TagString: Untagged
@@ -327,12 +325,12 @@ Rigidbody:
   m_GameObject: {fileID: 5353858407141398554}
   serializedVersion: 2
   m_Mass: 10
-  m_Drag: Infinity
+  m_Drag: 1
   m_AngularDrag: Infinity
-  m_UseGravity: 0
+  m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 84
+  m_Constraints: 80
   m_CollisionDetection: 0
 --- !u!114 &1965146877331169390
 MonoBehaviour:
@@ -366,7 +364,7 @@ MonoBehaviour:
   lineOfSightRaycastAngle: 360
   lineOfSightRaycastOffset: 0
   lineOfSightSeeOutsideRange: 0
-  multithreading: 0
+  multithreading: 1
   cellBased: 0
   snapToPixelCenter: 0
 --- !u!114 &4721624654941951496
@@ -445,22 +443,7 @@ MonoBehaviour:
   alwaysDrawGizmos: 0
   slowWhenNotFacingTarget: 0
   preventMovingBackwards: 0
-  constrainInsideGraph: 1
---- !u!114 &2075051146131870707
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5353858407141398554}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 64ffa084e9f3d48b59e691352d40eb68, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  version: 1073741824
-  radius: 0.2
-  detail: 5
+  constrainInsideGraph: 0
 --- !u!136 &2350746098491832441
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -475,22 +458,6 @@ CapsuleCollider:
   m_Height: 1
   m_Direction: 1
   m_Center: {x: 0, y: 0.5, z: 0}
---- !u!114 &4545743209171610123
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5353858407141398554}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 77f586f285b3847808d79083bd19ef1f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  version: 1073741824
-  quality: 0
-  splitAtEveryPortal: 0
-  accountForGridPenalties: 0
 --- !u!1001 &4363772687689255031
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -606,7 +606,7 @@ public class SelectableEntity : NetworkBehaviour
         if (Physics.Raycast(transform.position + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
         {
             transform.position = hit.point;
-            Debug.Log(gameObject.name + "trying to place on ground");
+            //Debug.Log(gameObject.name + "trying to place on ground");
         }
     }
     public bool HasEmptyGarrisonablePosition()

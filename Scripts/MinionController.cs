@@ -5,6 +5,7 @@ using Unity.Netcode;
 using Pathfinding;
 using FoW;
 using UnityEngine.Rendering;
+using UnityEngine.Windows;
 
 //used for entities that can attack
 [RequireComponent(typeof(SelectableEntity))]
@@ -234,7 +235,6 @@ public class MinionController : NetworkBehaviour
             if (IsOwner)
             {
                 OwnerUpdateState();
-                PlaceOnGround();
             }
         }
     }
@@ -257,7 +257,7 @@ public class MinionController : NetworkBehaviour
         }
         SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range 
         if (clientSideTargetInRange == null)
-        { 
+        {
             if (check != null && check.alive && check.teamNumber.Value != selectableEntity.teamNumber.Value && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
             { //only check on enemies that are alive, targetable, visible, and in range  
                 clientSideTargetInRange = check;
@@ -352,7 +352,7 @@ public class MinionController : NetworkBehaviour
             {
                 //Debug.DrawLine(transform.position, clientSideEnemyInRange.transform.position, Color.red, 0.1f);
                 LookAtTarget(clientSideTargetInRange.transform);
-                animator.Play("Attack"); 
+                animator.Play("Attack");
             }
         }
         else
@@ -431,7 +431,7 @@ public class MinionController : NetworkBehaviour
             realLocationReached = false;
             realLocation.Value = transform.position; //only update when different enough
         }
-    } 
+    }
     private bool realLocationReached = false;
     private readonly float updateRealLocThreshold = 1f; //1
     private readonly float allowedNonOwnerError = 1.5f; //1.5 ideally higher than real loc update; don't want to lerp to old position
@@ -616,7 +616,7 @@ public class MinionController : NetworkBehaviour
         {
             targetEnemy = FindEnemyToAttack(attackRange);
         }
-    } 
+    }
     private void OwnerUpdateState()
     {
         EnsureNotInteractingWithBusy();
@@ -629,13 +629,23 @@ public class MinionController : NetworkBehaviour
         switch (state)
         {
             #region defaults
-            case State.Spawn: //play the spawn animation
+            case State.Spawn: //play the spawn animation 
+                
                 animator.Play("Spawn");
-                FreezeRigid();
+                //FreezeRigid();
                 if (IsOwner) destination.Value = transform.position;
+
+                if (Physics.Raycast(transform.position + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.entityLayer))
+                {
+                    Collider col = hit.collider;
+                    Rigidbody rigid = col.GetComponent<Rigidbody>();
+                    rigid.AddForce(transform.forward * 1);
+                    //Debug.Log(gameObject.name + "trying to place on ground");
+                }
+                PlaceOnGround();
                 break;
-            case State.Die: 
-                animator.Play("Die"); 
+            case State.Die:
+                animator.Play("Die");
                 FreezeRigid();
                 break;
             case State.Idle:
@@ -738,7 +748,7 @@ public class MinionController : NetworkBehaviour
                 /*if (attackType == AttackType.Gatling)
                 {
                     animator.SetFloat("AttackSpeed", 1);
-                }*/ 
+                }*/
                 //can only invalidate targets if we are not attacking
                 if (!TargetIsValidEnemy(targetEnemy) && !attackReady && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
                 {
@@ -1316,8 +1326,8 @@ public class MinionController : NetworkBehaviour
         }
         else
         {
-            //posCon = RigidbodyConstraints.None;
-            posCon = RigidbodyConstraints.FreezePositionY;
+            posCon = RigidbodyConstraints.None;
+            //posCon = RigidbodyConstraints.FreezePositionY;
         }
         //posCon = RigidbodyConstraints.FreezePositionY;
         if (freezeRotation)
@@ -1423,7 +1433,7 @@ public class MinionController : NetworkBehaviour
     {
         if (selectableEntity != null)
         {
-            if (Input.GetKey(KeyCode.Space) && targetEnemy != null)
+            if (UnityEngine.Input.GetKey(KeyCode.Space) && targetEnemy != null)
             {
                 selectableEntity.UpdateAttackIndicator();
             }
@@ -1440,7 +1450,7 @@ public class MinionController : NetworkBehaviour
     {
         if (selectableEntity != null)
         {
-            if (Input.GetKey(KeyCode.Space))
+            if (UnityEngine.Input.GetKey(KeyCode.Space))
             {
                 selectableEntity.UpdateMoveIndicator();
             }
@@ -1491,7 +1501,7 @@ public class MinionController : NetworkBehaviour
                 RequestHarvestServerRpc(harvestAmount, target);
             }
 
-            selectableEntity.harvestedResourceAmount += actualHarvested; 
+            selectableEntity.harvestedResourceAmount += actualHarvested;
             Global.Instance.localPlayer.UpdateGUIFromSelections();
         }
         else if (target != null && !target.IsSpawned)
@@ -1917,7 +1927,7 @@ public class MinionController : NetworkBehaviour
         ClearTargets();
         basicallyIdleInstances = 0;
         state = State.WalkBeginFindEnemies; //default to walking state
-        playedAttackMoveSound = false; 
+        playedAttackMoveSound = false;
         destination.Value = target;
         orderedDestination = target;
     }
@@ -1928,7 +1938,7 @@ public class MinionController : NetworkBehaviour
         basicallyIdleInstances = 0;
         state = State.WalkBeginFindEnemies; //default to walking state
         playedAttackMoveSound = false;
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        Ray ray = cam.ScreenPointToRay(UnityEngine.Input.mousePosition);
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
         {
             destination.Value = hit.point;
