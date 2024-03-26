@@ -1048,7 +1048,7 @@ public class MinionController : NetworkBehaviour
                 }
                 else
                 {
-                    FreezeRigid(true, false);
+                    FreezeRigid(true, false, true);
 
                     LookAtTarget(selectableEntity.interactionTarget.transform);
 
@@ -1078,17 +1078,17 @@ public class MinionController : NetworkBehaviour
             case State.AfterHarvestCheck:
                 animator.Play("Idle");
                 FreezeRigid();
-                if (selectableEntity.harvestedResourceAmount >= selectableEntity.harvestCapacity)
+                if (selectableEntity.harvestedResourceAmount >= selectableEntity.harvestCapacity) //we're full so deposit
                 {
                     state = State.FindInteractable;
                     lastState = State.Depositing;
                 }
-                else if (InvalidHarvestable(selectableEntity.interactionTarget))
+                else if (!InvalidHarvestable(selectableEntity.interactionTarget)) //keep harvesting if valid harvestable
                 {
                     stateTimer = 0;
                     state = State.Harvesting;
                 }
-                else
+                else //find new thing to harvest from
                 {
                     state = State.FindInteractable;
                     lastState = State.Harvesting;

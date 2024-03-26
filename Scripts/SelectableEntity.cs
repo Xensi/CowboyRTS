@@ -10,7 +10,7 @@ using UnityEngine.XR;
 public class SelectableEntity : NetworkBehaviour
 {
     public bool fakeSpawn = false;
-    #region Enums
+    #region Enums 
     public enum RallyMission
     {
         None,
@@ -95,6 +95,9 @@ public class SelectableEntity : NetworkBehaviour
     public bool fullyBuilt = true;
     public bool isKeystone = false;
 
+    [Header("Building Only")]
+    public float buildOffset = 0.5f;
+
     [Header("Builder Only")]
     public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
     public int spawnableAtOnce = 1; //how many minions can be spawned at at time from this unit.
@@ -136,6 +139,7 @@ public class SelectableEntity : NetworkBehaviour
     #region NetworkSpawn 
     public byte clientIDToSpawnUnder = 0;
     public bool aiControlled = false;
+    private Rigidbody rigid;
     private void OnDrawGizmos()
     {
         if (fakeSpawn)
@@ -264,13 +268,15 @@ public class SelectableEntity : NetworkBehaviour
                 item.enabled = true;
             }
         }
-
-        for (int i = 0; i < unbuiltRenderers.Length; i++)
-        {
-            if (unbuiltRenderers[i] != null)
+        if (!isBuildIndicator)
+        { 
+            for (int i = 0; i < unbuiltRenderers.Length; i++)
             {
-                savedMaterials.Add(unbuiltRenderers[i].material);
-                unbuiltRenderers[i].material = Global.Instance.transparent;
+                if (unbuiltRenderers[i] != null)
+                {
+                    savedMaterials.Add(unbuiltRenderers[i].material);
+                    unbuiltRenderers[i].material = Global.Instance.transparent;
+                }
             }
         }
         if (rallyVisual != null) rallyVisual.enabled = false;
@@ -285,6 +291,7 @@ public class SelectableEntity : NetworkBehaviour
         if (obstacle == null) obstacle = GetComponentInChildren<DynamicGridObstacle>();
         if (RVO == null) RVO = GetComponent<RVOController>();
         if (physicalCollider == null) physicalCollider = GetComponent<Collider>();
+        if (rigid == null) rigid = GetComponent<Rigidbody>();
     }
     private void TryToRegisterRallyMission()
     {
@@ -365,21 +372,7 @@ public class SelectableEntity : NetworkBehaviour
 
             if (!isBuildIndicator && !constructionBegun && hitPoints.Value > 0)
             {
-                constructionBegun = true;  
-                isTargetable.Value = true;
-                physicalCollider.isTrigger = false;
-                for (int i = 0; i < unbuiltRenderers.Length; i++)
-                {
-                    if (unbuiltRenderers[i] != null)
-                    {
-                        unbuiltRenderers[i].material = savedMaterials[i];
-                    }
-                }
-                if (obstacle != null) //update pathfinding
-                {
-                    obstacle.DoUpdateGraphs();
-                    AstarPath.active.FlushGraphUpdates();
-                }
+                Unghost();
             }
             if (hitPoints.Value <= 0 && constructionBegun && alive) //detect death if "present" in game world ie not ghost/corpse
             {
@@ -389,6 +382,25 @@ public class SelectableEntity : NetworkBehaviour
             {
                 obstacle.enabled = true;
             } 
+        }
+    }
+    private void Unghost()
+    {
+        constructionBegun = true;
+        isTargetable.Value = true;
+        physicalCollider.isTrigger = false;
+        //rigid.isKinematic = false;
+        for (int i = 0; i < unbuiltRenderers.Length; i++)
+        {
+            if (unbuiltRenderers[i] != null)
+            {
+                unbuiltRenderers[i].material = savedMaterials[i];
+            }
+        }
+        if (obstacle != null) //update pathfinding
+        {
+            obstacle.DoUpdateGraphs();
+            AstarPath.active.FlushGraphUpdates();
         }
     }
     private float attackEffectTimer = 0;

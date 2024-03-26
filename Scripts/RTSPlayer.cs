@@ -8,6 +8,7 @@ using TMPro;
 using System.Linq;
 using FoW;
 using UnityEngine.Rendering;
+using System;
 
 public class RTSPlayer : NetworkBehaviour
 {
@@ -69,10 +70,11 @@ public class RTSPlayer : NetworkBehaviour
     void Start()
     {
         groundLayer = LayerMask.GetMask("Ground");
-        entityLayer = LayerMask.GetMask("Entity", "Obstacle");
+        entityLayer = LayerMask.GetMask("Entity"); 
         gameLayer = LayerMask.GetMask("Entity", "Obstacle", "Ground");
         placementGhost = LayerMask.GetMask("PlacementGhost");
-        _offset = new Vector3(0.5f, 0, .5f);
+        //_offset = new Vector3(0.5f, 0, .5f);
+        _offset = new Vector3(0.25f, 0, .25f);
         //_offset = new Vector3(0, 0, 0);
         cam = Camera.main;
         camParent = cam.transform.parent.transform;
@@ -115,7 +117,7 @@ public class RTSPlayer : NetworkBehaviour
             }
             else
             {
-                spawn = new Vector3(Random.Range(-9, 9), 0, Random.Range(-9, 9));
+                spawn = new Vector3(UnityEngine.Random.Range(-9, 9), 0, UnityEngine.Random.Range(-9, 9));
             }
 
             GenericSpawnMinion(spawn, starterUnitID, this);
@@ -478,11 +480,7 @@ public class RTSPlayer : NetworkBehaviour
                         TryToSelectOne();
                         break;
                     case MouseState.ReadyToPlace:
-                        PlaceBuilding(buildingPlacingID);
-                        if (!placementBlocked)
-                        {
-
-                        }
+                        PlaceBuilding(buildingPlacingID); 
                         break;
                     case MouseState.ReadyToSetRallyPoint:
                         mouseState = MouseState.Waiting;
@@ -783,16 +781,18 @@ public class RTSPlayer : NetworkBehaviour
         }
         wallGhosts.Clear();
         FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
+        float halfExtents = 0.1f;
         if (distance > 0)
         {
-            for (int i = 0; i <= distance; i++)
+            for (float i = 0; i <= distance+0.5f; i+=0.5f)
             {
                 Vector3 spot = Vector3.Lerp(start, end, i / distance);
-                Vector3 mod = new Vector3(AlignToGrid(spot.x), 0, AlignToGrid(spot.z));
+                Vector3 mod = new Vector3(AlignToQuarterGrid(spot.x), 0, AlignToQuarterGrid(spot.z));
+                Debug.DrawLine(spot, spot + new Vector3(0, 1, 0), Color.red);
                 Debug.DrawLine(mod, mod + new Vector3(0, 1, 0));
                 if (!predictedWallPositions.Any(i => i == mod)) // && mod != cursorWorldPosition
                 {
-                    if (Physics.CheckBox(mod, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Ignore) ||
+                    if (Physics.CheckBox(mod, new Vector3(halfExtents, halfExtents, halfExtents), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Collide) ||
                         (fow.GetFogValue(mod) > 0.1f * 255)) //blocked
                     {
                         predictedWallPositionsShouldBePlaced.Add(false);
@@ -807,7 +807,7 @@ public class RTSPlayer : NetworkBehaviour
         }
         else
         {
-            if (Physics.CheckBox(start, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Ignore) ||
+            if (Physics.CheckBox(start, new Vector3(halfExtents, halfExtents, halfExtents), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Collide) ||
                 (fow.GetFogValue(start) > 0.1f * 255)) //blocked
             {
                 predictedWallPositionsShouldBePlaced.Add(false);
@@ -855,6 +855,7 @@ public class RTSPlayer : NetworkBehaviour
     {
         GameObject build = _faction.entities[id].prefabToSpawn.gameObject;
         GameObject spawn = Instantiate(build, pos, Quaternion.Euler(0, 180, 0)); //spawn locally  
+        spawn.layer = 0; //don't count as entity
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
 
         entity.isBuildIndicator = true;
@@ -905,26 +906,31 @@ public class RTSPlayer : NetworkBehaviour
     private float AlignToGrid(float input)
     {
         //ex 1.7
-        float ceiling = Mathf.Ceil(input); //2
+        //float ceiling = Mathf.Ceil(input); //2
         float floor = Mathf.Floor(input); //1
         float middle = floor + 0.5f;
 
         //float maxDiff = 0.25f;
-        return middle;
-        /*
-                if (Mathf.Abs(ceiling - input) <= maxDiff) //if diff between ceiling and input is small
-                {
-                    return ceiling;
-                }
-                else if (Mathf.Abs(floor - input) <= maxDiff)
-                {
-                    return floor;
-                }
-                else
-                {
-                    return middle;
-                }*/
+        return middle;  
+    }
+    private float AlignToQuarterGrid(float input) //avoid 0 and 0.5 endings. we want .75 and .25
+    {
+        float round = (float)Math.Round(input * 4, MidpointRounding.ToEven) / 4; //rounds to closest .25 first
+        float floor = Mathf.Floor(round); //this will always be integer 
 
+        if (Math.Abs(round-floor) < 0.01f || Mathf.Abs(round - (floor + 0.5f)) < 0.01) //avoid 0 and 0.5
+        {
+            float math = input - round; //determine direction
+            if (math >= 0.01)
+            {
+                round += 0.25f;
+            }
+            else if (math < 0.01)
+            {
+                round -= 0.25f;
+            }
+        }  
+        return round;
     }
     private byte wallID = 0;
     private void StopPlacingBuilding()
@@ -943,20 +949,11 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
         wallGhosts.Clear();
-    }
-    private void OnDrawGizmos()
-    {
-        if (IsOwner)
-        {
-            Gizmos.color = new Color(1, 0, 0, 0.5f);
-            Gizmos.DrawCube(cursorWorldPosition, new Vector3(.8f, .8f, .8f));
-            /*Gizmos.DrawWireSphere(_mousePosition, .1f);
-            Gizmos.DrawSphere(worldPosition, .1f);*/
-        }
-    }
+    } 
     public void UpdatePlacement()
     {
-        placementBlocked = Physics.CheckBox(cursorWorldPosition, new Vector3(0.4f, 0.4f, 0.4f), Quaternion.identity, entityLayer, QueryTriggerInteraction.Ignore);
+        float size = buildOffset - 0.1f;
+        placementBlocked = Physics.CheckBox(cursorWorldPosition, new Vector3(size, size, size), Quaternion.identity, entityLayer, QueryTriggerInteraction.Ignore);
 
         FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
         if (fow.GetFogValue(cursorWorldPosition) > 0.1f * 255)
@@ -1002,7 +999,8 @@ public class RTSPlayer : NetworkBehaviour
         {
             _mousePosition = hit.point;
             _gridPosition = grid.WorldToCell(_mousePosition);
-            cursorWorldPosition = grid.CellToWorld(_gridPosition) + _offset;
+            //cursorWorldPosition = grid.CellToWorld(_gridPosition) + _offset;
+            cursorWorldPosition = grid.CellToWorld(_gridPosition) + new Vector3(buildOffset, 0, buildOffset);
             if (followCursorObject != null)
             {
                 followCursorObject.transform.position = cursorWorldPosition;
@@ -1407,14 +1405,16 @@ public class RTSPlayer : NetworkBehaviour
         }
         UpdateBuildQueue();
     }
+    private float buildOffset = 0.5f;
     private void HoverBuildWithID(byte id = 0)
     {
         mouseState = MouseState.ReadyToPlace;
         placementBlocked = false;
         buildingPlacingID = id;
         GameObject build = _faction.entities[id].prefabToSpawn.gameObject;
-        GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn locally  
+        GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn ghost
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
+        buildOffset = entity.buildOffset;
         if (entity.type == SelectableEntity.EntityTypes.Portal)
         {
             placingPortal = true;

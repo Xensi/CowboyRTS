@@ -103,12 +103,13 @@ MonoBehaviour:
   isHeavy: 0
   fullyBuilt: 0
   isKeystone: 0
+  buildOffset: 0.5
   builderEntityIndices: 
   spawnableAtOnce: 1
+  allowedInteractors: 1
   isHarvester: 0
-  allowedInteractors: 4
-  resourceType: 1
   harvestCapacity: 10
+  selfHarvestableType: 1
   garrisonablePositions: []
   passengersAreTargetable: 0
   acceptsHeavy: 0
@@ -248,8 +249,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 183748dd497aa473a98ff0cd8cb67fc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 1
-  uniqueID: 7582396648524626232
+  version: 1073741824
+  uniqueID: 8024075146548905032
   updateError: 0.2
   checkTime: 0.2
 --- !u!65 &1740862975100282267

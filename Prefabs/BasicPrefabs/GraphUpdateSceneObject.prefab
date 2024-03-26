@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: efee954c69f0d421086729bb8df1137f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 1
+  version: 1073741824
   uniqueID: 8172768791796309062
   points: []
   convex: 1
@@ -57,12 +57,13 @@ MonoBehaviour:
   applyOnScan: 0
   updatePhysics: 0
   resetPenaltyOnPhysics: 1
-  updateErosion: 0
+  updateErosion: 1
   modifyTag: 1
-  setTag: 0
+  setTag:
+    value: 0
   legacyMode: 0
-  serializedVersion: 1
   legacyUseWorldSpace: 0
+  setTagCompatibility: -1
 --- !u!135 &3850986818363057127
 SphereCollider:
   m_ObjectHideFlags: 0
