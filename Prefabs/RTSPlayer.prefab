@@ -54,6 +54,7 @@ MonoBehaviour:
   grid: {fileID: 2084301759269820934}
   ownedEntities: []
   selectedEntities: []
+  enemyEntities: []
   _faction: {fileID: 11400000, guid: 66749da4c40495e4780f36062d3a4f8b, type: 2}
   _entitiesIndex: 0
   cursorWorldPosition: {x: 0, y: 0, z: 0}
@@ -72,8 +73,11 @@ MonoBehaviour:
   placingLinkedBuilding: 0
   starterUnitID: 8
   population: 0
-  maxPopulation: 10
+  maxPopulation: 100
   placementGhost:
+    serializedVersion: 2
+    m_Bits: 0
+  gameLayer:
     serializedVersion: 2
     m_Bits: 0
   predictedWallPositions: []

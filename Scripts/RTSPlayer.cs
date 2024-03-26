@@ -428,15 +428,15 @@ public class RTSPlayer : NetworkBehaviour
         {
             Global.Instance.gridVisual.SetActive(mouseState == MouseState.ReadyToPlace);
         }
-        if (Input.GetKey(KeyCode.Q))
+        if (Input.GetKeyDown(KeyCode.Q))
         {
             SelectAllAttackers();
         }
-        if (Input.GetKey(KeyCode.E))
+        if (Input.GetKeyDown(KeyCode.E))
         {
             SelectAllProduction();
         }
-        if (Input.GetKey(KeyCode.B))
+        if (Input.GetKeyDown(KeyCode.B))
         {
             SelectAllIdleBuilders();
         }
@@ -446,19 +446,19 @@ public class RTSPlayer : NetworkBehaviour
             GetMouseWorldPosition();
 
 #if UNITY_EDITOR
-            if (Input.GetKey(KeyCode.RightShift))
+            if (Input.GetKeyDown(KeyCode.RightShift))
             {
                 GenericSpawnMinion(cursorWorldPosition, 0, this);
             }
-            if (Input.GetKey(KeyCode.RightAlt))
+            if (Input.GetKeyDown(KeyCode.RightAlt))
             {
                 GenericSpawnMinion(cursorWorldPosition, 2, this);
             }
-            if (Input.GetKey(KeyCode.RightControl))
+            if (Input.GetKeyDown(KeyCode.RightControl))
             {
                 GenericSpawnMinion(cursorWorldPosition, 3, this);
             }
-            if (Input.GetKey(KeyCode.UpArrow))
+            if (Input.GetKeyDown(KeyCode.UpArrow))
             {
                 GenericSpawnMinion(cursorWorldPosition, 11, this);
             }

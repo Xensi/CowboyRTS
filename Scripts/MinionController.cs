@@ -75,6 +75,7 @@ public class MinionController : NetworkBehaviour
     public SelectableEntity targetEnemy;
     [HideInInspector] public MinionNetwork minionNetwork;
     bool playedAttackMoveSound = false;
+    private AIDestinationSetter setter;
     #endregion
     #region Variables
 
@@ -135,11 +136,17 @@ public class MinionController : NetworkBehaviour
             ai.enabled = false;
         }
         nearbyIndexer = 0;// Random.Range(0, Global.Instance.allFactionEntities.Count);
-    }
-    private void Initialize()
-    {
 
+        setter = GetComponent<AIDestinationSetter>();
+        if (setter != null && setter.target == null)
+        {
+            GameObject obj = new GameObject("target");
+            target = obj.transform;
+            target.position = transform.position; //set to be on us
+            setter.target = target;
+        }
     }
+    private Transform target; 
     void OnDisable()
     {
         if (ai != null) ai.onSearchPath -= Update;
@@ -156,12 +163,18 @@ public class MinionController : NetworkBehaviour
         maxDetectable = Mathf.RoundToInt(20 * attackRange);
     }
     private int maxDetectable;
+    private void SetDestination(Vector3 position)
+    {
+        destination.Value = position;
+        target.position = position;
+    }
     public override void OnNetworkSpawn()
     {
         if (IsOwner)
         {
             realLocation.Value = transform.position;
-            destination.Value = transform.position;
+            //destination.Value = transform.position;
+            SetDestination(transform.position);
             state = State.Spawn;
             Invoke(nameof(FinishSpawning), spawnDuration);
             finishedInitializingRealLocation = true;
@@ -633,7 +646,7 @@ public class MinionController : NetworkBehaviour
                 
                 animator.Play("Spawn");
                 //FreezeRigid();
-                if (IsOwner) destination.Value = transform.position;
+                if (IsOwner) SetDestination(transform.position);//destination.Value = transform.position;
 
                 if (Physics.Raycast(transform.position + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.entityLayer))
                 {
@@ -652,7 +665,7 @@ public class MinionController : NetworkBehaviour
                 HideMoveIndicator();
                 IdleOrWalkContextuallyAnimationOnly();
                 //animator.Play("Idle"); 
-                if (IsOwner && selectableEntity.occupiedGarrison == null) destination.Value = orderedDestination;//transform.position; //stand still 
+                if (IsOwner && selectableEntity.occupiedGarrison == null) SetDestination(orderedDestination);//destination.Value = orderedDestination;//transform.position; //stand still 
                 if (selectableEntity.occupiedGarrison == null)
                 {
                     FreezeRigid();
@@ -668,7 +681,7 @@ public class MinionController : NetworkBehaviour
             case State.Walk:
                 UpdateMoveIndicator();
                 FreezeRigid(false, false);
-                destination.Value = orderedDestination;
+                SetDestination(orderedDestination);//destination.Value = orderedDestination;
 
                 IdleOrWalkContextuallyAnimationOnly();
                 if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
@@ -679,7 +692,7 @@ public class MinionController : NetworkBehaviour
             case State.WalkToRally:
                 FreezeRigid(false, false);
                 UpdateMoveIndicator();
-                if (IsOwner) destination.Value = rallyTarget;
+                if (IsOwner) SetDestination(rallyTarget);//destination.Value = rallyTarget;
                 IdleOrWalkContextuallyAnimationOnly();
                 break;
             #endregion
@@ -687,7 +700,7 @@ public class MinionController : NetworkBehaviour
             case State.WalkBeginFindEnemies: //"ATTACK MOVE" 
                 UpdateMoveIndicator();
                 FreezeRigid(false, false);
-                destination.Value = orderedDestination;
+                SetDestination(orderedDestination);//destination.Value = orderedDestination;
 
                 if (!animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
                 {
@@ -721,7 +734,7 @@ public class MinionController : NetworkBehaviour
                             break;
                         }
                         animator.Play("AttackWalk");
-                        if (IsOwner) destination.Value = targetEnemy.transform.position;
+                        if (IsOwner) SetDestination(targetEnemy.transform.position);//destination.Value = targetEnemy.transform.position;
 
                         SelectableEntity attackable = FindEnemyToAttack(attackRange);
                         if (attackable != null)
@@ -762,7 +775,7 @@ public class MinionController : NetworkBehaviour
                 {
                     UpdateAttackIndicator();
                     FreezeRigid(!canMoveWhileAttacking, false);
-                    if (IsOwner) destination.Value = transform.position; //stop in place
+                    if (IsOwner) SetDestination(transform.position);//destination.Value = transform.position; //stop in place
                     rotationSpeed = ai.rotationSpeed / 60;
                     LookAtTarget(targetEnemy.transform);
 
@@ -894,7 +907,7 @@ public class MinionController : NetworkBehaviour
                             {
                                 animator.Play("Walk");
                                 Vector3 closest = selectableEntity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
-                                if (IsOwner) destination.Value = closest;
+                                if (IsOwner) SetDestination(closest);//destination.Value = closest;
                                 /*selectableEntity.interactionTarget.transform.position;*/
                             }
                         }
@@ -915,7 +928,7 @@ public class MinionController : NetworkBehaviour
                             {
                                 animator.Play("Walk");
                                 Vector3 closest = selectableEntity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
-                                if (IsOwner) destination.Value = closest;
+                                if (IsOwner) SetDestination(closest);//destination.Value = closest;
                             }
                         }
                         break;
@@ -934,7 +947,7 @@ public class MinionController : NetworkBehaviour
                             {
                                 animator.Play("Walk");
                                 Vector3 closest = selectableEntity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
-                                if (IsOwner) destination.Value = closest;
+                                if (IsOwner) SetDestination(closest); //destination.Value = closest;
                             }
                         }
                         break;
@@ -951,7 +964,7 @@ public class MinionController : NetworkBehaviour
                                 {
                                     animator.Play("Walk");
                                     Vector3 closest = selectableEntity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
-                                    if (IsOwner) destination.Value = closest;
+                                    if (IsOwner) SetDestination(closest); //destination.Value = closest;
                                 }
                                 else
                                 {
@@ -968,7 +981,7 @@ public class MinionController : NetworkBehaviour
                                 {
                                     animator.Play("Walk");
                                     Vector3 closest = selectableEntity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
-                                    if (IsOwner) destination.Value = closest;
+                                    if (IsOwner) SetDestination(closest); //destination.Value = closest;
                                 }
                             }
                         }
@@ -1234,7 +1247,7 @@ public class MinionController : NetworkBehaviour
             if (attackMoving)
             {
                 //Debug.Log("moving to ordered destination");
-                destination.Value = orderedDestination;
+                SetDestination(orderedDestination);//destination.Value = orderedDestination;
             }
         }
     }
@@ -1928,7 +1941,8 @@ public class MinionController : NetworkBehaviour
         basicallyIdleInstances = 0;
         state = State.WalkBeginFindEnemies; //default to walking state
         playedAttackMoveSound = false;
-        destination.Value = target;
+        SetDestination(target);
+        //destination.Value = target;
         orderedDestination = target;
     }
     public void SetAttackMoveDestination() //called by local player
@@ -1941,7 +1955,8 @@ public class MinionController : NetworkBehaviour
         Ray ray = cam.ScreenPointToRay(UnityEngine.Input.mousePosition);
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
         {
-            destination.Value = hit.point;
+            SetDestination(hit.point);
+            //destination.Value = hit.point;
             orderedDestination = destination.Value;
         }
     }
@@ -1965,7 +1980,7 @@ public class MinionController : NetworkBehaviour
         //selectableEntity.tryingToTeleport = false;
         ClearTargets();
         BecomeUnstuck();
-        SetDestinations(target);
+        SetOrderedDestination(target);
         state = State.Walk;
 
         SelectableEntity justLeftGarrison = null;
@@ -1980,9 +1995,10 @@ public class MinionController : NetworkBehaviour
     {
         basicallyIdleInstances = 0; //we're not idle anymore
     }
-    private void SetDestinations(Vector3 target)
+    private void SetOrderedDestination(Vector3 target)
     {
-        destination.Value = target; //set destination
+        SetDestination(target);
+        //destination.Value = target; //set destination
         orderedDestination = target; //remember where we set destination 
     }
     public void MoveTo(Vector3 target)
