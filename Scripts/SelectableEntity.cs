@@ -222,7 +222,6 @@ public class SelectableEntity : NetworkBehaviour
         //SimplePlaySound(0);
         Global.Instance.PlayClipAtPoint(sounds[0], transform.position, .5f); //play spawning sound
         //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
-        UpdateTeamRenderers();
 
         if (targetIndicator != null)
         {
@@ -230,12 +229,14 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (selectIndicator != null) selectIndicator.SetActive(selected);
         if (fogUnit != null) fogUnit.team = teamNumber.Value;
-        
+
         /*if (IsOwner && !hasRegisteredRallyMission)
         {
             hasRegisteredRallyMission = true;
             TryToRegisterRallyMission();
         }*/
+        SetHideFogTeam();
+        UpdateTeamRenderers();
     }
     private bool hasRegisteredRallyMission = false;
     private List<Material> savedMaterials = new();
@@ -340,54 +341,42 @@ public class SelectableEntity : NetworkBehaviour
         }
     }
     bool constructionBegun = false;
-    private void Update()
+    private void DetectIfBuilt()
     {
-        /* 
-        SetHideFogTeam();
-        UpdateVisibilityFromFogOfWar();
-        UpdateRallyVariables();
-
-        if (IsSpawned)
+        if (!fullyBuilt && hitPoints.Value >= maxHP) //detect if built
         {
-            if (!teamRenderersUpdated) //one time event
-            {
-                UpdateTeamRenderers();
-            }
-            if (minionController != null && !alive && minionController.state != MinionController.State.Die) //force go to death state
-            {
-                minionController.state = MinionController.State.Die;
-                return;
-            }
-            DetectChangeHarvestedResourceAmount();
-            UpdateTimers();
-            UpdateInteractors();
-
-            if (!fullyBuilt && hitPoints.Value >= maxHP) //detect if built
-            {
-                BecomeFullyBuilt(); 
-            }
-            else if (!damaged) //if built, detect if damaged
-            {
-                CheckIfDamaged();
-            }
-
-            if (!isBuildIndicator && !constructionBegun && hitPoints.Value > 0)
-            {
-                Unghost();
-            }
-            if (hitPoints.Value <= 0 && constructionBegun && alive) //detect death if "present" in game world ie not ghost/corpse
-            {
-                PrepareForEntityDestruction();
-            }
-            else if (fullyBuilt && !isBuildIndicator && obstacle != null && !obstacle.enabled)
-            {
-                obstacle.enabled = true;
-            } 
-        }*/
+            BecomeFullyBuilt();
+        }
+    }
+    private void DetectIfDamaged()
+    {
+        if (fullyBuilt && !damaged) //if built, detect if damaged
+        {
+            CheckIfDamaged();
+        }
+    }
+    private void DetectIfShouldDie()
+    {
+        if (minionController != null && !alive && minionController.state != MinionController.State.Die) //force go to death state
+        {
+            minionController.SwitchState(MinionController.State.Die);
+        }
+        if (hitPoints.Value <= 0 && constructionBegun && alive) //detect death if "present" in game world ie not ghost/corpse
+        {
+            alive = false;
+            PrepareForEntityDestruction();
+        }
+    }
+    private void DetectIfShouldUnghost()
+    {
+        if (!isBuildIndicator && !constructionBegun && hitPoints.Value > 0)
+        {
+            constructionBegun = true;
+            Unghost();
+        }
     }
     private void Unghost()
     {
-        constructionBegun = true;
         isTargetable.Value = true;
         physicalCollider.isTrigger = false;
         //rigid.isKinematic = false;
@@ -403,6 +392,23 @@ public class SelectableEntity : NetworkBehaviour
             obstacle.DoUpdateGraphs();
             AstarPath.active.FlushGraphUpdates();
         }
+    }  
+    private void Update()
+    { 
+        if (IsSpawned)
+        {
+            DetectIfShouldDie();
+            if (minionController != null && minionController.state == MinionController.State.Die) return; //do not do other things if dead
+            UpdateVisibilityFromFogOfWar();
+            DetectIfShouldUnghost();
+            DetectIfBuilt();
+            if (!fullyBuilt) return; //do not pass if not built
+            UpdateRallyVariables();
+            UpdateTimers();
+            //UpdateInteractors();
+            //DetectIfDamaged();
+            DetectChangeHarvestedResourceAmount();
+        } 
     }
     private float attackEffectTimer = 0;
     private void FixedUpdate()
@@ -474,7 +480,6 @@ public class SelectableEntity : NetworkBehaviour
         {
             fogUnit.enabled = false;
         }
-        alive = false;
         foreach (GarrisonablePosition item in garrisonablePositions)
         {
             if (item != null)
@@ -508,7 +513,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (minionController != null)
         {
-            minionController.FreezeRigid(true, true, false);
+            minionController.FreezeRigid(true, true);
             minionController.PrepareForDeath();
 
             Invoke(nameof(Die), deathDuration);
@@ -759,7 +764,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 FogOfWarTeam fow = FogOfWarTeam.GetTeam(hideFogTeam);
                 visibleInFog = fow.GetFogValue(transform.position) < minFogStrength * 255;
-                if (visibleInFog != oldVisibleInFog) //update if ther is a change
+                if (visibleInFog != oldVisibleInFog) //update if there is a change
                 {
                     oldVisibleInFog = visibleInFog;
 
@@ -789,10 +794,13 @@ public class SelectableEntity : NetworkBehaviour
         else
         {
             showAttackEffects = false;
-        }
+        } 
     }
 
     bool hideFogTeamSet = false;
+    /// <summary>
+    /// One time event to set fog hide team
+    /// </summary>
     private void SetHideFogTeam()
     {
         if (hideFogTeamSet) return;
@@ -841,6 +849,11 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (fogUnit != null) fogUnit.enabled = true;
         ChangeMaxPopulation(raisePopulationLimitBy);
+
+        if (!isBuildIndicator && obstacle != null && !obstacle.enabled)
+        {
+            obstacle.enabled = true;
+        }
     }
     private void ChangeMaxPopulation(int change)
     {
