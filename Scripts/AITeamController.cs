@@ -21,7 +21,7 @@ public class AITeamController : MonoBehaviour
         if (timer >= actionTime)
         {
             timer = 0;
-            //PerformAction();
+            PerformAction();
         }
     }
     private void PerformAction()

@@ -17465,9 +17465,9 @@ MonoBehaviour:
   workerThreads: 2
   doubleBuffering: 0
   hardCollisions: 1
-  symmetryBreakingBias: 0.1
+  symmetryBreakingBias: 0.2
   movementPlane: 0
-  useNavmeshAsObstacle: 1
+  useNavmeshAsObstacle: 0
   drawQuadtree: 0
 --- !u!4 &1427630717
 Transform:
