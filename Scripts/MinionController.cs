@@ -122,13 +122,7 @@ public class MinionController : NetworkBehaviour
         minionNetwork = GetComponent<MinionNetwork>();
         animator = GetComponentInChildren<Animator>();
         rigid = GetComponent<Rigidbody>();
-        //obstacle = GetComponentInChildren<MinionObstacle>();
-        // Update the destination right before searching for a path as well.
-        // This is enough in theory, but this script will also update the destination every
-        // frame as the destination is used for debugging and may be used for other things by other
-        // scripts as well. So it makes sense that it is up to date every frame.
-        if (ai != null) ai.onSearchPath += Update;
-
+        //obstacle = GetComponentInChildren<MinionObstacle>();  
 
         if (selectableEntity.fakeSpawn)
         {
@@ -146,11 +140,7 @@ public class MinionController : NetworkBehaviour
             setter.target = target;
         }
     }
-    private Transform target;
-    void OnDisable()
-    {
-        if (ai != null) ai.onSearchPath -= Update;
-    }
+    private Transform target; 
     private void Awake()
     {
         enemyMask = LayerMask.GetMask("Entity", "Obstacle");
@@ -165,8 +155,9 @@ public class MinionController : NetworkBehaviour
     private int maxDetectable;
     private void SetDestination(Vector3 position)
     {
-        destination.Value = position;
-        target.position = position;
+        print("setting destination");
+        destination.Value = position; //tell server where we're going
+        target.position = position; //move pathfinding target there
     }
     public override void OnNetworkSpawn()
     {
@@ -227,9 +218,14 @@ public class MinionController : NetworkBehaviour
     private bool finishedInitializingRealLocation = false;
     private void Update()
     {
-        if (!selectableEntity.fakeSpawn && IsSpawned)
+        if (IsSpawned && IsOwner) //update state machine
         {
-            if (ai != null) ai.destination = destination.Value;
+            OwnerUpdateState();
+        }
+        //update real location, or catch up
+        /*if (!selectableEntity.fakeSpawn && IsSpawned)
+        {
+            //if (ai != null) ai.destination = destination.Value;
             GetActualPositionChange();
             UpdateIdleCount();
             if (IsOwner)
@@ -242,14 +238,9 @@ public class MinionController : NetworkBehaviour
                 NonOwnerUpdateAnimationBasedOnContext();
             }
         }
+        */
 
-        if (IsSpawned)
-        {
-            if (IsOwner)
-            {
-                OwnerUpdateState(); 
-            }
-        }
+
     }
     private void IdleOrWalkContextuallyAnimationOnly()
     {
@@ -491,7 +482,7 @@ public class MinionController : NetworkBehaviour
 
         m_CurrentLerpTime += Time.deltaTime;
 
-        /*//gentler lerp for shorter distances
+        /*// gentler lerp for shorter distances
         float dist = Vector3.Distance(current, target);
         float modifiedLerpTime = m_LerpTime * dist;
 
@@ -629,44 +620,39 @@ public class MinionController : NetworkBehaviour
         {
             targetEnemy = FindEnemyToAttack(attackRange);
         }
+    } 
+    private void FinishSpawning()
+    {
+        state = State.Idle;
     }
     private void OwnerUpdateState()
     {
-        EnsureNotInteractingWithBusy();
-        //UpdateColliderStatus();
+        //EnsureNotInteractingWithBusy(); //temporarily disabled because it might be expensive
         UpdateAttackReadiness();
-        /*if (attackType == AttackType.Gatling)
-        {
-            animator.SetFloat("AttackSpeed", 0);
-        }*/
         switch (state)
         {
-            #region defaults
-            case State.Spawn: //play the spawn animation 
-
+            case State.Spawn: //play the spawn animation  
                 animator.Play("Spawn");
-                //FreezeRigid();
-                if (IsOwner) SetDestination(transform.position);//destination.Value = transform.position;
-
-                if (Physics.Raycast(transform.position + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.entityLayer))
+                if (IsOwner) SetDestination(transform.position);//destination.Value = transform.position; 
+                /*if (Physics.Raycast(transform.position + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.entityLayer))
                 {
                     Collider col = hit.collider;
                     Rigidbody rigid = col.GetComponent<Rigidbody>();
-                    rigid.AddForce(transform.forward * 1);
-                    //Debug.Log(gameObject.name + "trying to place on ground");
-                }
-                PlaceOnGround();
-                break;
+                    rigid.AddForce(transform.forward * 1); 
+                }*/
+                //PlaceOnGround();
+                //FreezeRigid();
+                break; 
             case State.Die:
                 animator.Play("Die");
                 FreezeRigid();
-                break;
+                break; 
             case State.Idle:
-                HideMoveIndicator();
-                IdleOrWalkContextuallyAnimationOnly();
-                //animator.Play("Idle"); 
-                if (IsOwner && selectableEntity.occupiedGarrison == null) SetDestination(orderedDestination);//destination.Value = orderedDestination;//transform.position; //stand still 
-                if (selectableEntity.occupiedGarrison == null)
+                //HideMoveIndicator();
+                IdleOrWalkContextuallyAnimationOnly(); 
+                //if (IsOwner && selectableEntity.occupiedGarrison == null) SetDestination(orderedDestination);
+                
+                /*if (selectableEntity.occupiedGarrison == null)
                 {
                     FreezeRigid();
                     FollowGivenMission();
@@ -676,8 +662,18 @@ public class MinionController : NetworkBehaviour
                 {
                     FreezeRigid(true, false, false); //freeze position, not rotation 
                     GarrisonedSeekEnemies();
-                }
+                }*/
                 break;
+        }
+        return;
+        //UpdateColliderStatus();
+        /*if (attackType == AttackType.Gatling)
+        {
+            animator.SetFloat("AttackSpeed", 0);
+        }*/
+        switch (state)
+        {
+            #region defaults
             case State.Walk:
                 UpdateMoveIndicator();
                 FreezeRigid(false, false);
@@ -1220,11 +1216,6 @@ public class MinionController : NetworkBehaviour
         Destroy(rigid);
         Destroy(col);
     }
-
-    private void FinishSpawning()
-    {
-        state = State.Idle;
-    }
     public void SetBuildDestination(Vector3 pos, SelectableEntity ent)
     {
         destination.Value = pos;
@@ -1301,7 +1292,7 @@ public class MinionController : NetworkBehaviour
             PlaceOnGround();
         }
     }
-    private void FleeFromPosition(Vector3 position)
+    /*private void FleeFromPosition(Vector3 position)
     {
         if (ai == null) return;
         // The path will be returned when the path is over a specified length (or more accurately when the traversal cost is greater than a specified value).
@@ -1315,7 +1306,7 @@ public class MinionController : NetworkBehaviour
         // Determines the variation in path length that is allowed
         path.spread = 4000;   
         ai.SetPath(path);
-    } 
+    } */
     /// <summary>
     /// Freeze rigidbody. Defaults to completely freezing it.
     /// </summary>
@@ -1388,7 +1379,7 @@ public class MinionController : NetworkBehaviour
         //tell graph update scene to stop blocking
         if (graphUpdateScene != null)
         {
-            graphUpdateSceneCollider.radius = ai.radius + 0.1f;
+            graphUpdateSceneCollider.radius = ai.radius + 0.5f; //it's better for less obstacle to be present than for more to be
             graphUpdateScene.transform.position = transform.position;
             graphUpdateScene.setTag = 0;
             graphUpdateScene.Apply();

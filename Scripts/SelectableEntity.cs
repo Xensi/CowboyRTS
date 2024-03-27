@@ -96,7 +96,7 @@ public class SelectableEntity : NetworkBehaviour
     public bool isKeystone = false;
 
     [Header("Building Only")]
-    public float buildOffset = 0.5f;
+    public Vector3 buildOffset = new Vector3(0.5f, 0, 0.5f);
 
     [Header("Builder Only")]
     public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
@@ -230,6 +230,12 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (selectIndicator != null) selectIndicator.SetActive(selected);
         if (fogUnit != null) fogUnit.team = teamNumber.Value;
+        
+        /*if (IsOwner && !hasRegisteredRallyMission)
+        {
+            hasRegisteredRallyMission = true;
+            TryToRegisterRallyMission();
+        }*/
     }
     private bool hasRegisteredRallyMission = false;
     private List<Material> savedMaterials = new();
@@ -336,12 +342,7 @@ public class SelectableEntity : NetworkBehaviour
     bool constructionBegun = false;
     private void Update()
     {
-        if (!hasRegisteredRallyMission) //one time event
-        {
-            hasRegisteredRallyMission = true;
-            TryToRegisterRallyMission();
-        }
-
+        /* 
         SetHideFogTeam();
         UpdateVisibilityFromFogOfWar();
         UpdateRallyVariables();
@@ -382,7 +383,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 obstacle.enabled = true;
             } 
-        }
+        }*/
     }
     private void Unghost()
     {

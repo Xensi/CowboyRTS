@@ -70,7 +70,7 @@ public class RTSPlayer : NetworkBehaviour
     void Start()
     {
         groundLayer = LayerMask.GetMask("Ground");
-        entityLayer = LayerMask.GetMask("Entity"); 
+        entityLayer = LayerMask.GetMask("Entity");
         gameLayer = LayerMask.GetMask("Entity", "Obstacle", "Ground");
         placementGhost = LayerMask.GetMask("PlacementGhost");
         //_offset = new Vector3(0.5f, 0, .5f);
@@ -418,18 +418,15 @@ public class RTSPlayer : NetworkBehaviour
         }
         UpdateGUIFromSelections();
     }
-
-
-    void Update()
+    private void UpdateGridVisual()
     {
-        if (!active) return;
-        /*FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
-        Debug.Log(fow.GetFogValue(cursorWorldPosition));*/
-        UpdatePlacement();
         if (Global.Instance.gridVisual != null)
         {
             Global.Instance.gridVisual.SetActive(mouseState == MouseState.ReadyToPlace);
         }
+    }
+    private void DetectHotkeys()
+    {
         if (Input.GetKeyDown(KeyCode.Q))
         {
             SelectAllAttackers();
@@ -442,29 +439,39 @@ public class RTSPlayer : NetworkBehaviour
         {
             SelectAllIdleBuilders();
         }
+#if UNITY_EDITOR //DEBUG COMMANDS
+        if (Input.GetKeyDown(KeyCode.RightShift))
+        {
+            GenericSpawnMinion(cursorWorldPosition, 0, this);
+        }
+        if (Input.GetKeyDown(KeyCode.RightAlt))
+        {
+            GenericSpawnMinion(cursorWorldPosition, 2, this);
+        }
+        if (Input.GetKeyDown(KeyCode.RightControl))
+        {
+            GenericSpawnMinion(cursorWorldPosition, 3, this);
+        }
+        if (Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            GenericSpawnMinion(cursorWorldPosition, 11, this);
+        }
+#endif
+    }
+
+    void Update()
+    {
+        /*FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
+        Debug.Log(fow.GetFogValue(cursorWorldPosition));*/
+        if (!active) return;
+        UpdatePlacement();
+        UpdateGridVisual();
+        DetectHotkeys();
         CameraMove();
         if (!MouseOverUI())
         {
             GetMouseWorldPosition();
 
-#if UNITY_EDITOR
-            if (Input.GetKeyDown(KeyCode.RightShift))
-            {
-                GenericSpawnMinion(cursorWorldPosition, 0, this);
-            }
-            if (Input.GetKeyDown(KeyCode.RightAlt))
-            {
-                GenericSpawnMinion(cursorWorldPosition, 2, this);
-            }
-            if (Input.GetKeyDown(KeyCode.RightControl))
-            {
-                GenericSpawnMinion(cursorWorldPosition, 3, this);
-            }
-            if (Input.GetKeyDown(KeyCode.UpArrow))
-            {
-                GenericSpawnMinion(cursorWorldPosition, 11, this);
-            }
-#endif
             if (linkedState == LinkedState.PlacingEnd)
             {
                 CalculateFillCost(startWallPosition, cursorWorldPosition, wallID);
@@ -480,7 +487,7 @@ public class RTSPlayer : NetworkBehaviour
                         TryToSelectOne();
                         break;
                     case MouseState.ReadyToPlace:
-                        PlaceBuilding(buildingPlacingID); 
+                        PlaceBuilding(buildingPlacingID);
                         break;
                     case MouseState.ReadyToSetRallyPoint:
                         mouseState = MouseState.Waiting;
@@ -547,7 +554,7 @@ public class RTSPlayer : NetworkBehaviour
             if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
             {
                 DeselectAll();
-            } 
+            }
             //evaluate which should actually be selected based on priority
             //count types
             List<SelectableEntity> evaluation = new();
@@ -617,23 +624,6 @@ public class RTSPlayer : NetworkBehaviour
                     item.Select(true);
                 }
             }
-
-
-            /*foreach (SelectableEntity item in ownedEntities)
-            {
-                if (item != null)
-                { 
-                    if (UnitIsInSelectionBox(cam.WorldToScreenPoint(item.transform.position), bounds))
-                    {
-                        selectedEntities.Add(item);
-                        item.Select(true);
-                    }
-                    else
-                    {
-                        item.Select(false);
-                    }
-                }
-            }*/
             UpdateGUIFromSelections();
         }
         Global.Instance.selectionRect.gameObject.SetActive(false);
@@ -666,7 +656,7 @@ public class RTSPlayer : NetworkBehaviour
     }
     private Vector3 startWallPosition;
     private void PlaceBuilding(byte id = 0)
-    { 
+    {
         switch (linkedState)
         {
             case LinkedState.Waiting:
@@ -692,7 +682,7 @@ public class RTSPlayer : NetworkBehaviour
             default:
                 break;
         }
-    } 
+    }
     private void NormalPlaceBuilding(byte id)
     {
         FactionEntityClass fac = _faction.entities[id];
@@ -784,10 +774,10 @@ public class RTSPlayer : NetworkBehaviour
         float halfExtents = 0.1f;
         if (distance > 0)
         {
-            for (float i = 0; i <= distance+0.5f; i+=0.5f)
+            for (float i = 0; i <= distance + 0.5f; i += 0.5f)
             {
                 Vector3 spot = Vector3.Lerp(start, end, i / distance);
-                Vector3 mod = new Vector3(AlignToQuarterGrid(spot.x), 0, AlignToQuarterGrid(spot.z));
+                Vector3 mod = AlignToQuarterGrid(spot);
                 Debug.DrawLine(spot, spot + new Vector3(0, 1, 0), Color.red);
                 Debug.DrawLine(mod, mod + new Vector3(0, 1, 0));
                 if (!predictedWallPositions.Any(i => i == mod)) // && mod != cursorWorldPosition
@@ -847,7 +837,6 @@ public class RTSPlayer : NetworkBehaviour
                 wallGhosts.Add(ghost);
             }
         }
-
         Debug.Log(realCost);
         return realCost;
     }
@@ -902,7 +891,7 @@ public class RTSPlayer : NetworkBehaviour
         }
         predictedWallPositions.Clear();
         predictedWallPositionsShouldBePlaced.Clear();
-    } 
+    }
     private float AlignToGrid(float input)
     {
         //ex 1.7
@@ -911,26 +900,14 @@ public class RTSPlayer : NetworkBehaviour
         float middle = floor + 0.5f;
 
         //float maxDiff = 0.25f;
-        return middle;  
+        return middle;
     }
-    private float AlignToQuarterGrid(float input) //avoid 0 and 0.5 endings. we want .75 and .25
+    private Vector3 AlignToQuarterGrid(Vector3 input) //avoid 0 and 0.5 endings. we want .75 and .25
     {
-        float round = (float)Math.Round(input * 4, MidpointRounding.ToEven) / 4; //rounds to closest .25 first
-        float floor = Mathf.Floor(round); //this will always be integer 
-
-        if (Math.Abs(round-floor) < 0.01f || Mathf.Abs(round - (floor + 0.5f)) < 0.01) //avoid 0 and 0.5
-        {
-            float math = input - round; //determine direction
-            if (math >= 0.01)
-            {
-                round += 0.25f;
-            }
-            else if (math < 0.01)
-            {
-                round -= 0.25f;
-            }
-        }  
-        return round;
+        Vector3Int gridPosition = grid.WorldToCell(input);
+        //cursorWorldPosition = grid.CellToWorld(_gridPosition) + _offset;
+        Vector3 pos = grid.CellToWorld(gridPosition) + buildOffset;
+        return pos;
     }
     private byte wallID = 0;
     private void StopPlacingBuilding()
@@ -949,11 +926,10 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
         wallGhosts.Clear();
-    } 
+    }
     public void UpdatePlacement()
     {
-        float size = buildOffset - 0.1f;
-        placementBlocked = Physics.CheckBox(cursorWorldPosition, new Vector3(size, size, size), Quaternion.identity, entityLayer, QueryTriggerInteraction.Ignore);
+        placementBlocked = Physics.CheckBox(cursorWorldPosition, buildOffset, Quaternion.identity, entityLayer, QueryTriggerInteraction.Ignore);
 
         FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
         if (fow.GetFogValue(cursorWorldPosition) > 0.1f * 255)
@@ -1000,19 +976,22 @@ public class RTSPlayer : NetworkBehaviour
             _mousePosition = hit.point;
             _gridPosition = grid.WorldToCell(_mousePosition);
             //cursorWorldPosition = grid.CellToWorld(_gridPosition) + _offset;
-            cursorWorldPosition = grid.CellToWorld(_gridPosition) + new Vector3(buildOffset, 0, buildOffset);
+            cursorWorldPosition = grid.CellToWorld(_gridPosition) + buildOffset;
+            Debug.DrawRay(hit.point, transform.up, Color.red, 1);
+            Debug.DrawRay(cursorWorldPosition, transform.up, Color.green, 1);
+            //print(hit.point + " " + cursorWorldPosition);
             if (followCursorObject != null)
             {
-                followCursorObject.transform.position = cursorWorldPosition;
+                followCursorObject.transform.position = new Vector3(cursorWorldPosition.x, hit.point.y, cursorWorldPosition.z);// + new Vector3(0, 5, 0);
             }
         }
     }
     #region SpawnMinion
 
-    private List<SelectableEntity> fakeSpawns = new(); 
-    private void FakeClientSideSpawn(Vector2 spawn, byte minionID)
+    private List<SelectableEntity> fakeSpawns = new();
+    private void FakeClientSideSpawn(Vector3 spawn, byte minionID)
     {
-        Vector3 spawnPosition = new(spawn.x, 0, spawn.y); //get spawn position 
+        Vector3 spawnPosition = spawn;//new(spawn.x, 0, spawn.y); //get spawn position 
         FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
         if (fac.prefabToSpawn != null) // && fac.prefabToSpawn.fakeSpawnObject != null
         {
@@ -1051,9 +1030,9 @@ public class RTSPlayer : NetworkBehaviour
     /// <summary>
     /// Tell the server to spawn in a minion at a position.
     /// </summary> 
-    public void GenericSpawnMinion(Vector3 spawnPos, byte minionID, NetworkBehaviourReference spawner)
+    public void GenericSpawnMinion(Vector3 spawn, byte minionID, NetworkBehaviourReference spawner)
     {
-        Vector2 spawn = new Vector2(spawnPos.x, spawnPos.z);
+        //Vector2 spawn = new Vector2(spawnPos.x, spawnPos.z);
         if (IsServer)
         {
             ServerSpawnMinion(spawn, minionID, (byte)OwnerClientId, spawner);
@@ -1069,17 +1048,17 @@ public class RTSPlayer : NetworkBehaviour
         UpdateButtons();
     }
     [ServerRpc]
-    private void RequestSpawnMinionServerRpc(Vector2 spawn, byte minionID, byte clientID, NetworkBehaviourReference spawner) //ok to use byte because 0-244
+    private void RequestSpawnMinionServerRpc(Vector3 spawn, byte minionID, byte clientID, NetworkBehaviourReference spawner) //ok to use byte because 0-244
     {
         FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
         Debug.Log("SERVER: received request to spawn " + fac.productionName);
         ServerSpawnMinion(spawn, minionID, clientID, spawner);
     }
-    private void ServerSpawnMinion(Vector2 spawn, byte minionID, byte clientID, NetworkBehaviourReference spawner)
+    private void ServerSpawnMinion(Vector3 spawn, byte minionID, byte clientID, NetworkBehaviourReference spawner)
     {
         if (!IsServer) return;
 
-        Vector3 spawnPosition = new(spawn.x, 0, spawn.y); //get spawn position
+        Vector3 spawnPosition = spawn; //new(spawn.x, 0, spawn.y); //get spawn position
 
         FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
         if (fac != null && fac.prefabToSpawn != null)
@@ -1180,36 +1159,7 @@ public class RTSPlayer : NetworkBehaviour
                 }
             }
         }
-    }
-    /*private void InternalSpawnMinion(Vector2 spawn, byte minionID, ServerRpcParams serverRpcParams = default)
-    {
-        *//*Vector3 spawnPosition = new(spawn.x, 0, spawn.y); //get spawn position
-
-        FactionEntityClass fac = _faction.entities[minionID]; //get information about minion based on ID
-        GameObject minion = Instantiate(fac.prefabToSpawn, spawnPosition, Quaternion.Euler(0, 180, 0)); //spawn locally
-        //Get components
-        SelectableEntity select = minion.GetComponent<SelectableEntity>();   
-
-        //Grant ownership to client that called this
-        var clientId = serverRpcParams.Receive.SenderClientId;
-        if (NetworkManager.ConnectedClients.ContainsKey(clientId))
-        {
-            Debug.Log("Spawning" + minion.name);  
-            select.net.SpawnWithOwnership(clientId);
-            //use client rpc to send this ID to client
-            ClientRpcParams clientRpcParams = new ClientRpcParams
-            {
-                Send = new ClientRpcSendParams
-                {
-                    TargetClientIds = new ulong[] { clientId }
-                }
-            };
-            SendReferenceToSpawnedMinionClientRpc(select.NetworkObjectId, clientRpcParams);
-        } 
-        return select;*//*
-    }*/
-
-
+    }  
     #endregion
     #region Selection
     private void DoNotDoubleSelect()
@@ -1347,7 +1297,7 @@ public class RTSPlayer : NetworkBehaviour
         SelectableEntity select = selectedEntities[0];
         //only works if is production structure, fully built, and spawned
         if (select.type != SelectableEntity.EntityTypes.ProductionStructure || !select.fullyBuilt || !select.net.IsSpawned) return;
-        
+
         Global.Instance.queueParent.gameObject.SetActive(true);
         int num = Mathf.Clamp(select.buildQueue.Count, 0, Global.Instance.queueButtons.Count);
         //enable a button for each indices
@@ -1362,7 +1312,7 @@ public class RTSPlayer : NetworkBehaviour
         }
     }
     private void UpdateButton(SelectableEntity select, int i = 0)
-    { 
+    {
         Button button = Global.Instance.queueButtons[i];
         button.gameObject.SetActive(true);
         TMP_Text text = button.GetComponentInChildren<TMP_Text>();
@@ -1372,12 +1322,12 @@ public class RTSPlayer : NetworkBehaviour
         button.onClick.AddListener(delegate { DequeueProductionOrder(i); });
     }
     public void DequeueProductionOrder(int index = 0) //on click remove thing from queue and refund gold
-    { 
+    {
         if (selectedEntities.Count == 1)
         {
-            SelectableEntity select = selectedEntities[0]; 
-            FactionEntityClass fac = select.buildQueue[index]; 
-            gold += fac.goldCost; 
+            SelectableEntity select = selectedEntities[0];
+            FactionEntityClass fac = select.buildQueue[index];
+            gold += fac.goldCost;
             select.buildQueue.RemoveAt(index);
             UpdateGUIFromSelections();
         }
@@ -1397,15 +1347,19 @@ public class RTSPlayer : NetworkBehaviour
         int cost = newFac.goldCost;
         //try to spawn from all selected buildings if possible 
         foreach (SelectableEntity select in selectedEntities)
-        { 
+        {
             if (gold < cost || !select.net.IsSpawned || !select.fullyBuilt || !select.builderEntityIndices.Contains(id)) break;
             //if requirements fulfilled
             gold -= cost;
-            select.buildQueue.Add(newFac); 
+            select.buildQueue.Add(newFac);
         }
         UpdateBuildQueue();
     }
-    private float buildOffset = 0.5f;
+    private Vector3 buildOffset = Vector3.zero;
+    /// <summary>
+    /// Create building ghost showing where building will be placed
+    /// </summary>
+    /// <param name="id"></param>
     private void HoverBuildWithID(byte id = 0)
     {
         mouseState = MouseState.ReadyToPlace;
@@ -1439,7 +1393,7 @@ public class RTSPlayer : NetworkBehaviour
     public bool placingPortal = false;
     public List<byte> indices;
     private void SingleSelect()
-    { 
+    {
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
         if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
         {
@@ -1452,10 +1406,9 @@ public class RTSPlayer : NetworkBehaviour
             SelectableEntity entity = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
             if (entity != null)
             {
-                TrySelectEntity(entity); 
+                TrySelectEntity(entity);
             }
-        }
-
+        } 
     }
     private void DoubleSelectDetected()
     {
@@ -1502,7 +1455,7 @@ public class RTSPlayer : NetworkBehaviour
         foreach (SelectableEntity item in ownedEntities)
         {
             if (item.type == type && item.occupiedGarrison == null)
-            { 
+            {
                 item.Select(true);
                 selectedEntities.Add(item);
             }
@@ -1515,7 +1468,7 @@ public class RTSPlayer : NetworkBehaviour
         UpdateGUIFromSelections();
     }
     private void DeselectAll()
-    { 
+    {
         foreach (SelectableEntity item in selectedEntities)
         {
             item.Select(false);
@@ -1529,7 +1482,7 @@ public class RTSPlayer : NetworkBehaviour
     /// Damages all in radius at point.
     /// </summary> 
     public void CreateExplosionAtPoint(Vector3 center, float explodeRadius, sbyte damage = 10)
-    { 
+    {
         Collider[] hitColliders = new Collider[40];
         int numColliders = Physics.OverlapSphereNonAlloc(center, explodeRadius, hitColliders, entityLayer);
         for (int i = 0; i < numColliders; i++)
@@ -1549,9 +1502,9 @@ public class RTSPlayer : NetworkBehaviour
             {
                 continue;
             }
-            DamageEntity(damage, select); 
+            DamageEntity(damage, select);
         }
-    } 
+    }
     public void DamageEntity(sbyte damage, SelectableEntity enemy) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         if (enemy != null)
@@ -1566,7 +1519,7 @@ public class RTSPlayer : NetworkBehaviour
                 PredictAndRequestDamage(damage, enemy);
             }
         }
-    } 
+    }
     private void PredictAndRequestDamage(sbyte damage, SelectableEntity enemy)
     {
         //if we know that this attack will kill that unit, we can kill it client side
@@ -1576,7 +1529,7 @@ public class RTSPlayer : NetworkBehaviour
             enemy.PrepareForEntityDestruction();
         }
         Global.Instance.localPlayer.RequestDamageServerRpc(damage, enemy);
-    } 
+    }
 
     [ServerRpc]
     public void RequestDamageServerRpc(sbyte damage, NetworkBehaviourReference enemy)
@@ -1586,7 +1539,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             select.TakeDamage(damage);
         }
-    } 
+    }
     public void SpawnExplosion(Vector3 pos)
     {
         GameObject prefab = Global.Instance.explosionPrefab;
