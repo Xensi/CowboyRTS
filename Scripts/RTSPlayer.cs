@@ -15,7 +15,6 @@ public class RTSPlayer : NetworkBehaviour
     public NetworkVariable<bool> inTheGame = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public List<SelectableEntity> keystoneUnits = new();
     public int gold = 100;
-    public Camera cam;
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
     public List<SelectableEntity> ownedEntities; //must be serialized or public
@@ -63,6 +62,8 @@ public class RTSPlayer : NetworkBehaviour
     public int maxPopulation = 100;
     public LayerMask placementGhost;
     public LayerMask gameLayer;
+    public Camera mainCam;
+    public Camera lineCam;
     public void LoseGame()
     {
         inTheGame.Value = false;
@@ -76,8 +77,9 @@ public class RTSPlayer : NetworkBehaviour
         //_offset = new Vector3(0.5f, 0, .5f);
         _offset = new Vector3(0.25f, 0, .25f);
         //_offset = new Vector3(0, 0, 0);
-        cam = Camera.main;
-        camParent = cam.transform.parent.transform;
+        mainCam = Global.Instance.mainCam;
+        lineCam = Global.Instance.lineCam;
+        camParent = mainCam.transform.parent.transform;
         meshes = new MeshRenderer[1];
         if (IsOwner)
         {
@@ -142,9 +144,9 @@ public class RTSPlayer : NetworkBehaviour
         Vector3 motion = new(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
         camParent.transform.Translate(camSpeed * Time.deltaTime * motion); //reordered operands for better performance
         //from 0 to 10
-        cam.orthographicSize -= Input.mouseScrollDelta.y * camScroll;
-
-        cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, 1, 10);
+        mainCam.orthographicSize -= Input.mouseScrollDelta.y * camScroll; 
+        mainCam.orthographicSize = Mathf.Clamp(mainCam.orthographicSize, 1, 10);
+        lineCam.orthographicSize = mainCam.orthographicSize;
     }
     private void SelectedAttackMove()
     {
@@ -152,6 +154,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             if (item.minionController != null) //minion
             {
+                print("attack moving");
                 item.minionController.SetAttackMoveDestination();
             }
         }
@@ -160,13 +163,13 @@ public class RTSPlayer : NetworkBehaviour
     {
         Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget
     }
-    private ActionType actionType = ActionType.Move;
+    private ActionType actionType = ActionType.Move; 
     private void SelectedSetDestination()
     {
         //when player right clicks, get position on map
         //tell other clients that this happened
         Vector3 clickedPosition;
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.gameLayer))
         {
             clickedPosition = hit.point;
@@ -219,9 +222,12 @@ public class RTSPlayer : NetworkBehaviour
             else
             {
                 actionType = ActionType.Move;
-            }
-            foreach (SelectableEntity item in selectedEntities)
+            } 
+            for (int i = 0; i < selectedEntities.Count; i++)
             {
+                SelectableEntity item = selectedEntities[i];
+                /*Vector2 circle = UnityEngine.Random.insideUnitCircle * i * 0.5f;
+                Vector3 vec = clickedPosition + new Vector3(circle.x, 0, circle.y);*/
                 if (item.minionController != null) //minion
                 {
                     switch (actionType)
@@ -232,8 +238,7 @@ public class RTSPlayer : NetworkBehaviour
                         case ActionType.AttackTarget:
                             item.minionController.AttackTarget(select);
                             break;
-                        case ActionType.Harvest:
-                            Debug.Log("Commanding harvest");
+                        case ActionType.Harvest: 
                             item.minionController.CommandHarvestTarget(select);
                             break;
                         case ActionType.Deposit:
@@ -242,7 +247,7 @@ public class RTSPlayer : NetworkBehaviour
                         case ActionType.Garrison:
                             item.minionController.GarrisonInto(select);
                             break;
-                        case ActionType.BuildTarget:
+                        case ActionType.BuildTarget://try determining how many things need to be built in total, and grabbing closest ones
                             item.minionController.CommandBuildTarget(select);
                             break;
                         default:
@@ -253,7 +258,7 @@ public class RTSPlayer : NetworkBehaviour
                 {
                     item.SetRally();
                 }
-            }
+            }  
             /*if (IsServer)
             {
                 Debug.Log("Server telling client about the order");
@@ -562,7 +567,7 @@ public class RTSPlayer : NetworkBehaviour
             {
                 if (item != null)
                 {
-                    if (UnitIsInSelectionBox(cam.WorldToScreenPoint(item.transform.position), bounds))
+                    if (UnitIsInSelectionBox(mainCam.WorldToScreenPoint(item.transform.position), bounds))
                     {
                         evaluation.Add(item);
                     }
@@ -969,7 +974,7 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void GetMouseWorldPosition()
     {
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
 
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, groundLayer))
         {
@@ -1394,7 +1399,7 @@ public class RTSPlayer : NetworkBehaviour
     public List<byte> indices;
     private void SingleSelect()
     {
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
         {
             DeselectAll();
@@ -1412,7 +1417,7 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void DoubleSelectDetected()
     {
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
         {
             DeselectAll();

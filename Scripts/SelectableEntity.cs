@@ -235,6 +235,7 @@ public class SelectableEntity : NetworkBehaviour
             hasRegisteredRallyMission = true;
             TryToRegisterRallyMission();
         }*/
+        TryToRegisterRallyMission();
         SetHideFogTeam();
         UpdateTeamRenderers();
     }
@@ -405,7 +406,7 @@ public class SelectableEntity : NetworkBehaviour
             if (!fullyBuilt) return; //do not pass if not built
             UpdateRallyVariables();
             UpdateTimers();
-            //UpdateInteractors();
+            UpdateInteractors(); //costly for loop
             //DetectIfDamaged();
             DetectChangeHarvestedResourceAmount();
         } 
@@ -733,21 +734,20 @@ public class SelectableEntity : NetworkBehaviour
             Global.Instance.localPlayer.UpdatePlacement();
         }
     } */
+    private int interactorIndex = 0;
     private void UpdateInteractors()
     {
         if (interactors.Count > 0)
         {
-            for (int i = 0; i < interactors.Count; i++)
+            if (interactors[interactorIndex] != null)
             {
-                if (interactors[i] != null)
+                if (interactors[interactorIndex].interactionTarget != this)
                 {
-                    if (interactors[i].interactionTarget != this)
-                    {
-                        interactors.RemoveAt(i);
-                        break;
-                    }
+                    interactors.RemoveAt(interactorIndex); 
                 }
             }
+            interactorIndex++;
+            if (interactorIndex >= interactors.Count) interactorIndex = 0; 
         }
     }
     public readonly float minFogStrength = 0.45f;
@@ -909,7 +909,7 @@ public class SelectableEntity : NetworkBehaviour
         rallyTarget = null;
         //determine if spawned units should be given a mission
 
-        Ray ray = Global.Instance.localPlayer.cam.ScreenPointToRay(Input.mousePosition);
+        Ray ray = Global.Instance.localPlayer.mainCam.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.gameLayer))
         {
             rallyPoint = hit.point;
@@ -1068,7 +1068,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void UpdateAttackIndicator()
     {
-        if (targetIndicator != null && minionController != null && minionController.targetEnemy != null)
+        /*if (targetIndicator != null && minionController != null && minionController.targetEnemy != null)
         {
             if (alive)
             {
@@ -1084,11 +1084,16 @@ public class SelectableEntity : NetworkBehaviour
                 targetIndicator.SetActive(false);
                 lineIndicator.enabled = false;
             }
-        }
+        }*/
+    }
+    public void UpdatePathIndicator(Vector3[] list)
+    {
+        lineIndicator.positionCount = list.Length;
+        lineIndicator.SetPositions(list);
     }
     public void UpdateMoveIndicator()
     {
-        if (targetIndicator != null && minionController != null)
+        /*if (targetIndicator != null && minionController != null)
         {
             if (alive)
             {
@@ -1104,7 +1109,7 @@ public class SelectableEntity : NetworkBehaviour
                 targetIndicator.SetActive(false);
                 lineIndicator.enabled = false;
             }
-        }
+        }*/
     }
     public void UpdateTargetIndicator()
     {

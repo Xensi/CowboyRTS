@@ -146,3 +146,10 @@ MonoBehaviour:
     goldCost: 40
     timeCost: 10
     buildID: 0
+  - productionName: Depot
+    needsConstructing: 1
+    prefabToSpawn: {fileID: 776634543507809315, guid: dafc1e121bd03ee458b48feedf727d15, type: 3}
+    linkedID: -1
+    goldCost: 20
+    timeCost: 0
+    buildID: 0

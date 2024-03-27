@@ -45,6 +45,10 @@ public class Global : NetworkBehaviour
     public GraphUpdateScene graphUpdateScenePrefab;
     public List<AITeamController> aiTeamControllers = new();
     public int maxMapSize = 25; //radius
+
+    [SerializeField] public Camera mainCam;
+    [SerializeField] public Camera lineCam;
+
     private void Awake()
     {
         // If there is an instance, and it's not me, delete myself.

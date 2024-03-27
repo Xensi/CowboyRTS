@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5979901183641035642}
   - component: {fileID: 555440906972586300}
-  m_Layer: 7
+  m_Layer: 10
   m_Name: line
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -76,7 +76,6 @@ LineRenderer:
   m_SortingOrder: 0
   m_Positions:
   - {x: 0, y: 0, z: 0}
-  - {x: 0, y: 0, z: 1}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -308,6 +307,7 @@ MonoBehaviour:
   attackType: 0
   directionalAttack: 0
   attackRange: 1
+  depositRange: 1
   canMoveWhileAttacking: 0
   attackEffectSpawnPosition: {fileID: 0}
   damage: 1
