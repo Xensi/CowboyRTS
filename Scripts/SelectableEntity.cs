@@ -357,6 +357,64 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
+    public void UseAbility(FactionAbility ability)
+    {
+        List<SelectableEntity> targetedEntities = new();
+        foreach (TargetedEffects effect in ability.effectsToApply)
+        {
+            switch (effect.targets)
+            {
+                case TargetedEffects.Targets.Self:
+                    targetedEntities.Add(this);
+                    break;
+                default:
+                    break;
+            }
+            foreach (SelectableEntity target in targetedEntities)
+            {
+                //get current variable
+                float variableToChange = 0;
+                switch (effect.status) //set variable to change;
+                {
+                    case TargetedEffects.StatusEffect.MoveSpeed:
+                        if (target.minionController != null && target.minionController.ai != null)
+                        {
+                            variableToChange = target.minionController.ai.maxSpeed;
+                        }
+                        break;
+                    case TargetedEffects.StatusEffect.AttackSpeed:
+                        break;
+                    default:
+                        break;
+                }
+                switch (effect.operation) //apply change to variable
+                {
+                    case TargetedEffects.Operation.Set:
+                        break;
+                    case TargetedEffects.Operation.Add:
+                        break;
+                    case TargetedEffects.Operation.Multiply:
+                        variableToChange *= effect.statusNumber;
+                        break;
+                    default:
+                        break;
+                }
+                switch (effect.status) //set actual variable to new variable
+                {
+                    case TargetedEffects.StatusEffect.MoveSpeed:
+                        if (target.minionController != null && target.minionController.ai != null)
+                        {
+                            target.minionController.ai.maxSpeed = variableToChange;
+                        }
+                        break;
+                    case TargetedEffects.StatusEffect.AttackSpeed:
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+    } 
     private void UpdateRallyVariables()
     {
         if (rallyTarget != null) //update rally visual and rally point to rally target position

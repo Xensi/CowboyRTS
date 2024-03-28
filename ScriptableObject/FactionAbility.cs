@@ -6,7 +6,7 @@ using System.Collections.Generic;
 [System.Serializable]
 public class FactionAbility : ScriptableObject
 {
-    public string abilityName = "Ability Name";   
+    public string abilityName = "Ability Name"; 
     public int cooldownTime = 60; //used only if needsConstructing is false 
     public List<TargetedEffects> effectsToApply = new(); //effects to activate when this ability is used
 }
@@ -24,6 +24,7 @@ public class TargetedEffects //name, target, status effect
         MoveSpeed, AttackSpeed
     }
     public StatusEffect status = StatusEffect.MoveSpeed;
+    public float expirationTime = 5;
     public enum Operation //how to apply status number
     {
         Set, Add, Multiply

@@ -68,7 +68,7 @@ public class MinionController : NetworkBehaviour
     public readonly float walkAnimThreshold = 0.0001f;
     private Vector3 oldPosition;
     private bool attackReady = true;
-    [HideInInspector] AIPath ai;
+    [HideInInspector] public AIPath ai;
     [HideInInspector] public Collider col;
     [HideInInspector] private Rigidbody rigid;
     [HideInInspector] public Animator animator;
@@ -140,7 +140,9 @@ public class MinionController : NetworkBehaviour
             target.position = transform.position; //set to be on us
             setter.target = target;
         }
+        defaultMoveSpeed = ai.maxSpeed;
     }
+    [HideInInspector] public float defaultMoveSpeed = 0;
     private Transform target;
     private void Awake()
     {

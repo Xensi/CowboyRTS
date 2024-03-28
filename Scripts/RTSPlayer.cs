@@ -9,6 +9,7 @@ using System.Linq;
 using FoW;
 using UnityEngine.Rendering;
 using System;
+using UnityEditor.Playables;
 
 public class RTSPlayer : NetworkBehaviour
 {
@@ -24,7 +25,7 @@ public class RTSPlayer : NetworkBehaviour
     //[SerializeField] private FactionScriptableObject _faction;
     public FactionUnit startingFactionUnit;
     public Faction playerFaction;
-    
+
     [SerializeField] private int _entitiesIndex = 0; //used to pick a prefab from faction list
     private Vector3 _mousePosition;
     private Vector3 _offset;
@@ -114,7 +115,7 @@ public class RTSPlayer : NetworkBehaviour
         if (IsOwner) //spawn initial minions/buildings  
         {
             inTheGame.Value = true;
-            Global.Instance.localPlayer = this; 
+            Global.Instance.localPlayer = this;
             Vector3 spawnPosition;
             if (teamID < Global.Instance.playerSpawn.Count)
             {
@@ -149,7 +150,7 @@ public class RTSPlayer : NetworkBehaviour
         Vector3 motion = new(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
         camParent.transform.Translate(camSpeed * Time.deltaTime * motion); //reordered operands for better performance
         //from 0 to 10
-        mainCam.orthographicSize -= Input.mouseScrollDelta.y * camScroll; 
+        mainCam.orthographicSize -= Input.mouseScrollDelta.y * camScroll;
         mainCam.orthographicSize = Mathf.Clamp(mainCam.orthographicSize, 1, 10);
         lineCam.orthographicSize = mainCam.orthographicSize;
     }
@@ -168,7 +169,7 @@ public class RTSPlayer : NetworkBehaviour
     {
         Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget
     }
-    private ActionType actionType = ActionType.Move; 
+    private ActionType actionType = ActionType.Move;
     private void SelectedSetDestination()
     {
         //when player right clicks, get position on map
@@ -227,7 +228,7 @@ public class RTSPlayer : NetworkBehaviour
             else
             {
                 actionType = ActionType.Move;
-            } 
+            }
             for (int i = 0; i < selectedEntities.Count; i++)
             {
                 SelectableEntity item = selectedEntities[i];
@@ -243,7 +244,7 @@ public class RTSPlayer : NetworkBehaviour
                         case ActionType.AttackTarget:
                             item.minionController.AttackTarget(select);
                             break;
-                        case ActionType.Harvest: 
+                        case ActionType.Harvest:
                             item.minionController.CommandHarvestTarget(select);
                             break;
                         case ActionType.Deposit:
@@ -263,7 +264,7 @@ public class RTSPlayer : NetworkBehaviour
                 {
                     item.SetRally();
                 }
-            }  
+            }
             /*if (IsServer)
             {
                 Debug.Log("Server telling client about the order");
@@ -449,26 +450,26 @@ public class RTSPlayer : NetworkBehaviour
         {
             SelectAllIdleBuilders();
         }
-/*#if UNITY_EDITOR //DEBUG COMMANDS
-        if (Input.GetKeyDown(KeyCode.RightShift))
-        {
-            GenericSpawnMinion(cursorWorldPosition, 0, this);
-        }
-        if (Input.GetKeyDown(KeyCode.RightAlt))
-        {
-            GenericSpawnMinion(cursorWorldPosition, 2, this);
-        }
-        if (Input.GetKeyDown(KeyCode.RightControl))
-        {
-            GenericSpawnMinion(cursorWorldPosition, 3, this);
-        }
-        if (Input.GetKeyDown(KeyCode.UpArrow))
-        {
-            GenericSpawnMinion(cursorWorldPosition, 11, this);
-        }
-#endif*/
+        /*#if UNITY_EDITOR //DEBUG COMMANDS
+                if (Input.GetKeyDown(KeyCode.RightShift))
+                {
+                    GenericSpawnMinion(cursorWorldPosition, 0, this);
+                }
+                if (Input.GetKeyDown(KeyCode.RightAlt))
+                {
+                    GenericSpawnMinion(cursorWorldPosition, 2, this);
+                }
+                if (Input.GetKeyDown(KeyCode.RightControl))
+                {
+                    GenericSpawnMinion(cursorWorldPosition, 3, this);
+                }
+                if (Input.GetKeyDown(KeyCode.UpArrow))
+                {
+                    GenericSpawnMinion(cursorWorldPosition, 11, this);
+                }
+        #endif*/
     }
-
+    private FactionBuilding buildingToPlace = null;
     void Update()
     {
         /*FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
@@ -497,7 +498,7 @@ public class RTSPlayer : NetworkBehaviour
                         TryToSelectOne();
                         break;
                     case MouseState.ReadyToPlace:
-                        PlaceBuilding(buildingPlacingID);
+                        PlaceBuilding(buildingToPlace);
                         break;
                     case MouseState.ReadyToSetRallyPoint:
                         mouseState = MouseState.Waiting;
@@ -665,12 +666,12 @@ public class RTSPlayer : NetworkBehaviour
         }
     }
     private Vector3 startWallPosition;
-    private void PlaceBuilding(byte id = 0)
+    private void PlaceBuilding(FactionBuilding building)
     {
-        switch (linkedState)
+        NormalPlaceBuilding(building);
+        /*switch (linkedState)
         {
-            case LinkedState.Waiting:
-                //PlaceBuildingGuide(id);
+            case LinkedState.Waiting: 
                 NormalPlaceBuilding(id);
                 break;
             case LinkedState.PlacingStart:
@@ -691,72 +692,69 @@ public class RTSPlayer : NetworkBehaviour
                 break;
             default:
                 break;
-        }
+        }*/
     }
-    private void NormalPlaceBuilding(byte id)
+    private void NormalPlaceBuilding(FactionBuilding building)
     {
-        /*FactionUnit fac = _faction.entities[id];
-        if (gold >= fac.goldCost)
+        if (gold < building.goldCost) return;
+        gold -= building.goldCost; 
+        GenericSpawnMinion(cursorWorldPosition, building, this);
+        SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
+        TellSelectedToBuild(last);
+        //temporary: later re-implement two-part buildings and holding shift to continue placing
+        StopPlacingBuilding();
+        /*if (Input.GetKey(KeyCode.LeftShift) && gold >= building.goldCost)
         {
-            gold -= fac.goldCost;
-            Debug.Log("placing at " + cursorWorldPosition);
-            GenericSpawnMinion(cursorWorldPosition, id, this); //followCursorObject.transform.position
-
-            SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
-            TellSelectedToBuild(last);
-            if (Input.GetKey(KeyCode.LeftShift) && gold >= fac.goldCost)
+            //continue placing buildings
+        }
+        else if (!Input.GetKey(KeyCode.LeftShift) || gold < building.goldCost) //if not holding shift or out of money for this building
+        {
+            if (building.linkedID == -1) //if no linked building, stop after placing building
             {
-                //continue placing buildings
-            }
-            else if (!Input.GetKey(KeyCode.LeftShift) || gold < fac.goldCost) //if not holding shift or out of money for this building
-            {
-                *//*if (fac.linkedID == -1) //if no linked building, stop after placing building
+                StopPlacingBuilding();
+                if (placingPortal)
                 {
-                    StopPlacingBuilding();
-                    if (placingPortal)
+                    foreach (SelectableEntity item in ownedEntities)
                     {
-                        foreach (SelectableEntity item in ownedEntities)
+                        if (item.type == SelectableEntity.EntityTypes.Portal)
                         {
-                            if (item.type == SelectableEntity.EntityTypes.Portal)
+                            Portal portal = item.GetComponent<Portal>();
+                            if (portal != startPortal)
                             {
-                                Portal portal = item.GetComponent<Portal>();
-                                if (portal != startPortal)
-                                {
-                                    endPortal = portal;
+                                endPortal = portal;
 
-                                    startPortal.destination = endPortal.transform.position;
-                                    endPortal.destination = startPortal.transform.position;
-                                    startPortal.hasLinkedPortal = true;
-                                    endPortal.hasLinkedPortal = true;
-                                    startPortal.linkedPortal = endPortal;
-                                    endPortal.linkedPortal = startPortal;
+                                startPortal.destination = endPortal.transform.position;
+                                endPortal.destination = startPortal.transform.position;
+                                startPortal.hasLinkedPortal = true;
+                                endPortal.hasLinkedPortal = true;
+                                startPortal.linkedPortal = endPortal;
+                                endPortal.linkedPortal = startPortal;
 
-                                    startPortal = null;
-                                    endPortal = null;
-                                    placingPortal = false;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                else //if there's a linked building, we continue placing buildings so the player can place the next part of the building.
-                {
-                    buildingPlacingID = (byte)fac.linkedID;
-                    placingLinkedBuilding = true;
-
-                    if (placingPortal)
-                    {
-                        foreach (SelectableEntity item in ownedEntities)
-                        {
-                            if (item.type == SelectableEntity.EntityTypes.Portal)
-                            {
-                                startPortal = item.GetComponent<Portal>();
+                                startPortal = null;
+                                endPortal = null;
+                                placingPortal = false;
                                 break;
                             }
                         }
                     }
-                }*//*
+                }
+            }
+            else //if there's a linked building, we continue placing buildings so the player can place the next part of the building.
+            {
+                buildingPlacingID = (byte)building.linkedID;
+                placingLinkedBuilding = true;
+
+                if (placingPortal)
+                {
+                    foreach (SelectableEntity item in ownedEntities)
+                    {
+                        if (item.type == SelectableEntity.EntityTypes.Portal)
+                        {
+                            startPortal = item.GetComponent<Portal>();
+                            break;
+                        }
+                    }
+                }
             }
         }*/
     }
@@ -1094,7 +1092,7 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void ServerSpawnMinion(Vector3 spawnPosition, FactionEntity unit, byte clientID, NetworkBehaviourReference spawner)
     {
-        if (!IsServer) return; 
+        if (!IsServer) return;
 
         //FactionUnit fac = _faction.entities[minionID]; //get information about minion based on ID
         if (unit != null && unit.prefabToSpawn != null)
@@ -1195,7 +1193,7 @@ public class RTSPlayer : NetworkBehaviour
                 }
             }
         }
-    }  
+    }
     #endregion
     #region Selection
     private void DoNotDoubleSelect()
@@ -1273,61 +1271,85 @@ public class RTSPlayer : NetworkBehaviour
     }
 
     private List<FactionBuilding> availableConstructionOptions = new();
-    private void UpdateButtonsFromSelectedUnits()
-    {
-        //get spawnable units
-
-        //get constructable buildings
-        indices.Clear();
-
+    private List<FactionAbility> availableAbilities = new();
+    private void UpdateButtonsFromSelectedUnits() //update button abilities
+    { 
+        availableConstructionOptions.Clear();
+        availableAbilities.Clear();
         if (selectedEntities.Count > 0) //at least one unit selected
         {
             //show gui elements based on unit type selected
-            foreach (SelectableEntity item in selectedEntities)
+            foreach (SelectableEntity entity in selectedEntities)
             {
-                if (!item.fullyBuilt || !item.net.IsSpawned) //if not built or spawned, skip
+                if (!entity.fullyBuilt || !entity.net.IsSpawned || entity == null) //if not built or spawned, skip
                 {
                     continue;
                 }
-                foreach (byte num in item.builderEntityIndices)
+                //get spawnable units
+                //get constructable buildings
+                foreach (FactionBuilding buildingOption in entity.constructableBuildings)
                 {
-                    if (!indices.Contains(num))
-                    {
-                        indices.Add(num);
-                    }
+                    if (!availableConstructionOptions.Contains(buildingOption)) availableConstructionOptions.Add(buildingOption);
+                } 
+                //get abilities
+                foreach (FactionAbility abilityOption in entity.usableAbilities)
+                {
+                    if (!availableAbilities.Contains(abilityOption)) availableAbilities.Add(abilityOption);
                 }
             }
-        }
-        //get abilities
-
-
-        byte i = 0;
-        int cap = Mathf.Clamp(indices.Count, 0, Global.Instance.productionButtons.Count);
-        //enable a button for each indices
-        for (; i < cap; i++)
+        }  
+        //enable a button for each indices 
+        for (byte i = 0; i < Global.Instance.productionButtons.Count; i++)
         {
+            if (i >= Global.Instance.productionButtons.Count) break; //met limit
             Button button = Global.Instance.productionButtons[i];
             button.gameObject.SetActive(true);
             TMP_Text text = button.GetComponentInChildren<TMP_Text>();
-            FactionUnit fac = _faction.entities[indices[i]];
-            text.text = fac.productionName + ": " + fac.goldCost + "g";
-            byte j = indices[i];
-            //Debug.Log(j);
-            button.onClick.RemoveAllListeners();
-            if (_faction.entities[indices[i]].needsConstructing)
+            button.onClick.RemoveAllListeners(); 
+
+            if (i < availableAbilities.Count)
             {
-                button.onClick.AddListener(delegate { HoverBuildWithID(j); });
+                FactionAbility ability = availableAbilities[i];
+                button.interactable = true;
+                text.text = ability.abilityName;// + ": " + ability.goldCost + "g"; 
+                button.onClick.AddListener(delegate { UseAbility(ability); });
+            }
+            else if (i < availableAbilities.Count + availableConstructionOptions.Count)
+            {
+                FactionBuilding fac = availableConstructionOptions[i - availableAbilities.Count];
+                button.interactable = gold >= fac.goldCost;
+                text.text = fac.productionName + ": " + fac.goldCost + "g";
+                button.onClick.AddListener(delegate { HoverBuild(fac); });
+
             }
             else
-            {
-                button.onClick.AddListener(delegate { QueueBuildingSpawn(j); });
+            { 
+                Global.Instance.productionButtons[i].gameObject.SetActive(false);
             }
-            button.interactable = gold >= fac.goldCost;
+            /*  button.onClick.AddListener(delegate { QueueBuildingSpawn(j); });*/
         }
-        for (; i < Global.Instance.productionButtons.Count; i++)
-        {
-            Global.Instance.productionButtons[i].gameObject.SetActive(false);
+    }
+    /// <summary>
+    /// All selected units that have this ability will attempt to use it
+    /// </summary>
+    /// <param name="ability"></param>
+    private void UseAbility(FactionAbility ability)
+    {
+        if (selectedEntities.Count > 0) //at least one unit selected
+        { 
+            foreach (SelectableEntity entity in selectedEntities)
+            {
+                //skip if not built, not spawned, n
+                if (EntityCanUseAbility(entity, ability)) 
+                {
+                    entity.UseAbility(ability);
+                } 
+            }
         }
+    }
+    private bool EntityCanUseAbility(SelectableEntity entity, FactionAbility ability)
+    {
+        return (entity != null && entity.fullyBuilt && entity.net.IsSpawned && entity.alive && entity.usableAbilities.Contains(ability));
     }
     public void UpdateBuildQueue()
     {
@@ -1400,12 +1422,14 @@ public class RTSPlayer : NetworkBehaviour
     /// Create building ghost showing where building will be placed
     /// </summary>
     /// <param name="id"></param>
-    private void HoverBuildWithID(byte id = 0)
+    private void HoverBuild(FactionBuilding building)
     {
-        /*mouseState = MouseState.ReadyToPlace;
+        mouseState = MouseState.ReadyToPlace;
         placementBlocked = false;
-        buildingPlacingID = id;
-        GameObject build = _faction.entities[id].prefabToSpawn.gameObject;
+        //buildingPlacingID = id;
+        buildingToPlace = building;
+        //GameObject build = _faction.entities[id].prefabToSpawn.gameObject;
+        GameObject build = building.prefabToSpawn;
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn ghost
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
         buildOffset = entity.buildOffset;
@@ -1428,7 +1452,7 @@ public class RTSPlayer : NetworkBehaviour
         for (int i = 0; i < colliders.Length; i++)
         {
             colliders[i].isTrigger = true;
-        }*/
+        }
     }
     public bool placingPortal = false;
     public List<byte> indices;
@@ -1448,7 +1472,7 @@ public class RTSPlayer : NetworkBehaviour
             {
                 TrySelectEntity(entity);
             }
-        } 
+        }
     }
     private void DoubleSelectDetected()
     {

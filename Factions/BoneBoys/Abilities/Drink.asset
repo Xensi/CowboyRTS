@@ -17,5 +17,5 @@ MonoBehaviour:
   effectsToApply:
   - targets: 0
     status: 0
-    operation: 0
-    statusNumber: 0
+    operation: 2
+    statusNumber: 2
