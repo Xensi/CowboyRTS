@@ -1,12 +1,12 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections.Generic;
 [System.Serializable]
 public class FactionAbilityClass
 {
     public string abilityName = "Ability Name";   
-    public int cooldownTime = 5; //used only if needsConstructing is false 
+    public int cooldownTime = 60; //used only if needsConstructing is false 
     public List<TargetedEffects> effectsToApply = new(); //effects to activate when this ability is used
 }
 

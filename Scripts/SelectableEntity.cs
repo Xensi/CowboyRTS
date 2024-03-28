@@ -92,15 +92,22 @@ public class SelectableEntity : NetworkBehaviour
     public TeamBehavior teamBehavior = TeamBehavior.OwnerTeam;
     public EntityTypes type = EntityTypes.Melee;
     public bool isHeavy = false; //heavy units can't garrison into pallbearers
-    public bool fullyBuilt = true;
+    [HideInInspector] public bool fullyBuilt = true;
     public bool isKeystone = false;
 
     [Header("Building Only")]
-    public Vector3 buildOffset = new Vector3(0.5f, 0, 0.5f);
+    public Vector3 buildOffset = new Vector3(0.5f, 0, 0.5f); 
 
     [Header("Builder Only")]
+    [Tooltip ("Spawnable units and constructable buildings")]
     public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
     public int spawnableAtOnce = 1; //how many minions can be spawned at at time from this unit.
+
+
+    public List<FactionScriptableObject> tests = new();
+
+    [Header("Abilities")]
+    public List<int> abilityIndices; //ability indices
 
     [Header("Harvester Only")]
     public int allowedInteractors = 1; //only relevant if this is a resource or deposit point
@@ -289,6 +296,26 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (rallyVisual != null) rallyVisual.enabled = false;
         if (teamBehavior == TeamBehavior.OwnerTeam) Global.Instance.allFactionEntities.Add(this);
+
+        switch (type) //determine if should be fullyBuilt
+        {
+            case EntityTypes.Melee: 
+            case EntityTypes.Ranged:
+            case EntityTypes.Builder:
+            case EntityTypes.Transport:
+                fullyBuilt = true;
+                break;
+            case EntityTypes.ProductionStructure: 
+            case EntityTypes.HarvestableStructure: 
+            case EntityTypes.DefensiveGarrison: 
+            case EntityTypes.Portal: 
+            case EntityTypes.ExtendableWall:
+                fullyBuilt = false;
+                break;
+            default:
+                fullyBuilt = true;
+                break;
+        }
     }
     private void Initialize()
     {
