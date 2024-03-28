@@ -14,6 +14,7 @@ public class Global : NetworkBehaviour
     public List<Material> colors;
     public List<Color> teamColors;
     public List<Color> aiTeamColors;
+    public List<Faction> factions;
     public List<Transform> playerSpawn;
     public List<Button> productionButtons;
     public Material transparent;

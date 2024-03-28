@@ -66,7 +66,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
     public SelectableEntity interactionTarget;
 
-    [HideInInspector] public List<FactionEntityClass> buildQueue;
+    [HideInInspector] public List<FactionUnit> buildQueue;
     public List<SelectableEntity> interactors;
     private MeshRenderer[] allMeshes;
     //when fog of war changes, check if we should hide or show attack effects
@@ -101,13 +101,11 @@ public class SelectableEntity : NetworkBehaviour
     [Header("Builder Only")]
     [Tooltip ("Spawnable units and constructable buildings")]
     public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
-    public int spawnableAtOnce = 1; //how many minions can be spawned at at time from this unit.
+    public int spawnableAtOnce = 1; //how many minions can be spawned at at time from this unit. 
 
-
-    public List<FactionScriptableObject> tests = new();
-
-    [Header("Abilities")]
-    public List<int> abilityIndices; //ability indices
+    public FactionUnit[] spawnableUnits;
+    public FactionBuilding[] constructableBuildings;
+    public FactionAbility[] usableAbilities;
 
     [Header("Harvester Only")]
     public int allowedInteractors = 1; //only relevant if this is a resource or deposit point
@@ -235,7 +233,6 @@ public class SelectableEntity : NetworkBehaviour
             targetIndicator.transform.parent = null;
         }
         if (selectIndicator != null) selectIndicator.SetActive(selected);
-        if (fogUnit != null) fogUnit.team = teamNumber.Value;
 
         /*if (IsOwner && !hasRegisteredRallyMission)
         {
@@ -420,7 +417,14 @@ public class SelectableEntity : NetworkBehaviour
             obstacle.DoUpdateGraphs();
             AstarPath.active.FlushGraphUpdates();
         }
-    }  
+    }
+    private void FixFogTeam() //temporary fix
+    { 
+        if (fogUnit != null && fogUnit.team != teamNumber.Value)
+        {
+            fogUnit.team = teamNumber.Value;
+        }
+    }
     private void Update()
     { 
         if (IsSpawned)
@@ -1042,7 +1046,7 @@ public class SelectableEntity : NetworkBehaviour
         if (buildQueue.Count > 0)
         {
             // todo add ability to build multiple from one structure
-            FactionEntityClass fac = buildQueue[0];
+            FactionUnit fac = buildQueue[0];
             if (fac.timeCost > 0)
             {
                 fac.timeCost--;
@@ -1064,7 +1068,7 @@ public class SelectableEntity : NetworkBehaviour
     public SelectableEntity spawnerThatSpawnedThis;
     public void SpawnFromSpawner(SelectableEntity select, Vector3 rally, byte id)
     {
-        //spawner is this
+        /*//spawner is this
         Vector3 pos;
         if (select.positionToSpawnMinions != null)
         {
@@ -1075,7 +1079,7 @@ public class SelectableEntity : NetworkBehaviour
             pos = select.transform.position;
         }
         //GenericSpawnMinion(pos, id, true, rally);
-        Global.Instance.localPlayer.GenericSpawnMinion(pos, id, this);
+        Global.Instance.localPlayer.GenericSpawnMinion(pos, id, this);*/
     }
     private Vector3[] LineArray(Vector3 des)
     {

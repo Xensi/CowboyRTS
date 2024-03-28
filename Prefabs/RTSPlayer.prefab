@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 707310657
+  GlobalObjectIdHash: 4183589894
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -71,12 +71,12 @@ MonoBehaviour:
     m_InternalValue: 0
   keystoneUnits: []
   gold: 100
-  cam: {fileID: 0}
   grid: {fileID: 2084301759269820934}
   ownedEntities: []
   selectedEntities: []
   enemyEntities: []
-  _faction: {fileID: 11400000, guid: 66749da4c40495e4780f36062d3a4f8b, type: 2}
+  startingFactionUnit: {fileID: 11400000, guid: 04ae84b5d643fbc498358c09db111adb, type: 2}
+  playerFaction: {fileID: 11400000, guid: 48d2654104c708448a90a4bfe3b2baa9, type: 2}
   _entitiesIndex: 0
   cursorWorldPosition: {x: 0, y: 0, z: 0}
   linkedState: 0
@@ -101,6 +101,8 @@ MonoBehaviour:
   gameLayer:
     serializedVersion: 2
     m_Bits: 0
+  mainCam: {fileID: 0}
+  lineCam: {fileID: 0}
   predictedWallPositions: []
   predictedWallPositionsShouldBePlaced: 
   wallGhosts: []
