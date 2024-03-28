@@ -7,6 +7,8 @@ using Pathfinding.RVO;
 using System.Linq;
 using FoW;
 using UnityEngine.XR;
+using static UnityEngine.GraphicsBuffer;
+using static TargetedEffects;
 public class SelectableEntity : NetworkBehaviour
 {
     public bool fakeSpawn = false;
@@ -96,10 +98,10 @@ public class SelectableEntity : NetworkBehaviour
     public bool isKeystone = false;
 
     [Header("Building Only")]
-    public Vector3 buildOffset = new Vector3(0.5f, 0, 0.5f); 
+    public Vector3 buildOffset = new Vector3(0.5f, 0, 0.5f);
 
     [Header("Builder Only")]
-    [Tooltip ("Spawnable units and constructable buildings")]
+    [Tooltip("Spawnable units and constructable buildings")]
     public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
     public int spawnableAtOnce = 1; //how many minions can be spawned at at time from this unit. 
 
@@ -167,7 +169,7 @@ public class SelectableEntity : NetworkBehaviour
         if (resourceCollectingMeshes.Length == 0) return;
         //compare max resources against max resourceCollectingMeshes
         float frac = (float)harvestedResourceAmount / harvestCapacity;
-        int numToActivate = Mathf.FloorToInt(frac * resourceCollectingMeshes.Length); 
+        int numToActivate = Mathf.FloorToInt(frac * resourceCollectingMeshes.Length);
         for (int i = 0; i < resourceCollectingMeshes.Length; i++)
         {
             if (resourceCollectingMeshes[i] != null)
@@ -210,12 +212,12 @@ public class SelectableEntity : NetworkBehaviour
             }
             if (hitPoints.Value <= 0 && !constructionBegun) //buildings begun as untargetable (by enemies)
             {
-                isTargetable.Value = false; 
+                isTargetable.Value = false;
             }
             else
             {
                 isTargetable.Value = true;
-            } 
+            }
         }
         if (IsServer)
         {
@@ -281,7 +283,7 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
         if (!isBuildIndicator)
-        { 
+        {
             for (int i = 0; i < unbuiltRenderers.Length; i++)
             {
                 if (unbuiltRenderers[i] != null)
@@ -296,16 +298,16 @@ public class SelectableEntity : NetworkBehaviour
 
         switch (type) //determine if should be fullyBuilt
         {
-            case EntityTypes.Melee: 
+            case EntityTypes.Melee:
             case EntityTypes.Ranged:
             case EntityTypes.Builder:
             case EntityTypes.Transport:
                 fullyBuilt = true;
                 break;
-            case EntityTypes.ProductionStructure: 
-            case EntityTypes.HarvestableStructure: 
-            case EntityTypes.DefensiveGarrison: 
-            case EntityTypes.Portal: 
+            case EntityTypes.ProductionStructure:
+            case EntityTypes.HarvestableStructure:
+            case EntityTypes.DefensiveGarrison:
+            case EntityTypes.Portal:
             case EntityTypes.ExtendableWall:
                 fullyBuilt = false;
                 break;
@@ -356,6 +358,14 @@ public class SelectableEntity : NetworkBehaviour
                     break;
             }
         }
+    }
+    public bool AbilityOffCooldown(FactionAbility ability)
+    {
+        for (int i = 0; i < usedAbilities.Count; i++)
+        {
+            if (usedAbilities[i].abilityName == ability.name) return false; //if ability is in the used abilities list, then we still need to wait  
+        }
+        return true;
     }
     public void UseAbility(FactionAbility ability)
     {
@@ -412,9 +422,66 @@ public class SelectableEntity : NetworkBehaviour
                     default:
                         break;
                 }
+                TargetedEffects newEffect = new() //NECESSARY to prevent modifying original class
+                {
+                    targets = effect.targets,
+                    status = effect.status,
+                    expirationTime = effect.expirationTime,
+                    operation = effect.operation,
+                    statusNumber = effect.statusNumber
+                };
+                appliedEffects.Add(newEffect);
+
+                AbilityOnCooldown newAbility = new()
+                {
+                    abilityName = ability.abilityName,
+                    cooldownTime = ability.cooldownTime
+                };
+                usedAbilities.Add(newAbility);
             }
         }
-    } 
+    }
+    private List<AbilityOnCooldown> usedAbilities = new();
+    private List<TargetedEffects> appliedEffects = new();
+    private void UpdateUsedAbilities()
+    {
+        for (int i = usedAbilities.Count - 1; i >= 0; i--)
+        {
+            usedAbilities[i].cooldownTime -= Time.deltaTime;
+            if (usedAbilities[i].cooldownTime <= 0)
+            {
+                usedAbilities.RemoveAt(i);
+            }
+        }
+    }
+    private void UpdateAppliedEffects() //handle expiration of these effects; this implementation may be somewhat slow
+    {
+        for (int i = appliedEffects.Count - 1; i >= 0; i--)
+        {
+            appliedEffects[i].expirationTime -= Time.deltaTime;
+            if (appliedEffects[i].expirationTime <= 0)
+            {
+                ResetVariableFromStatusEffect(appliedEffects[i]);
+                appliedEffects.RemoveAt(i);
+            }
+        }
+    }
+    private void ResetVariableFromStatusEffect(TargetedEffects effect)
+    {
+        switch (effect.status)
+        {
+            case TargetedEffects.StatusEffect.MoveSpeed:
+                if (minionController != null && minionController.ai != null)
+                {
+                    minionController.ai.maxSpeed = minionController.defaultMoveSpeed;
+                }
+                break;
+            case TargetedEffects.StatusEffect.AttackSpeed:
+                break;
+            default:
+                break;
+        }
+    }
     private void UpdateRallyVariables()
     {
         if (rallyTarget != null) //update rally visual and rally point to rally target position
@@ -477,14 +544,14 @@ public class SelectableEntity : NetworkBehaviour
         }
     }
     private void FixFogTeam() //temporary fix
-    { 
+    {
         if (fogUnit != null && fogUnit.team != teamNumber.Value)
         {
             fogUnit.team = teamNumber.Value;
         }
     }
     private void Update()
-    { 
+    {
         if (IsSpawned)
         {
             DetectIfShouldDie();
@@ -495,10 +562,12 @@ public class SelectableEntity : NetworkBehaviour
             if (!fullyBuilt) return; //do not pass if not built
             UpdateRallyVariables();
             UpdateTimers();
+            UpdateAppliedEffects();
+            UpdateUsedAbilities();
             UpdateInteractors(); //costly for loop
             //DetectIfDamaged();
             DetectChangeHarvestedResourceAmount();
-        } 
+        }
     }
     private float attackEffectTimer = 0;
     private void FixedUpdate()
@@ -832,11 +901,11 @@ public class SelectableEntity : NetworkBehaviour
             {
                 if (interactors[interactorIndex].interactionTarget != this)
                 {
-                    interactors.RemoveAt(interactorIndex); 
+                    interactors.RemoveAt(interactorIndex);
                 }
             }
             interactorIndex++;
-            if (interactorIndex >= interactors.Count) interactorIndex = 0; 
+            if (interactorIndex >= interactors.Count) interactorIndex = 0;
         }
     }
     public readonly float minFogStrength = 0.45f;
@@ -883,7 +952,7 @@ public class SelectableEntity : NetworkBehaviour
         else
         {
             showAttackEffects = false;
-        } 
+        }
     }
 
     bool hideFogTeamSet = false;
@@ -915,7 +984,7 @@ public class SelectableEntity : NetworkBehaviour
     }
 
     private int footstepCount = 0;
-    private readonly int footstepThreshold = 12; 
+    private readonly int footstepThreshold = 12;
     private void BecomeFullyBuilt()
     {
         constructionBegun = true;

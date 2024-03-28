@@ -1268,8 +1268,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             Debug.LogError("a GUI element needs to be assigned.");
         }
-    }
-
+    } 
     private List<FactionBuilding> availableConstructionOptions = new();
     private List<FactionAbility> availableAbilities = new();
     private void UpdateButtonsFromSelectedUnits() //update button abilities
@@ -1349,7 +1348,8 @@ public class RTSPlayer : NetworkBehaviour
     }
     private bool EntityCanUseAbility(SelectableEntity entity, FactionAbility ability)
     {
-        return (entity != null && entity.fullyBuilt && entity.net.IsSpawned && entity.alive && entity.usableAbilities.Contains(ability));
+        return (entity != null && entity.fullyBuilt && entity.net.IsSpawned && entity.alive && entity.usableAbilities.Contains(ability)
+            && entity.AbilityOffCooldown(ability));
     }
     public void UpdateBuildQueue()
     {

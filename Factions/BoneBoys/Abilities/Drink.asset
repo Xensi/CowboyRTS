@@ -17,5 +17,6 @@ MonoBehaviour:
   effectsToApply:
   - targets: 0
     status: 0
+    expirationTime: 5
     operation: 2
     statusNumber: 2
