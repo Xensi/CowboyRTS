@@ -4,4 +4,5 @@ using UnityEngine;
 public class FactionScriptableObject : ScriptableObject
 { 
     public FactionEntityClass[] entities;
+    public FactionAbilityClass[] abilities;
 }
