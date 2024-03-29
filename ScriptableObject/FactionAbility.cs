@@ -31,7 +31,7 @@ public class TargetedEffects //name, target, status effect
     }
     public enum Operation //how to apply status number
     {
-        Set, Add, Multiply
+        Set, Add, Multiply, Divide
     }
     public Targets targets = Targets.Self;
     public StatusEffect status = StatusEffect.MoveSpeed;

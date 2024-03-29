@@ -193,7 +193,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 56881033
+  GlobalObjectIdHash: 2641155720
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -247,8 +247,10 @@ MonoBehaviour:
   fullyBuilt: 1
   isKeystone: 0
   buildOffset: {x: 0.5, y: 0, z: 0.5}
-  builderEntityIndices: 01000000
   spawnableAtOnce: 1
+  spawnableUnits: []
+  constructableBuildings: []
+  usableAbilities: []
   allowedInteractors: 999
   isHarvester: 0
   harvestCapacity: 10
@@ -300,6 +302,7 @@ MonoBehaviour:
   selectableEntity: {fileID: 0}
   attackMoving: 0
   orderedDestination: {x: 0, y: 0, z: 0}
+  ai: {fileID: 0}
   col: {fileID: 0}
   animator: {fileID: 0}
   targetEnemy: {fileID: 0}
@@ -321,6 +324,7 @@ MonoBehaviour:
     m_InternalValue: {x: 0, y: 0, z: 0}
   destination:
     m_InternalValue: {x: 0, y: 0, z: 0}
+  defaultMoveSpeed: 0
   shouldAutoSeekOutEnemies: 1
   lastCommand:
     m_InternalValue: 0
@@ -363,7 +367,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b130f358dcb26548b2ff0923d496dc6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  team: 0
+  team: -1
   brightness: 1
   shapeType: 0
   absoluteOffset: 0

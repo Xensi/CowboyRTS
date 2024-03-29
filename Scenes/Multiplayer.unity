@@ -10315,7 +10315,7 @@ MonoBehaviour:
   - {r: 1, g: 0.5012884, b: 0, a: 1}
   factions:
   - {fileID: 11400000, guid: 48d2654104c708448a90a4bfe3b2baa9, type: 2}
-  - {fileID: 11400000, guid: 176acaf3e79946a48bb22a7c8ff3ee51, type: 2}
+  - {fileID: 11400000, guid: 48d2654104c708448a90a4bfe3b2baa9, type: 2}
   playerSpawn:
   - {fileID: 1478403450}
   - {fileID: 152340609}

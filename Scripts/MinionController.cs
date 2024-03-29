@@ -90,8 +90,12 @@ public class MinionController : NetworkBehaviour
     [SerializeField] private bool canMoveWhileAttacking = false;
     [SerializeField] private Transform attackEffectSpawnPosition;
     [SerializeField] private sbyte damage = 1;
-    [SerializeField] private float attackDuration = 1;
-    [SerializeField] private float impactTime = .5f;
+    [SerializeField] public float attackDuration = 1;
+    [SerializeField] public float impactTime = .5f;
+    [HideInInspector] public float defaultMoveSpeed = 0;
+    [HideInInspector] public float defaultAttackDuration = 0;
+    [HideInInspector] public float defaultImpactTime = 0;
+    private Transform target;
     public readonly float garrisonRange = 1.1f;
     //50 fps fixed update
     //private readonly int delay = 0;
@@ -141,9 +145,9 @@ public class MinionController : NetworkBehaviour
             setter.target = target;
         }
         defaultMoveSpeed = ai.maxSpeed;
+        defaultAttackDuration = attackDuration;
+        defaultImpactTime = impactTime;
     }
-    [HideInInspector] public float defaultMoveSpeed = 0;
-    private Transform target;
     private void Awake()
     {
         enemyMask = LayerMask.GetMask("Entity", "Obstacle");
@@ -159,17 +163,20 @@ public class MinionController : NetworkBehaviour
     private void SetDestination(Vector3 position)
     {
         print("setting destination");
-        destination.Value = position; //tell server where we're going
+        if (IsOwner) destination.Value = position; //tell server where we're going
         target.position = position; //move pathfinding target there
+    }
+    private void UpdateSetterTargetPosition()
+    {
+        target.position = destination.Value;
     }
     public override void OnNetworkSpawn()
     {
         if (IsOwner)
         {
             realLocation.Value = transform.position;
-            //destination.Value = transform.position;
+            //destination.Value = transform.position; 
             SetDestination(transform.position);
-
             SwitchState(State.Spawn);
             Invoke(nameof(FinishSpawning), spawnDuration);
             finishedInitializingRealLocation = true;
@@ -242,6 +249,7 @@ public class MinionController : NetworkBehaviour
                 NonOwnerUpdateAnimationBasedOnContext();
                 //if (ai != null) ai.destination = destination.Value;
             }
+            UpdateSetterTargetPosition();
         }
     }
     float stopDistIncreaseThreshold = 0.01f;
@@ -850,10 +858,12 @@ public class MinionController : NetworkBehaviour
                                     default:
                                         break;
                                 }
+                                Debug.Log("impact");
                             }
                         }
                         else //animation finished
                         {
+                            Debug.Log("Attack Over");
                             SwitchState(State.AfterAttackCheck);
                         }
                     }
@@ -1092,10 +1102,12 @@ public class MinionController : NetworkBehaviour
                             {
                                 attackReady = false;
                                 HarvestTarget(selectableEntity.interactionTarget);
+                                Debug.Log("impact");
                             }
                         }
                         else //animation finished
                         {
+                            Debug.Log("harvest over");
                             SwitchState(State.AfterHarvestCheck);
                         }
                     }
@@ -1514,7 +1526,7 @@ public class MinionController : NetworkBehaviour
     {
         if (!attackReady)
         {
-            if (attackReadyTimer < attackDuration - impactTime)
+            if (attackReadyTimer < Mathf.Clamp(attackDuration - impactTime, 0, 999))
             {
                 attackReadyTimer += Time.deltaTime;
             }
@@ -1522,6 +1534,7 @@ public class MinionController : NetworkBehaviour
             {
                 attackReady = true;
                 attackReadyTimer = 0;
+                Debug.Log("attack ready");
             }
         }
     }

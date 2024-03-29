@@ -10,10 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b888e0fe913eaf4095ed4e0fccd988e, type: 3}
-  m_Name: Goblin
+  m_Name: Gunslinger
   m_EditorClassIdentifier: 
-  productionName: goblin
-  goldCost: 0
-  prefabToSpawn: {fileID: 3247805216466599197, guid: 14aa9348e444d404baea8d5cf76f8398, type: 3}
-  buildID: 0
+  productionName: Gunslinger
+  goldCost: 30
+  prefabToSpawn: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
   timeCost: 5

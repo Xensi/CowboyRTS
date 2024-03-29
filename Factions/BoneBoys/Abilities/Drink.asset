@@ -13,10 +13,15 @@ MonoBehaviour:
   m_Name: Drink
   m_EditorClassIdentifier: 
   abilityName: Drink
-  cooldownTime: 60
+  cooldownTime: 0
   effectsToApply:
   - targets: 0
     status: 0
     expirationTime: 5
     operation: 2
+    statusNumber: 2
+  - targets: 0
+    status: 1
+    expirationTime: 5
+    operation: 3
     statusNumber: 2

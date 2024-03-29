@@ -102,7 +102,7 @@ public class SelectableEntity : NetworkBehaviour
 
     [Header("Builder Only")]
     [Tooltip("Spawnable units and constructable buildings")]
-    public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
+    //public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
     public int spawnableAtOnce = 1; //how many minions can be spawned at at time from this unit. 
 
     public FactionUnit[] spawnableUnits;
@@ -244,13 +244,14 @@ public class SelectableEntity : NetworkBehaviour
         TryToRegisterRallyMission();
         SetHideFogTeam();
         UpdateTeamRenderers();
+        FixFogTeam();
     }
     private bool hasRegisteredRallyMission = false;
     private List<Material> savedMaterials = new();
     private void Start()
     {
         Initialize();
-        if (fogUnit != null) fogUnit.team = desiredTeamNumber;
+        //if (fogUnit != null) fogUnit.team = desiredTeamNumber;
         aiControlled = desiredTeamNumber < 0;
         if (isKeystone && Global.Instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
         {
@@ -376,14 +377,13 @@ public class SelectableEntity : NetworkBehaviour
             {
                 case TargetedEffects.Targets.Self:
                     targetedEntities.Add(this);
-                    break;
-                default:
-                    break;
+                    break; 
             }
             foreach (SelectableEntity target in targetedEntities)
             {
                 //get current variable
                 float variableToChange = 0;
+                float secondVariable = 0;
                 switch (effect.status) //set variable to change;
                 {
                     case TargetedEffects.StatusEffect.MoveSpeed:
@@ -393,20 +393,32 @@ public class SelectableEntity : NetworkBehaviour
                         }
                         break;
                     case TargetedEffects.StatusEffect.AttackSpeed:
-                        break;
-                    default:
-                        break;
+                        if (target.minionController != null)
+                        {
+                            variableToChange = target.minionController.attackDuration;
+                            secondVariable = target.minionController.impactTime;
+                        }
+                        break; 
                 }
+                float attackAnimMultiplier = 1;
                 switch (effect.operation) //apply change to variable
                 {
                     case TargetedEffects.Operation.Set:
+                        variableToChange = effect.statusNumber;
+                        secondVariable = effect.statusNumber;
                         break;
                     case TargetedEffects.Operation.Add:
+                        variableToChange += effect.statusNumber;
+                        secondVariable += effect.statusNumber;
                         break;
                     case TargetedEffects.Operation.Multiply:
                         variableToChange *= effect.statusNumber;
+                        secondVariable *= effect.statusNumber;
                         break;
-                    default:
+                    case Operation.Divide: //use to halve attackDuration
+                        variableToChange /= effect.statusNumber;
+                        secondVariable /= effect.statusNumber;
+                        attackAnimMultiplier *= effect.statusNumber;
                         break;
                 }
                 switch (effect.status) //set actual variable to new variable
@@ -418,9 +430,13 @@ public class SelectableEntity : NetworkBehaviour
                         }
                         break;
                     case TargetedEffects.StatusEffect.AttackSpeed:
-                        break;
-                    default:
-                        break;
+                        if (target.minionController != null)
+                        {
+                            target.minionController.attackDuration = variableToChange;
+                            target.minionController.impactTime = secondVariable;
+                            target.minionController.animator.SetFloat("attackMultiplier", attackAnimMultiplier); //if we are halving, double animation speed
+                        }
+                        break; 
                 }
                 TargetedEffects newEffect = new() //NECESSARY to prevent modifying original class
                 {
@@ -476,7 +492,13 @@ public class SelectableEntity : NetworkBehaviour
                     minionController.ai.maxSpeed = minionController.defaultMoveSpeed;
                 }
                 break;
-            case TargetedEffects.StatusEffect.AttackSpeed:
+            case TargetedEffects.StatusEffect.AttackSpeed: 
+                if (minionController != null)
+                {
+                    minionController.attackDuration = minionController.defaultAttackDuration;
+                    minionController.impactTime = minionController.defaultImpactTime;
+                    minionController.animator.SetFloat("attackMultiplier", 1);
+                }
                 break;
             default:
                 break;
@@ -1063,6 +1085,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void SetRally()
     {
+        Debug.Log("Setting rally");
         rallyMission = RallyMission.Move;
         rallyTarget = null;
         //determine if spawned units should be given a mission
@@ -1179,23 +1202,23 @@ public class SelectableEntity : NetworkBehaviour
                 fac.timeCost--;
             }
             if (fac.timeCost <= 0 && consumePopulationAmount <= Global.Instance.localPlayer.maxPopulation - Global.Instance.localPlayer.population)
-            {
+            { //spawn the unit
                 //Debug.Log("spawn");
 
-                BuildQueueSpawn(fac.buildID);
+                BuildQueueSpawn(fac);
             }
         }
         Global.Instance.localPlayer.UpdateBuildQueue();
     }
-    private void BuildQueueSpawn(byte id)
+    private void BuildQueueSpawn(FactionUnit unit)
     {
         buildQueue.RemoveAt(0);
-        SpawnFromSpawner(this, rallyPoint, id);
+        SpawnFromSpawner(this, rallyPoint, unit);
     }
     public SelectableEntity spawnerThatSpawnedThis;
-    public void SpawnFromSpawner(SelectableEntity select, Vector3 rally, byte id)
+    public void SpawnFromSpawner(SelectableEntity select, Vector3 rally, FactionUnit unit)
     {
-        /*//spawner is this
+        //spawner is this
         Vector3 pos;
         if (select.positionToSpawnMinions != null)
         {
@@ -1206,7 +1229,7 @@ public class SelectableEntity : NetworkBehaviour
             pos = select.transform.position;
         }
         //GenericSpawnMinion(pos, id, true, rally);
-        Global.Instance.localPlayer.GenericSpawnMinion(pos, id, this);*/
+        Global.Instance.localPlayer.GenericSpawnMinion(pos, unit, this);
     }
     private Vector3[] LineArray(Vector3 des)
     {

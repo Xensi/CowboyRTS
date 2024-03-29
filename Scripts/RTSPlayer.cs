@@ -22,8 +22,7 @@ public class RTSPlayer : NetworkBehaviour
     public List<SelectableEntity> selectedEntities;
     public List<SelectableEntity> enemyEntities;
 
-    //[SerializeField] private FactionScriptableObject _faction;
-    public FactionUnit startingFactionUnit;
+    //[SerializeField] private FactionScriptableObject _faction; 
     public Faction playerFaction;
 
     [SerializeField] private int _entitiesIndex = 0; //used to pick a prefab from faction list
@@ -126,7 +125,7 @@ public class RTSPlayer : NetworkBehaviour
                 spawnPosition = new Vector3(UnityEngine.Random.Range(-9, 9), 0, UnityEngine.Random.Range(-9, 9));
             }
 
-            GenericSpawnMinion(spawnPosition, startingFactionUnit, this);
+            GenericSpawnMinion(spawnPosition, playerFaction.spawnableEntities[0], this);
             //GenericSpawnMinion(spawn, starterUnitID, this);
 
             VolumeProfile profile = Global.Instance.fogVolume.sharedProfile;
@@ -170,7 +169,7 @@ public class RTSPlayer : NetworkBehaviour
         Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget
     }
     private ActionType actionType = ActionType.Move;
-    private void SelectedSetDestination()
+    private void SelectedSetDestination() //RTS entity right click behavior
     {
         //when player right clicks, get position on map
         //tell other clients that this happened
@@ -260,7 +259,7 @@ public class RTSPlayer : NetworkBehaviour
                             break;
                     }
                 }
-                else
+                else //building
                 {
                     item.SetRally();
                 }
@@ -1083,11 +1082,11 @@ public class RTSPlayer : NetworkBehaviour
         //ServerSpawnMinion(spawnPosition, unit, clientID, spawner);
 
         //convert unit id to faction entity to spawn
-        FactionEntity entity = null;
-        for (int i = 0; i < playerFaction.spawnableEntities.Count; i++)
+        FactionEntity entity = playerFaction.spawnableEntities[unit];
+        /*for (int i = 0; i < playerFaction.spawnableEntities.Count; i++)
         {
             entity = playerFaction.spawnableEntities[i];
-        }
+        }*/
         ServerSpawnMinion(spawnPosition, entity, clientID, spawner);
     }
     private void ServerSpawnMinion(Vector3 spawnPosition, FactionEntity unit, byte clientID, NetworkBehaviourReference spawner)
@@ -1271,10 +1270,12 @@ public class RTSPlayer : NetworkBehaviour
     } 
     private List<FactionBuilding> availableConstructionOptions = new();
     private List<FactionAbility> availableAbilities = new();
+    private List<FactionUnit> availableUnitSpawns = new();
     private void UpdateButtonsFromSelectedUnits() //update button abilities
     { 
         availableConstructionOptions.Clear();
         availableAbilities.Clear();
+        availableUnitSpawns.Clear();
         if (selectedEntities.Count > 0) //at least one unit selected
         {
             //show gui elements based on unit type selected
@@ -1284,17 +1285,21 @@ public class RTSPlayer : NetworkBehaviour
                 {
                     continue;
                 }
-                //get spawnable units
-                //get constructable buildings
-                foreach (FactionBuilding buildingOption in entity.constructableBuildings)
-                {
-                    if (!availableConstructionOptions.Contains(buildingOption)) availableConstructionOptions.Add(buildingOption);
-                } 
                 //get abilities
                 foreach (FactionAbility abilityOption in entity.usableAbilities)
                 {
                     if (!availableAbilities.Contains(abilityOption)) availableAbilities.Add(abilityOption);
                 }
+                //get spawnable units
+                foreach (FactionUnit unitOption in entity.spawnableUnits)
+                { 
+                    if (!availableUnitSpawns.Contains(unitOption)) availableUnitSpawns.Add(unitOption);
+                }
+                //get constructable buildings
+                foreach (FactionBuilding buildingOption in entity.constructableBuildings)
+                {
+                    if (!availableConstructionOptions.Contains(buildingOption)) availableConstructionOptions.Add(buildingOption);
+                } 
             }
         }  
         //enable a button for each indices 
@@ -1306,26 +1311,31 @@ public class RTSPlayer : NetworkBehaviour
             TMP_Text text = button.GetComponentInChildren<TMP_Text>();
             button.onClick.RemoveAllListeners(); 
 
-            if (i < availableAbilities.Count)
+            if (i < availableAbilities.Count) //abilities
             {
                 FactionAbility ability = availableAbilities[i];
                 button.interactable = true;
                 text.text = ability.abilityName;// + ": " + ability.goldCost + "g"; 
                 button.onClick.AddListener(delegate { UseAbility(ability); });
             }
-            else if (i < availableAbilities.Count + availableConstructionOptions.Count)
+            else if (i < availableAbilities.Count + availableUnitSpawns.Count) //spawns
             {
-                FactionBuilding fac = availableConstructionOptions[i - availableAbilities.Count];
+                FactionUnit fac = availableUnitSpawns[i - availableAbilities.Count];
                 button.interactable = gold >= fac.goldCost;
                 text.text = fac.productionName + ": " + fac.goldCost + "g";
-                button.onClick.AddListener(delegate { HoverBuild(fac); });
-
+                button.onClick.AddListener(delegate { QueueBuildingSpawn(fac); });
+            }
+            else if (i < availableAbilities.Count + availableConstructionOptions.Count + availableUnitSpawns.Count) //buildings
+            {
+                FactionBuilding fac = availableConstructionOptions[i - availableAbilities.Count - availableUnitSpawns.Count];
+                button.interactable = gold >= fac.goldCost;
+                text.text = fac.productionName + ": " + fac.goldCost + "g";
+                button.onClick.AddListener(delegate { HoverBuild(fac); }); 
             }
             else
             { 
                 Global.Instance.productionButtons[i].gameObject.SetActive(false);
-            }
-            /*  button.onClick.AddListener(delegate { QueueBuildingSpawn(j); });*/
+            } 
         }
     }
     /// <summary>
@@ -1394,28 +1404,36 @@ public class RTSPlayer : NetworkBehaviour
             UpdateGUIFromSelections();
         }
     }
-    private void QueueBuildingSpawn(byte id = 0)
+    private void QueueBuildingSpawn(FactionUnit unit)
     {
         //necessary to create new so we don't accidentally affect the files
-        /*FactionUnit newFac = new()
+        FactionUnit newUnit = new()
         {
-            productionName = _faction.entities[id].prefabToSpawn.name,
-            timeCost = _faction.entities[id].timeCost,
-            prefabToSpawn = _faction.entities[id].prefabToSpawn,
-            goldCost = _faction.entities[id].goldCost,
-            buildID = id
+            productionName = unit.prefabToSpawn.name,
+            timeCost = unit.timeCost,
+            prefabToSpawn = unit.prefabToSpawn,
+            goldCost = unit.goldCost,
+            //buildID = id
         };
 
-        int cost = newFac.goldCost;
+        int cost = newUnit.goldCost;
         //try to spawn from all selected buildings if possible 
         foreach (SelectableEntity select in selectedEntities)
         {
-            if (gold < cost || !select.net.IsSpawned || !select.fullyBuilt || !select.builderEntityIndices.Contains(id)) break;
+            if (gold < cost || !select.net.IsSpawned || !select.fullyBuilt || !TargetCanSpawnThisEntity(select, newUnit)) break;
             //if requirements fulfilled
             gold -= cost;
-            select.buildQueue.Add(newFac);
+            select.buildQueue.Add(newUnit);
         }
-        UpdateBuildQueue();*/
+        UpdateBuildQueue();
+    }
+    private bool TargetCanSpawnThisEntity(SelectableEntity target, FactionEntity entity)
+    {
+        for (int i = 0; i < target.spawnableUnits.Length; i++)
+        {
+            if (target.spawnableUnits[i].productionName == entity.productionName) return true; //if ability is in the used abilities list, then we still need to wait  
+        }
+        return false;
     }
     private Vector3 buildOffset = Vector3.zero;
     /// <summary>
