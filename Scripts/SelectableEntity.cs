@@ -401,6 +401,7 @@ public class SelectableEntity : NetworkBehaviour
                         break; 
                 }
                 float attackAnimMultiplier = 1;
+                float moveSpeedMultiplier = 1;
                 switch (effect.operation) //apply change to variable
                 {
                     case TargetedEffects.Operation.Set:
@@ -414,11 +415,14 @@ public class SelectableEntity : NetworkBehaviour
                     case TargetedEffects.Operation.Multiply:
                         variableToChange *= effect.statusNumber;
                         secondVariable *= effect.statusNumber;
+                        attackAnimMultiplier /= effect.statusNumber;
+                        moveSpeedMultiplier *= effect.statusNumber;
                         break;
                     case Operation.Divide: //use to halve attackDuration
                         variableToChange /= effect.statusNumber;
                         secondVariable /= effect.statusNumber;
                         attackAnimMultiplier *= effect.statusNumber;
+                        moveSpeedMultiplier /= effect.statusNumber;
                         break;
                 }
                 switch (effect.status) //set actual variable to new variable
@@ -427,6 +431,7 @@ public class SelectableEntity : NetworkBehaviour
                         if (target.minionController != null && target.minionController.ai != null)
                         {
                             target.minionController.ai.maxSpeed = variableToChange;
+                            target.minionController.animator.SetFloat("moveSpeedMultiplier", moveSpeedMultiplier); //if we are halving, double animation speed
                         }
                         break;
                     case TargetedEffects.StatusEffect.AttackSpeed:
@@ -490,6 +495,7 @@ public class SelectableEntity : NetworkBehaviour
                 if (minionController != null && minionController.ai != null)
                 {
                     minionController.ai.maxSpeed = minionController.defaultMoveSpeed;
+                    minionController.animator.SetFloat("moveSpeedMultiplier", 1); //if we are halving, double animation speed
                 }
                 break;
             case TargetedEffects.StatusEffect.AttackSpeed: 
