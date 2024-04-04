@@ -3,5 +3,7 @@ using UnityEngine;
 [System.Serializable]
 public class FactionBuilding : FactionEntity
 {
-    public bool needsConstructing = true; 
+    public bool needsConstructing = true;
+    public Vector3 buildOffset;
+    //public GameObject linkedPrefab;
 }

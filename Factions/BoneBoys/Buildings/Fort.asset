@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5040608eb03c21941b0df73233e2ec94, type: 3}
-  m_Name: Saloon
+  m_Name: Fort
   m_EditorClassIdentifier: 
-  productionName: Saloon
-  goldCost: 50
-  prefabToSpawn: {fileID: 3798861697192735719, guid: b4e9f923a3dbe1441ad535f64f46abf9, type: 3}
+  productionName: Fort
+  goldCost: 15
+  prefabToSpawn: {fileID: 8795742978982568552, guid: c0363a0cf8391ed498d2b8f91cc1b324, type: 3}
   needsConstructing: 1

@@ -230,6 +230,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: 9e3789c3f4911a84f8f2da8a4d72d6cc, type: 2}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: factionEntity
+      value: 
+      objectReference: {fileID: 11400000, guid: 04ae84b5d643fbc498358c09db111adb, type: 2}
+    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: harvestCapacity
       value: 5
       objectReference: {fileID: 0}
@@ -270,12 +274,16 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 5f176f98524f7504ca68506ecda226d8, type: 2}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: usableAbilities.Array.data[1]
+      value: 
+      objectReference: {fileID: 11400000, guid: 5520fcf989cec5b4f8df7b526e73504f, type: 2}
+    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: builderEntityIndices.Array.size
       value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: constructableBuildings.Array.size
-      value: 1
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: builderEntityIndices.Array.data[0]
@@ -308,7 +316,23 @@ PrefabInstance:
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: constructableBuildings.Array.data[0]
       value: 
+      objectReference: {fileID: 11400000, guid: c0ef745a8df8be4478d8040e4830b3d3, type: 2}
+    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: constructableBuildings.Array.data[1]
+      value: 
+      objectReference: {fileID: 11400000, guid: fdac55644c8edd44b95e22406f27474f, type: 2}
+    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: constructableBuildings.Array.data[2]
+      value: 
+      objectReference: {fileID: 11400000, guid: 9272fcf1d648ea143823dcd20788f7fa, type: 2}
+    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: constructableBuildings.Array.data[3]
+      value: 
       objectReference: {fileID: 11400000, guid: caa5c448d3a92e04e8c3b58c5fa5488c, type: 2}
+    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: constructableBuildings.Array.data[4]
+      value: 
+      objectReference: {fileID: 11400000, guid: c2cb3d675f019b04bb3edd7dd7731243, type: 2}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: resourceCollectingMeshes.Array.data[0]
       value: 
@@ -343,7 +367,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: attackRange
-      value: 0.25
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: depositRange
@@ -367,7 +391,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4126868118260038068, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1967153614
+      value: 1942736719
       objectReference: {fileID: 0}
     - target: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Name

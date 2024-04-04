@@ -1,17 +1,19 @@
-using System.Collections;
+//using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using Pathfinding;
 using Pathfinding.RVO;
-using System.Linq;
+//using System.Linq;
 using FoW;
-using UnityEngine.XR;
-using static UnityEngine.GraphicsBuffer;
+//using UnityEngine.XR;
+//using static UnityEngine.GraphicsBuffer;
 using static TargetedEffects;
+//using Unity.VisualScripting;
+//using UnityEditor.Playables;
 public class SelectableEntity : NetworkBehaviour
 {
-    public bool fakeSpawn = false;
+    [HideInInspector] public bool fakeSpawn = false;
     #region Enums 
     public enum RallyMission
     {
@@ -36,6 +38,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public enum EntityTypes
     {
+        Generic,
         Melee,
         Ranged,
         ProductionStructure,
@@ -56,70 +59,94 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public NetworkVariable<bool> isTargetable = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
     #region Hidden
+    public FactionEntity factionEntity;
     [HideInInspector] public MinionController minionController;
     [HideInInspector] public bool selected = false;
-    public NetworkObject net;
-    public Vector3 rallyPoint;
+    [HideInInspector] public NetworkObject net;
+    [HideInInspector] public Vector3 rallyPoint;
     [HideInInspector] public bool alive = true;
 
-    public SelectableEntity occupiedGarrison;
+    [HideInInspector] public SelectableEntity occupiedGarrison;
     [HideInInspector] public bool isBuildIndicator = false;
     [HideInInspector] public bool tryingToTeleport = false;
     [HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
-    public SelectableEntity interactionTarget;
+    [HideInInspector] public SelectableEntity interactionTarget;
 
     [HideInInspector] public List<FactionUnit> buildQueue;
-    public List<SelectableEntity> interactors;
+    [HideInInspector] public List<SelectableEntity> interactors;
     private MeshRenderer[] allMeshes;
     //when fog of war changes, check if we should hide or show attack effects
     private bool damaged = false;
     private readonly int delay = 50;
     private int count = 0;
+    [HideInInspector]
     public int consumePopulationAmount = 1;
+    [HideInInspector]
     public int raisePopulationLimitBy = 0;
     #endregion
     #region Variables
 
-    public RallyMission rallyMission;
-    public SelectableEntity rallyTarget;
+    [HideInInspector] public RallyMission rallyMission;
+    [HideInInspector] public SelectableEntity rallyTarget;
     [HideInInspector] public Collider physicalCollider;
     [Header("Behavior Settings")]
-    public string displayName = "name";
-    [TextArea(2, 4)]
+    [HideInInspector] public string displayName = "name";
+    //[TextArea(2, 4)]
+    [HideInInspector]
     public string desc = "desc";
-    public NetworkVariable<short> hitPoints = new();
-    [SerializeField] private short startingHP = 10; //buildings usually don't start with full HP
-    public short maxHP = 10;
+    [HideInInspector] public NetworkVariable<short> hitPoints = new();
+
+    //[SerializeField] 
+    private short startingHP = 10; //buildings usually don't start with full HP
+    [HideInInspector] public short maxHP = 10;
+    [HideInInspector]
     public DepositType depositType = DepositType.None;
-    public TeamBehavior teamBehavior = TeamBehavior.OwnerTeam;
-    public EntityTypes type = EntityTypes.Melee;
+    [HideInInspector]
+    public TeamBehavior teamType = TeamBehavior.OwnerTeam;
+    [HideInInspector]
+    public EntityTypes entityType = EntityTypes.Melee;
+    [HideInInspector]
     public bool isHeavy = false; //heavy units can't garrison into pallbearers
     [HideInInspector] public bool fullyBuilt = true;
+    [HideInInspector]
     public bool isKeystone = false;
+    [HideInInspector] public int allowedInteractors = 1; //only relevant if this is a resource or deposit point
+    
+    private int allowedFinishedInteractors = 1;
+    private int allowedUnfinishedInteractors = 1;
 
     [Header("Building Only")]
+    [HideInInspector]
     public Vector3 buildOffset = new Vector3(0.5f, 0, 0.5f);
 
     [Header("Builder Only")]
     [Tooltip("Spawnable units and constructable buildings")]
     //public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
+    [HideInInspector]
     public int spawnableAtOnce = 1; //how many minions can be spawned at at time from this unit. 
 
+    [HideInInspector]
     public FactionUnit[] spawnableUnits;
+    [HideInInspector]
     public FactionBuilding[] constructableBuildings;
+    [HideInInspector]
     public FactionAbility[] usableAbilities;
 
-    [Header("Harvester Only")]
-    public int allowedInteractors = 1; //only relevant if this is a resource or deposit point
+    //[Header("Harvester Only")]
+    [HideInInspector]
     public bool isHarvester = false;
+    [HideInInspector]
     public int harvestCapacity = 10;
 
-    [Header("Resource Only")]
+    //[Header("Resource Only")]
+    [HideInInspector]
     public ResourceType selfHarvestableType = ResourceType.None;
 
     [Header("Garrison Only")]
     public List<GarrisonablePosition> garrisonablePositions = new();
+    [HideInInspector]
     public bool passengersAreTargetable = false;
+    [HideInInspector]
     public bool acceptsHeavy = false;
 
     [Header("Spawners Only")]
@@ -139,14 +166,17 @@ public class SelectableEntity : NetworkBehaviour
     public List<MeshRenderer> teamRenderers;
     private DynamicGridObstacle obstacle;
     [HideInInspector] public RVOController RVO;
+    [HideInInspector]
     public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); //negative team numbers are AI controlled
     public sbyte desiredTeamNumber = 0; //only matters if negative
     #endregion
     #region NetworkSpawn 
-    public byte clientIDToSpawnUnder = 0;
-    public bool aiControlled = false;
+    [HideInInspector] public byte clientIDToSpawnUnder = 0;
+    [HideInInspector] public bool aiControlled = false;
     private Rigidbody rigid;
+    private bool hasRegisteredRallyMission = false;
+    private List<Material> savedMaterials = new();
     private void OnDrawGizmos()
     {
         if (fakeSpawn)
@@ -178,7 +208,7 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-    public override void OnNetworkSpawn() //invoked before start()
+    public override void OnNetworkSpawn()
     {
         Initialize();
         if (lineIndicator != null)
@@ -190,7 +220,7 @@ public class SelectableEntity : NetworkBehaviour
             if (desiredTeamNumber < 0) //AI controlled
             {
                 teamNumber.Value = desiredTeamNumber;
-                if (teamBehavior == TeamBehavior.OwnerTeam)
+                if (teamType == TeamBehavior.OwnerTeam)
                 {
                     Global.Instance.aiTeamControllers[Mathf.Abs(desiredTeamNumber) - 1].ownedEntities.Add(this);
                 }
@@ -198,7 +228,7 @@ public class SelectableEntity : NetworkBehaviour
             else
             {
                 teamNumber.Value = (sbyte)OwnerClientId;
-                if (teamBehavior == TeamBehavior.OwnerTeam)
+                if (teamType == TeamBehavior.OwnerTeam)
                 {
                     Global.Instance.localPlayer.ownedEntities.Add(this);
                     Global.Instance.localPlayer.lastSpawnedEntity = this;
@@ -236,6 +266,8 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (selectIndicator != null) selectIndicator.SetActive(selected);
 
+
+        allowedInteractors = allowedUnfinishedInteractors;
         /*if (IsOwner && !hasRegisteredRallyMission)
         {
             hasRegisteredRallyMission = true;
@@ -246,10 +278,52 @@ public class SelectableEntity : NetworkBehaviour
         UpdateTeamRenderers();
         FixFogTeam();
     }
-    private bool hasRegisteredRallyMission = false;
-    private List<Material> savedMaterials = new();
+    private void InitializeEntityInfo()
+    {
+        //set faction entity information
+        displayName = factionEntity.name;
+        desc = factionEntity.description;
+        maxHP = (short)factionEntity.maxHP;
+
+        spawnableUnits = factionEntity.spawnableUnits;
+        constructableBuildings = factionEntity.constructableBuildings;
+        usableAbilities = factionEntity.usableAbilities;
+        isKeystone = factionEntity.isKeystone;
+        isHarvester = factionEntity.isHarvester;
+        harvestCapacity = factionEntity.harvestCapacity;
+        spawnableAtOnce = factionEntity.spawnableAtOnce;
+        allowedUnfinishedInteractors = factionEntity.allowedUnfinishedInteractors;
+        allowedFinishedInteractors = factionEntity.allowedFinishedInteractors;
+
+        passengersAreTargetable = factionEntity.passengersAreTargetable;
+        acceptsHeavy = factionEntity.acceptsHeavy;
+
+        consumePopulationAmount = factionEntity.consumePopulationAmount;
+        raisePopulationLimitBy = factionEntity.raisePopulationLimitBy;
+        //DIFFERENTIATE BETWEEN BUILDING AND UNIT TYPES
+        //entityType = factionEntity.entityType;
+        depositType = factionEntity.depositType;
+        teamType = factionEntity.teamType;
+        selfHarvestableType = factionEntity.selfHarvestableType;
+        shouldHideInFog = factionEntity.shouldHideInFog;
+
+        if (factionEntity is FactionBuilding)
+        {
+            FactionBuilding factionBuilding = factionEntity as FactionBuilding;
+            buildOffset = factionBuilding.buildOffset;
+        }
+        else if (factionEntity is FactionUnit)
+        {
+            FactionUnit factionUnit = factionEntity as FactionUnit;
+            isHeavy = factionUnit.isHeavy;
+        }
+
+
+    }
     private void Start()
     {
+        InitializeEntityInfo();
+
         Initialize();
         //if (fogUnit != null) fogUnit.team = desiredTeamNumber;
         aiControlled = desiredTeamNumber < 0;
@@ -295,9 +369,9 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
         if (rallyVisual != null) rallyVisual.enabled = false;
-        if (teamBehavior == TeamBehavior.OwnerTeam) Global.Instance.allFactionEntities.Add(this);
+        if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allFactionEntities.Add(this);
 
-        switch (type) //determine if should be fullyBuilt
+        switch (entityType) //determine if should be fullyBuilt
         {
             case EntityTypes.Melee:
             case EntityTypes.Ranged:
@@ -359,6 +433,14 @@ public class SelectableEntity : NetworkBehaviour
                     break;
             }
         }
+    }
+    public bool CanUseAbility(FactionAbility ability)
+    {
+        for (int i = 0; i < usableAbilities.Length; i++)
+        {
+            if (usableAbilities[i].abilityName == ability.name) return true; //if ability is in the used abilities list, then we still need to wait  
+        }
+        return false;
     }
     public bool AbilityOffCooldown(FactionAbility ability)
     {
@@ -453,16 +535,30 @@ public class SelectableEntity : NetworkBehaviour
                 };
                 appliedEffects.Add(newEffect);
 
-                AbilityOnCooldown newAbility = new()
-                {
-                    abilityName = ability.abilityName,
-                    cooldownTime = ability.cooldownTime
-                };
-                usedAbilities.Add(newAbility);
+                if (!UsedSameNameAbility(ability)) //if this unit has not used this ability already, mark it as used
+                { 
+                    AbilityOnCooldown newAbility = new()
+                    {
+                        abilityName = ability.abilityName,
+                        cooldownTime = ability.cooldownTime
+                    };
+                    usedAbilities.Add(newAbility);
+                }
             }
         }
     }
-    private List<AbilityOnCooldown> usedAbilities = new();
+    public bool UsedSameNameAbility(FactionAbility ability)
+    {
+        for (int i = 0; i < usedAbilities.Count; i++) //find the ability and set the cooldown
+        {
+            if (usedAbilities[i].abilityName == ability.abilityName)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    public List<AbilityOnCooldown> usedAbilities = new();
     private List<TargetedEffects> appliedEffects = new();
     private void UpdateUsedAbilities()
     {
@@ -724,7 +820,7 @@ public class SelectableEntity : NetworkBehaviour
         }
     }
     private HideInFog fogHide;
-    public FogOfWarUnit fogUnit;
+    [HideInInspector] public FogOfWarUnit fogUnit;
     private void OnHitPointsChanged(short prev, short current)
     {
         if (selected)
@@ -839,7 +935,7 @@ public class SelectableEntity : NetworkBehaviour
         RTSPlayer local = Global.Instance.localPlayer;
         foreach (SelectableEntity item in local.selectedEntities)
         {
-            if (item.type == EntityTypes.Builder)
+            if (item.entityType == EntityTypes.Builder)
             {
                 MinionController minion = item.GetComponent<MinionController>();
                 minion.SetBuildDestination(transform.position, this);
@@ -936,11 +1032,11 @@ public class SelectableEntity : NetworkBehaviour
             if (interactorIndex >= interactors.Count) interactorIndex = 0;
         }
     }
-    public readonly float minFogStrength = 0.45f;
-    public bool visibleInFog = false;
-    public bool oldVisibleInFog = false;
-    public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
-    public bool shouldHideInFog = true; // gold should not be hidden
+    [HideInInspector] public readonly float minFogStrength = 0.45f;
+    [HideInInspector] public bool visibleInFog = false;
+    [HideInInspector] public bool oldVisibleInFog = false;
+    [HideInInspector] public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
+    [HideInInspector] public bool shouldHideInFog = true; // gold should not be hidden
 
     private void UpdateVisibilityFromFogOfWar()
     {
@@ -1003,6 +1099,7 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
+
     private void StructureCosmeticDestruction()
     {
         foreach (MeshRenderer item in allMeshes)
@@ -1015,6 +1112,7 @@ public class SelectableEntity : NetworkBehaviour
     private readonly int footstepThreshold = 12;
     private void BecomeFullyBuilt()
     {
+        allowedInteractors = allowedFinishedInteractors;
         constructionBegun = true;
         fullyBuilt = true;
 
@@ -1043,11 +1141,11 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void ChangeMaxPopulation(int change)
     {
-        if (IsOwner && teamBehavior == TeamBehavior.OwnerTeam) Global.Instance.localPlayer.maxPopulation += change;
+        if (IsOwner && teamType == TeamBehavior.OwnerTeam) Global.Instance.localPlayer.maxPopulation += change;
     }
     private void ChangePopulation(int change)
     {
-        if (IsOwner && teamBehavior == TeamBehavior.OwnerTeam)
+        if (IsOwner && teamType == TeamBehavior.OwnerTeam)
         {
             Global.Instance.localPlayer.population += change;
         }
@@ -1108,7 +1206,7 @@ public class SelectableEntity : NetworkBehaviour
             //SelectableEntity target = hit.collider.GetComponent<SelectableEntity>();
             if (target != null)
             {
-                if (target.teamBehavior == TeamBehavior.OwnerTeam)
+                if (target.teamType == TeamBehavior.OwnerTeam)
                 {
                     if (target.net.OwnerClientId == net.OwnerClientId) //same team
                     {
@@ -1129,9 +1227,9 @@ public class SelectableEntity : NetworkBehaviour
                         rallyTarget = target;
                     }
                 }
-                else if (target.teamBehavior == TeamBehavior.FriendlyNeutral)
+                else if (target.teamType == TeamBehavior.FriendlyNeutral)
                 {
-                    if (target.type == EntityTypes.HarvestableStructure)
+                    if (target.entityType == EntityTypes.HarvestableStructure)
                     {
                         rallyMission = RallyMission.Harvest;
                         rallyTarget = target;
@@ -1221,7 +1319,7 @@ public class SelectableEntity : NetworkBehaviour
         buildQueue.RemoveAt(0);
         SpawnFromSpawner(this, rallyPoint, unit);
     }
-    public SelectableEntity spawnerThatSpawnedThis;
+    [HideInInspector] public SelectableEntity spawnerThatSpawnedThis;
     public void SpawnFromSpawner(SelectableEntity select, Vector3 rally, FactionUnit unit)
     {
         //spawner is this

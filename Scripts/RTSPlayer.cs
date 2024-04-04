@@ -184,7 +184,7 @@ public class RTSPlayer : NetworkBehaviour
             //SelectableEntity select = hit.collider.GetComponent<SelectableEntity>();
             if (select != null && fow.GetFogValue(select.transform.position) <= 0.51f * 255) //if exists and is explored at least
             {
-                if (select.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
+                if (select.teamType == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
                     if (select.net.OwnerClientId == OwnerClientId) //same team
                     {
@@ -215,9 +215,9 @@ public class RTSPlayer : NetworkBehaviour
                         actionType = ActionType.AttackTarget;
                     }
                 }
-                else if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
+                else if (select.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral)
                 {
-                    if (select.type == SelectableEntity.EntityTypes.HarvestableStructure)
+                    if (select.entityType == SelectableEntity.EntityTypes.HarvestableStructure)
                     { //harvest target
                         actionType = ActionType.Harvest;
                         Debug.Log("HARVEST");
@@ -372,9 +372,9 @@ public class RTSPlayer : NetworkBehaviour
         DeselectAll();
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item != null && (item.type == SelectableEntity.EntityTypes.Melee || item.type == SelectableEntity.EntityTypes.Ranged))
+            if (item != null && (item.entityType == SelectableEntity.EntityTypes.Melee || item.entityType == SelectableEntity.EntityTypes.Ranged))
             {
-                if (item.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam && item.occupiedGarrison == null) //only select ungarrisoned
+                if (item.teamType == SelectableEntity.TeamBehavior.OwnerTeam && item.occupiedGarrison == null) //only select ungarrisoned
                 {
                     TrySelectEntity(item);
                 }
@@ -386,9 +386,9 @@ public class RTSPlayer : NetworkBehaviour
         DeselectAll();
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item != null && item.type == SelectableEntity.EntityTypes.ProductionStructure)
+            if (item != null && item.entityType == SelectableEntity.EntityTypes.ProductionStructure)
             {
-                if (item.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
+                if (item.teamType == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
                     TrySelectEntity(item);
                 }
@@ -400,9 +400,9 @@ public class RTSPlayer : NetworkBehaviour
         DeselectAll();
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item != null && item.type == SelectableEntity.EntityTypes.Builder && item.minionController != null)
+            if (item != null && item.entityType == SelectableEntity.EntityTypes.Builder && item.minionController != null)
             {
-                if (item.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam)
+                if (item.teamType == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
                     switch (item.minionController.state)
                     {
@@ -417,11 +417,11 @@ public class RTSPlayer : NetworkBehaviour
     }
     public bool IsTargetExplicitlyOnOurTeam(SelectableEntity target)
     {
-        return target.teamBehavior == SelectableEntity.TeamBehavior.OwnerTeam && ownedEntities.Contains(target);
+        return target.teamType == SelectableEntity.TeamBehavior.OwnerTeam && ownedEntities.Contains(target);
     }
     private void TrySelectEntity(SelectableEntity entity)
     {
-        if (IsTargetExplicitlyOnOurTeam(entity) || entity.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
+        if (IsTargetExplicitlyOnOurTeam(entity) || entity.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral)
         {
             selectedEntities.Add(entity);
             entity.Select(true);
@@ -449,24 +449,24 @@ public class RTSPlayer : NetworkBehaviour
         {
             SelectAllIdleBuilders();
         }
-        /*#if UNITY_EDITOR //DEBUG COMMANDS
-                if (Input.GetKeyDown(KeyCode.RightShift))
-                {
-                    GenericSpawnMinion(cursorWorldPosition, 0, this);
-                }
-                if (Input.GetKeyDown(KeyCode.RightAlt))
-                {
-                    GenericSpawnMinion(cursorWorldPosition, 2, this);
-                }
-                if (Input.GetKeyDown(KeyCode.RightControl))
-                {
-                    GenericSpawnMinion(cursorWorldPosition, 3, this);
-                }
-                if (Input.GetKeyDown(KeyCode.UpArrow))
-                {
-                    GenericSpawnMinion(cursorWorldPosition, 11, this);
-                }
-        #endif*/
+#if UNITY_EDITOR //DEBUG COMMANDS
+        if (Input.GetKeyDown(KeyCode.RightShift))
+        {
+            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[1], this);
+        }
+        /*if (Input.GetKeyDown(KeyCode.RightAlt))
+        {
+            GenericSpawnMinion(cursorWorldPosition, 2, this);
+        }
+        if (Input.GetKeyDown(KeyCode.RightControl))
+        {
+            GenericSpawnMinion(cursorWorldPosition, 3, this);
+        }
+        if (Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            GenericSpawnMinion(cursorWorldPosition, 11, this);
+        }*/
+#endif
     }
     private FactionBuilding buildingToPlace = null;
     void Update()
@@ -484,7 +484,7 @@ public class RTSPlayer : NetworkBehaviour
 
             if (linkedState == LinkedState.PlacingEnd)
             {
-                CalculateFillCost(startWallPosition, cursorWorldPosition, wallID);
+                //CalculateFillCost(startWallPosition, cursorWorldPosition, wallID);
             }
             if (Input.GetMouseButtonDown(0)) //left click
             {
@@ -553,6 +553,7 @@ public class RTSPlayer : NetworkBehaviour
             Global.Instance.popText.text = population + "/" + maxPopulation + " Population";
         }
         TryReplaceFakeSpawn();
+        UpdateGUIFromSelections();// this might be expensive ...
     }
     private void SelectWithinBounds() //rectangle select, finish drag select
     {
@@ -583,7 +584,7 @@ public class RTSPlayer : NetworkBehaviour
             int builder = 0;
             foreach (SelectableEntity item in evaluation)
             {
-                switch (item.type)
+                switch (item.entityType)
                 {
                     case SelectableEntity.EntityTypes.Melee:
                     case SelectableEntity.EntityTypes.Ranged:
@@ -628,7 +629,7 @@ public class RTSPlayer : NetworkBehaviour
             }
             foreach (SelectableEntity item in evaluation)
             {
-                if ((item.type == privileged1 || item.type == privileged2 || item.type == privileged3) && item.occupiedGarrison == null)
+                if ((item.entityType == privileged1 || item.entityType == privileged2 || item.entityType == privileged3) && item.occupiedGarrison == null)
                 {
                     selectedEntities.Add(item);
                     item.Select(true);
@@ -667,31 +668,31 @@ public class RTSPlayer : NetworkBehaviour
     private Vector3 startWallPosition;
     private void PlaceBuilding(FactionBuilding building)
     {
-        NormalPlaceBuilding(building);
-        /*switch (linkedState)
+        switch (linkedState)
         {
-            case LinkedState.Waiting: 
-                NormalPlaceBuilding(id);
+            case LinkedState.Waiting:
+                NormalPlaceBuilding(building);
                 break;
-            case LinkedState.PlacingStart:
+            /*case LinkedState.PlacingStart:
                 linkedState = LinkedState.PlacingEnd;
                 startWallPosition = cursorWorldPosition;
-                wallID = id;
+                //wallID = id;
                 Destroy(followCursorObject);
                 break;
             case LinkedState.PlacingEnd:
-                int cost = CalculateFillCost(startWallPosition, cursorWorldPosition, id);
+                //int cost = CalculateFillCost(startWallPosition, cursorWorldPosition, id);
+                int cost = CalculateFillCost(startWallPosition, cursorWorldPosition, building);
                 if (gold >= cost)
                 {
                     gold -= cost;
                     //GenericSpawnMinion(cursorWorldPosition, id); //followCursorObject.transform.position
-                    WallFill(id);
+                    WallFill(building);
                     StopPlacingBuilding();
                 }
-                break;
+                break;*/
             default:
                 break;
-        }*/
+        }
     }
     private void NormalPlaceBuilding(FactionBuilding building)
     {
@@ -702,6 +703,11 @@ public class RTSPlayer : NetworkBehaviour
         TellSelectedToBuild(last);
         //temporary: later re-implement two-part buildings and holding shift to continue placing
         StopPlacingBuilding();
+
+
+        //is building a two-parter?
+
+
         /*if (Input.GetKey(KeyCode.LeftShift) && gold >= building.goldCost)
         {
             //continue placing buildings
@@ -760,7 +766,7 @@ public class RTSPlayer : NetworkBehaviour
     public List<Vector3> predictedWallPositions = new();
     public List<bool> predictedWallPositionsShouldBePlaced = new();
     public List<GameObject> wallGhosts = new();
-    private int CalculateFillCost(Vector3 start, Vector3 end, byte id) //fill between start and end
+    private int CalculateFillCost(Vector3 start, Vector3 end, FactionBuilding building) //fill between start and end byte id
     {
         /*FactionUnit fac = _faction.entities[id];
         int cost = fac.goldCost;
@@ -1314,9 +1320,39 @@ public class RTSPlayer : NetworkBehaviour
             if (i < availableAbilities.Count) //abilities
             {
                 FactionAbility ability = availableAbilities[i];
-                button.interactable = true;
-                text.text = ability.abilityName;// + ": " + ability.goldCost + "g"; 
                 button.onClick.AddListener(delegate { UseAbility(ability); });
+                //get lowest ability cooldown 
+                float cooldown = 999;
+                foreach (SelectableEntity entity in selectedEntities)
+                {
+                    if (entity.CanUseAbility(ability)) //if this entity can use the ability
+                    {
+                        bool foundAbility = false;
+                        for (int j = 0; j < entity.usedAbilities.Count; j++) //find the ability and set the cooldown
+                        {
+                            if (entity.usedAbilities[j].abilityName == ability.abilityName) //does the ability match?
+                            {
+                                foundAbility = true;
+                                if (entity.usedAbilities[j].cooldownTime < cooldown) //is the cooldown lower than the current cooldown?
+                                { 
+                                    cooldown = entity.usedAbilities[j].cooldownTime;
+                                    //Debug.Log("found ability");
+                                }
+                                break;
+                            }
+                        }
+                        if (foundAbility == false) cooldown = 0;
+                    }
+                }
+                if (cooldown <= 0)
+                { 
+                    text.text = ability.abilityName;
+                }
+                else
+                { 
+                    text.text = ability.abilityName + ": " + Mathf.RoundToInt(cooldown);
+                }
+                button.interactable = cooldown <= 0; 
             }
             else if (i < availableAbilities.Count + availableUnitSpawns.Count) //spawns
             {
@@ -1368,7 +1404,7 @@ public class RTSPlayer : NetworkBehaviour
 
         SelectableEntity select = selectedEntities[0];
         //only works if is production structure, fully built, and spawned
-        if (select.type != SelectableEntity.EntityTypes.ProductionStructure || !select.fullyBuilt || !select.net.IsSpawned) return;
+        if (select.entityType != SelectableEntity.EntityTypes.ProductionStructure || !select.fullyBuilt || !select.net.IsSpawned) return;
 
         Global.Instance.queueParent.gameObject.SetActive(true);
         int num = Mathf.Clamp(select.buildQueue.Count, 0, Global.Instance.queueButtons.Count);
@@ -1451,11 +1487,11 @@ public class RTSPlayer : NetworkBehaviour
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn ghost
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
         buildOffset = entity.buildOffset;
-        if (entity.type == SelectableEntity.EntityTypes.Portal)
+        if (entity.entityType == SelectableEntity.EntityTypes.Portal)
         {
             placingPortal = true;
         }
-        else if (entity.type == SelectableEntity.EntityTypes.ExtendableWall)
+        else if (entity.entityType == SelectableEntity.EntityTypes.ExtendableWall)
         {
             linkedState = LinkedState.PlacingStart;
         }
@@ -1512,7 +1548,7 @@ public class RTSPlayer : NetworkBehaviour
                 }
                 else
                 {
-                    SelectAllSameTypeExcludingInGarrisons(entity.type);
+                    SelectAllSameTypeExcludingInGarrisons(entity.entityType);
                 }
             }
         }
@@ -1536,7 +1572,7 @@ public class RTSPlayer : NetworkBehaviour
     {
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item.type == type && item.occupiedGarrison == null)
+            if (item.entityType == type && item.occupiedGarrison == null)
             {
                 item.Select(true);
                 selectedEntities.Add(item);
@@ -1576,7 +1612,7 @@ public class RTSPlayer : NetworkBehaviour
             {
                 continue;
             }
-            if (select.teamBehavior == SelectableEntity.TeamBehavior.FriendlyNeutral)
+            if (select.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral)
             {
                 continue;
             }

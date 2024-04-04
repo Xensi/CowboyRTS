@@ -46,7 +46,7 @@ public class MinionController : NetworkBehaviour
         None
     }
     #endregion
-    public State lastState = State.Idle;
+    [HideInInspector] public State lastState = State.Idle;
     #region Hidden
     LayerMask enemyMask;
     private Camera cam;
@@ -60,7 +60,7 @@ public class MinionController : NetworkBehaviour
     private float rotationSpeed = 10f;
     [HideInInspector] public bool attackMoving = false;
     //[HideInInspector] public bool followingMoveOrder = false;
-    public Vector3 orderedDestination; //remembers where player told minion to go
+    [HideInInspector] public Vector3 orderedDestination; //remembers where player told minion to go
     private float basicallyIdleInstances = 0;
     private readonly int idleThreshold = 3; //seconds of being stuck
     private float attackReadyTimer = 0;
@@ -72,6 +72,7 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] public Collider col;
     [HideInInspector] private Rigidbody rigid;
     [HideInInspector] public Animator animator;
+    [HideInInspector]
     public SelectableEntity targetEnemy;
     [HideInInspector] public MinionNetwork minionNetwork;
     bool playedAttackMoveSound = false;
@@ -101,9 +102,9 @@ public class MinionController : NetworkBehaviour
     //private readonly int delay = 0;
     [Header("Self-Destruct Only")]
     [SerializeField] private float selfDestructAreaOfEffect = 1; //ignore if not selfdestructer
-    public State state = State.Spawn;
-    public SelectableEntity.RallyMission givenMission = SelectableEntity.RallyMission.None;
-    public Vector3 rallyTarget;
+    [HideInInspector] public State state = State.Spawn;
+    [HideInInspector] public SelectableEntity.RallyMission givenMission = SelectableEntity.RallyMission.None;
+    [HideInInspector] public Vector3 rallyTarget;
     #endregion
     #region NetworkVariables
     //maybe optimize this as vector 2 later
@@ -111,6 +112,7 @@ public class MinionController : NetworkBehaviour
     public NetworkVariable<Vector3> realLocation = new NetworkVariable<Vector3>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     //controls where the AI will pathfind to
+    [HideInInspector]
     public NetworkVariable<Vector3> destination = new NetworkVariable<Vector3>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
@@ -593,7 +595,7 @@ public class MinionController : NetworkBehaviour
                 lastState = State.Harvesting;
                 break;
             case SelectableEntity.RallyMission.Build:
-                if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
+                if (selectableEntity.entityType == SelectableEntity.EntityTypes.Builder)
                 {
                     if (selectableEntity.interactionTarget == null || selectableEntity.interactionTarget.fullyBuilt)
                     {
@@ -1003,7 +1005,18 @@ public class MinionController : NetworkBehaviour
                         }
                         else
                         {
-                            if (selectableEntity.interactionTarget.type == SelectableEntity.EntityTypes.Portal) //walk into
+                            if (InRangeOfEntity(selectableEntity.interactionTarget, garrisonRange))
+                            {
+                                //Debug.Log("Garrisoning");
+                                SwitchState(State.Garrisoning);
+                            }
+                            else
+                            {
+                                animator.Play("Walk");
+                                Vector3 closest = selectableEntity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
+                                SetDestinationIfHighDiff(closest);
+                            }
+                            /*if (selectableEntity.interactionTarget.type == SelectableEntity.EntityTypes.Portal) //walk into
                             {
                                 if (selectableEntity.tryingToTeleport)
                                 {
@@ -1018,17 +1031,8 @@ public class MinionController : NetworkBehaviour
                             }
                             else
                             {
-                                if (InRangeOfEntity(selectableEntity.interactionTarget, garrisonRange))
-                                {
-                                    SwitchState(State.Garrisoning);
-                                }
-                                else
-                                {
-                                    animator.Play("Walk");
-                                    Vector3 closest = selectableEntity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
-                                    SetDestinationIfHighDiff(closest);
-                                }
-                            }
+                                
+                            }*/
                         }
                         break;
                     default:
@@ -1102,12 +1106,12 @@ public class MinionController : NetworkBehaviour
                             {
                                 attackReady = false;
                                 HarvestTarget(selectableEntity.interactionTarget);
-                                Debug.Log("impact");
+                                //Debug.Log("impact");
                             }
                         }
                         else //animation finished
                         {
-                            Debug.Log("harvest over");
+                            //Debug.Log("harvest over");
                             SwitchState(State.AfterHarvestCheck);
                         }
                     }
@@ -1534,7 +1538,7 @@ public class MinionController : NetworkBehaviour
             {
                 attackReady = true;
                 attackReadyTimer = 0;
-                Debug.Log("attack ready");
+                //Debug.Log("attack ready");
             }
         }
     }
@@ -1611,12 +1615,12 @@ public class MinionController : NetworkBehaviour
     {
         if (attackType == AttackType.None) return null;
 
-        if (selectableEntity.type == SelectableEntity.EntityTypes.Melee)
+        if (selectableEntity.entityType == SelectableEntity.EntityTypes.Melee)
         {
             float defaultDetectionRange = 5;
             range = defaultDetectionRange;
         }
-        if (selectableEntity.type == SelectableEntity.EntityTypes.Ranged)
+        if (selectableEntity.entityType == SelectableEntity.EntityTypes.Ranged)
         {
             range += 1;
         }
@@ -1742,7 +1746,7 @@ public class MinionController : NetworkBehaviour
         {
             if (item != null && item.depositType != SelectableEntity.DepositType.None && item.fullyBuilt && item.alive)
             {
-                float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position);
+                float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position); //faster than .distance
                 if (newDist < distance)
                 {
                     closest = item;
@@ -1865,7 +1869,7 @@ public class MinionController : NetworkBehaviour
             {
                 selectableEntity.DisplayAttackEffects();
             }
-            if (selectableEntity.type == SelectableEntity.EntityTypes.Ranged) //shoot trail
+            if (selectableEntity.entityType == SelectableEntity.EntityTypes.Ranged) //shoot trail
             {
                 Vector3 spawnPos;
                 if (attackEffectSpawnPosition != null)
@@ -2097,7 +2101,7 @@ public class MinionController : NetworkBehaviour
     }
     public void CommandBuildTarget(SelectableEntity select)
     {
-        if (selectableEntity.type == SelectableEntity.EntityTypes.Builder)
+        if (selectableEntity.entityType == SelectableEntity.EntityTypes.Builder)
         {
             lastCommand.Value = CommandTypes.Build;
             selectableEntity.interactionTarget = select;
@@ -2107,6 +2111,7 @@ public class MinionController : NetworkBehaviour
     }
     public void GarrisonInto(SelectableEntity garrison)
     {
+        //Debug.Log("Trying to garrison");
         SelectableEntity justLeftGarrison = null;
         if (selectableEntity.occupiedGarrison != null) //we are currently garrisoned
         {
@@ -2117,18 +2122,13 @@ public class MinionController : NetworkBehaviour
         // && selectableEntity.garrisonablePositions.Count <= 0
         if (justLeftGarrison != garrison) //not perfect, fails on multiple units
         {
-            if (garrison.acceptsHeavy)
+            if (garrison.acceptsHeavy || !selectableEntity.isHeavy)
             {
                 selectableEntity.interactionTarget = garrison;
                 SwitchState(State.WalkToInteractable);
                 lastState = State.Garrisoning;
-            }
-            else if (!selectableEntity.isHeavy)
-            {
-                selectableEntity.interactionTarget = garrison;
-                SwitchState(State.WalkToInteractable);
-                lastState = State.Garrisoning;
-            }
+                //Debug.Log("Moving into garrison");
+            } 
         }
         lastCommand.Value = CommandTypes.Move;
         /*SelectableEntity garrison = select.occupiedGarrison;
