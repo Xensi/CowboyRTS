@@ -316,6 +316,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: 9e3789c3f4911a84f8f2da8a4d72d6cc, type: 2}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: factionEntity
+      value: 
+      objectReference: {fileID: 11400000, guid: f0bbeafc167fb4f42b6a8cb8590d5373, type: 2}
+    - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: harvestCapacity
       value: 1
       objectReference: {fileID: 0}

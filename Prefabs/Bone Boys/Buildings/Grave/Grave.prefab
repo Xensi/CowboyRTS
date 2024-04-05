@@ -359,6 +359,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: factionEntity
+      value: 
+      objectReference: {fileID: 11400000, guid: 9272fcf1d648ea143823dcd20788f7fa, type: 2}
+    - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: selectIndicator
       value: 
       objectReference: {fileID: 8413581457042850347}

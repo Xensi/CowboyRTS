@@ -19,14 +19,32 @@ MonoBehaviour:
   prefabToSpawn: {fileID: 2545681379473208697, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
   maxHP: 10
   isKeystone: 0
-  isHarvester: 1
-  harvestCapacity: 5
-  spawnableAtOnce: 1
+  consumePopulationAmount: 1
+  raisePopulationLimitBy: 0
+  shouldHideInFog: 1
+  sounds: []
+  teamType: 0
   spawnableUnits: []
   constructableBuildings:
   - {fileID: 11400000, guid: c0ef745a8df8be4478d8040e4830b3d3, type: 2}
   usableAbilities:
   - {fileID: 11400000, guid: 5f176f98524f7504ca68506ecda226d8, type: 2}
-  timeCost: 5
+  depositType: 0
+  selfHarvestableType: 1
+  isHarvester: 1
+  harvestCapacity: 5
+  depositRange: 1
+  spawnableAtOnce: 1
+  passengersAreTargetable: 0
+  acceptsHeavy: 0
+  attackType: 1
+  damage: 1
+  directionalAttack: 0
+  attackRange: 1
+  attackDuration: 1
+  impactTime: 0.5
+  areaOfEffectRadius: 1
+  shouldAutoSeekEnemies: 0
+  spawnTimeCost: 5
   isHeavy: 0
   canAttackWhileMoving: 0

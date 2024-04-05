@@ -169,7 +169,7 @@ public class RTSPlayer : NetworkBehaviour
         Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget
     }
     private ActionType actionType = ActionType.Move;
-    private void SelectedSetDestination() //RTS entity right click behavior
+    private void SetSelectedDestination() //RTS entity right click behavior
     {
         //when player right clicks, get position on map
         //tell other clients that this happened
@@ -195,6 +195,7 @@ public class RTSPlayer : NetworkBehaviour
                         }
                         else if (!select.fullyBuilt) //if buildable and this is a builder
                         {
+                            Debug.Log("not full built");
                             actionType = ActionType.BuildTarget;
                         }
                         else if (select.fullyBuilt && select.HasEmptyGarrisonablePosition())
@@ -400,7 +401,7 @@ public class RTSPlayer : NetworkBehaviour
         DeselectAll();
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item != null && item.entityType == SelectableEntity.EntityTypes.Builder && item.minionController != null)
+            if (item != null && item.canBuild && item.minionController != null)
             {
                 if (item.teamType == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
@@ -484,7 +485,7 @@ public class RTSPlayer : NetworkBehaviour
 
             if (linkedState == LinkedState.PlacingEnd)
             {
-                //CalculateFillCost(startWallPosition, cursorWorldPosition, wallID);
+                CalculateFillCost(startWallPosition, cursorWorldPosition, buildingToPlace);
             }
             if (Input.GetMouseButtonDown(0)) //left click
             {
@@ -516,7 +517,7 @@ public class RTSPlayer : NetworkBehaviour
                 switch (mouseState)
                 {
                     case MouseState.Waiting:
-                        SelectedSetDestination();
+                        SetSelectedDestination();
                         break;
                     case MouseState.ReadyToPlace:
                         if (!placingLinkedBuilding)
@@ -673,23 +674,20 @@ public class RTSPlayer : NetworkBehaviour
             case LinkedState.Waiting:
                 NormalPlaceBuilding(building);
                 break;
-            /*case LinkedState.PlacingStart:
+            case LinkedState.PlacingStart:
                 linkedState = LinkedState.PlacingEnd;
-                startWallPosition = cursorWorldPosition;
-                //wallID = id;
+                startWallPosition = cursorWorldPosition; 
                 Destroy(followCursorObject);
                 break;
-            case LinkedState.PlacingEnd:
-                //int cost = CalculateFillCost(startWallPosition, cursorWorldPosition, id);
+            case LinkedState.PlacingEnd: 
                 int cost = CalculateFillCost(startWallPosition, cursorWorldPosition, building);
                 if (gold >= cost)
                 {
-                    gold -= cost;
-                    //GenericSpawnMinion(cursorWorldPosition, id); //followCursorObject.transform.position
+                    gold -= cost; 
                     WallFill(building);
                     StopPlacingBuilding();
                 }
-                break;*/
+                break;
             default:
                 break;
         }
@@ -768,8 +766,9 @@ public class RTSPlayer : NetworkBehaviour
     public List<GameObject> wallGhosts = new();
     private int CalculateFillCost(Vector3 start, Vector3 end, FactionBuilding building) //fill between start and end byte id
     {
-        /*FactionUnit fac = _faction.entities[id];
-        int cost = fac.goldCost;
+
+        //FactionUnit fac = _faction.entities[id];
+        int cost = building.goldCost;
 
         float distance = Vector3.Distance(start, end);
         //greater distance means more walls
@@ -836,7 +835,7 @@ public class RTSPlayer : NetworkBehaviour
             for (int i = 0; i < predictedWallPositions.Count; i++)
             {
                 Vector3 pos = predictedWallPositions[i];
-                GameObject ghost = PlaceWallGhost(pos, id, true);
+                GameObject ghost = PlaceWallGhost(pos, building, true);
                 wallGhosts.Add(ghost);
             }
         }
@@ -846,17 +845,16 @@ public class RTSPlayer : NetworkBehaviour
             {
                 Vector3 pos = predictedWallPositions[i];
                 bool shouldBePlaced = predictedWallPositionsShouldBePlaced[i];
-                GameObject ghost = PlaceWallGhost(pos, id, !shouldBePlaced);
+                GameObject ghost = PlaceWallGhost(pos, building, !shouldBePlaced);
                 wallGhosts.Add(ghost);
             }
         }
         Debug.Log(realCost);
-        return realCost;*/
-        return 0;
+        return realCost; 
     }
-    private GameObject PlaceWallGhost(Vector3 pos, byte id, bool blocked = false)
-    {
-        /*GameObject build = _faction.entities[id].prefabToSpawn.gameObject;
+    private GameObject PlaceWallGhost(Vector3 pos, FactionBuilding building, bool blocked = false)
+    { 
+        GameObject build = building.prefabToSpawn.gameObject;
         GameObject spawn = Instantiate(build, pos, Quaternion.Euler(0, 180, 0)); //spawn locally  
         spawn.layer = 0; //don't count as entity
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
@@ -882,12 +880,11 @@ public class RTSPlayer : NetworkBehaviour
         {
             colliders[i].isTrigger = true;
         }
-        return spawn;*/
-        return null;
+        return spawn; 
     }
-    private void WallFill(byte id)
+    private void WallFill(FactionBuilding building)
     {
-        /*foreach (GameObject item in wallGhosts)
+        foreach (GameObject item in wallGhosts)
         {
             if (item != null)
             {
@@ -901,11 +898,11 @@ public class RTSPlayer : NetworkBehaviour
             bool shouldBePlaced = predictedWallPositionsShouldBePlaced[i];
             if (shouldBePlaced)
             {
-                GenericSpawnMinion(pos, id, this);
+                GenericSpawnMinion(pos, building, this);
             }
         }
         predictedWallPositions.Clear();
-        predictedWallPositionsShouldBePlaced.Clear();*/
+        predictedWallPositionsShouldBePlaced.Clear();
     }
     private float AlignToGrid(float input)
     {
@@ -1404,7 +1401,7 @@ public class RTSPlayer : NetworkBehaviour
 
         SelectableEntity select = selectedEntities[0];
         //only works if is production structure, fully built, and spawned
-        if (select.entityType != SelectableEntity.EntityTypes.ProductionStructure || !select.fullyBuilt || !select.net.IsSpawned) return;
+        if (!select.canSpawn || !select.fullyBuilt || !select.net.IsSpawned) return;
 
         Global.Instance.queueParent.gameObject.SetActive(true);
         int num = Mathf.Clamp(select.buildQueue.Count, 0, Global.Instance.queueButtons.Count);
@@ -1425,7 +1422,7 @@ public class RTSPlayer : NetworkBehaviour
         button.gameObject.SetActive(true);
         TMP_Text text = button.GetComponentInChildren<TMP_Text>();
         FactionUnit fac = select.buildQueue[i];
-        text.text = fac.productionName + ": " + fac.timeCost + "s";
+        text.text = fac.productionName + ": " + fac.spawnTimeCost + "s";
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(delegate { DequeueProductionOrder(i); });
     }
@@ -1446,7 +1443,7 @@ public class RTSPlayer : NetworkBehaviour
         FactionUnit newUnit = new()
         {
             productionName = unit.prefabToSpawn.name,
-            timeCost = unit.timeCost,
+            spawnTimeCost = unit.spawnTimeCost,
             prefabToSpawn = unit.prefabToSpawn,
             goldCost = unit.goldCost,
             //buildID = id
@@ -1479,19 +1476,17 @@ public class RTSPlayer : NetworkBehaviour
     private void HoverBuild(FactionBuilding building)
     {
         mouseState = MouseState.ReadyToPlace;
-        placementBlocked = false;
-        //buildingPlacingID = id;
-        buildingToPlace = building;
-        //GameObject build = _faction.entities[id].prefabToSpawn.gameObject;
+        placementBlocked = false; 
+        buildingToPlace = building; 
         GameObject build = building.prefabToSpawn;
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn ghost
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
         buildOffset = entity.buildOffset;
-        if (entity.entityType == SelectableEntity.EntityTypes.Portal)
+        /*if (entity.entityType == SelectableEntity.EntityTypes.Portal)
         {
             placingPortal = true;
-        }
-        else if (entity.entityType == SelectableEntity.EntityTypes.ExtendableWall)
+        }*/
+        if (building.extendable)
         {
             linkedState = LinkedState.PlacingStart;
         }

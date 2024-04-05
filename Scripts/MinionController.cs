@@ -1,11 +1,11 @@
-using System.Collections;
+//using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using Pathfinding;
 using FoW;
-using UnityEngine.Rendering;
-using UnityEngine.Windows;
+//using UnityEngine.Rendering;
+//using UnityEngine.Windows;
 
 //used for entities that can attack
 [RequireComponent(typeof(SelectableEntity))]
@@ -41,9 +41,9 @@ public class MinionController : NetworkBehaviour
 
     public enum AttackType
     {
+        None,
         Instant, SelfDestruct, Artillery,
         Gatling, //for gatling gun
-        None
     }
     #endregion
     [HideInInspector] public State lastState = State.Idle;
@@ -81,16 +81,16 @@ public class MinionController : NetworkBehaviour
     #region Variables
 
     [Header("Behavior Settings")]
-    public AttackType attackType = AttackType.Instant;
-    public bool directionalAttack = false;
+    [HideInInspector] public AttackType attackType = AttackType.Instant;
+    [HideInInspector] public bool directionalAttack = false;
 
-    [SerializeField] private float attackRange = 1;
-    [SerializeField] private float depositRange = 1;
+    [HideInInspector]public float attackRange = 1;
+    [HideInInspector] public float depositRange = 1;
 
     //[SerializeField] private LocalRotation localRotate;
-    [SerializeField] private bool canMoveWhileAttacking = false;
+    [HideInInspector] public bool canMoveWhileAttacking = false;
     [SerializeField] private Transform attackEffectSpawnPosition;
-    [SerializeField] private sbyte damage = 1;
+    [HideInInspector] public sbyte damage = 1;
     [SerializeField] public float attackDuration = 1;
     [SerializeField] public float impactTime = .5f;
     [HideInInspector] public float defaultMoveSpeed = 0;
@@ -101,7 +101,7 @@ public class MinionController : NetworkBehaviour
     //50 fps fixed update
     //private readonly int delay = 0;
     [Header("Self-Destruct Only")]
-    [SerializeField] private float selfDestructAreaOfEffect = 1; //ignore if not selfdestructer
+    [HideInInspector] public float areaOfEffectRadius = 1; //ignore if not selfdestructer
     [HideInInspector] public State state = State.Spawn;
     [HideInInspector] public SelectableEntity.RallyMission givenMission = SelectableEntity.RallyMission.None;
     [HideInInspector] public Vector3 rallyTarget;
@@ -164,7 +164,7 @@ public class MinionController : NetworkBehaviour
     private int maxDetectable;
     private void SetDestination(Vector3 position)
     {
-        print("setting destination");
+        //print("setting destination");
         if (IsOwner) destination.Value = position; //tell server where we're going
         target.position = position; //move pathfinding target there
     }
@@ -847,7 +847,7 @@ public class MinionController : NetworkBehaviour
                                         DamageSpecifiedEnemy(targetEnemy, damage);
                                         break;
                                     case AttackType.SelfDestruct:
-                                        SelfDestruct(selfDestructAreaOfEffect);
+                                        SelfDestruct(areaOfEffectRadius);
                                         break;
                                     case AttackType.Artillery:
                                         ShootProjectileAtPosition(targetEnemy.transform.position);
@@ -1468,7 +1468,7 @@ public class MinionController : NetworkBehaviour
             return Vector3.Distance(transform.position, target.transform.position) <= range;
         }
     }
-    public bool shouldAutoSeekOutEnemies = true;
+    [HideInInspector] public bool shouldAutoSeekOutEnemies = true;
     private bool InvalidBuildable(SelectableEntity target)
     {
         return target == null || target.fullyBuilt || target.alive == false;
@@ -2101,8 +2101,9 @@ public class MinionController : NetworkBehaviour
     }
     public void CommandBuildTarget(SelectableEntity select)
     {
-        if (selectableEntity.entityType == SelectableEntity.EntityTypes.Builder)
+        if (selectableEntity.canBuild)
         {
+            Debug.Log("can build");
             lastCommand.Value = CommandTypes.Build;
             selectableEntity.interactionTarget = select;
             SwitchState(State.WalkToInteractable);

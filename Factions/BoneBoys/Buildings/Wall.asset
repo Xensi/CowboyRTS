@@ -13,6 +13,35 @@ MonoBehaviour:
   m_Name: Wall
   m_EditorClassIdentifier: 
   productionName: Wall
+  description: 
   goldCost: 2
   prefabToSpawn: {fileID: 3798861697192735719, guid: 0469ba43681a07247aef51cf6ccb8ef9, type: 3}
+  maxHP: 50
+  isKeystone: 0
+  consumePopulationAmount: 0
+  raisePopulationLimitBy: 0
+  shouldHideInFog: 1
+  sounds: []
+  teamType: 0
+  spawnableUnits: []
+  constructableBuildings: []
+  usableAbilities: []
+  depositType: 0
+  selfHarvestableType: 1
+  isHarvester: 0
+  harvestCapacity: 5
+  spawnableAtOnce: 1
+  passengersAreTargetable: 0
+  acceptsHeavy: 0
+  attackType: 0
+  damage: 1
+  directionalAttack: 0
+  attackRange: 1
+  depositRange: 1
+  attackDuration: 1
+  impactTime: 0.5
+  areaOfEffectRadius: 1
+  shouldAutoSeekEnemies: 0
   needsConstructing: 1
+  buildOffset: {x: 0.25, y: 0, z: 0.25}
+  extendable: 1

@@ -49,6 +49,8 @@ public class SelectableEntity : NetworkBehaviour
         Portal,
         ExtendableWall
     }
+    public bool canBuild = false;
+    [HideInInspector] public bool canSpawn = false;
     public enum ResourceType
     {
         Gold, None
@@ -107,11 +109,11 @@ public class SelectableEntity : NetworkBehaviour
     public EntityTypes entityType = EntityTypes.Melee;
     [HideInInspector]
     public bool isHeavy = false; //heavy units can't garrison into pallbearers
-    [HideInInspector] public bool fullyBuilt = true;
+    public bool fullyBuilt = true;
     [HideInInspector]
     public bool isKeystone = false;
     [HideInInspector] public int allowedInteractors = 1; //only relevant if this is a resource or deposit point
-    
+
     private int allowedFinishedInteractors = 1;
     private int allowedUnfinishedInteractors = 1;
 
@@ -155,7 +157,7 @@ public class SelectableEntity : NetworkBehaviour
     [Header("Aesthetic Settings")]
     [SerializeField] private MeshRenderer rallyVisual;
     [SerializeField] private Material damagedState;
-    public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
+    [HideInInspector] public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
     public LineRenderer lineIndicator;
     public MeshRenderer[] unbuiltRenderers;
     public MeshRenderer[] finishedRenderers;
@@ -208,9 +210,95 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-    public override void OnNetworkSpawn()
+    private void Initialize()
     {
+        if (minionController == null) minionController = GetComponent<MinionController>();
+        if (fogUnit == null) fogUnit = GetComponent<FogOfWarUnit>();
+        allMeshes = GetComponentsInChildren<MeshRenderer>();
+        if (net == null) net = GetComponent<NetworkObject>();
+        if (obstacle == null) obstacle = GetComponentInChildren<DynamicGridObstacle>();
+        if (RVO == null) RVO = GetComponent<RVOController>();
+        if (physicalCollider == null) physicalCollider = GetComponent<Collider>();
+        if (rigid == null) rigid = GetComponent<Rigidbody>();
+    }
+    private void InitializeEntityInfo()
+    {
+        if (factionEntity == null) return;
+        //set faction entity information
+        displayName = factionEntity.name;
+        desc = factionEntity.description;
+        maxHP = (short)factionEntity.maxHP;
+
+        spawnableUnits = factionEntity.spawnableUnits;
+        constructableBuildings = factionEntity.constructableBuildings;
+        usableAbilities = factionEntity.usableAbilities;
+        isKeystone = factionEntity.isKeystone;
+        isHarvester = factionEntity.isHarvester;
+        harvestCapacity = factionEntity.harvestCapacity;
+        spawnableAtOnce = factionEntity.spawnableAtOnce;
+        //allowedUnfinishedInteractors = factionEntity.allowedUnfinishedInteractors;
+        //allowedFinishedInteractors = factionEntity.allowedFinishedInteractors;
+        if (garrisonablePositions.Count > 0)
+        {
+            allowedFinishedInteractors = garrisonablePositions.Count; //automatically set 
+        }
+
+        passengersAreTargetable = factionEntity.passengersAreTargetable;
+        acceptsHeavy = factionEntity.acceptsHeavy;
+
+        consumePopulationAmount = factionEntity.consumePopulationAmount;
+        raisePopulationLimitBy = factionEntity.raisePopulationLimitBy;
+        //DIFFERENTIATE BETWEEN BUILDING AND UNIT TYPES
+        //entityType = factionEntity.entityType;
+        depositType = factionEntity.depositType;
+        teamType = factionEntity.teamType;
+        selfHarvestableType = factionEntity.selfHarvestableType;
+        shouldHideInFog = factionEntity.shouldHideInFog;
+        sounds = factionEntity.sounds;
+
+        if (factionEntity.constructableBuildings.Length > 0)
+        {
+            canBuild = true;
+        }
+        if (factionEntity.spawnableUnits.Length > 0)
+        {
+            canSpawn = true;
+        }
+
+        if (minionController != null)
+        {
+            minionController.attackType = factionEntity.attackType;
+            minionController.directionalAttack = factionEntity.directionalAttack;
+            minionController.attackRange = factionEntity.attackRange;
+            minionController.depositRange = factionEntity.depositRange;
+            minionController.damage = factionEntity.damage;
+            minionController.attackDuration = factionEntity.attackDuration;
+            minionController.impactTime = factionEntity.impactTime;
+            minionController.areaOfEffectRadius = factionEntity.areaOfEffectRadius;
+            minionController.shouldAutoSeekOutEnemies = factionEntity.shouldAutoSeekEnemies;
+        }
+
+        if (factionEntity is FactionBuilding)
+        {
+            FactionBuilding factionBuilding = factionEntity as FactionBuilding;
+            buildOffset = factionBuilding.buildOffset;
+            fullyBuilt = !factionBuilding.needsConstructing;
+            if (factionBuilding.needsConstructing) startingHP = 0;
+        }
+        else if (factionEntity is FactionUnit)
+        {
+            FactionUnit factionUnit = factionEntity as FactionUnit;
+            isHeavy = factionUnit.isHeavy;
+            if (minionController != null) minionController.canMoveWhileAttacking = factionUnit.canAttackWhileMoving;
+        }
+    }
+    private void Awake() //awake, networkspawn, start (dynamic)
+    {
+        InitializeEntityInfo();
         Initialize();
+    }
+    public override void OnNetworkSpawn()
+    { 
         if (lineIndicator != null)
         {
             lineIndicator.enabled = false;
@@ -255,10 +343,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         hitPoints.OnValueChanged += OnHitPointsChanged;
         damagedThreshold = (sbyte)(maxHP / 2);
-        rallyPoint = transform.position;
-        //SimplePlaySound(0);
-        Global.Instance.PlayClipAtPoint(sounds[0], transform.position, .5f); //play spawning sound
-        //AudioSource.PlayClipAtPoint(spawnSound, transform.position);
+        rallyPoint = transform.position;  
 
         if (targetIndicator != null)
         {
@@ -273,58 +358,18 @@ public class SelectableEntity : NetworkBehaviour
             hasRegisteredRallyMission = true;
             TryToRegisterRallyMission();
         }*/
+    }
+    private void PlaySpawnSound()
+    { 
+        if (sounds.Length > 0) Global.Instance.PlayClipAtPoint(sounds[0], transform.position, .5f); //play spawning sound
+    }
+    private void Start() //call stuff here so that network variables are valid (isSpawned)
+    {
+        PlaySpawnSound();
+        FixFogTeam();
         TryToRegisterRallyMission();
         SetHideFogTeam();
-        UpdateTeamRenderers();
-        FixFogTeam();
-    }
-    private void InitializeEntityInfo()
-    {
-        //set faction entity information
-        displayName = factionEntity.name;
-        desc = factionEntity.description;
-        maxHP = (short)factionEntity.maxHP;
-
-        spawnableUnits = factionEntity.spawnableUnits;
-        constructableBuildings = factionEntity.constructableBuildings;
-        usableAbilities = factionEntity.usableAbilities;
-        isKeystone = factionEntity.isKeystone;
-        isHarvester = factionEntity.isHarvester;
-        harvestCapacity = factionEntity.harvestCapacity;
-        spawnableAtOnce = factionEntity.spawnableAtOnce;
-        allowedUnfinishedInteractors = factionEntity.allowedUnfinishedInteractors;
-        allowedFinishedInteractors = factionEntity.allowedFinishedInteractors;
-
-        passengersAreTargetable = factionEntity.passengersAreTargetable;
-        acceptsHeavy = factionEntity.acceptsHeavy;
-
-        consumePopulationAmount = factionEntity.consumePopulationAmount;
-        raisePopulationLimitBy = factionEntity.raisePopulationLimitBy;
-        //DIFFERENTIATE BETWEEN BUILDING AND UNIT TYPES
-        //entityType = factionEntity.entityType;
-        depositType = factionEntity.depositType;
-        teamType = factionEntity.teamType;
-        selfHarvestableType = factionEntity.selfHarvestableType;
-        shouldHideInFog = factionEntity.shouldHideInFog;
-
-        if (factionEntity is FactionBuilding)
-        {
-            FactionBuilding factionBuilding = factionEntity as FactionBuilding;
-            buildOffset = factionBuilding.buildOffset;
-        }
-        else if (factionEntity is FactionUnit)
-        {
-            FactionUnit factionUnit = factionEntity as FactionUnit;
-            isHeavy = factionUnit.isHeavy;
-        }
-
-
-    }
-    private void Start()
-    {
-        InitializeEntityInfo();
-
-        Initialize();
+        UpdateTeamRenderers(); 
         //if (fogUnit != null) fogUnit.team = desiredTeamNumber;
         aiControlled = desiredTeamNumber < 0;
         if (isKeystone && Global.Instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
@@ -369,38 +414,7 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
         if (rallyVisual != null) rallyVisual.enabled = false;
-        if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allFactionEntities.Add(this);
-
-        switch (entityType) //determine if should be fullyBuilt
-        {
-            case EntityTypes.Melee:
-            case EntityTypes.Ranged:
-            case EntityTypes.Builder:
-            case EntityTypes.Transport:
-                fullyBuilt = true;
-                break;
-            case EntityTypes.ProductionStructure:
-            case EntityTypes.HarvestableStructure:
-            case EntityTypes.DefensiveGarrison:
-            case EntityTypes.Portal:
-            case EntityTypes.ExtendableWall:
-                fullyBuilt = false;
-                break;
-            default:
-                fullyBuilt = true;
-                break;
-        }
-    }
-    private void Initialize()
-    {
-        if (minionController == null) minionController = GetComponent<MinionController>();
-        if (fogUnit == null) fogUnit = GetComponent<FogOfWarUnit>();
-        allMeshes = GetComponentsInChildren<MeshRenderer>();
-        if (net == null) net = GetComponent<NetworkObject>();
-        if (obstacle == null) obstacle = GetComponentInChildren<DynamicGridObstacle>();
-        if (RVO == null) RVO = GetComponent<RVOController>();
-        if (physicalCollider == null) physicalCollider = GetComponent<Collider>();
-        if (rigid == null) rigid = GetComponent<Rigidbody>();
+        if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allFactionEntities.Add(this); 
     }
     private void TryToRegisterRallyMission()
     {
@@ -459,7 +473,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 case TargetedEffects.Targets.Self:
                     targetedEntities.Add(this);
-                    break; 
+                    break;
             }
             foreach (SelectableEntity target in targetedEntities)
             {
@@ -480,7 +494,7 @@ public class SelectableEntity : NetworkBehaviour
                             variableToChange = target.minionController.attackDuration;
                             secondVariable = target.minionController.impactTime;
                         }
-                        break; 
+                        break;
                 }
                 float attackAnimMultiplier = 1;
                 float moveSpeedMultiplier = 1;
@@ -523,7 +537,7 @@ public class SelectableEntity : NetworkBehaviour
                             target.minionController.impactTime = secondVariable;
                             target.minionController.animator.SetFloat("attackMultiplier", attackAnimMultiplier); //if we are halving, double animation speed
                         }
-                        break; 
+                        break;
                 }
                 TargetedEffects newEffect = new() //NECESSARY to prevent modifying original class
                 {
@@ -536,7 +550,7 @@ public class SelectableEntity : NetworkBehaviour
                 appliedEffects.Add(newEffect);
 
                 if (!UsedSameNameAbility(ability)) //if this unit has not used this ability already, mark it as used
-                { 
+                {
                     AbilityOnCooldown newAbility = new()
                     {
                         abilityName = ability.abilityName,
@@ -558,7 +572,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         return false;
     }
-    public List<AbilityOnCooldown> usedAbilities = new();
+    [HideInInspector] public List<AbilityOnCooldown> usedAbilities = new();
     private List<TargetedEffects> appliedEffects = new();
     private void UpdateUsedAbilities()
     {
@@ -594,7 +608,7 @@ public class SelectableEntity : NetworkBehaviour
                     minionController.animator.SetFloat("moveSpeedMultiplier", 1); //if we are halving, double animation speed
                 }
                 break;
-            case TargetedEffects.StatusEffect.AttackSpeed: 
+            case TargetedEffects.StatusEffect.AttackSpeed:
                 if (minionController != null)
                 {
                     minionController.attackDuration = minionController.defaultAttackDuration;
@@ -935,8 +949,9 @@ public class SelectableEntity : NetworkBehaviour
         RTSPlayer local = Global.Instance.localPlayer;
         foreach (SelectableEntity item in local.selectedEntities)
         {
-            if (item.entityType == EntityTypes.Builder)
+            if (item.canBuild)
             {
+                Debug.Log("requesting builder");
                 MinionController minion = item.GetComponent<MinionController>();
                 minion.SetBuildDestination(transform.position, this);
             }
@@ -1276,10 +1291,13 @@ public class SelectableEntity : NetworkBehaviour
     public void SimplePlaySound(byte id)
     {
         //fire locally 
-        AudioClip clip = sounds[id];
-        Global.Instance.PlayClipAtPoint(clip, transform.position, 0.1f);
-        //request server to send to other clients
-        RequestSoundServerRpc(id);
+        if (sounds.Length > 0)
+        { 
+            AudioClip clip = sounds[id];
+            Global.Instance.PlayClipAtPoint(clip, transform.position, 0.1f);
+            //request server to send to other clients
+            RequestSoundServerRpc(id);
+        }
     }
     [ServerRpc(RequireOwnership = false)]
     private void RequestSoundServerRpc(byte id)
@@ -1301,11 +1319,11 @@ public class SelectableEntity : NetworkBehaviour
         {
             // todo add ability to build multiple from one structure
             FactionUnit fac = buildQueue[0];
-            if (fac.timeCost > 0)
+            if (fac.spawnTimeCost > 0)
             {
-                fac.timeCost--;
+                fac.spawnTimeCost--;
             }
-            if (fac.timeCost <= 0 && consumePopulationAmount <= Global.Instance.localPlayer.maxPopulation - Global.Instance.localPlayer.population)
+            if (fac.spawnTimeCost <= 0 && consumePopulationAmount <= Global.Instance.localPlayer.maxPopulation - Global.Instance.localPlayer.population)
             { //spawn the unit
                 //Debug.Log("spawn");
 

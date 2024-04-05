@@ -13,6 +13,36 @@ MonoBehaviour:
   m_Name: Armory
   m_EditorClassIdentifier: 
   productionName: Armory
-  goldCost: 100
+  description: 
   prefabToSpawn: {fileID: 371321480321102268, guid: 4633e3a65da2d4c4bb36477e222ddc61, type: 3}
+  goldCost: 100
+  maxHP: 10
+  isKeystone: 0
+  consumePopulationAmount: 0
+  raisePopulationLimitBy: 0
+  shouldHideInFog: 1
+  sounds: []
+  teamType: 0
+  constructableBuildings: []
+  usableAbilities: []
+  depositType: 0
+  selfHarvestableType: 1
+  attackType: 0
+  damage: 1
+  directionalAttack: 0
+  attackRange: 1
+  attackDuration: 1
+  impactTime: 0.5
+  areaOfEffectRadius: 1
+  shouldAutoSeekEnemies: 0
+  spawnableUnits: []
+  spawnableAtOnce: 1
+  isHarvester: 0
+  harvestCapacity: 5
+  depositRange: 1
+  expandGarrisonOptions: 0
+  passengersAreTargetable: 0
+  acceptsHeavy: 0
   needsConstructing: 1
+  buildOffset: {x: 0, y: 0, z: 0}
+  extendable: 0

@@ -3,7 +3,14 @@ using UnityEngine;
 [System.Serializable]
 public class FactionBuilding : FactionEntity
 {
+    [Header ("Building Properties")]
     public bool needsConstructing = true;
-    public Vector3 buildOffset;
+    public Vector3 buildOffset = new Vector3(0.5f, 0, 0.5f);
+    public bool extendable = false; //should this building be placed in a line?
     //public GameObject linkedPrefab;
+
+    public enum BuildingTypes
+    {
+        Generic, //default  
+    }
 }

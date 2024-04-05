@@ -13,6 +13,36 @@ MonoBehaviour:
   m_Name: RichLich
   m_EditorClassIdentifier: 
   productionName: Rich Lich
+  description: 
   goldCost: 20
   prefabToSpawn: {fileID: 277787794319671239, guid: 27bf33d358ef0194aa8fa42cf69b6502, type: 3}
-  timeCost: 5
+  maxHP: 1000
+  isKeystone: 1
+  consumePopulationAmount: 0
+  raisePopulationLimitBy: 0
+  shouldHideInFog: 1
+  sounds: []
+  teamType: 0
+  spawnableUnits:
+  - {fileID: 11400000, guid: 04ae84b5d643fbc498358c09db111adb, type: 2}
+  constructableBuildings: []
+  usableAbilities: []
+  depositType: 1
+  selfHarvestableType: 1
+  isHarvester: 1
+  harvestCapacity: 1
+  spawnableAtOnce: 1
+  passengersAreTargetable: 0
+  acceptsHeavy: 0
+  attackType: 0
+  directionalAttack: 0
+  attackRange: 1
+  depositRange: 1
+  damage: 1
+  attackDuration: 1
+  impactTime: 0.5
+  areaOfEffectRadius: 1
+  shouldAutoSeekEnemies: 0
+  spawnTimeCost: 5
+  isHeavy: 0
+  canAttackWhileMoving: 0
