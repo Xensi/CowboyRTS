@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   productionName: Grave
   description: 
-  goldCost: 20
   prefabToSpawn: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
+  goldCost: 20
   maxHP: 10
   isKeystone: 0
   consumePopulationAmount: 0
@@ -23,24 +23,26 @@ MonoBehaviour:
   shouldHideInFog: 1
   sounds: []
   teamType: 0
-  spawnableUnits: []
   constructableBuildings: []
   usableAbilities: []
   depositType: 0
   selfHarvestableType: 1
-  isHarvester: 0
-  harvestCapacity: 5
-  spawnableAtOnce: 1
-  passengersAreTargetable: 0
-  acceptsHeavy: 0
   attackType: 0
+  damage: 1
   directionalAttack: 0
   attackRange: 1
-  depositRange: 1
-  damage: 1
   attackDuration: 1
   impactTime: 0.5
   areaOfEffectRadius: 1
   shouldAutoSeekEnemies: 0
+  spawnableUnits: []
+  spawnableAtOnce: 1
+  isHarvester: 0
+  harvestCapacity: 5
+  depositRange: 1
+  expandGarrisonOptions: 0
+  passengersAreTargetable: 0
+  acceptsHeavy: 0
   needsConstructing: 1
   buildOffset: {x: 0, y: 0, z: 0}
+  extendable: 0

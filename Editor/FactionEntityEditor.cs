@@ -59,10 +59,6 @@ public class FactionEntityEditor : Editor
 
         serializedObject.Update();
         EditorGUILayout.PropertyField(attackType);
-        EditorGUILayout.PropertyField(isHarvester);
-        EditorGUILayout.PropertyField(spawnableUnits);
-        EditorGUILayout.PropertyField(expandGarrisonOptions);
-
         if (attackType.intValue != 0)
         {
             EditorGUILayout.PropertyField(damage);
@@ -73,15 +69,19 @@ public class FactionEntityEditor : Editor
             EditorGUILayout.PropertyField(areaOfEffectRadius);
             EditorGUILayout.PropertyField(shouldAutoSeekEnemies);
         }
+        EditorGUILayout.PropertyField(isHarvester);
         if (isHarvester.boolValue == true)
         { 
             EditorGUILayout.PropertyField(harvestCapacity);
             EditorGUILayout.PropertyField(depositRange);
         }
+        EditorGUILayout.PropertyField(spawnableUnits);
         if (spawnableUnits.arraySize > 0)
         {
             EditorGUILayout.PropertyField(spawnableAtOnce);
         }
+
+        EditorGUILayout.PropertyField(expandGarrisonOptions);
         if (expandGarrisonOptions.boolValue == true)
         { 
             EditorGUILayout.PropertyField(passengersAreTargetable);

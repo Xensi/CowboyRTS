@@ -1,16 +1,10 @@
-//using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using Pathfinding;
 using Pathfinding.RVO;
-//using System.Linq;
 using FoW;
-//using UnityEngine.XR;
-//using static UnityEngine.GraphicsBuffer;
 using static TargetedEffects;
-//using Unity.VisualScripting;
-//using UnityEditor.Playables;
 public class SelectableEntity : NetworkBehaviour
 {
     [HideInInspector] public bool fakeSpawn = false;
@@ -49,7 +43,7 @@ public class SelectableEntity : NetworkBehaviour
         Portal,
         ExtendableWall
     }
-    public bool canBuild = false;
+    [HideInInspector] public bool canBuild = false;
     [HideInInspector] public bool canSpawn = false;
     public enum ResourceType
     {
@@ -109,7 +103,7 @@ public class SelectableEntity : NetworkBehaviour
     public EntityTypes entityType = EntityTypes.Melee;
     [HideInInspector]
     public bool isHeavy = false; //heavy units can't garrison into pallbearers
-    public bool fullyBuilt = true;
+    [HideInInspector] public bool fullyBuilt = true;
     [HideInInspector]
     public bool isKeystone = false;
     [HideInInspector] public int allowedInteractors = 1; //only relevant if this is a resource or deposit point
@@ -131,8 +125,8 @@ public class SelectableEntity : NetworkBehaviour
     public FactionUnit[] spawnableUnits;
     [HideInInspector]
     public FactionBuilding[] constructableBuildings;
-    [HideInInspector]
-    public FactionAbility[] usableAbilities;
+    //[HideInInspector]
+    public FactionAbility[] usableAbilities { get; set; }
 
     //[Header("Harvester Only")]
     [HideInInspector]
@@ -142,16 +136,14 @@ public class SelectableEntity : NetworkBehaviour
 
     //[Header("Resource Only")]
     [HideInInspector]
-    public ResourceType selfHarvestableType = ResourceType.None;
+    public ResourceType selfHarvestableType = ResourceType.None; 
 
-    [Header("Garrison Only")]
     public List<GarrisonablePosition> garrisonablePositions = new();
     [HideInInspector]
     public bool passengersAreTargetable = false;
     [HideInInspector]
     public bool acceptsHeavy = false;
 
-    [Header("Spawners Only")]
     public Transform positionToSpawnMinions; //used for buildings
 
     [Header("Aesthetic Settings")]
@@ -452,7 +444,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         for (int i = 0; i < usableAbilities.Length; i++)
         {
-            if (usableAbilities[i].abilityName == ability.name) return true; //if ability is in the used abilities list, then we still need to wait  
+            if (usableAbilities[i].abilityName == ability.abilityName) return true; //if ability is in the used abilities list, then we still need to wait  
         }
         return false;
     }
@@ -482,18 +474,21 @@ public class SelectableEntity : NetworkBehaviour
                 float secondVariable = 0;
                 switch (effect.status) //set variable to change;
                 {
-                    case TargetedEffects.StatusEffect.MoveSpeed:
+                    case StatusEffect.MoveSpeed:
                         if (target.minionController != null && target.minionController.ai != null)
                         {
                             variableToChange = target.minionController.ai.maxSpeed;
                         }
                         break;
-                    case TargetedEffects.StatusEffect.AttackSpeed:
+                    case StatusEffect.AttackSpeed:
                         if (target.minionController != null)
                         {
                             variableToChange = target.minionController.attackDuration;
                             secondVariable = target.minionController.impactTime;
                         }
+                        break;
+                    case StatusEffect.HP:
+                        variableToChange = target.hitPoints.Value;
                         break;
                 }
                 float attackAnimMultiplier = 1;
@@ -538,16 +533,35 @@ public class SelectableEntity : NetworkBehaviour
                             target.minionController.animator.SetFloat("attackMultiplier", attackAnimMultiplier); //if we are halving, double animation speed
                         }
                         break;
+                    case StatusEffect.HP:
+                        hitPoints.Value = (short)variableToChange;
+                        break;
+                    case StatusEffect.CancelInProgress:
+                        //if target is ghost, full refund
+                        //if construction in progress, half refund
+                        if (constructionBegun)
+                        {
+                            Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost/2);
+                        }
+                        else
+                        {
+                            Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost);
+                        }
+                        target.DestroyThis();
+                        break;
                 }
-                TargetedEffects newEffect = new() //NECESSARY to prevent modifying original class
+                if (effect.applyAsLingeringEffect)
                 {
-                    targets = effect.targets,
-                    status = effect.status,
-                    expirationTime = effect.expirationTime,
-                    operation = effect.operation,
-                    statusNumber = effect.statusNumber
-                };
-                appliedEffects.Add(newEffect);
+                    TargetedEffects newEffect = new() //NECESSARY to prevent modifying original class
+                    {
+                        targets = effect.targets,
+                        status = effect.status,
+                        expirationTime = effect.expirationTime,
+                        operation = effect.operation,
+                        statusNumber = effect.statusNumber
+                    };
+                    appliedEffects.Add(newEffect);
+                }
 
                 if (!UsedSameNameAbility(ability)) //if this unit has not used this ability already, mark it as used
                 {
@@ -572,7 +586,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         return false;
     }
-    [HideInInspector] public List<AbilityOnCooldown> usedAbilities = new();
+    public List<AbilityOnCooldown> usedAbilities = new();
     private List<TargetedEffects> appliedEffects = new();
     private void UpdateUsedAbilities()
     {
@@ -654,6 +668,10 @@ public class SelectableEntity : NetworkBehaviour
             alive = false;
             PrepareForEntityDestruction();
         }
+    }
+    public void DestroyThis()
+    {
+        PrepareForEntityDestruction();
     }
     private void DetectIfShouldUnghost()
     {
@@ -951,7 +969,7 @@ public class SelectableEntity : NetworkBehaviour
         {
             if (item.canBuild)
             {
-                Debug.Log("requesting builder");
+                //Debug.Log("requesting builder");
                 MinionController minion = item.GetComponent<MinionController>();
                 minion.SetBuildDestination(transform.position, this);
             }

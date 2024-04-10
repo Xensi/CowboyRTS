@@ -6,7 +6,8 @@ using System.Collections.Generic;
 [System.Serializable]
 public class FactionAbility : ScriptableObject
 {
-    public string abilityName = "Ability Name"; 
+    public string abilityName = "Ability Name";
+    public bool usableOnlyWhenBuilt = true;
     public float cooldownTime = 60; //used only if needsConstructing is false 
     public List<TargetedEffects> effectsToApply = new(); //effects to activate when this ability is used
 }
@@ -27,7 +28,7 @@ public class TargetedEffects //name, target, status effect
     }
     public enum StatusEffect
     {
-        MoveSpeed, AttackSpeed
+        MoveSpeed, AttackSpeed, HP, CancelInProgress
     }
     public enum Operation //how to apply status number
     {
@@ -35,7 +36,9 @@ public class TargetedEffects //name, target, status effect
     }
     public Targets targets = Targets.Self;
     public StatusEffect status = StatusEffect.MoveSpeed;
-    public float expirationTime = 5;
+    public bool applyAsLingeringEffect = true; //should effect be applied as lingering status?
+
+    public float expirationTime = 5; 
     public Operation operation = Operation.Set;
     public float statusNumber = 1;
 }

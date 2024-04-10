@@ -1254,7 +1254,7 @@ public class MinionController : NetworkBehaviour
     {
         Global.Instance.localPlayer.selectedEntities.Remove(selectableEntity);
         selectableEntity.Select(false);
-        state = State.Die;
+        SwitchState(State.Die); 
         ai.enabled = false;
         if (selectableEntity.RVO != null) selectableEntity.RVO.enabled = false;
         if (rayMod != null) rayMod.enabled = false;
@@ -1262,10 +1262,17 @@ public class MinionController : NetworkBehaviour
         Destroy(rigid);
         Destroy(col);
     }
+    /// <summary>
+    /// Tell this minion to go and construct a building. Clears obstacle.
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <param name="ent"></param>
     public void SetBuildDestination(Vector3 pos, SelectableEntity ent)
     {
         destination.Value = pos;
         selectableEntity.interactionTarget = ent;
+        lastState = State.Building;
+        SwitchState(State.WalkToInteractable);
     }
     #endregion
     #region DetectionFunctions

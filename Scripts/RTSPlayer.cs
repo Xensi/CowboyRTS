@@ -10,6 +10,7 @@ using FoW;
 using UnityEngine.Rendering;
 using System;
 using UnityEditor.Playables;
+using UnityEditor.ShaderGraph.Internal;
 
 public class RTSPlayer : NetworkBehaviour
 {
@@ -475,7 +476,7 @@ public class RTSPlayer : NetworkBehaviour
         /*FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
         Debug.Log(fow.GetFogValue(cursorWorldPosition));*/
         if (!active) return;
-        UpdatePlacement();
+        UpdatePlacementBlockedStatus();
         UpdateGridVisual();
         DetectHotkeys();
         CameraMove();
@@ -676,14 +677,14 @@ public class RTSPlayer : NetworkBehaviour
                 break;
             case LinkedState.PlacingStart:
                 linkedState = LinkedState.PlacingEnd;
-                startWallPosition = cursorWorldPosition; 
+                startWallPosition = cursorWorldPosition;
                 Destroy(followCursorObject);
                 break;
-            case LinkedState.PlacingEnd: 
+            case LinkedState.PlacingEnd:
                 int cost = CalculateFillCost(startWallPosition, cursorWorldPosition, building);
                 if (gold >= cost)
                 {
-                    gold -= cost; 
+                    gold -= cost;
                     WallFill(building);
                     StopPlacingBuilding();
                 }
@@ -695,7 +696,7 @@ public class RTSPlayer : NetworkBehaviour
     private void NormalPlaceBuilding(FactionBuilding building)
     {
         if (gold < building.goldCost) return;
-        gold -= building.goldCost; 
+        gold -= building.goldCost;
         GenericSpawnMinion(cursorWorldPosition, building, this);
         SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
         TellSelectedToBuild(last);
@@ -850,10 +851,10 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
         Debug.Log(realCost);
-        return realCost; 
+        return realCost;
     }
     private GameObject PlaceWallGhost(Vector3 pos, FactionBuilding building, bool blocked = false)
-    { 
+    {
         GameObject build = building.prefabToSpawn.gameObject;
         GameObject spawn = Instantiate(build, pos, Quaternion.Euler(0, 180, 0)); //spawn locally  
         spawn.layer = 0; //don't count as entity
@@ -880,7 +881,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             colliders[i].isTrigger = true;
         }
-        return spawn; 
+        return spawn;
     }
     private void WallFill(FactionBuilding building)
     {
@@ -939,14 +940,32 @@ public class RTSPlayer : NetworkBehaviour
         }
         wallGhosts.Clear();
     }
-    public void UpdatePlacement()
+    public void UpdatePlacementBlockedStatus()
     {
-        placementBlocked = Physics.CheckBox(cursorWorldPosition, buildOffset, Quaternion.identity, entityLayer, QueryTriggerInteraction.Ignore);
-
+        //float maxDiff = 0.01f;
         FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
+        /*if (Mathf.Abs(cursorWorldPosition.y - yInt) > maxDiff) // blocked if not near integer height
+        {
+            placementBlocked = true;
+        }*/
         if (fow.GetFogValue(cursorWorldPosition) > 0.1f * 255)
         {
             placementBlocked = true;
+        }
+        else
+        {
+            if (onRamp)
+            {
+                placementBlocked = true;
+            }
+            else
+            {
+                float sides = .48f;
+                float height = .5f;
+                Vector3 halfExtents = new Vector3(sides, height, sides);
+                Vector3 center = new Vector3(cursorWorldPosition.x, cursorWorldPosition.y + height, cursorWorldPosition.z);
+                placementBlocked = Physics.CheckBox(center, halfExtents, Quaternion.identity, entityLayer, QueryTriggerInteraction.Ignore);
+            }
         }
 
         if (placementBlocked != oldPlacement)
@@ -954,7 +973,6 @@ public class RTSPlayer : NetworkBehaviour
             oldPlacement = placementBlocked;
             UpdatePlacementMeshes();
         }
-
     }
     private void UpdatePlacementMeshes()
     {
@@ -979,6 +997,7 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
     }
+    bool onRamp = false;
     private void GetMouseWorldPosition()
     {
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
@@ -989,12 +1008,43 @@ public class RTSPlayer : NetworkBehaviour
             _gridPosition = grid.WorldToCell(_mousePosition);
             //cursorWorldPosition = grid.CellToWorld(_gridPosition) + _offset;
             cursorWorldPosition = grid.CellToWorld(_gridPosition) + buildOffset;
-            Debug.DrawRay(hit.point, transform.up, Color.red, 1);
-            Debug.DrawRay(cursorWorldPosition, transform.up, Color.green, 1);
+
+            int use = 0;
+            //first check if hit position is very close to integer
+            int checkAgainst = Mathf.RoundToInt(hit.point.y);
+            if (Mathf.Abs(checkAgainst - hit.point.y) < 0.01f) //
+            {
+                use = checkAgainst;
+            }
+            else
+            {
+                use = Mathf.CeilToInt(hit.point.y);
+            }
+
+            float buffer = 0.5f;
+            cursorWorldPosition = new Vector3(cursorWorldPosition.x, use, cursorWorldPosition.z);
+            Vector3 test = new Vector3(cursorWorldPosition.x, cursorWorldPosition.y + buffer, cursorWorldPosition.z);
+            if (Physics.Raycast(test, Vector3.down, out RaycastHit rampHit, Mathf.Infinity, groundLayer))
+            {
+                float distance = Mathf.Abs(test.y - rampHit.point.y);
+                //Debug.Log(distance);
+                onRamp = distance > 0.01f + buffer || distance < buffer - 0.01f;
+                if (onRamp)
+                {
+                    Debug.DrawRay(test, -transform.up, Color.red, distance);
+                }
+                else
+                {
+                    Debug.DrawRay(test, -transform.up, Color.green, distance);
+                }
+            }
+
+            //Debug.DrawRay(hit.point, transform.up, Color.red, 1);
+            //Debug.DrawRay(cursorWorldPosition, transform.up, Color.green, 1);
             //print(hit.point + " " + cursorWorldPosition);
             if (followCursorObject != null)
             {
-                followCursorObject.transform.position = new Vector3(cursorWorldPosition.x, hit.point.y, cursorWorldPosition.z);// + new Vector3(0, 5, 0);
+                followCursorObject.transform.position = cursorWorldPosition;//new Vector3(cursorWorldPosition.x, hit.point.y, cursorWorldPosition.z);// + new Vector3(0, 5, 0);
             }
         }
     }
@@ -1270,12 +1320,17 @@ public class RTSPlayer : NetworkBehaviour
         {
             Debug.LogError("a GUI element needs to be assigned.");
         }
-    } 
+    }
     private List<FactionBuilding> availableConstructionOptions = new();
-    private List<FactionAbility> availableAbilities = new();
+    [SerializeField] private List<FactionAbility> availableAbilities = new();
     private List<FactionUnit> availableUnitSpawns = new();
-    private void UpdateButtonsFromSelectedUnits() //update button abilities
-    { 
+
+
+    /// <summary>
+    /// Update button abilities displayed based on selected units.
+    /// </summary>
+    private void UpdateButtonsFromSelectedUnits()
+    {
         availableConstructionOptions.Clear();
         availableAbilities.Clear();
         availableUnitSpawns.Clear();
@@ -1284,27 +1339,31 @@ public class RTSPlayer : NetworkBehaviour
             //show gui elements based on unit type selected
             foreach (SelectableEntity entity in selectedEntities)
             {
-                if (!entity.fullyBuilt || !entity.net.IsSpawned || entity == null) //if not built or spawned, skip
+                if (entity == null! || !entity.net.IsSpawned || entity.factionEntity == null) //if not built or spawned, skip
                 {
                     continue;
                 }
                 //get abilities
                 foreach (FactionAbility abilityOption in entity.usableAbilities)
                 {
-                    if (!availableAbilities.Contains(abilityOption)) availableAbilities.Add(abilityOption);
+                    if (!abilityOption.usableOnlyWhenBuilt || entity.fullyBuilt)
+                    {
+                        if (!availableAbilities.Contains(abilityOption)) availableAbilities.Add(abilityOption);
+                    }
                 }
+                if (!entity.fullyBuilt) continue;
                 //get spawnable units
                 foreach (FactionUnit unitOption in entity.spawnableUnits)
-                { 
+                {
                     if (!availableUnitSpawns.Contains(unitOption)) availableUnitSpawns.Add(unitOption);
                 }
                 //get constructable buildings
                 foreach (FactionBuilding buildingOption in entity.constructableBuildings)
                 {
                     if (!availableConstructionOptions.Contains(buildingOption)) availableConstructionOptions.Add(buildingOption);
-                } 
+                }
             }
-        }  
+        }
         //enable a button for each indices 
         for (byte i = 0; i < Global.Instance.productionButtons.Count; i++)
         {
@@ -1312,7 +1371,7 @@ public class RTSPlayer : NetworkBehaviour
             Button button = Global.Instance.productionButtons[i];
             button.gameObject.SetActive(true);
             TMP_Text text = button.GetComponentInChildren<TMP_Text>();
-            button.onClick.RemoveAllListeners(); 
+            button.onClick.RemoveAllListeners();
 
             if (i < availableAbilities.Count) //abilities
             {
@@ -1322,8 +1381,10 @@ public class RTSPlayer : NetworkBehaviour
                 float cooldown = 999;
                 foreach (SelectableEntity entity in selectedEntities)
                 {
+                    //Debug.Log(entity.name);
                     if (entity.CanUseAbility(ability)) //if this entity can use the ability
                     {
+                        //Debug.Log("can use ability" + ability.name);
                         bool foundAbility = false;
                         for (int j = 0; j < entity.usedAbilities.Count; j++) //find the ability and set the cooldown
                         {
@@ -1331,7 +1392,7 @@ public class RTSPlayer : NetworkBehaviour
                             {
                                 foundAbility = true;
                                 if (entity.usedAbilities[j].cooldownTime < cooldown) //is the cooldown lower than the current cooldown?
-                                { 
+                                {
                                     cooldown = entity.usedAbilities[j].cooldownTime;
                                     //Debug.Log("found ability");
                                 }
@@ -1339,17 +1400,19 @@ public class RTSPlayer : NetworkBehaviour
                             }
                         }
                         if (foundAbility == false) cooldown = 0;
+
+                        //Debug.Log("found result: " + foundAbility);
                     }
                 }
                 if (cooldown <= 0)
-                { 
+                {
                     text.text = ability.abilityName;
                 }
                 else
-                { 
+                {
                     text.text = ability.abilityName + ": " + Mathf.RoundToInt(cooldown);
                 }
-                button.interactable = cooldown <= 0; 
+                button.interactable = cooldown <= 0;
             }
             else if (i < availableAbilities.Count + availableUnitSpawns.Count) //spawns
             {
@@ -1363,12 +1426,12 @@ public class RTSPlayer : NetworkBehaviour
                 FactionBuilding fac = availableConstructionOptions[i - availableAbilities.Count - availableUnitSpawns.Count];
                 button.interactable = gold >= fac.goldCost;
                 text.text = fac.productionName + ": " + fac.goldCost + "g";
-                button.onClick.AddListener(delegate { HoverBuild(fac); }); 
+                button.onClick.AddListener(delegate { HoverBuild(fac); });
             }
             else
-            { 
+            {
                 Global.Instance.productionButtons[i].gameObject.SetActive(false);
-            } 
+            }
         }
     }
     /// <summary>
@@ -1378,20 +1441,21 @@ public class RTSPlayer : NetworkBehaviour
     private void UseAbility(FactionAbility ability)
     {
         if (selectedEntities.Count > 0) //at least one unit selected
-        { 
+        {
             foreach (SelectableEntity entity in selectedEntities)
             {
                 //skip if not built, not spawned, n
-                if (EntityCanUseAbility(entity, ability)) 
+                if (EntityCanUseAbility(entity, ability))
                 {
                     entity.UseAbility(ability);
-                } 
+                }
             }
         }
     }
     private bool EntityCanUseAbility(SelectableEntity entity, FactionAbility ability)
     {
-        return (entity != null && entity.fullyBuilt && entity.net.IsSpawned && entity.alive && entity.usableAbilities.Contains(ability)
+        return (entity != null && (entity.fullyBuilt || !ability.usableOnlyWhenBuilt) && entity.net.IsSpawned
+            && entity.alive && entity.usableAbilities.Contains(ability)
             && entity.AbilityOffCooldown(ability));
     }
     public void UpdateBuildQueue()
@@ -1425,6 +1489,10 @@ public class RTSPlayer : NetworkBehaviour
         text.text = fac.productionName + ": " + fac.spawnTimeCost + "s";
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(delegate { DequeueProductionOrder(i); });
+    }
+    public void AddGold(int count)
+    {
+        gold += count;
     }
     public void DequeueProductionOrder(int index = 0) //on click remove thing from queue and refund gold
     {
@@ -1476,8 +1544,8 @@ public class RTSPlayer : NetworkBehaviour
     private void HoverBuild(FactionBuilding building)
     {
         mouseState = MouseState.ReadyToPlace;
-        placementBlocked = false; 
-        buildingToPlace = building; 
+        placementBlocked = false;
+        buildingToPlace = building;
         GameObject build = building.prefabToSpawn;
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn ghost
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();

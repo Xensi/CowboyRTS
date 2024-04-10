@@ -148,6 +148,10 @@ PrefabInstance:
       value: Gold Ore
       objectReference: {fileID: 0}
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: rallyVisual
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: resourceType
       value: 0
       objectReference: {fileID: 0}
@@ -262,7 +266,8 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 7884046691171381629, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
     - {fileID: 4082303753784431905, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 8935554887271392799, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 5541063728032177516, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       insertIndex: -1

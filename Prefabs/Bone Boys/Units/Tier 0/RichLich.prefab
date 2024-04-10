@@ -473,7 +473,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4126868118260038068, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 532768403
+      value: 1029641217
       objectReference: {fileID: 0}
     - target: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Name
@@ -849,7 +849,7 @@ Animator:
   m_GameObject: {fileID: 6847384960839190530}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
-  m_Controller: {fileID: 22100000, guid: cf411ba69fc70204db097fb5dafbd940, type: 2}
+  m_Controller: {fileID: 22100000, guid: 5a5cc71431760714581b959e87527a7b, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
