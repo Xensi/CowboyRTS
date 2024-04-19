@@ -102,7 +102,7 @@ public class MinionController : NetworkBehaviour
     //private readonly int delay = 0;
     [Header("Self-Destruct Only")]
     [HideInInspector] public float areaOfEffectRadius = 1; //ignore if not selfdestructer
-    [HideInInspector] public State state = State.Spawn;
+    public State state = State.Spawn;
     [HideInInspector] public SelectableEntity.RallyMission givenMission = SelectableEntity.RallyMission.None;
     [HideInInspector] public Vector3 rallyTarget;
     #endregion
@@ -706,6 +706,10 @@ public class MinionController : NetworkBehaviour
             SetDestination(target);
         }
     }
+    public void ClearGivenMission()
+    {
+        //givenMission = SelectableEntity.RallyMission.None;
+    }
     private void OwnerUpdateState()
     {
         switch (state)
@@ -730,7 +734,7 @@ public class MinionController : NetworkBehaviour
 
                 if (selectableEntity.occupiedGarrison == null) //if not in garrison
                 {
-                    FollowGivenMission();
+                    FollowGivenMission(); //if we have a rally mission, attempt to do it
                     AutoSeekEnemies();
                 }
                 else
@@ -2086,6 +2090,7 @@ public class MinionController : NetworkBehaviour
         {
             if (selectableEntity.harvestedResourceAmount < selectableEntity.harvestCapacity) //we could still harvest more
             {
+                Debug.Log("Harvesting");
                 lastCommand.Value = CommandTypes.Harvest;
                 selectableEntity.interactionTarget = select;
                 SwitchState(State.WalkToInteractable);
@@ -2093,6 +2098,7 @@ public class MinionController : NetworkBehaviour
             }
             else
             {
+                Debug.Log("Depositing");
                 lastCommand.Value = CommandTypes.Deposit;
                 SwitchState(State.FindInteractable);
                 lastState = State.Depositing;
@@ -2108,9 +2114,9 @@ public class MinionController : NetworkBehaviour
     }
     public void CommandBuildTarget(SelectableEntity select)
     {
-        if (selectableEntity.canBuild)
+        if (selectableEntity.CanProduceUnits())
         {
-            Debug.Log("can build");
+            //Debug.Log("can build");
             lastCommand.Value = CommandTypes.Build;
             selectableEntity.interactionTarget = select;
             SwitchState(State.WalkToInteractable);

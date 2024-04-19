@@ -15,7 +15,8 @@ public class FactionEntity : ScriptableObject
     public int raisePopulationLimitBy = 0;
     public bool shouldHideInFog = true;
     public AudioClip[] sounds;
-    public SelectableEntity.TeamBehavior teamType = SelectableEntity.TeamBehavior.OwnerTeam;  
+    public SelectableEntity.TeamBehavior teamType = SelectableEntity.TeamBehavior.OwnerTeam;
+    //public SelectableEntity.EntityTypes entityType = SelectableEntity.EntityTypes.Generic;
 
     public FactionBuilding[] constructableBuildings;
     public FactionAbility[] usableAbilities;

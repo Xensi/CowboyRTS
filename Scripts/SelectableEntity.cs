@@ -43,8 +43,6 @@ public class SelectableEntity : NetworkBehaviour
         Portal,
         ExtendableWall
     }
-    [HideInInspector] public bool canBuild = false;
-    [HideInInspector] public bool canSpawn = false;
     public enum ResourceType
     {
         Gold, None
@@ -202,6 +200,14 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
+    public bool CanProduceUnits()
+    {
+        return spawnableUnits.Length > 0;
+    }
+    public bool CanConstruct()
+    {
+        return constructableBuildings.Length > 0;
+    }
     private void Initialize()
     {
         if (minionController == null) minionController = GetComponent<MinionController>();
@@ -247,15 +253,6 @@ public class SelectableEntity : NetworkBehaviour
         selfHarvestableType = factionEntity.selfHarvestableType;
         shouldHideInFog = factionEntity.shouldHideInFog;
         sounds = factionEntity.sounds;
-
-        if (factionEntity.constructableBuildings.Length > 0)
-        {
-            canBuild = true;
-        }
-        if (factionEntity.spawnableUnits.Length > 0)
-        {
-            canSpawn = true;
-        }
 
         if (minionController != null)
         {
@@ -967,7 +964,7 @@ public class SelectableEntity : NetworkBehaviour
         RTSPlayer local = Global.Instance.localPlayer;
         foreach (SelectableEntity item in local.selectedEntities)
         {
-            if (item.canBuild)
+            if (item.CanConstruct())
             {
                 //Debug.Log("requesting builder");
                 MinionController minion = item.GetComponent<MinionController>();
