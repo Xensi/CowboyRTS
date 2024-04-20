@@ -47,8 +47,9 @@ public class Global : NetworkBehaviour
     public List<AITeamController> aiTeamControllers = new();
     public int maxMapSize = 25; //radius
 
-    [SerializeField] public Camera mainCam;
-    [SerializeField] public Camera lineCam;
+    //[SerializeField] public Camera mainCam;
+    //[SerializeField] public Camera lineCam;
+    public Camera[] cams;
 
     private void Awake()
     {

@@ -762,7 +762,15 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-
+    public bool IsMelee()
+    {
+        float maxMeleeRange = 2;
+        if (minionController != null && minionController.attackRange <= maxMeleeRange)
+        {
+            return true;
+        }
+        return false;
+    }
     [ServerRpc]
     public void ChangeHitPointsServerRpc(sbyte value)
     {
@@ -872,17 +880,17 @@ public class SelectableEntity : NetworkBehaviour
                 {
                     item.passenger = newPassenger;
                     //newPassenger.transform.parent = item.transform;
-                    newPassenger.selectableEntity.occupiedGarrison = this;
+                    newPassenger.entity.occupiedGarrison = this;
                     if (IsOwner)
                     {
-                        newPassenger.selectableEntity.isTargetable.Value = passengersAreTargetable;
+                        newPassenger.entity.isTargetable.Value = passengersAreTargetable;
                         /*if (newPassenger.minionNetwork != null)
                         {
                             newPassenger.minionNetwork.verticalPosition.Value = item.transform.position.y;
                         }*/
                     }
                     newPassenger.col.isTrigger = true;
-                    Global.Instance.localPlayer.DeselectSpecific(newPassenger.selectableEntity);
+                    Global.Instance.localPlayer.DeselectSpecific(newPassenger.entity);
                     //newPassenger.minionNetwork.positionDifferenceThreshold = .1f;
                     //newPassenger.minionNetwork.ForceUpdatePosition(); //update so that passengers are more in the correct y-position
                     break;
@@ -898,18 +906,18 @@ public class SelectableEntity : NetworkBehaviour
             {
                 item.passenger = null;
                 //exiting.transform.parent = null;
-                exiting.selectableEntity.occupiedGarrison = null;
+                exiting.entity.occupiedGarrison = null;
                 if (IsOwner)
                 {
-                    exiting.selectableEntity.isTargetable.Value = true;
-                    exiting.selectableEntity.PlaceOnGround();
+                    exiting.entity.isTargetable.Value = true;
+                    exiting.entity.PlaceOnGround();
                     if (IsServer)
                     {
-                        exiting.selectableEntity.PlaceOnGroundClientRpc();
+                        exiting.entity.PlaceOnGroundClientRpc();
                     }
                     else
                     {
-                        exiting.selectableEntity.PlaceOnGroundServerRpc();
+                        exiting.entity.PlaceOnGroundServerRpc();
                     }
 
                     /*if (exiting.minionNetwork != null) exiting.minionNetwork.verticalPosition.Value = 0;*/
@@ -1216,6 +1224,10 @@ public class SelectableEntity : NetworkBehaviour
         GameObject game = obj;
         //Destroy(game);
         net.Despawn(game);
+    } 
+    public bool IsHarvestable()
+    {
+        return selfHarvestableType != ResourceType.None; 
     }
     public void SetRally()
     {
@@ -1258,8 +1270,8 @@ public class SelectableEntity : NetworkBehaviour
                     }
                 }
                 else if (target.teamType == TeamBehavior.FriendlyNeutral)
-                {
-                    if (target.entityType == EntityTypes.HarvestableStructure)
+                { 
+                    if (target.IsHarvestable())
                     {
                         rallyMission = RallyMission.Harvest;
                         rallyTarget = target;

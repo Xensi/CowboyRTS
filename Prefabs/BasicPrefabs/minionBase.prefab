@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5979901183641035642}
   - component: {fileID: 555440906972586300}
-  m_Layer: 10
+  m_Layer: 7
   m_Name: line
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -41,7 +41,7 @@ LineRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1559538758085730787}
   m_Enabled: 0
-  m_CastShadows: 1
+  m_CastShadows: 0
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
   m_StaticShadowCaster: 0
@@ -73,7 +73,7 @@ LineRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: -1
   m_Positions:
   - {x: 0, y: 0, z: 0}
   m_Parameters:
@@ -193,7 +193,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2641155720
+  GlobalObjectIdHash: 56881033
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -217,6 +217,7 @@ MonoBehaviour:
   fakeSpawn: 0
   isTargetable:
     m_InternalValue: 0
+  factionEntity: {fileID: 0}
   minionController: {fileID: 0}
   selected: 0
   net: {fileID: 4126868118260038068}
@@ -238,20 +239,18 @@ MonoBehaviour:
   desc: desc
   hitPoints:
     m_InternalValue: 0
-  startingHP: 10
   maxHP: 10
   depositType: 0
-  teamBehavior: 0
-  type: 3
+  teamType: 0
+  entityType: 1
   isHeavy: 0
   fullyBuilt: 1
   isKeystone: 0
+  allowedInteractors: 999
   buildOffset: {x: 0.5, y: 0, z: 0.5}
   spawnableAtOnce: 1
   spawnableUnits: []
   constructableBuildings: []
-  usableAbilities: []
-  allowedInteractors: 999
   isHarvester: 0
   harvestCapacity: 10
   selfHarvestableType: 1
@@ -279,6 +278,7 @@ MonoBehaviour:
   desiredTeamNumber: 0
   clientIDToSpawnUnder: 0
   aiControlled: 0
+  usedAbilities: []
   fogUnit: {fileID: 0}
   visibleInFog: 0
   oldVisibleInFog: 0
@@ -299,7 +299,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lastState: 0
-  selectableEntity: {fileID: 0}
+  entity: {fileID: 0}
   attackMoving: 0
   orderedDestination: {x: 0, y: 0, z: 0}
   ai: {fileID: 0}
@@ -316,7 +316,10 @@ MonoBehaviour:
   damage: 1
   attackDuration: 1
   impactTime: 0.5
-  selfDestructAreaOfEffect: 1
+  defaultMoveSpeed: 0
+  defaultAttackDuration: 0
+  defaultImpactTime: 0
+  areaOfEffectRadius: 1
   state: 10
   givenMission: 0
   rallyTarget: {x: 0, y: 0, z: 0}
@@ -324,7 +327,6 @@ MonoBehaviour:
     m_InternalValue: {x: 0, y: 0, z: 0}
   destination:
     m_InternalValue: {x: 0, y: 0, z: 0}
-  defaultMoveSpeed: 0
   shouldAutoSeekOutEnemies: 1
   lastCommand:
     m_InternalValue: 0
@@ -649,7 +651,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 0e3bdc84c36d08045867157da426aea5, type: 3}
       propertyPath: m_Layer
-      value: 7
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 0e3bdc84c36d08045867157da426aea5, type: 3}
       propertyPath: m_IsActive
@@ -756,7 +758,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 0e3bdc84c36d08045867157da426aea5, type: 3}
       propertyPath: m_Layer
-      value: 7
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 0e3bdc84c36d08045867157da426aea5, type: 3}
       propertyPath: m_IsActive

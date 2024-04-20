@@ -12,6 +12,7 @@ using System;
 using UnityEditor.Playables;
 using UnityEditor.ShaderGraph.Internal;
 using Unity.Burst.CompilerServices;
+using static UnityEditor.Progress;
 
 public class RTSPlayer : NetworkBehaviour
 {
@@ -48,6 +49,7 @@ public class RTSPlayer : NetworkBehaviour
     public MouseState mouseState = MouseState.Waiting;
     public LayerMask groundLayer;
     public LayerMask entityLayer;
+    private LayerMask blockingLayer;
     public SelectableEntity lastSpawnedEntity;
     public bool placementBlocked = false;
     private GameObject followCursorObject;
@@ -66,9 +68,9 @@ public class RTSPlayer : NetworkBehaviour
     public int population = 0;
     public int maxPopulation = 100;
     public LayerMask placementGhost;
-    public LayerMask gameLayer;
+    public LayerMask gameLayer; 
     public Camera mainCam;
-    public Camera lineCam;
+    private Camera[] cams;
     public void LoseGame()
     {
         inTheGame.Value = false;
@@ -76,15 +78,16 @@ public class RTSPlayer : NetworkBehaviour
     void Start()
     {
         groundLayer = LayerMask.GetMask("Ground");
+        blockingLayer = LayerMask.GetMask("Entity", "Obstacle");
         entityLayer = LayerMask.GetMask("Entity");
         gameLayer = LayerMask.GetMask("Entity", "Obstacle", "Ground");
         placementGhost = LayerMask.GetMask("PlacementGhost");
         //_offset = new Vector3(0.5f, 0, .5f);
         _offset = new Vector3(0.25f, 0, .25f);
-        //_offset = new Vector3(0, 0, 0);
-        mainCam = Global.Instance.mainCam;
-        lineCam = Global.Instance.lineCam;
-        camParent = mainCam.transform.parent.transform;
+        //_offset = new Vector3(0, 0, 0); 
+        cams = Global.Instance.cams;
+        mainCam = cams[0];
+        camParent = cams[0].transform.parent.transform;
         meshes = new MeshRenderer[1];
         if (IsOwner)
         {
@@ -150,10 +153,11 @@ public class RTSPlayer : NetworkBehaviour
     {
         Vector3 motion = new(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
         camParent.transform.Translate(camSpeed * Time.deltaTime * motion); //reordered operands for better performance
-        //from 0 to 10
-        mainCam.orthographicSize -= Input.mouseScrollDelta.y * camScroll;
-        mainCam.orthographicSize = Mathf.Clamp(mainCam.orthographicSize, 1, 10);
-        lineCam.orthographicSize = mainCam.orthographicSize;
+        //from 0 to 10 
+        for (int i = 0; i < cams.Length; i++)
+        {
+            cams[i].orthographicSize = Mathf.Clamp(cams[i].orthographicSize - Input.mouseScrollDelta.y * camScroll, 1, 10); ; 
+        }
     }
     public enum ActionType
     {
@@ -210,10 +214,7 @@ public class RTSPlayer : NetworkBehaviour
                         { //target is passenger of garrison, then enter garrison
                             actionType = ActionType.Garrison;
                             select = select.occupiedGarrison;
-                        }
-                        /*else if (select.type == SelectableEntity.EntityTypes.Portal)
-                        {
-                        }*/
+                        } 
                     }
                     else //enemy
                     { //try to target this enemy specifically
@@ -223,14 +224,9 @@ public class RTSPlayer : NetworkBehaviour
                 else if (select.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral)
                 {
                     if (select.selfHarvestableType != SelectableEntity.ResourceType.None)
-                    { 
+                    {
                         actionType = ActionType.Harvest;
-                    }
-                    /*if (select.entityType == SelectableEntity.EntityTypes.HarvestableStructure)
-                    { //harvest target
-                        actionType = ActionType.Harvest;
-                        Debug.Log("HARVEST");
-                    }*/
+                    } 
                 }
             }
             else
@@ -386,12 +382,13 @@ public class RTSPlayer : NetworkBehaviour
         DeselectAll();
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item != null && item.minionController.attackType != MinionController.AttackType.None && !IsEntityGarrrisoned(item))
+            if (item != null && item.minionController != null &&
+                item.minionController.attackType != MinionController.AttackType.None && !IsEntityGarrrisoned(item))
             {
                 TrySelectEntity(item);
             }
         }
-    } 
+    }
     private void SelectAllProduction()
     {
         DeselectAll();
@@ -510,7 +507,7 @@ public class RTSPlayer : NetworkBehaviour
                         break;
                     case MouseState.ReadyToPlace:
                         if (!placementBlocked)
-                        { 
+                        {
                             PlaceBuilding(buildingToPlace);
                         }
                         break;
@@ -575,7 +572,7 @@ public class RTSPlayer : NetworkBehaviour
         RectTransform SelectionBox = Global.Instance.selectionRect;
         Bounds bounds = new(SelectionBox.anchoredPosition, SelectionBox.sizeDelta);
         //Debug.Log(bounds.size.magnitude);
-        if (bounds.size.magnitude > 20f)
+        if (bounds.size.magnitude > 20f) //make sure the selection box is sufficiently large
         {
             if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
             {
@@ -593,62 +590,48 @@ public class RTSPlayer : NetworkBehaviour
                         evaluation.Add(item);
                     }
                 }
-            }
-            int military = 0;
-            int production = 0;
-            int builder = 0;
+            } 
+            List<SelectableEntity> militaryList = new();
+            List<SelectableEntity> builderList = new();
+            List<SelectableEntity> productionList = new();
             foreach (SelectableEntity item in evaluation)
-            {
-                switch (item.entityType)
+            { 
+                if (item.CanConstruct())
                 {
-                    case SelectableEntity.EntityTypes.Melee:
-                    case SelectableEntity.EntityTypes.Ranged:
-                    case SelectableEntity.EntityTypes.Transport:
-                        military++;
-                        break;
-                    case SelectableEntity.EntityTypes.ProductionStructure:
-                        production++;
-                        break;
-                    case SelectableEntity.EntityTypes.Builder:
-                        builder++;
-                        break;
-                    case SelectableEntity.EntityTypes.HarvestableStructure:
-                        break;
-                    case SelectableEntity.EntityTypes.DefensiveGarrison:
-                        break;
-                    case SelectableEntity.EntityTypes.Portal:
-                        break;
-                    case SelectableEntity.EntityTypes.ExtendableWall:
-                        break;
-                    default:
-                        break;
+                    builderList.Add(item);
+                }
+                else if (item.minionController != null && item.minionController.attackType != MinionController.AttackType.None)
+                {
+                    militaryList.Add(item);
+                }
+                else if (item.CanProduceUnits())
+                {
+                    productionList.Add(item);
                 }
             }
-            SelectableEntity.EntityTypes privileged1 = SelectableEntity.EntityTypes.Melee;
-            SelectableEntity.EntityTypes privileged2 = SelectableEntity.EntityTypes.Ranged;
-            SelectableEntity.EntityTypes privileged3 = SelectableEntity.EntityTypes.Transport;
-            if (military > 0 || builder > 0) //these take precedent over production always
+            int mil = militaryList.Count;
+            int build = builderList.Count;
+            int prod = productionList.Count;
+            List<SelectableEntity> useList = new();
+            if (mil > 0 || build > 0) //then ignore prod
             {
-                if (military < builder)
+                if (mil > build)
                 {
-                    privileged1 = SelectableEntity.EntityTypes.Builder;
-                    privileged2 = SelectableEntity.EntityTypes.Builder;
-                    privileged3 = SelectableEntity.EntityTypes.Builder;
+                    useList = militaryList;
+                }
+                else
+                {
+                    useList = builderList;
                 }
             }
             else
             {
-                privileged1 = SelectableEntity.EntityTypes.ProductionStructure;
-                privileged2 = SelectableEntity.EntityTypes.ProductionStructure;
-                privileged3 = SelectableEntity.EntityTypes.ProductionStructure;
+                useList = productionList;
             }
-            foreach (SelectableEntity item in evaluation)
+
+            foreach (SelectableEntity item in useList)
             {
-                if ((item.entityType == privileged1 || item.entityType == privileged2 || item.entityType == privileged3) && item.occupiedGarrison == null)
-                {
-                    selectedEntities.Add(item);
-                    item.Select(true);
-                }
+                TrySelectEntity(item);
             }
             UpdateGUIFromSelections();
         }
@@ -717,8 +700,7 @@ public class RTSPlayer : NetworkBehaviour
         StopPlacingBuilding();
 
 
-        //is building a two-parter?
-
+        //is building a two-parter? 
 
         /*if (Input.GetKey(KeyCode.LeftShift) && gold >= building.goldCost)
         {
@@ -733,8 +715,6 @@ public class RTSPlayer : NetworkBehaviour
                 {
                     foreach (SelectableEntity item in ownedEntities)
                     {
-                        if (item.type == SelectableEntity.EntityTypes.Portal)
-                        {
                             Portal portal = item.GetComponent<Portal>();
                             if (portal != startPortal)
                             {
@@ -752,7 +732,6 @@ public class RTSPlayer : NetworkBehaviour
                                 placingPortal = false;
                                 break;
                             }
-                        }
                     }
                 }
             }
@@ -765,11 +744,8 @@ public class RTSPlayer : NetworkBehaviour
                 {
                     foreach (SelectableEntity item in ownedEntities)
                     {
-                        if (item.type == SelectableEntity.EntityTypes.Portal)
-                        {
                             startPortal = item.GetComponent<Portal>();
                             break;
-                        }
                     }
                 }
             }
@@ -782,7 +758,7 @@ public class RTSPlayer : NetworkBehaviour
     {
         predictedWallPositions.Clear();
         predictedWallPositionsShouldBePlaced.Clear();
-        int cost = building.goldCost; 
+        int cost = building.goldCost;
         float distance = Vector3.Distance(start, end); //greater distance means more walls
         foreach (GameObject item in wallGhosts)
         {
@@ -804,28 +780,25 @@ public class RTSPlayer : NetworkBehaviour
                 Vector3 ground = Vector3.zero;
                 if (Physics.Raycast(mod + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
                 {
-                    ground = hit.point; 
+                    ground = hit.point;
                 }
                 //Vector3 mod = AlignToQuarterGrid(spot);
                 //Vector3 mod = AlignToQuarterGrid(ground);
                 //Debug.DrawLine(spot, spot + new Vector3(0, 1, 0), Color.red);
-                //Debug.DrawLine(mod, mod + new Vector3(0, 1, 0));
                 if (!predictedWallPositions.Any(i => i == ground)) // && mod != cursorWorldPosition
                 {
-                    bool placeable = IsPositionBlocked(ground);
+                    bool placeable = !IsPositionBlocked(ground);
                     predictedWallPositionsShouldBePlaced.Add(placeable);
                     predictedWallPositions.Add(ground);
-
-                    /*if (Physics.CheckBox(mod, new Vector3(halfExtents, halfExtents, halfExtents), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Collide) ||
-                        (fow.GetFogValue(mod) > 0.1f * 255)) //blocked
+                    /*if (placeable)
                     {
-                        predictedWallPositionsShouldBePlaced.Add(false);
+                        Debug.DrawLine(ground, ground + new Vector3(0, 1, 0), Color.green);
                     }
                     else
                     {
-                        predictedWallPositionsShouldBePlaced.Add(true);
-                    }
-                    predictedWallPositions.Add(mod);*/
+
+                        Debug.DrawLine(ground, ground + new Vector3(0, 1, 0), Color.red);
+                    }*/ 
                 }
             }
         }
@@ -836,19 +809,9 @@ public class RTSPlayer : NetworkBehaviour
             {
                 ground = hit.point;
             }
-            bool placeable = IsPositionBlocked(ground);
+            bool placeable = !IsPositionBlocked(ground);
             predictedWallPositionsShouldBePlaced.Add(placeable);
-            predictedWallPositions.Add(ground);
-            /*if (Physics.CheckBox(start, new Vector3(halfExtents, halfExtents, halfExtents), Quaternion.Euler(0, 180, 0), entityLayer, QueryTriggerInteraction.Collide) ||
-                (fow.GetFogValue(start) > 0.1f * 255)) //blocked
-            {
-                predictedWallPositionsShouldBePlaced.Add(false);
-            }
-            else
-            {
-                predictedWallPositionsShouldBePlaced.Add(true);
-            }
-            predictedWallPositions.Add(start);*/
+            predictedWallPositions.Add(ground); 
         }
         //count how many should be placed
         int count = 0;
@@ -879,7 +842,7 @@ public class RTSPlayer : NetworkBehaviour
                 wallGhosts.Add(ghost);
             }
         }
-        Debug.Log(realCost);
+        //Debug.Log(realCost);
         return realCost;
     }
     private GameObject PlaceWallGhost(Vector3 pos, FactionBuilding building, bool blocked = false)
@@ -968,9 +931,9 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
         wallGhosts.Clear();
-    } 
+    }
     private bool CheckIfPositionIsOnRamp(Vector3 position)
-    { 
+    {
         int use;
         //first check if hit position is very close to integer
         int checkAgainst = Mathf.RoundToInt(position.y);
@@ -984,10 +947,10 @@ public class RTSPlayer : NetworkBehaviour
         }
 
         float buffer = 0.5f;
-        Vector3 testPosition = new Vector3(position.x, use + buffer, position.z); 
+        Vector3 testPosition = new Vector3(position.x, use + buffer, position.z);
         if (Physics.Raycast(testPosition, Vector3.down, out RaycastHit rampHit, Mathf.Infinity, groundLayer))
         {
-            float distance = Mathf.Abs(testPosition.y - rampHit.point.y); 
+            float distance = Mathf.Abs(testPosition.y - rampHit.point.y);
             return distance > 0.01f + buffer || distance < buffer - 0.01f;
         }
         return false;
@@ -997,7 +960,7 @@ public class RTSPlayer : NetworkBehaviour
         bool onRamp = CheckIfPositionIsOnRamp(position);
         bool placementBlocked = false;
 
-        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId); 
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
         if (fow.GetFogValue(position) > 0.1f * 255)
         {
             placementBlocked = true;
@@ -1010,17 +973,18 @@ public class RTSPlayer : NetworkBehaviour
             }
             else
             {
-                float sides = .48f;
+
+                float sides = .24f;
                 float height = .5f;
                 Vector3 halfExtents = new Vector3(sides, height, sides);
                 Vector3 center = new Vector3(position.x, position.y + height, position.z);
-                placementBlocked = Physics.CheckBox(center, halfExtents, Quaternion.identity, entityLayer, QueryTriggerInteraction.Ignore);
+                placementBlocked = Physics.CheckBox(center, halfExtents, Quaternion.identity, blockingLayer, QueryTriggerInteraction.Ignore);
             }
         }
         return placementBlocked;
     }
     public void UpdatePlacementBlockedStatus()
-    { 
+    {
         placementBlocked = IsPositionBlocked(cursorWorldPosition);
         if (placementBlocked != oldPlacement)
         {
@@ -1058,7 +1022,7 @@ public class RTSPlayer : NetworkBehaviour
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, groundLayer))
         {
             _mousePosition = hit.point;
-            _gridPosition = grid.WorldToCell(_mousePosition); 
+            _gridPosition = grid.WorldToCell(_mousePosition);
             cursorWorldPosition = grid.CellToWorld(_gridPosition) + buildOffset;
             cursorWorldPosition = new Vector3(cursorWorldPosition.x, hit.point.y, cursorWorldPosition.z);
             if (followCursorObject != null)
@@ -1569,10 +1533,8 @@ public class RTSPlayer : NetworkBehaviour
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn ghost
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
         buildOffset = entity.buildOffset;
-        /*if (entity.entityType == SelectableEntity.EntityTypes.Portal)
-        {
-            placingPortal = true;
-        }*/
+        /*
+            placingPortal = true;*/
         if (building.extendable)
         {
             linkedState = LinkedState.PlacingStart;
@@ -1630,7 +1592,7 @@ public class RTSPlayer : NetworkBehaviour
                 }
                 else
                 {
-                    SelectAllSameTypeExcludingInGarrisons(entity.entityType);
+                    SelectAllSameTypeExcludingInGarrisons(entity);
                 }
             }
         }
@@ -1643,21 +1605,26 @@ public class RTSPlayer : NetworkBehaviour
         {
             if (item.passenger != null)
             {
-                if (item.passenger.selectableEntity != null)
+                if (item.passenger.entity != null)
                 {
-                    TrySelectEntity(item.passenger.selectableEntity);
+                    TrySelectEntity(item.passenger.entity);
                 }
             }
         }
     }
-    private void SelectAllSameTypeExcludingInGarrisons(SelectableEntity.EntityTypes type)
-    {
+    private void SelectAllSameTypeExcludingInGarrisons(SelectableEntity entity)
+    { 
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item.entityType == type && item.occupiedGarrison == null)
-            {
-                item.Select(true);
-                selectedEntities.Add(item);
+            if (item.occupiedGarrison == null)
+            { 
+                if ((entity.CanConstruct() && item.CanConstruct()) ||
+                    (entity.minionController != null && entity.minionController.attackType != MinionController.AttackType.None
+                    && item.minionController != null && item.minionController.attackType != MinionController.AttackType.None) || 
+                    (entity.CanProduceUnits() && item.CanProduceUnits()))
+                {
+                    TrySelectEntity(item);
+                } 
             }
         }
     }
