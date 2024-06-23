@@ -66,7 +66,7 @@ public class RTSPlayer : NetworkBehaviour
     public byte starterUnitID = 0;
     private Transform camParent;
     public int population = 0;
-    public int maxPopulation = 100;
+    public int maxPopulation = 10;
     public LayerMask placementGhost;
     public LayerMask gameLayer; 
     public Camera mainCam;

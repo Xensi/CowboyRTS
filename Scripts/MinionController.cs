@@ -1482,7 +1482,16 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] public bool shouldAutoSeekOutEnemies = true;
     private bool InvalidBuildable(SelectableEntity target)
     {
-        return target == null || target.fullyBuilt || target.alive == false;
+        /*if (target == null)
+        {
+            Debug.LogWarning("Target Null");
+        }
+        else
+        { 
+            if (target.initialized && target.fullyBuilt) Debug.LogWarning("Target Already Built");
+            if (target.alive == false) Debug.LogWarning("Target Not Alive");
+        }*/
+        return target == null || target.initialized && target.fullyBuilt || target.alive == false;
     }
     private bool InvalidDeposit(SelectableEntity target)
     {
@@ -2114,7 +2123,7 @@ public class MinionController : NetworkBehaviour
     }
     public void CommandBuildTarget(SelectableEntity select)
     {
-        if (entity.CanProduceUnits())
+        if (entity.CanConstruct())
         {
             //Debug.Log("can build");
             lastCommand.Value = CommandTypes.Build;

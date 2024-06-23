@@ -5,7 +5,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
-    serializedVersion: 2
+    serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 840438227060371342, guid: 7b30b838627cfe8449fe5d8f21682979, type: 3}
@@ -54,12 +54,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6960648852560355660, guid: 7b30b838627cfe8449fe5d8f21682979, type: 3}
       propertyPath: m_Name
-      value: SmokePortal
+      value: EndPortal
       objectReference: {fileID: 0}
     - target: {fileID: 8427066161565711752, guid: 7b30b838627cfe8449fe5d8f21682979, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 951099334
+      value: 3000545456
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7b30b838627cfe8449fe5d8f21682979, type: 3}

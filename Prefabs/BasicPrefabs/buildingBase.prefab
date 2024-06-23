@@ -52,7 +52,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 1827683345
+  GlobalObjectIdHash: 174441591
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -76,6 +76,7 @@ MonoBehaviour:
   fakeSpawn: 0
   isTargetable:
     m_InternalValue: 0
+  factionEntity: {fileID: 0}
   minionController: {fileID: 0}
   selected: 0
   net: {fileID: 3728683629940428650}
@@ -97,20 +98,18 @@ MonoBehaviour:
   desc: desc
   hitPoints:
     m_InternalValue: 0
-  startingHP: 0
   maxHP: 50
   depositType: 0
-  teamBehavior: 0
-  type: 2
+  teamType: 0
+  entityType: 1
   isHeavy: 0
   fullyBuilt: 0
   isKeystone: 0
+  allowedInteractors: 1
   buildOffset: {x: 0.5, y: 0, z: 0.5}
   spawnableAtOnce: 1
   spawnableUnits: []
   constructableBuildings: []
-  usableAbilities: []
-  allowedInteractors: 1
   isHarvester: 0
   harvestCapacity: 10
   selfHarvestableType: 1
@@ -137,6 +136,8 @@ MonoBehaviour:
   desiredTeamNumber: 0
   clientIDToSpawnUnder: 0
   aiControlled: 0
+  initialized: 0
+  usedAbilities: []
   fogUnit: {fileID: 0}
   visibleInFog: 0
   oldVisibleInFog: 0

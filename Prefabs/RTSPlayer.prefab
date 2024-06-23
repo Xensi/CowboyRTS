@@ -75,7 +75,6 @@ MonoBehaviour:
   ownedEntities: []
   selectedEntities: []
   enemyEntities: []
-  startingFactionUnit: {fileID: 11400000, guid: 04ae84b5d643fbc498358c09db111adb, type: 2}
   playerFaction: {fileID: 11400000, guid: 48d2654104c708448a90a4bfe3b2baa9, type: 2}
   _entitiesIndex: 0
   cursorWorldPosition: {x: 0, y: 0, z: 0}
@@ -94,7 +93,7 @@ MonoBehaviour:
   placingLinkedBuilding: 0
   starterUnitID: 8
   population: 0
-  maxPopulation: 100
+  maxPopulation: 20
   placementGhost:
     serializedVersion: 2
     m_Bits: 0
@@ -102,10 +101,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   mainCam: {fileID: 0}
-  lineCam: {fileID: 0}
+  teamID: 0
   predictedWallPositions: []
   predictedWallPositionsShouldBePlaced: 
   wallGhosts: []
+  availableAbilities: []
   placingPortal: 0
   indices: 
 --- !u!1 &8508829344168354121

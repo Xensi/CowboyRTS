@@ -21,7 +21,7 @@ MonoBehaviour:
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0
   shouldHideInFog: 1
-  sounds: []
+  soundProfile: {fileID: 0}
   teamType: 0
   constructableBuildings: []
   usableAbilities: []
@@ -35,7 +35,10 @@ MonoBehaviour:
   impactTime: 0.5
   areaOfEffectRadius: 1
   shouldAutoSeekEnemies: 0
-  spawnableUnits: []
+  spawnableUnits:
+  - {fileID: 11400000, guid: 062fe0b231fb3b54289b317e0e999443, type: 2}
+  - {fileID: 11400000, guid: cb023bde7bc23994d82355c43644efc7, type: 2}
+  - {fileID: 11400000, guid: 780c8c6df0f384c40ae61e992fc342b0, type: 2}
   spawnableAtOnce: 1
   isHarvester: 0
   harvestCapacity: 5

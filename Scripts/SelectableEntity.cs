@@ -101,7 +101,7 @@ public class SelectableEntity : NetworkBehaviour
     public EntityTypes entityType = EntityTypes.Melee;
     [HideInInspector]
     public bool isHeavy = false; //heavy units can't garrison into pallbearers
-    [HideInInspector] public bool fullyBuilt = true;
+    public bool fullyBuilt = true; //[HideInInspector] 
     [HideInInspector]
     public bool isKeystone = false;
     [HideInInspector] public int allowedInteractors = 1; //only relevant if this is a resource or deposit point
@@ -252,7 +252,14 @@ public class SelectableEntity : NetworkBehaviour
         teamType = factionEntity.teamType;
         selfHarvestableType = factionEntity.selfHarvestableType;
         shouldHideInFog = factionEntity.shouldHideInFog;
-        sounds = factionEntity.sounds;
+        if (factionEntity.soundProfile != null)
+        { 
+            sounds = factionEntity.soundProfile.sounds;
+        }
+        else
+        {
+            sounds = new AudioClip[0];
+        }
 
         if (minionController != null)
         {
@@ -285,7 +292,9 @@ public class SelectableEntity : NetworkBehaviour
     {
         InitializeEntityInfo();
         Initialize();
+        initialized = true;
     }
+    public bool initialized = false;
     public override void OnNetworkSpawn()
     { 
         if (lineIndicator != null)
@@ -1150,6 +1159,7 @@ public class SelectableEntity : NetworkBehaviour
     private readonly int footstepThreshold = 12;
     private void BecomeFullyBuilt()
     {
+        //Debug.Log("Becoming Fully Built");
         allowedInteractors = allowedFinishedInteractors;
         constructionBegun = true;
         fullyBuilt = true;
