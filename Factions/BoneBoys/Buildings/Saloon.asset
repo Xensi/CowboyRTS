@@ -16,7 +16,7 @@ MonoBehaviour:
   description: 
   prefabToSpawn: {fileID: 3798861697192735719, guid: b4e9f923a3dbe1441ad535f64f46abf9, type: 3}
   goldCost: 50
-  maxHP: 10
+  maxHP: 50
   isKeystone: 0
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0

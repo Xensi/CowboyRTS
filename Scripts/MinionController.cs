@@ -242,7 +242,7 @@ public class MinionController : NetworkBehaviour
                 UpdateRealLocation();
                 UpdateMinionTimers();
                 UpdateAttackReadiness();
-                EnsureNotInteractingWithBusy(); //temporarily disabled because it might be expensive
+                EnsureNotHarvestingFromBusy(); //temporarily disabled because it might be expensive
                 OwnerUpdateState();
             }
             else if (finishedInitializingRealLocation)
@@ -1232,16 +1232,16 @@ public class MinionController : NetworkBehaviour
             };
         }
     }
-    private void EnsureNotInteractingWithBusy()
+    private void EnsureNotHarvestingFromBusy()
     {
         if (entity.interactionTarget != null && entity.interactionTarget.alive) //if we have a harvest target
         {
-            if (!entity.interactionTarget.interactors.Contains(entity)) //if we are not in harvester list
+            if (!entity.interactionTarget.buildersInteracting.Contains(entity)) //if we are not in harvester list
             {
-                if (entity.interactionTarget.interactors.Count < entity.interactionTarget.allowedInteractors) //if there is space
+                if (entity.interactionTarget.buildersInteracting.Count < entity.interactionTarget.allowedBuilders) //if there is space
                 {
                     //add us
-                    entity.interactionTarget.interactors.Add(entity);
+                    entity.interactionTarget.buildersInteracting.Add(entity);
                 }
                 else //there is no space
                 {
@@ -1604,7 +1604,7 @@ public class MinionController : NetworkBehaviour
         float distance = Mathf.Infinity;
         foreach (SelectableEntity item in list)
         {
-            if (item != null && !item.fullyBuilt && item.interactors.Count < item.allowedInteractors)
+            if (item != null && !item.fullyBuilt && item.buildersInteracting.Count < item.allowedBuilders)
             {
                 float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position);
                 if (newDist < distance)
@@ -1743,7 +1743,7 @@ public class MinionController : NetworkBehaviour
         {
             if (item != null && item.alive && fow.GetFogValue(item.transform.position) <= 0.5 * 255) //item is visible to some degree
             {
-                if (item.interactors.Count < item.allowedInteractors) //there is space for a new harvester
+                if (item.buildersInteracting.Count < item.allowedBuilders) //there is space for a new harvester
                 {
                     float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position);
                     if (newDist < distance)
@@ -2040,9 +2040,9 @@ public class MinionController : NetworkBehaviour
     }
     public void ForceBuildTarget(SelectableEntity target)
     {
-        if (target.interactors.Count < target.allowedInteractors)
+        if (target.buildersInteracting.Count < target.allowedBuilders)
         {
-            target.interactors.Add(entity);
+            target.buildersInteracting.Add(entity);
         }
         entity.interactionTarget = target;
 

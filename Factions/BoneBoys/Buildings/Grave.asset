@@ -16,7 +16,7 @@ MonoBehaviour:
   description: 
   prefabToSpawn: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
   goldCost: 20
-  maxHP: 10
+  maxHP: 50
   isKeystone: 0
   consumePopulationAmount: 0
   raisePopulationLimitBy: 20
@@ -25,7 +25,7 @@ MonoBehaviour:
   teamType: 0
   constructableBuildings: []
   usableAbilities: []
-  depositType: 0
+  depositType: 2
   selfHarvestableType: 1
   attackType: 0
   damage: 1
@@ -44,5 +44,5 @@ MonoBehaviour:
   passengersAreTargetable: 0
   acceptsHeavy: 0
   needsConstructing: 1
-  buildOffset: {x: 0, y: 0, z: 0}
+  buildOffset: {x: 0.25, y: 0, z: 0}
   extendable: 0

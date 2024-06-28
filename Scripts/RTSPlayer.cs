@@ -283,85 +283,7 @@ public class RTSPlayer : NetworkBehaviour
             ReportOrderServerRpc();
         }*/
     }
-    /*[ClientRpc]
-    private void ReportOrderClientRpc(ActionType action, Vector3 position)
-    {
-        if (!IsServer)
-        {
-            //tell opponent about our order. once we receive their acknowledgement,
-            //then activate our order
-            Debug.Log("Received server's order, sending client acknowledgement.");
-            SendAcknowledgementServerRpc(action, position);
-        }
-    }
-    [ServerRpc(RequireOwnership = false)]
-    private void SendAcknowledgementServerRpc(ActionType action, Vector3 position)
-    {
-        Debug.Log("Received client's acknowledgement, activating order NOW.");
-        ActivateOrder(action, position);
-    }
-    private void ActivateOrder(ActionType action, Vector3 position)
-    {
-        SelectableEntity select = null;
-        if (Physics.Raycast(position + new Vector3(0, 100, 0), Vector3.down, out RaycastHit hit, Mathf.Infinity))
-        {
-            if (hit.collider != null)
-            {
-                select = hit.collider.GetComponent<SelectableEntity>();
-            }
-        }
-        if (select == null && action != ActionType.Move)
-        {
-            Debug.Log("entity expected but missing ...");
-            action = ActionType.Move; //if for some reason it's missing default
-        }
-        foreach (SelectableEntity item in selectedEntities)
-        {
-            if (item.minionController != null) //minion
-            {
-                switch (action)
-                {
-                    case ActionType.Move:
-                        item.minionController.MoveTo(position);
-                        break;
-                    case ActionType.AttackTarget:
-                        item.minionController.AttackTarget(select);
-                        break;
-                    case ActionType.Harvest:
-                        item.minionController.CommandHarvestTarget(select);
-                        break;
-                    case ActionType.Deposit:
-                        item.minionController.DepositTo(select);
-                        break;
-                    case ActionType.Garrison:
-                        item.minionController.GarrisonInto(select);
-                        break;
-                    case ActionType.BuildTarget:
-                        item.minionController.CommandBuildTarget(select);
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else
-            {
-                item.SetRally();
-            }
-        }
-    }*/
-    /*[ServerRpc]
-    private void ReportOrderServerRpc() //runs on server
-    { 
-        Debug.Log("server receives order and sends acknowledgement");
-        AcknowledgeOrderClientRpc();
-    }
-    [ClientRpc]
-    private void AcknowledgeOrderClientRpc() //runs on clients
-    { 
-        Debug.Log("clients receive server acknowledgement and original client can run order");
-    } */
-
-
+     
     public void ReadySetRallyPoint()
     {
         mouseState = MouseState.ReadyToSetRallyPoint;
@@ -693,6 +615,7 @@ public class RTSPlayer : NetworkBehaviour
     {
         if (gold < building.goldCost) return;
         gold -= building.goldCost;
+        Debug.Log("Trying to place" + building.name);
         GenericSpawnMinion(cursorWorldPosition, building, this);
         SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
         TellSelectedToBuild(last);
@@ -1091,17 +1014,29 @@ public class RTSPlayer : NetworkBehaviour
 
             //FakeClientSideSpawn(spawnPosition, unit);
             //get ID of requested unit from our faction information
+            Debug.Log("Trying to spawn " + unit.productionName); 
             byte id = 0;
+            bool foundID = false;
             for (int i = 0; i < playerFaction.spawnableEntities.Count; i++)
             {
+                //Debug.Log(playerFaction.spawnableEntities[i].productionName + "checking against" + unit.productionName + " at index " + i);
                 if (playerFaction.spawnableEntities[i].productionName == unit.productionName)
                 {
+                    //Debug.Log(playerFaction.spawnableEntities[i].productionName + "matches" + unit.productionName + " at index " + i);
                     id = (byte)i;
+                    foundID = true;
                     break;
                 }
             }
-            Debug.Log("ID: " + id);
-            RequestSpawnMinionServerRpc(spawnPosition, id, ownerID, spawner);
+            //Debug.Log("ID: " + id);
+            if (foundID)
+            { 
+                RequestSpawnMinionServerRpc(spawnPosition, id, ownerID, spawner);
+            }
+            else
+            {
+                Debug.LogError("Missing: " + unit.productionName + "; Make sure it's added to the faction's spawnable entities.");
+            }
         }
         UpdateButtons();
     }
@@ -1530,6 +1465,15 @@ public class RTSPlayer : NetworkBehaviour
         placementBlocked = false;
         buildingToPlace = building;
         GameObject build = building.prefabToSpawn;
+
+        if (meshes.Length > 0)
+        {
+            for (int i = 0; i < meshes.Length; i++)
+            {
+                Destroy(meshes[i]);
+            }
+        }
+
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn ghost
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();
         buildOffset = entity.buildOffset;
@@ -1538,6 +1482,10 @@ public class RTSPlayer : NetworkBehaviour
         if (building.extendable)
         {
             linkedState = LinkedState.PlacingStart;
+        }
+        else
+        {
+            linkedState = LinkedState.Waiting;
         }
         entity.isBuildIndicator = true;
         followCursorObject = spawn;

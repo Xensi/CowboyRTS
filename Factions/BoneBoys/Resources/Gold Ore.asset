@@ -16,7 +16,7 @@ MonoBehaviour:
   description: Gold ore desc
   prefabToSpawn: {fileID: 5847112704809811961, guid: 95c239bfce637ba4f8bf8d0850f0461d, type: 3}
   goldCost: 0
-  maxHP: 200
+  maxHP: 1000
   isKeystone: 0
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0

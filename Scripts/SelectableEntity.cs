@@ -67,7 +67,8 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public SelectableEntity interactionTarget;
 
     [HideInInspector] public List<FactionUnit> buildQueue;
-    [HideInInspector] public List<SelectableEntity> interactors;
+    [HideInInspector] public List<SelectableEntity> buildersInteracting;
+    [HideInInspector] public List<SelectableEntity> othersInteracting; 
     private MeshRenderer[] allMeshes;
     //when fog of war changes, check if we should hide or show attack effects
     private bool damaged = false;
@@ -104,10 +105,8 @@ public class SelectableEntity : NetworkBehaviour
     public bool fullyBuilt = true; //[HideInInspector] 
     [HideInInspector]
     public bool isKeystone = false;
-    [HideInInspector] public int allowedInteractors = 1; //only relevant if this is a resource or deposit point
-
-    private int allowedFinishedInteractors = 1;
-    private int allowedUnfinishedInteractors = 1;
+    [HideInInspector] public int allowedBuilders = 1; //how many can build/repair/harvest at a time
+    [HideInInspector] public int allowedInteractors = 1; //how many can interact (not build/repair)
 
     [Header("Building Only")]
     [HideInInspector]
@@ -238,7 +237,7 @@ public class SelectableEntity : NetworkBehaviour
         //allowedFinishedInteractors = factionEntity.allowedFinishedInteractors;
         if (garrisonablePositions.Count > 0)
         {
-            allowedFinishedInteractors = garrisonablePositions.Count; //automatically set 
+            allowedInteractors = garrisonablePositions.Count; //automatically set 
         }
 
         passengersAreTargetable = factionEntity.passengersAreTargetable;
@@ -279,13 +278,21 @@ public class SelectableEntity : NetworkBehaviour
             FactionBuilding factionBuilding = factionEntity as FactionBuilding;
             buildOffset = factionBuilding.buildOffset;
             fullyBuilt = !factionBuilding.needsConstructing;
-            if (factionBuilding.needsConstructing) startingHP = 0;
+            if (factionBuilding.needsConstructing)
+            { 
+                startingHP = 0;
+            }
+            else
+            {
+                startingHP = maxHP;
+            }
         }
         else if (factionEntity is FactionUnit)
         {
             FactionUnit factionUnit = factionEntity as FactionUnit;
             isHeavy = factionUnit.isHeavy;
             if (minionController != null) minionController.canMoveWhileAttacking = factionUnit.canAttackWhileMoving;
+            startingHP = maxHP;
         }
     }
     private void Awake() //awake, networkspawn, start (dynamic)
@@ -350,7 +357,7 @@ public class SelectableEntity : NetworkBehaviour
         if (selectIndicator != null) selectIndicator.SetActive(selected);
 
 
-        allowedInteractors = allowedUnfinishedInteractors;
+        //allowedBuilders = allowedUnfinishedInteractors;
         /*if (IsOwner && !hasRegisteredRallyMission)
         {
             hasRegisteredRallyMission = true;
@@ -687,9 +694,10 @@ public class SelectableEntity : NetworkBehaviour
             Unghost();
         }
     }
-    private void Unghost()
+    private void Unghost() //sets thong to look solid and not transparent
     {
-        isTargetable.Value = true;
+        if (IsOwner) isTargetable.Value = true;
+
         physicalCollider.isTrigger = false;
         //rigid.isKinematic = false;
         for (int i = 0; i < unbuiltRenderers.Length; i++)
@@ -1066,17 +1074,17 @@ public class SelectableEntity : NetworkBehaviour
     private int interactorIndex = 0;
     private void UpdateInteractors()
     {
-        if (interactors.Count > 0)
+        if (buildersInteracting.Count > 0)
         {
-            if (interactors[interactorIndex] != null)
+            if (buildersInteracting[interactorIndex] != null)
             {
-                if (interactors[interactorIndex].interactionTarget != this)
+                if (buildersInteracting[interactorIndex].interactionTarget != this)
                 {
-                    interactors.RemoveAt(interactorIndex);
+                    buildersInteracting.RemoveAt(interactorIndex);
                 }
             }
             interactorIndex++;
-            if (interactorIndex >= interactors.Count) interactorIndex = 0;
+            if (interactorIndex >= buildersInteracting.Count) interactorIndex = 0;
         }
     }
     [HideInInspector] public readonly float minFogStrength = 0.45f;
@@ -1160,7 +1168,7 @@ public class SelectableEntity : NetworkBehaviour
     private void BecomeFullyBuilt()
     {
         //Debug.Log("Becoming Fully Built");
-        allowedInteractors = allowedFinishedInteractors;
+        //allowedBuilders = allowedFinishedInteractors;
         constructionBegun = true;
         fullyBuilt = true;
 
