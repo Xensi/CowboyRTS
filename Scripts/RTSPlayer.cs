@@ -329,10 +329,10 @@ public class RTSPlayer : NetworkBehaviour
         {
             if (item != null && item.minionController != null && (item.CanConstruct())) //&& item.canBuild
             {
-                switch (item.minionController.state)
+                switch (item.minionController.minionState)
                 {
-                    case MinionController.State.Idle:
-                    case MinionController.State.FindInteractable:
+                    case MinionController.MinionStates.Idle:
+                    case MinionController.MinionStates.FindInteractable:
                         TrySelectEntity(item);
                         break;
                 }
@@ -677,12 +677,8 @@ public class RTSPlayer : NetworkBehaviour
     public List<Vector3> predictedWallPositions = new();
     public List<bool> predictedWallPositionsShouldBePlaced = new();
     public List<GameObject> wallGhosts = new();
-    private int CalculateFillCost(Vector3 start, Vector3 end, FactionBuilding building) //fill between start and end byte id
+    private void ClearWallGhosts()
     {
-        predictedWallPositions.Clear();
-        predictedWallPositionsShouldBePlaced.Clear();
-        int cost = building.goldCost;
-        float distance = Vector3.Distance(start, end); //greater distance means more walls
         foreach (GameObject item in wallGhosts)
         {
             if (item != null)
@@ -691,6 +687,15 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
         wallGhosts.Clear();
+    }
+    private int CalculateFillCost(Vector3 start, Vector3 end, FactionBuilding building) //fill between start and end byte id
+    {
+        predictedWallPositions.Clear();
+        predictedWallPositionsShouldBePlaced.Clear();
+        int cost = building.goldCost;
+        float distance = Vector3.Distance(start, end); //greater distance means more walls
+
+        ClearWallGhosts();
         FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
         float halfExtents = 0.1f;
         if (distance > 0)
@@ -1038,7 +1043,7 @@ public class RTSPlayer : NetworkBehaviour
                 Debug.LogError("Missing: " + unit.productionName + "; Make sure it's added to the faction's spawnable entities.");
             }
         }
-        UpdateButtons();
+        //UpdateButtons();
     }
     [ServerRpc]
     private void RequestSpawnMinionServerRpc(Vector3 spawnPosition, byte unit, byte clientID, NetworkBehaviourReference spawner) //ok to use byte because 0-244
@@ -1143,8 +1148,8 @@ public class RTSPlayer : NetworkBehaviour
                     newSpawn.transform.SetPositionAndRotation(fakeSpawns[0].transform.position, fakeSpawns[0].transform.rotation);
                     if (select != null && select.minionController != null && fake != null && fakeController != null)
                     {
-                        select.minionController.state = fakeController.state;
-                        select.minionController.state = MinionController.State.Idle;
+                        select.minionController.minionState = fakeController.minionState;
+                        select.minionController.minionState = MinionController.MinionStates.Idle;
                     }
                     if (select != null && fake != null)
                     {
@@ -1187,7 +1192,7 @@ public class RTSPlayer : NetworkBehaviour
     /// <summary>
     /// Update all buttons to be interactable or not based on their cost vs your gold.
     /// </summary>
-    public void UpdateButtons()
+    public void UpdateButtons() //TODO
     {
         /*for (int i = 0; i < indices.Count; i++)
         {
@@ -1459,7 +1464,7 @@ public class RTSPlayer : NetworkBehaviour
     /// Create building ghost showing where building will be placed
     /// </summary>
     /// <param name="id"></param>
-    private void HoverBuild(FactionBuilding building)
+    private void HoverBuild(FactionBuilding building) //start building
     {
         mouseState = MouseState.ReadyToPlace;
         placementBlocked = false;
@@ -1473,6 +1478,7 @@ public class RTSPlayer : NetworkBehaviour
                 Destroy(meshes[i]);
             }
         }
+        ClearWallGhosts();
 
         GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn ghost
         SelectableEntity entity = spawn.GetComponent<SelectableEntity>();

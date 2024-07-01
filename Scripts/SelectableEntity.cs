@@ -67,8 +67,6 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public SelectableEntity interactionTarget;
 
     [HideInInspector] public List<FactionUnit> buildQueue;
-    [HideInInspector] public List<SelectableEntity> buildersInteracting;
-    [HideInInspector] public List<SelectableEntity> othersInteracting; 
     private MeshRenderer[] allMeshes;
     //when fog of war changes, check if we should hide or show attack effects
     private bool damaged = false;
@@ -105,8 +103,10 @@ public class SelectableEntity : NetworkBehaviour
     public bool fullyBuilt = true; //[HideInInspector] 
     [HideInInspector]
     public bool isKeystone = false;
-    [HideInInspector] public int allowedBuilders = 1; //how many can build/repair/harvest at a time
-    [HideInInspector] public int allowedInteractors = 1; //how many can interact (not build/repair)
+    public int allowedWorkers = 1; //how many can build/repair/harvest at a time
+    public int allowedInteractors = 10; //how many can interact (not build/repair)
+    public List<SelectableEntity> workersInteracting;
+    public List<SelectableEntity> othersInteracting;
 
     [Header("Building Only")]
     [HideInInspector]
@@ -238,6 +238,10 @@ public class SelectableEntity : NetworkBehaviour
         if (garrisonablePositions.Count > 0)
         {
             allowedInteractors = garrisonablePositions.Count; //automatically set 
+        }
+        else
+        {
+            allowedInteractors = 100;
         }
 
         passengersAreTargetable = factionEntity.passengersAreTargetable;
@@ -672,9 +676,9 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void DetectIfShouldDie()
     {
-        if (minionController != null && !alive && minionController.state != MinionController.State.Die) //force go to death state
+        if (minionController != null && !alive && minionController.minionState != MinionController.MinionStates.Die) //force go to death state
         {
-            minionController.SwitchState(MinionController.State.Die);
+            minionController.SwitchState(MinionController.MinionStates.Die);
         }
         if (hitPoints.Value <= 0 && constructionBegun && alive) //detect death if "present" in game world ie not ghost/corpse
         {
@@ -725,7 +729,7 @@ public class SelectableEntity : NetworkBehaviour
         if (IsSpawned)
         {
             DetectIfShouldDie();
-            if (minionController != null && minionController.state == MinionController.State.Die) return; //do not do other things if dead
+            if (minionController != null && minionController.minionState == MinionController.MinionStates.Die) return; //do not do other things if dead
             UpdateVisibilityFromFogOfWar();
             DetectIfShouldUnghost();
             DetectIfBuilt();
@@ -1074,18 +1078,28 @@ public class SelectableEntity : NetworkBehaviour
     private int interactorIndex = 0;
     private void UpdateInteractors()
     {
-        if (buildersInteracting.Count > 0)
+        if (workersInteracting.Count > 0)
         {
-            if (buildersInteracting[interactorIndex] != null)
+            if (workersInteracting[interactorIndex] != null)
             {
-                if (buildersInteracting[interactorIndex].interactionTarget != this)
+                if (workersInteracting[interactorIndex].interactionTarget != this)
                 {
-                    buildersInteracting.RemoveAt(interactorIndex);
+                    workersInteracting.RemoveAt(interactorIndex);
                 }
             }
-            interactorIndex++;
-            if (interactorIndex >= buildersInteracting.Count) interactorIndex = 0;
         }
+        if (othersInteracting.Count > 0)
+        {
+            if (othersInteracting[interactorIndex] != null)
+            {
+                if (othersInteracting[interactorIndex].interactionTarget != this)
+                {
+                    othersInteracting.RemoveAt(interactorIndex);
+                }
+            }  
+        }
+        interactorIndex++;
+        if (interactorIndex >= workersInteracting.Count) interactorIndex = 0;
     }
     [HideInInspector] public readonly float minFogStrength = 0.45f;
     [HideInInspector] public bool visibleInFog = false;
