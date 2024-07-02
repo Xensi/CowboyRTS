@@ -43,13 +43,13 @@ namespace FoW
             if (iterations > 1)
                 SetupRenderTarget(resolution, ref _source);
             
-            _target.MarkRestoreExpected();
+            //_target.MarkRestoreExpected();
             Graphics.Blit(fogtexture, _target, _blurMaterial);
 
             for (int i = 1; i < iterations; ++i)
             {
                 FogOfWarUtils.Swap(ref _target, ref _source);
-                _target.MarkRestoreExpected();
+                //_target.MarkRestoreExpected();
                 Graphics.Blit(_source, _target, _blurMaterial);
             }
 

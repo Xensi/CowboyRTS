@@ -196,7 +196,7 @@ namespace FoW
                 tex = box.texture;
             }
 
-            _renderTexture.MarkRestoreExpected();
+            //_renderTexture.MarkRestoreExpected();
             Graphics.Blit(tex ?? _outputTexture, _renderTexture, _material);
         }
     }

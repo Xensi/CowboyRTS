@@ -163,7 +163,9 @@ namespace FoW
                 for (int i = 0; i < _distances.Length; ++i)
                 {
                     Vector3 dir = Quaternion.AngleAxis(raycastoffset + angle * i, up) * forward;
-                    _multithreadRaycasts.raycasts[i] = new RaycastCommand(eye, dir, radius, layermask);
+                    QueryParameters query = new QueryParameters(layermask);
+                    //_multithreadRaycasts.raycasts[i] = new RaycastCommand(eye, dir, radius, layermask);
+                    _multithreadRaycasts.raycasts[i] = new RaycastCommand(eye, dir, query, radius);
                 }
 
                 // perform raycasts

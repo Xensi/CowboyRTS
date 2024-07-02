@@ -166,7 +166,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public byte clientIDToSpawnUnder = 0;
     [HideInInspector] public bool aiControlled = false;
     private Rigidbody rigid;
-    private bool hasRegisteredRallyMission = false;
+    //private bool hasRegisteredRallyMission = false;
     private List<Material> savedMaterials = new();
     private void OnDrawGizmos()
     {
@@ -1002,7 +1002,7 @@ public class SelectableEntity : NetworkBehaviour
         }
     }
 
-    private bool teamRenderersUpdated = false;
+    //private bool teamRenderersUpdated = false;
     private void UpdateTeamRenderers()
     {
         int id = Mathf.Abs(System.Convert.ToInt32(teamNumber.Value)); //net.OwnerClientId
@@ -1028,7 +1028,7 @@ public class SelectableEntity : NetworkBehaviour
                 }
             }
         }
-        teamRenderersUpdated = true;
+        //teamRenderersUpdated = true;
     }
 
     public void TakeDamage(sbyte damage) //always managed by SERVER

@@ -255,7 +255,7 @@ public class MinionController : NetworkBehaviour
             UpdateSetterTargetPosition();
         }
     }
-    float stopDistIncreaseThreshold = 0.01f;
+    //float stopDistIncreaseThreshold = 0.01f;
     float defaultEndReachedDistance = 0.5f;
     private void UpdateStopDistance()
     {
@@ -464,11 +464,11 @@ public class MinionController : NetworkBehaviour
 
         if (dist > updateRealLocThreshold * updateRealLocThreshold)
         {
-            realLocationReached = false;
+            //realLocationReached = false;
             realLocation.Value = transform.position; //only update when different enough
         }
     }
-    private bool realLocationReached = false;
+    //private bool realLocationReached = false;
     private float updateRealLocThreshold = 1f; //1
     private readonly float allowedNonOwnerError = 1.5f; //1.5 ideally higher than real loc update; don't want to lerp to old position
     private bool highPrecisionMovement = false;
@@ -1643,7 +1643,7 @@ public class MinionController : NetworkBehaviour
     }
     #region FindClosest
     //could try cycling through entire list of enemy units .. .
-    SelectableEntity currentClosestEnemy = null;
+    //SelectableEntity currentClosestEnemy = null;
     int nearbyIndexer = 0;
     private bool TargetIsValidEnemy(SelectableEntity target)
     {

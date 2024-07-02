@@ -28,7 +28,7 @@ public class RTSPlayer : NetworkBehaviour
     //[SerializeField] private FactionScriptableObject _faction; 
     public Faction playerFaction;
 
-    [SerializeField] private int _entitiesIndex = 0; //used to pick a prefab from faction list
+    //[SerializeField] private int _entitiesIndex = 0; //used to pick a prefab from faction list
     private Vector3 _mousePosition;
     private Vector3 _offset;
     public Vector3 cursorWorldPosition;
@@ -53,7 +53,7 @@ public class RTSPlayer : NetworkBehaviour
     public SelectableEntity lastSpawnedEntity;
     public bool placementBlocked = false;
     private GameObject followCursorObject;
-    private byte buildingPlacingID = 0;
+    //private byte buildingPlacingID = 0;
     private MeshRenderer[] meshes;
     private bool oldPlacement = false;
     public Portal startPortal;
@@ -697,7 +697,7 @@ public class RTSPlayer : NetworkBehaviour
 
         ClearWallGhosts();
         FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
-        float halfExtents = 0.1f;
+        //float halfExtents = 0.1f;
         if (distance > 0)
         {
             for (float i = 0; i <= distance + 0.5f; i += 0.5f)
@@ -842,7 +842,7 @@ public class RTSPlayer : NetworkBehaviour
         Vector3 pos = grid.CellToWorld(gridPosition) + buildOffset;
         return pos;
     }
-    private byte wallID = 0;
+    //private byte wallID = 0;
     private void StopPlacingBuilding()
     {
         Destroy(followCursorObject);
