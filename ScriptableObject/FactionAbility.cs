@@ -40,5 +40,5 @@ public class TargetedEffects //name, target, status effect
 
     public float expirationTime = 5; 
     public Operation operation = Operation.Set;
-    public float statusNumber = 1;
+    public float statusNumber = 1; //number to apply operation with
 }

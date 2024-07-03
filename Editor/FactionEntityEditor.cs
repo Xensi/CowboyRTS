@@ -66,8 +66,11 @@ public class FactionEntityEditor : Editor
             EditorGUILayout.PropertyField(attackRange);
             EditorGUILayout.PropertyField(attackDuration);
             EditorGUILayout.PropertyField(impactTime);
-            EditorGUILayout.PropertyField(areaOfEffectRadius);
             EditorGUILayout.PropertyField(shouldAutoSeekEnemies);
+        }
+        if (attackType.intValue == 2) //self destruct 
+        { 
+            EditorGUILayout.PropertyField(areaOfEffectRadius);
         }
         EditorGUILayout.PropertyField(isHarvester);
         if (isHarvester.boolValue == true)

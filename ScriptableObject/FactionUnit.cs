@@ -12,4 +12,19 @@ public class FactionUnit : FactionEntity
     {
         Generic, //default  
     }
+
+    public void Init(string name, int spawnTime, GameObject prefab, int goldCost)
+    {
+        productionName = name;
+        spawnTimeCost = spawnTime;
+        prefabToSpawn = prefab;
+        this.goldCost = goldCost; 
+    }
+
+    public static FactionUnit CreateInstance(string name, int spawnTime, GameObject prefab, int goldCost)
+    {
+        var data = CreateInstance<FactionUnit>();
+        data.Init(name, spawnTime, prefab, goldCost);
+        return data;
+    }
 }

@@ -263,9 +263,10 @@ public class SelectableEntity : NetworkBehaviour
         {
             sounds = new AudioClip[0];
         }
-
+        Debug.Log("Trying to initialize");
         if (minionController != null)
         {
+            Debug.Log("Initializing attack type as " + factionEntity.attackType);
             minionController.attackType = factionEntity.attackType;
             minionController.directionalAttack = factionEntity.directionalAttack;
             minionController.attackRange = factionEntity.attackRange;
@@ -301,8 +302,8 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void Awake() //awake, networkspawn, start (dynamic)
     {
-        InitializeEntityInfo();
         Initialize();
+        InitializeEntityInfo();
         initialized = true;
     }
     public bool initialized = false;

@@ -13,6 +13,36 @@ MonoBehaviour:
   m_Name: Desperado
   m_EditorClassIdentifier: 
   productionName: Desperado
-  goldCost: 40
+  description: 
   prefabToSpawn: {fileID: 3247805216466599197, guid: 14aa9348e444d404baea8d5cf76f8398, type: 3}
-  timeCost: 5
+  goldCost: 40
+  maxHP: 10
+  isKeystone: 0
+  consumePopulationAmount: 1
+  raisePopulationLimitBy: 0
+  shouldHideInFog: 1
+  soundProfile: {fileID: 0}
+  teamType: 0
+  constructableBuildings: []
+  usableAbilities: []
+  depositType: 0
+  selfHarvestableType: 1
+  attackType: 2
+  damage: 1
+  directionalAttack: 0
+  attackRange: 1
+  attackDuration: 1
+  impactTime: 0.5
+  areaOfEffectRadius: 1
+  shouldAutoSeekEnemies: 0
+  spawnableUnits: []
+  spawnableAtOnce: 1
+  isHarvester: 0
+  harvestCapacity: 5
+  depositRange: 1
+  expandGarrisonOptions: 0
+  passengersAreTargetable: 0
+  acceptsHeavy: 0
+  spawnTimeCost: 5
+  isHeavy: 0
+  canAttackWhileMoving: 0

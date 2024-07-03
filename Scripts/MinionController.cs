@@ -82,7 +82,7 @@ public class MinionController : NetworkBehaviour
     #region Variables
 
     [Header("Behavior Settings")]
-    [HideInInspector] public AttackType attackType = AttackType.Instant;
+    public AttackType attackType = AttackType.Instant;
     [HideInInspector] public bool directionalAttack = false;
 
     [HideInInspector] public float attackRange = 1;

@@ -68,7 +68,7 @@ public class RTSPlayer : NetworkBehaviour
     public int population = 0;
     public int maxPopulation = 10;
     public LayerMask placementGhost;
-    public LayerMask gameLayer; 
+    public LayerMask gameLayer;
     public Camera mainCam;
     private Camera[] cams;
     public void LoseGame()
@@ -156,7 +156,7 @@ public class RTSPlayer : NetworkBehaviour
         //from 0 to 10 
         for (int i = 0; i < cams.Length; i++)
         {
-            cams[i].orthographicSize = Mathf.Clamp(cams[i].orthographicSize - Input.mouseScrollDelta.y * camScroll, 1, 10); ; 
+            cams[i].orthographicSize = Mathf.Clamp(cams[i].orthographicSize - Input.mouseScrollDelta.y * camScroll, 1, 10); ;
         }
     }
     public enum ActionType
@@ -214,7 +214,7 @@ public class RTSPlayer : NetworkBehaviour
                         { //target is passenger of garrison, then enter garrison
                             actionType = ActionType.Garrison;
                             select = select.occupiedGarrison;
-                        } 
+                        }
                     }
                     else //enemy
                     { //try to target this enemy specifically
@@ -226,7 +226,7 @@ public class RTSPlayer : NetworkBehaviour
                     if (select.selfHarvestableType != SelectableEntity.ResourceType.None)
                     {
                         actionType = ActionType.Harvest;
-                    } 
+                    }
                 }
             }
             else
@@ -283,7 +283,7 @@ public class RTSPlayer : NetworkBehaviour
             ReportOrderServerRpc();
         }*/
     }
-     
+
     public void ReadySetRallyPoint()
     {
         mouseState = MouseState.ReadyToSetRallyPoint;
@@ -489,6 +489,9 @@ public class RTSPlayer : NetworkBehaviour
         TryReplaceFakeSpawn();
         UpdateGUIFromSelections();// this might be expensive ...
     }
+    public List<SelectableEntity> militaryList = new();
+    public List<SelectableEntity> builderList = new();
+    public List<SelectableEntity> productionList = new();
     private void SelectWithinBounds() //rectangle select, finish drag select
     {
         RectTransform SelectionBox = Global.Instance.selectionRect;
@@ -512,12 +515,12 @@ public class RTSPlayer : NetworkBehaviour
                         evaluation.Add(item);
                     }
                 }
-            } 
-            List<SelectableEntity> militaryList = new();
-            List<SelectableEntity> builderList = new();
-            List<SelectableEntity> productionList = new();
+            }
+            militaryList = new();
+            builderList = new();
+            productionList = new();
             foreach (SelectableEntity item in evaluation)
-            { 
+            {
                 if (item.CanConstruct())
                 {
                     builderList.Add(item);
@@ -537,7 +540,7 @@ public class RTSPlayer : NetworkBehaviour
             List<SelectableEntity> useList = new();
             if (mil > 0 || build > 0) //then ignore prod
             {
-                if (mil > build)
+                if (mil >= build)
                 {
                     useList = militaryList;
                 }
@@ -726,7 +729,7 @@ public class RTSPlayer : NetworkBehaviour
                     {
 
                         Debug.DrawLine(ground, ground + new Vector3(0, 1, 0), Color.red);
-                    }*/ 
+                    }*/
                 }
             }
         }
@@ -739,7 +742,7 @@ public class RTSPlayer : NetworkBehaviour
             }
             bool placeable = !IsPositionBlocked(ground);
             predictedWallPositionsShouldBePlaced.Add(placeable);
-            predictedWallPositions.Add(ground); 
+            predictedWallPositions.Add(ground);
         }
         //count how many should be placed
         int count = 0;
@@ -1019,7 +1022,7 @@ public class RTSPlayer : NetworkBehaviour
 
             //FakeClientSideSpawn(spawnPosition, unit);
             //get ID of requested unit from our faction information
-            Debug.Log("Trying to spawn " + unit.productionName); 
+            Debug.Log("Trying to spawn " + unit.productionName);
             byte id = 0;
             bool foundID = false;
             for (int i = 0; i < playerFaction.spawnableEntities.Count; i++)
@@ -1035,7 +1038,7 @@ public class RTSPlayer : NetworkBehaviour
             }
             //Debug.Log("ID: " + id);
             if (foundID)
-            { 
+            {
                 RequestSpawnMinionServerRpc(spawnPosition, id, ownerID, spawner);
             }
             else
@@ -1431,14 +1434,14 @@ public class RTSPlayer : NetworkBehaviour
     private void QueueBuildingSpawn(FactionUnit unit)
     {
         //necessary to create new so we don't accidentally affect the files
-        FactionUnit newUnit = new()
+        /*FactionUnit newUnit = new()
         {
             productionName = unit.prefabToSpawn.name,
             spawnTimeCost = unit.spawnTimeCost,
             prefabToSpawn = unit.prefabToSpawn,
-            goldCost = unit.goldCost,
-            //buildID = id
-        };
+            goldCost = unit.goldCost, 
+        };*/
+        FactionUnit newUnit = FactionUnit.CreateInstance(unit.prefabToSpawn.name, unit.spawnTimeCost, unit.prefabToSpawn, unit.goldCost);
 
         int cost = newUnit.goldCost;
         //try to spawn from all selected buildings if possible 
@@ -1567,18 +1570,18 @@ public class RTSPlayer : NetworkBehaviour
         }
     }
     private void SelectAllSameTypeExcludingInGarrisons(SelectableEntity entity)
-    { 
+    {
         foreach (SelectableEntity item in ownedEntities)
         {
             if (item.occupiedGarrison == null)
-            { 
+            {
                 if ((entity.CanConstruct() && item.CanConstruct()) ||
                     (entity.minionController != null && entity.minionController.attackType != MinionController.AttackType.None
-                    && item.minionController != null && item.minionController.attackType != MinionController.AttackType.None) || 
+                    && item.minionController != null && item.minionController.attackType != MinionController.AttackType.None) ||
                     (entity.CanProduceUnits() && item.CanProduceUnits()))
                 {
                     TrySelectEntity(item);
-                } 
+                }
             }
         }
     }
