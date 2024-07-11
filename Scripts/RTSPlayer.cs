@@ -201,7 +201,7 @@ public class RTSPlayer : NetworkBehaviour
                         {
                             actionType = ActionType.Deposit;
                         }
-                        else if (!select.fullyBuilt) //if buildable and this is a builder
+                        else if (!select.fullyBuilt || select.IsDamaged()) //if buildable
                         {
                             Debug.Log("not full built");
                             actionType = ActionType.BuildTarget;
@@ -252,14 +252,28 @@ public class RTSPlayer : NetworkBehaviour
                         case ActionType.Harvest:
                             item.minionController.CommandHarvestTarget(select);
                             break;
-                        case ActionType.Deposit:
-                            item.minionController.DepositTo(select);
+                        case ActionType.Deposit: //try to deposit if we have stuff to deposit
+                            if (item.HasResourcesToDeposit())
+                            { 
+                                item.minionController.DepositTo(select);
+                            }
+                            else if (select.IsDamaged() && item.CanConstruct()) //if its damaged, we can try to build it
+                            { 
+                                item.minionController.CommandBuildTarget(select);
+                            }
                             break;
                         case ActionType.Garrison:
                             item.minionController.GarrisonInto(select);
                             break;
                         case ActionType.BuildTarget://try determining how many things need to be built in total, and grabbing closest ones
-                            item.minionController.CommandBuildTarget(select);
+                            if (item.CanConstruct())
+                            { 
+                                item.minionController.CommandBuildTarget(select);
+                            }
+                            else
+                            { 
+                                item.minionController.GarrisonInto(select);
+                            }
                             break;
                         default:
                             break;
@@ -486,7 +500,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             Global.Instance.popText.text = population + "/" + maxPopulation + " Population";
         }
-        TryReplaceFakeSpawn();
+        //TryReplaceFakeSpawn();
         UpdateGUIFromSelections();// this might be expensive ...
     }
     public List<SelectableEntity> militaryList = new();
@@ -1076,11 +1090,11 @@ public class RTSPlayer : NetworkBehaviour
         if (unit != null && unit.prefabToSpawn != null)
         {
             Debug.Log("SERVER: spawning " + unit.productionName);
-            GameObject minion = Instantiate(unit.prefabToSpawn.gameObject, spawnPosition, Quaternion.identity); //Quaternion.Euler(0, 180, 0)
+            GameObject minion = Instantiate(unit.prefabToSpawn.gameObject, spawnPosition, Quaternion.identity); //spawn the minion
             SelectableEntity select = null;
             if (minion != null)
             {
-                select = minion.GetComponent<SelectableEntity>();
+                select = minion.GetComponent<SelectableEntity>(); //get select
             }
             if (select != null)
             {
@@ -1098,6 +1112,13 @@ public class RTSPlayer : NetworkBehaviour
                     if (select.net == null) select.net = select.GetComponent<NetworkObject>();
 
                     select.net.SpawnWithOwnership(clientID);
+
+                    //change fog of war unit to the correct team
+                    //select.localTeamNumber = clientID;
+                    //if (select.fogUnit != null) select.fogUnit.team = clientID;
+
+                    //change teamrenderers to correct color
+
                     //use client rpc to send this ID to client
                     ClientRpcParams clientRpcParams = new ClientRpcParams
                     {
@@ -1106,7 +1127,9 @@ public class RTSPlayer : NetworkBehaviour
                             TargetClientIds = new ulong[] { clientID }
                         }
                     };
-                    SendReferenceToSpawnedMinionClientRpc((ushort)select.NetworkObjectId, spawner, clientRpcParams);
+                    
+                    
+                    //SendReferenceToSpawnedMinionClientRpc((ushort)select.NetworkObjectId, spawner, clientRpcParams);
                 }
             }
         }
@@ -1131,7 +1154,7 @@ public class RTSPlayer : NetworkBehaviour
         }
     }
     private List<SelectableEntity> newSpawnsSpawnerList = new();
-    private void TryReplaceFakeSpawn()
+    private void TryReplaceFakeSpawn() //not being used yet
     {
         if (fakeSpawns.Count > 0 && fakeSpawnsReadyForReplacement.Count > 0) //fakeSpawnsReadyForReplacement.Count > 0 && 
         {

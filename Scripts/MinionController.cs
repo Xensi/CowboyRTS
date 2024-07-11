@@ -1516,7 +1516,10 @@ public class MinionController : NetworkBehaviour
             if (target.initialized && target.fullyBuilt) Debug.LogWarning("Target Already Built");
             if (target.alive == false) Debug.LogWarning("Target Not Alive");
         }*/
-        return target == null || target.initialized && target.fullyBuilt || target.alive == false;
+        //invalid if null
+        //or target is fully built and not damaged
+        //or if dead
+        return target == null || target.initialized && target.fullyBuilt && !target.IsDamaged() || target.alive == false;
     }
     private bool InvalidDeposit(SelectableEntity target)
     {

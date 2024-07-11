@@ -67,7 +67,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public SelectableEntity interactionTarget;
 
     [HideInInspector] public List<FactionUnit> buildQueue;
-    private MeshRenderer[] allMeshes;
+    public MeshRenderer[] allMeshes;
     //when fog of war changes, check if we should hide or show attack effects
     private bool damaged = false;
     private readonly int delay = 50;
@@ -87,7 +87,7 @@ public class SelectableEntity : NetworkBehaviour
     //[TextArea(2, 4)]
     [HideInInspector]
     public string desc = "desc";
-    [HideInInspector] public NetworkVariable<short> hitPoints = new();
+    public NetworkVariable<short> hitPoints = new();
 
     //[SerializeField] 
     private short startingHP = 10; //buildings usually don't start with full HP
@@ -156,10 +156,12 @@ public class SelectableEntity : NetworkBehaviour
     public GameObject targetIndicator;
     public List<MeshRenderer> teamRenderers;
     private DynamicGridObstacle obstacle;
-    [HideInInspector] public RVOController RVO;
-    [HideInInspector]
+    [HideInInspector] public RVOController RVO; 
     public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); //negative team numbers are AI controlled
+
+    public int localTeamNumber = 0; 
+
     public sbyte desiredTeamNumber = 0; //only matters if negative
     #endregion
     #region NetworkSpawn 
@@ -206,6 +208,10 @@ public class SelectableEntity : NetworkBehaviour
     public bool CanConstruct()
     {
         return constructableBuildings.Length > 0;
+    }
+    public bool HasResourcesToDeposit()
+    {
+        return harvestedResourceAmount > 0;
     }
     private void Initialize()
     {
@@ -300,15 +306,22 @@ public class SelectableEntity : NetworkBehaviour
             startingHP = maxHP;
         }
     }
-    private void Awake() //awake, networkspawn, start (dynamic)
+    public bool IsDamaged()
     {
+        return hitPoints.Value < maxHP;
+    }
+    private void Awake() //awake, networkspawn, start; verified through testing
+    {
+        //Debug.Log("Awake");
         Initialize();
         InitializeEntityInfo();
         initialized = true;
     }
     public bool initialized = false;
     public override void OnNetworkSpawn()
-    { 
+    {
+        //Debug.Log("NetworkSpawn");
+
         if (lineIndicator != null)
         {
             lineIndicator.enabled = false;
@@ -368,19 +381,13 @@ public class SelectableEntity : NetworkBehaviour
             hasRegisteredRallyMission = true;
             TryToRegisterRallyMission();
         }*/
-    }
-    private void PlaySpawnSound()
-    { 
-        if (sounds.Length > 0) Global.Instance.PlayClipAtPoint(sounds[0], transform.position, .5f); //play spawning sound
+        localTeamNumber = System.Convert.ToInt32(net.OwnerClientId);
     }
     private void Start() //call stuff here so that network variables are valid (isSpawned)
-    {
+    { 
         PlaySpawnSound();
-        FixFogTeam();
         TryToRegisterRallyMission();
-        SetHideFogTeam();
-        UpdateTeamRenderers(); 
-        //if (fogUnit != null) fogUnit.team = desiredTeamNumber;
+        SetInitialVisuals(); 
         aiControlled = desiredTeamNumber < 0;
         if (isKeystone && Global.Instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
         {
@@ -424,7 +431,86 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
         if (rallyVisual != null) rallyVisual.enabled = false;
-        if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allFactionEntities.Add(this); 
+        if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allFactionEntities.Add(this);
+        //Debug.Log("Team Value" + teamNumber.Value); //team number is unchanged during initialization :(
+    }
+    private void SetInitialVisuals()
+    { 
+        FixFogTeam();
+        SetHideFogTeam();
+        UpdateTeamRenderers();
+    }
+    private void FixFogTeam() //temporary fix
+    {
+        if (fogUnit != null) // && fogUnit.team != teamNumber.Value
+        {
+            fogUnit.team = localTeamNumber;//teamNumber.Value;
+            Debug.Log("setting fog unit team to" + fogUnit.team);
+        }
+    } /// <summary>
+      /// One time event to set fog hide team
+      /// </summary>
+    private void SetHideFogTeam()
+    { 
+        //if we don't own this, then set its' hide fog team equal to our team
+        if (IsSpawned)
+        {
+            if (!IsOwner)
+            {
+                if (Global.Instance.localPlayer != null)
+                {
+                    hideFogTeam = (int)Global.Instance.localPlayer.OwnerClientId;
+
+                    FogOfWarTeam fow = FogOfWarTeam.GetTeam(hideFogTeam);
+                    visibleInFog = fow.GetFogValue(transform.position) < minFogStrength * 255;
+
+                    for (int i = 0; i < allMeshes.Length; i++)
+                    {
+                        if (allMeshes[i] != null) allMeshes[i].enabled = visibleInFog;
+                    }
+                    for (int i = 0; i < attackEffects.Length; i++)
+                    {
+                        attackEffects[i].enabled = showAttackEffects && visibleInFog;
+                    }
+                }
+            }
+        }
+    }
+
+    //private bool teamRenderersUpdated = false;
+    private void UpdateTeamRenderers()
+    {
+        //int id = Mathf.Abs(System.Convert.ToInt32(teamNumber.Value)); //net.OwnerClientId
+        //int id = Mathf.Abs(System.Convert.ToInt32(localTeamNumber));
+        int id = localTeamNumber;
+        if (teamNumber.Value < 0)
+        {
+            foreach (MeshRenderer item in teamRenderers)
+            {
+                if (item != null)
+                {
+                    ///item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
+                    item.material.color = Global.Instance.aiTeamColors[id];
+                }
+            }
+        }
+        else
+        {
+            foreach (MeshRenderer item in teamRenderers)
+            {
+                if (item != null)
+                {
+                    ///item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
+                    item.material.color = Global.Instance.teamColors[id];
+                }
+            }
+        }
+        //teamRenderersUpdated = true;
+    }
+
+    private void PlaySpawnSound()
+    {
+        if (sounds.Length > 0) Global.Instance.PlayClipAtPoint(sounds[0], transform.position, .5f); //play spawning sound
     }
     private void TryToRegisterRallyMission()
     {
@@ -718,13 +804,6 @@ public class SelectableEntity : NetworkBehaviour
             AstarPath.active.FlushGraphUpdates();
         }
     }
-    private void FixFogTeam() //temporary fix
-    {
-        if (fogUnit != null && fogUnit.team != teamNumber.Value)
-        {
-            fogUnit.team = teamNumber.Value;
-        }
-    }
     private void Update()
     {
         if (IsSpawned)
@@ -1002,36 +1081,6 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-
-    //private bool teamRenderersUpdated = false;
-    private void UpdateTeamRenderers()
-    {
-        int id = Mathf.Abs(System.Convert.ToInt32(teamNumber.Value)); //net.OwnerClientId
-        if (teamNumber.Value < 0)
-        {
-            foreach (MeshRenderer item in teamRenderers)
-            {
-                if (item != null)
-                {
-                    ///item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
-                    item.material.color = Global.Instance.aiTeamColors[id];
-                }
-            }
-        }
-        else
-        {
-            foreach (MeshRenderer item in teamRenderers)
-            {
-                if (item != null)
-                {
-                    ///item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
-                    item.material.color = Global.Instance.teamColors[id];
-                }
-            }
-        }
-        //teamRenderersUpdated = true;
-    }
-
     public void TakeDamage(sbyte damage) //always managed by SERVER
     {
         hitPoints.Value -= damage;
@@ -1105,7 +1154,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public readonly float minFogStrength = 0.45f;
     [HideInInspector] public bool visibleInFog = false;
     [HideInInspector] public bool oldVisibleInFog = false;
-    [HideInInspector] public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
+    public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
     [HideInInspector] public bool shouldHideInFog = true; // gold should not be hidden
 
     private void UpdateVisibilityFromFogOfWar()
@@ -1150,25 +1199,7 @@ public class SelectableEntity : NetworkBehaviour
     }
 
     bool hideFogTeamSet = false;
-    /// <summary>
-    /// One time event to set fog hide team
-    /// </summary>
-    private void SetHideFogTeam()
-    {
-        if (hideFogTeamSet) return;
-        //if we don't own this, then set its' hide fog team equal to our team
-        if (IsSpawned)
-        {
-            if (!IsOwner)
-            {
-                if (Global.Instance.localPlayer != null)
-                {
-                    hideFogTeam = (int)Global.Instance.localPlayer.OwnerClientId;
-                    hideFogTeamSet = true;
-                }
-            }
-        }
-    }
+   
 
     private void StructureCosmeticDestruction()
     {
