@@ -5,6 +5,7 @@ using Unity.Netcode;
 using Pathfinding;
 using FoW;
 using static UnityEditorInternal.VersionControl.ListControl;
+using static UnityEngine.GraphicsBuffer;
 //using UnityEngine.Rendering;
 //using UnityEngine.Windows;
 
@@ -97,7 +98,7 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] public float defaultMoveSpeed = 0;
     [HideInInspector] public float defaultAttackDuration = 0;
     [HideInInspector] public float defaultImpactTime = 0;
-    private Transform target;
+    private Transform pathfindingTarget;
     public readonly float garrisonRange = 1.1f;
     //50 fps fixed update
     //private readonly int delay = 0;
@@ -116,9 +117,6 @@ public class MinionController : NetworkBehaviour
     [HideInInspector]
     public NetworkVariable<Vector3> destination = new NetworkVariable<Vector3>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-
-    //inform the server of the oldest (first) position on this list
-    public List<Vector3> nonOwnerDestinationList = new();
 
     #endregion
     #region Core
@@ -147,9 +145,9 @@ public class MinionController : NetworkBehaviour
         if (setter != null && setter.target == null)
         {
             GameObject obj = new GameObject("target");
-            target = obj.transform;
-            target.position = transform.position; //set to be on us
-            setter.target = target;
+            pathfindingTarget = obj.transform;
+            pathfindingTarget.position = transform.position; //set to be on us
+            setter.target = pathfindingTarget;
         }
         defaultMoveSpeed = ai.maxSpeed;
         defaultAttackDuration = attackDuration;
@@ -166,23 +164,6 @@ public class MinionController : NetworkBehaviour
         }
         maxDetectable = Mathf.RoundToInt(20 * attackRange);
     }
-    private int maxDetectable;
-
-
-    /// <summary>
-    /// Tells server this minion's destination so it can pathfind there on other clients
-    /// </summary>
-    /// <param name="position"></param>
-    private void SetDestination(Vector3 position)
-    {
-        //print("setting destination");
-        //if (IsOwner) destination.Value = position; //tell server where we're going
-        target.position = position; //move pathfinding target there
-    }
-    private void UpdateSetterTargetPosition()
-    {
-        target.position = destination.Value;
-    }
     public override void OnNetworkSpawn()
     {
         if (IsOwner)
@@ -198,7 +179,11 @@ public class MinionController : NetworkBehaviour
         }
         else
         {
-            /*  rigid.isKinematic = true;
+            rigid.isKinematic = true; //don't get knocked around
+            gameObject.layer = LayerMask.NameToLayer("OtherEntities"); //can pass through each other 
+            nonOwnerRealLocationList.Add(transform.position);
+            entity.RVO.enabled = false;
+            /*  ;
               ai.enabled = false;
               rayMod.enabled = false;
               seeker.enabled = false;*/
@@ -209,14 +194,72 @@ public class MinionController : NetworkBehaviour
         oldPosition = transform.position;
         orderedDestination = transform.position;
         if (IsOwner)
-        {
+        { 
             if (Global.Instance.graphUpdateScenePrefab != null)
                 graphUpdateScene = Instantiate(Global.Instance.graphUpdateScenePrefab, transform.position, Quaternion.identity);
             if (graphUpdateScene != null && ai != null)
             {
                 graphUpdateSceneCollider = graphUpdateScene.GetComponent<SphereCollider>();
-                graphUpdateSceneCollider.radius = ai.radius;
+                //graphUpdateSceneCollider.radius = ai.radius;
             }
+        }
+    }
+    private int maxDetectable;
+
+
+    /// <summary>
+    /// Tells server this minion's destination so it can pathfind there on other clients
+    /// </summary>
+    /// <param name="position"></param>
+    private void SetDestination(Vector3 position)
+    {
+        //print("setting destination");
+        if (IsOwner) destination.Value = position; //tell server where we're going
+        UpdateSetterTargetPosition(); //move pathfinding target
+    }
+    public bool manualControlPathfinding = false;
+    /// <summary>
+    /// Update pathfinding target to match actual destination
+    /// </summary>
+    private void UpdateSetterTargetPosition()
+    {
+        if (!manualControlPathfinding) pathfindingTarget.position = destination.Value;
+    }
+    private void NonOwnerPathfindToOldestRealLocation()
+    {
+        if (nonOwnerRealLocationList.Count > 0)
+        {
+            if (nonOwnerRealLocationList.Count >= Global.Instance.maximumQueuedRealLocations )
+            {
+                nonOwnerRealLocationList.RemoveAt(0); //remove oldest 
+
+            }
+            if (Vector3.Distance(nonOwnerRealLocationList[0], transform.position) > Global.Instance.allowedNonOwnerError)
+            {
+                transform.position = LerpPosition(transform.position, nonOwnerRealLocationList[0]);
+                if (ai != null) ai.enabled = false;
+            }
+            else
+            {
+                pathfindingTarget.position = nonOwnerRealLocationList[0]; //update pathfinding target to oldest real location 
+                if (ai != null) ai.enabled = true;
+            }
+
+            if (nonOwnerRealLocationList.Count > 1)
+            {
+                Vector3 offset = transform.position - pathfindingTarget.position;
+                float dist = offset.sqrMagnitude;
+                 //for best results, make this higher than unit's slow down distance. at time of writing slowdown dist is .2
+                if (dist < Global.Instance.closeEnoughDist * Global.Instance.closeEnoughDist) //square the distance to compare against
+                {
+                    nonOwnerRealLocationList.RemoveAt(0); //remove oldest 
+                }
+                ai.maxSpeed = defaultMoveSpeed * (1 + (nonOwnerRealLocationList.Count - 1) / Global.Instance.maximumQueuedRealLocations);
+            }
+        }
+        else //make sure we have at least one position
+        {
+            nonOwnerRealLocationList.Add(transform.position);
         }
     }
     private float moveTimer = 0;
@@ -239,7 +282,13 @@ public class MinionController : NetworkBehaviour
     private void OnRealLocationChanged(Vector3 prev, Vector3 cur)
     {
         finishedInitializingRealLocation = true;
+        if (!IsOwner)
+        {
+            nonOwnerRealLocationList.Add(realLocation.Value);
+        }
     }
+    public List<Vector3> nonOwnerRealLocationList = new(); //only used by non owners to store real locations that should be pathfound to sequentially
+
     private bool finishedInitializingRealLocation = false;
     private void Update()
     {
@@ -255,14 +304,15 @@ public class MinionController : NetworkBehaviour
                 UpdateAttackReadiness();
                 UpdateInteractors();
                 OwnerUpdateState();
+                UpdateSetterTargetPosition();
             }
-            else if (finishedInitializingRealLocation) //not owned by us
+            else // if (finishedInitializingRealLocation) //not owned by us
             {
+                NonOwnerPathfindToOldestRealLocation();
                 //CatchUpIfHighError();
                 //NonOwnerUpdateAnimationBasedOnContext(); //maybe there is issue with this 
                 //if (ai != null) ai.destination = destination.Value;
             }
-            UpdateSetterTargetPosition();
         }
     }
     //float stopDistIncreaseThreshold = 0.01f;
@@ -475,7 +525,7 @@ public class MinionController : NetworkBehaviour
         if (dist > Global.Instance.updateRealLocThreshold * Global.Instance.updateRealLocThreshold) //square the distance to compare against
         {
             //realLocationReached = false;
-            realLocation.Value = transform.position; //only update when different enough
+            realLocation.Value = transform.position; //only update when different enough 
         }
     }
     //private bool realLocationReached = false;
@@ -522,7 +572,7 @@ public class MinionController : NetworkBehaviour
             m_CurrentLerpTime = 0f;
         }
 
-        m_CurrentLerpTime += Time.deltaTime;
+        m_CurrentLerpTime += Time.deltaTime * Global.Instance.lerpScale;
 
         /*// gentler lerp for shorter distances
         float dist = Vector3.Distance(current, target);
@@ -549,7 +599,7 @@ public class MinionController : NetworkBehaviour
     }
     private void OnDrawGizmos()
     {
-        if (Vector3.Distance(realLocation.Value, transform.position) <= Global.Instance.allowedNonOwnerError)
+        /*if (Vector3.Distance(realLocation.Value, transform.position) <= Global.Instance.allowedNonOwnerError)
         {
             Gizmos.color = Color.green;
         }
@@ -558,12 +608,20 @@ public class MinionController : NetworkBehaviour
             Gizmos.color = Color.red;
         }
         Gizmos.DrawWireSphere(realLocation.Value, .1f);
-        Gizmos.DrawLine(transform.position, realLocation.Value);
+        Gizmos.DrawLine(transform.position, realLocation.Value);*/
         /*Gizmos.DrawWireSphere(transform.position, attackRange);
         if (targetEnemy != null)
         {
             Gizmos.DrawSphere(targetEnemy.transform.position, .1f);
         }*/
+
+        if (!IsOwner)
+        {
+            foreach (Vector3 loc in nonOwnerRealLocationList)
+            {
+                Gizmos.DrawWireSphere(loc, .1f);
+            }
+        }
     }
     #endregion
     #region States 
@@ -1255,7 +1313,7 @@ public class MinionController : NetworkBehaviour
                     if (!entity.interactionTarget.workersInteracting.Contains(entity)) //if we are not in harvester list
                     {
                         if (entity.interactionTarget.workersInteracting.Count < entity.interactionTarget.allowedWorkers) //if there is space
-                        { 
+                        {
                             entity.interactionTarget.workersInteracting.Add(entity);
                         }
                         else //there is no space
@@ -1267,10 +1325,10 @@ public class MinionController : NetworkBehaviour
                     break;
                 case MinionStates.Depositing:
                 case MinionStates.Garrisoning:
-                    if (!entity.interactionTarget.othersInteracting.Contains(entity)) 
+                    if (!entity.interactionTarget.othersInteracting.Contains(entity))
                     {
                         if (entity.interactionTarget.othersInteracting.Count < entity.interactionTarget.allowedInteractors) //if there is space
-                        { 
+                        {
                             entity.interactionTarget.othersInteracting.Add(entity);
                         }
                         else //there is no space
@@ -1452,6 +1510,7 @@ public class MinionController : NetworkBehaviour
     private SphereCollider graphUpdateSceneCollider;
 
     private float graphUpdateTime = 0.02f; //derived through trial and error
+    //public bool allowBecomingObstacles = false;
     private void BecomeObstacle()
     {
         //tell graph update scene to start blocking

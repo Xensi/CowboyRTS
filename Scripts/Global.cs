@@ -49,6 +49,10 @@ public class Global : NetworkBehaviour
     public int maxMapSize = 25; //radius
     public float allowedNonOwnerError = 1.5f; //should be greater than real loc threshold
     public float updateRealLocThreshold = .5f; //1
+
+    public int maximumQueuedRealLocations = 5;
+    public float closeEnoughDist = .3f;
+    public float lerpScale = 1;
     //[SerializeField] public Camera mainCam;
     //[SerializeField] public Camera lineCam;
     public Camera[] cams;

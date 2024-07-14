@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1550384743495247490}
   - component: {fileID: 8171473213557650441}
-  - component: {fileID: 3850986818363057127}
+  - component: {fileID: 7089064393463359737}
   m_Layer: 2
   m_Name: GraphUpdateSceneObject
   m_TagString: Untagged
@@ -60,12 +60,12 @@ MonoBehaviour:
   updateErosion: 1
   modifyTag: 0
   setTag:
-    value: 0
+    value: 1
   legacyMode: 0
   legacyUseWorldSpace: 0
   setTagCompatibility: -1
---- !u!135 &3850986818363057127
-SphereCollider:
+--- !u!136 &7089064393463359737
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -82,6 +82,8 @@ SphereCollider:
   m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 0.5
+  serializedVersion: 2
+  m_Radius: 0.05
+  m_Height: 0.5
+  m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}

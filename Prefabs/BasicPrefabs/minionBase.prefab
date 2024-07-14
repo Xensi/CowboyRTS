@@ -229,7 +229,7 @@ MonoBehaviour:
   harvestedResourceAmount: 0
   interactionTarget: {fileID: 0}
   buildQueue: []
-  interactors: []
+  allMeshes: []
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
   rallyMission: 0
@@ -246,7 +246,10 @@ MonoBehaviour:
   isHeavy: 0
   fullyBuilt: 1
   isKeystone: 0
+  allowedWorkers: 1
   allowedInteractors: 999
+  workersInteracting: []
+  othersInteracting: []
   buildOffset: {x: 0.5, y: 0, z: 0.5}
   spawnableAtOnce: 1
   spawnableUnits: []
@@ -275,9 +278,11 @@ MonoBehaviour:
   RVO: {fileID: 0}
   teamNumber:
     m_InternalValue: 0
+  localTeamNumber: 0
   desiredTeamNumber: 0
   clientIDToSpawnUnder: 0
   aiControlled: 0
+  initialized: 0
   usedAbilities: []
   fogUnit: {fileID: 0}
   visibleInFog: 0
@@ -320,13 +325,14 @@ MonoBehaviour:
   defaultAttackDuration: 0
   defaultImpactTime: 0
   areaOfEffectRadius: 1
-  state: 10
+  minionState: 10
   givenMission: 0
   rallyTarget: {x: 0, y: 0, z: 0}
   realLocation:
     m_InternalValue: {x: 0, y: 0, z: 0}
   destination:
     m_InternalValue: {x: 0, y: 0, z: 0}
+  nonOwnerRealLocationList: []
   shouldAutoSeekOutEnemies: 1
   lastCommand:
     m_InternalValue: 0
@@ -441,7 +447,7 @@ MonoBehaviour:
   groundMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  endReachedDistance: 0.25
+  endReachedDistance: 0.1
   whenCloseToDestination: 0
   rvoDensityBehavior:
     enabled: 0
@@ -463,7 +469,7 @@ MonoBehaviour:
   targetCompatibility: {fileID: 0}
   maxAcceleration: 999
   rotationSpeed: 360
-  slowdownDistance: 0.5
+  slowdownDistance: 0.2
   pickNextWaypointDist: 0.25
   alwaysDrawGizmos: 0
   slowWhenNotFacingTarget: 0
