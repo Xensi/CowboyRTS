@@ -10497,7 +10497,8 @@ MonoBehaviour:
   cannonBall: {fileID: 4931648679904400479, guid: ff26c0b7fbc2c1e439bd021472664b90, type: 3}
   explosion: {fileID: 8300000, guid: 53ce377f4f8f57347a834ce5d017add5, type: 3}
   singleUnitInfoParent: {fileID: 72769718}
-  playerList: []
+  uninitializedPlayers: []
+  initializedPlayers: []
   popText: {fileID: 316702969}
   fogVolume: {fileID: 1126431706}
   allFactionEntities: []
@@ -23595,9 +23596,9 @@ MonoBehaviour:
     Port: 7777
     ServerListenAddress: 127.0.0.1
   DebugSimulator:
-    PacketDelayMS: 50
-    PacketJitterMS: 10
-    PacketDropRate: 10
+    PacketDelayMS: 32
+    PacketJitterMS: 12
+    PacketDropRate: 2
 --- !u!114 &1873259844
 MonoBehaviour:
   m_ObjectHideFlags: 0

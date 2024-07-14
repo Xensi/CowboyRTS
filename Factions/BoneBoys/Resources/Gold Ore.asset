@@ -20,7 +20,7 @@ MonoBehaviour:
   isKeystone: 0
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0
-  shouldHideInFog: 1
+  shouldHideInFog: 0
   soundProfile: {fileID: 0}
   teamType: 1
   constructableBuildings: []

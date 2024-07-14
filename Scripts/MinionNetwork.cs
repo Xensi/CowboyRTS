@@ -1,5 +1,8 @@
 using UnityEngine;
 using Unity.Netcode; 
+/// <summary>
+/// Deprecated
+/// </summary>
 public class MinionNetwork : NetworkBehaviour
 {
     [SerializeField] private float rotationDifferenceThreshold = 22.5f;

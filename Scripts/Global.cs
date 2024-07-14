@@ -39,14 +39,16 @@ public class Global : NetworkBehaviour
     public Projectile cannonBall;
     public AudioClip explosion;
     public GameObject singleUnitInfoParent;
-    public List<RTSPlayer> playerList = new();
+    public List<RTSPlayer> uninitializedPlayers = new();
+    public List<RTSPlayer> initializedPlayers = new();
     public TMP_Text popText;
     public Volume fogVolume;
     public List<SelectableEntity> allFactionEntities = new();
     public GraphUpdateScene graphUpdateScenePrefab;
     public List<AITeamController> aiTeamControllers = new();
     public int maxMapSize = 25; //radius
-
+    public float allowedNonOwnerError = 1.5f; //should be greater than real loc threshold
+    public float updateRealLocThreshold = .5f; //1
     //[SerializeField] public Camera mainCam;
     //[SerializeField] public Camera lineCam;
     public Camera[] cams;
@@ -98,6 +100,7 @@ public class Global : NetworkBehaviour
     }
     private void Update()
     {
+        InitializePlayers();
         if (!playerHasWon) CheckIfAPlayerHasWon();
 
         if (allFactionEntities.Count > 0)
@@ -116,13 +119,29 @@ public class Global : NetworkBehaviour
         }
     }
     public bool playerHasWon = false;
+    private void InitializePlayers()
+    {
+        List<RTSPlayer> movedPlayers = new();
+        foreach (RTSPlayer player in uninitializedPlayers)
+        {
+            if (player.inTheGame.Value == true)
+            {
+                initializedPlayers.Add(player);
+                movedPlayers.Add(player);
+            }
+        }
+        foreach (RTSPlayer player in movedPlayers)
+        {
+            uninitializedPlayers.Remove(player);
+        }
+    }
     public void CheckIfAPlayerHasWon()
     {
-        if (playerList.Count <= 1) return;
+        if (initializedPlayers.Count <= 1) return;
         
         RTSPlayer potentialWinner = null;
         int inTheGameCount = 0;
-        foreach (RTSPlayer item in playerList)
+        foreach (RTSPlayer item in initializedPlayers)
         {
             if (item.inTheGame.Value == true)
             {

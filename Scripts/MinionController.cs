@@ -116,6 +116,10 @@ public class MinionController : NetworkBehaviour
     [HideInInspector]
     public NetworkVariable<Vector3> destination = new NetworkVariable<Vector3>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    //inform the server of the oldest (first) position on this list
+    public List<Vector3> nonOwnerDestinationList = new();
+
     #endregion
     #region Core
     //private MinionObstacle obstacle;
@@ -163,10 +167,16 @@ public class MinionController : NetworkBehaviour
         maxDetectable = Mathf.RoundToInt(20 * attackRange);
     }
     private int maxDetectable;
+
+
+    /// <summary>
+    /// Tells server this minion's destination so it can pathfind there on other clients
+    /// </summary>
+    /// <param name="position"></param>
     private void SetDestination(Vector3 position)
     {
         //print("setting destination");
-        if (IsOwner) destination.Value = position; //tell server where we're going
+        //if (IsOwner) destination.Value = position; //tell server where we're going
         target.position = position; //move pathfinding target there
     }
     private void UpdateSetterTargetPosition()
@@ -246,10 +256,10 @@ public class MinionController : NetworkBehaviour
                 UpdateInteractors();
                 OwnerUpdateState();
             }
-            else if (finishedInitializingRealLocation)
+            else if (finishedInitializingRealLocation) //not owned by us
             {
-                CatchUpIfHighError();
-                NonOwnerUpdateAnimationBasedOnContext();
+                //CatchUpIfHighError();
+                //NonOwnerUpdateAnimationBasedOnContext(); //maybe there is issue with this 
                 //if (ai != null) ai.destination = destination.Value;
             }
             UpdateSetterTargetPosition();
@@ -462,15 +472,15 @@ public class MinionController : NetworkBehaviour
         Vector3 offset = transform.position - realLocation.Value;
         float dist = offset.sqrMagnitude;//Vector3.Distance(transform.position, realLocation.Value);
 
-        if (dist > updateRealLocThreshold * updateRealLocThreshold)
+        if (dist > Global.Instance.updateRealLocThreshold * Global.Instance.updateRealLocThreshold) //square the distance to compare against
         {
             //realLocationReached = false;
             realLocation.Value = transform.position; //only update when different enough
         }
     }
     //private bool realLocationReached = false;
-    private float updateRealLocThreshold = 1f; //1
-    private readonly float allowedNonOwnerError = 1.5f; //1.5 ideally higher than real loc update; don't want to lerp to old position
+    //private float updateRealLocThreshold = 1f; //1
+    //private readonly float allowedNonOwnerError = 1.5f; //1.5 ideally higher than real loc update; don't want to lerp to old position
     private bool highPrecisionMovement = false;
     private void CatchUpIfHighError()
     {
@@ -478,8 +488,8 @@ public class MinionController : NetworkBehaviour
         //other clients: when their value for real location syncs up with owner, check if it's different enough to warrant a teleport
         //in future lerp to new location? 
         if (!IsOwner && entity.alive) //prevents dead units from teleporting
-        {
-            if (Vector3.Distance(realLocation.Value, transform.position) > allowedNonOwnerError || highPrecisionMovement) //&& realLocationReached == false
+        { //|| highPrecisionMovement
+            if (Vector3.Distance(realLocation.Value, transform.position) > Global.Instance.allowedNonOwnerError) //&& realLocationReached == false
             {
                 //Debug.Log("Telporting because distance too great");
                 //transform.position = realLocation.Value;
@@ -539,7 +549,7 @@ public class MinionController : NetworkBehaviour
     }
     private void OnDrawGizmos()
     {
-        if (Vector3.Distance(realLocation.Value, transform.position) <= allowedNonOwnerError)
+        if (Vector3.Distance(realLocation.Value, transform.position) <= Global.Instance.allowedNonOwnerError)
         {
             Gizmos.color = Color.green;
         }
@@ -1454,7 +1464,7 @@ public class MinionController : NetworkBehaviour
     }
     private void UpdateGraph()
     {
-        graphUpdateScene.Apply();
+        if (graphUpdateScene != null) graphUpdateScene.Apply();
         //AstarPath.active.FlushGraphUpdates(); 
     }
     public void ClearObstacle()

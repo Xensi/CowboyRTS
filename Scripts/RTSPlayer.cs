@@ -108,14 +108,14 @@ public class RTSPlayer : NetworkBehaviour
     }
     private void OnDisable()
     {
-        Global.Instance.playerList.Remove(this);
+        Global.Instance.uninitializedPlayers.Remove(this);
     }
     private bool active = true;
     public int teamID = 0;
     public override void OnNetworkSpawn()
     {
         teamID = System.Convert.ToInt32(OwnerClientId);
-        Global.Instance.playerList.Add(this);
+        Global.Instance.uninitializedPlayers.Add(this);
         if (IsOwner) //spawn initial minions/buildings  
         {
             inTheGame.Value = true;
