@@ -21,7 +21,7 @@ MonoBehaviour:
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
   shouldHideInFog: 1
-  soundProfile: {fileID: 0}
+  soundProfile: {fileID: 11400000, guid: ff7bffcb71726924386899d0f67a42ee, type: 2}
   teamType: 0
   constructableBuildings: []
   usableAbilities: []

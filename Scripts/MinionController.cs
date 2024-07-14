@@ -383,7 +383,7 @@ public class MinionController : NetworkBehaviour
         {
             if (entity.occupiedGarrison != null)
             {
-                ClientSeekEnemy();
+                //ClientSeekEnemy();
                 if (clientSideTargetInRange != null)
                 {
                     //Debug.DrawLine(transform.position, clientSideEnemyInRange.transform.position, Color.red, 0.1f);
@@ -1220,9 +1220,13 @@ public class MinionController : NetworkBehaviour
                     //instant dropoff
                     if (entity != null)
                     {
-                        Global.Instance.localPlayer.gold += entity.harvestedResourceAmount;
+                        entity.controllerOfThis.gold += entity.harvestedResourceAmount;
                         entity.harvestedResourceAmount = 0;
-                        Global.Instance.localPlayer.UpdateGUIFromSelections();
+                        if (entity.controllerOfThis is RTSPlayer)
+                        {
+                            RTSPlayer rts = entity.controllerOfThis as RTSPlayer;
+                            rts.UpdateGUIFromSelections();  
+                        }
                     }
                     minionState = MinionStates.AfterDepositCheck;
                 }
@@ -1349,7 +1353,11 @@ public class MinionController : NetworkBehaviour
 
     public void PrepareForDeath()
     {
-        Global.Instance.localPlayer.selectedEntities.Remove(entity);
+        if (entity.controllerOfThis is RTSPlayer)
+        {
+            RTSPlayer rts = entity.controllerOfThis as RTSPlayer;
+            rts.selectedEntities.Remove(entity); 
+        } 
         entity.Select(false);
         SwitchState(MinionStates.Die);
         ai.enabled = false;
@@ -1686,7 +1694,11 @@ public class MinionController : NetworkBehaviour
             }
 
             entity.harvestedResourceAmount += actualHarvested;
-            Global.Instance.localPlayer.UpdateGUIFromSelections();
+            if (entity.controllerOfThis is RTSPlayer)
+            {
+                RTSPlayer rts = entity.controllerOfThis as RTSPlayer;
+                rts.UpdateGUIFromSelections(); 
+            } 
         }
         else if (target != null && !target.IsSpawned)
         {
@@ -1695,7 +1707,7 @@ public class MinionController : NetworkBehaviour
     }
     private SelectableEntity FindClosestBuildable()
     {
-        List<SelectableEntity> list = Global.Instance.localPlayer.ownedEntities;
+        List<SelectableEntity> list = entity.controllerOfThis.ownedEntities;
 
         SelectableEntity closest = null;
         float distance = Mathf.Infinity;
@@ -1855,7 +1867,7 @@ public class MinionController : NetworkBehaviour
     }
     private SelectableEntity FindClosestDeposit() //right now resource agnostic
     {
-        List<SelectableEntity> list = Global.Instance.localPlayer.ownedEntities;
+        List<SelectableEntity> list = entity.controllerOfThis.ownedEntities;
 
         SelectableEntity closest = null;
         float distance = Mathf.Infinity;
@@ -2115,7 +2127,7 @@ public class MinionController : NetworkBehaviour
         SetDestination(target);
         //destination.Value = target;
         orderedDestination = target;
-    }
+    } 
     public void SetAttackMoveDestination() //called by local player
     {
         lastCommand.Value = CommandTypes.Attack;

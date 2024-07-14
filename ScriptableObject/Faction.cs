@@ -5,4 +5,6 @@ using UnityEngine;
 public class Faction : ScriptableObject
 {
     public List<FactionEntity> spawnableEntities = new(); //includes units and buildings 
+    public int startingGold = 100;
+    public int startingMaxPopulation = 20;
 }

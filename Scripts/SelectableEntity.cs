@@ -64,7 +64,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public bool isBuildIndicator = false;
     [HideInInspector] public bool tryingToTeleport = false;
     [HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
-    [HideInInspector] public SelectableEntity interactionTarget;
+    public SelectableEntity interactionTarget;
 
     [HideInInspector] public List<FactionUnit> buildQueue;
     public MeshRenderer[] allMeshes;
@@ -133,7 +133,7 @@ public class SelectableEntity : NetworkBehaviour
 
     //[Header("Resource Only")]
     [HideInInspector]
-    public ResourceType selfHarvestableType = ResourceType.None; 
+    public ResourceType selfHarvestableType = ResourceType.None;
 
     public List<GarrisonablePosition> garrisonablePositions = new();
     [HideInInspector]
@@ -156,20 +156,21 @@ public class SelectableEntity : NetworkBehaviour
     public GameObject targetIndicator;
     public List<MeshRenderer> teamRenderers;
     private DynamicGridObstacle obstacle;
-    [HideInInspector] public RVOController RVO; 
+    [HideInInspector] public RVOController RVO;
     public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); //negative team numbers are AI controlled
 
-    public int localTeamNumber = 0; 
+    public int localTeamNumber = 0;
 
     public sbyte desiredTeamNumber = 0; //only matters if negative
     #endregion
     #region NetworkSpawn 
     [HideInInspector] public byte clientIDToSpawnUnder = 0;
-    [HideInInspector] public bool aiControlled = false;
+    public bool aiControlled = false;
     private Rigidbody rigid;
     //private bool hasRegisteredRallyMission = false;
     private List<Material> savedMaterials = new();
+    public Player controllerOfThis;
     private void OnDrawGizmos()
     {
         if (fakeSpawn)
@@ -190,14 +191,27 @@ public class SelectableEntity : NetworkBehaviour
     private void UpdateResourceCollectableMeshes()
     {
         if (resourceCollectingMeshes.Length == 0) return;
-        //compare max resources against max resourceCollectingMeshes
-        float frac = (float)harvestedResourceAmount / harvestCapacity;
-        int numToActivate = Mathf.FloorToInt(frac * resourceCollectingMeshes.Length);
-        for (int i = 0; i < resourceCollectingMeshes.Length; i++)
-        {
-            if (resourceCollectingMeshes[i] != null)
+        if (visibleInFog)
+        { 
+            //compare max resources against max resourceCollectingMeshes
+            float frac = (float)harvestedResourceAmount / harvestCapacity;
+            int numToActivate = Mathf.FloorToInt(frac * resourceCollectingMeshes.Length);
+            for (int i = 0; i < resourceCollectingMeshes.Length; i++)
             {
-                resourceCollectingMeshes[i].enabled = i <= numToActivate - 1;
+                if (resourceCollectingMeshes[i] != null)
+                {
+                    resourceCollectingMeshes[i].enabled = i <= numToActivate - 1;
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < resourceCollectingMeshes.Length; i++)
+            {
+                if (resourceCollectingMeshes[i] != null)
+                {
+                    resourceCollectingMeshes[i].enabled = false;
+                }
             }
         }
     }
@@ -262,17 +276,17 @@ public class SelectableEntity : NetworkBehaviour
         selfHarvestableType = factionEntity.selfHarvestableType;
         shouldHideInFog = factionEntity.shouldHideInFog;
         if (factionEntity.soundProfile != null)
-        { 
+        {
             sounds = factionEntity.soundProfile.sounds;
         }
         else
         {
             sounds = new AudioClip[0];
         }
-        Debug.Log("Trying to initialize");
+        //Debug.Log("Trying to initialize");
         if (minionController != null)
         {
-            Debug.Log("Initializing attack type as " + factionEntity.attackType);
+            //Debug.Log("Initializing attack type as " + factionEntity.attackType);
             minionController.attackType = factionEntity.attackType;
             minionController.directionalAttack = factionEntity.directionalAttack;
             minionController.attackRange = factionEntity.attackRange;
@@ -290,7 +304,7 @@ public class SelectableEntity : NetworkBehaviour
             buildOffset = factionBuilding.buildOffset;
             fullyBuilt = !factionBuilding.needsConstructing;
             if (factionBuilding.needsConstructing)
-            { 
+            {
                 startingHP = 0;
             }
             else
@@ -318,6 +332,10 @@ public class SelectableEntity : NetworkBehaviour
         initialized = true;
     }
     public bool initialized = false;
+    public bool CanHarvest()
+    {
+        return isHarvester;
+    }
     public override void OnNetworkSpawn()
     {
         //Debug.Log("NetworkSpawn");
@@ -333,23 +351,33 @@ public class SelectableEntity : NetworkBehaviour
                 teamNumber.Value = desiredTeamNumber;
                 if (teamType == TeamBehavior.OwnerTeam)
                 {
-                    Global.Instance.aiTeamControllers[Mathf.Abs(desiredTeamNumber) - 1].ownedEntities.Add(this);
+                    AIPlayer AIController = Global.Instance.aiTeamControllers[Mathf.Abs(desiredTeamNumber) - 1];
+                    AIController.ownedEntities.Add(this);
+                    controllerOfThis = AIController;
                 }
+                //fogUnit.enabled = false;
             }
             else
             {
                 teamNumber.Value = (sbyte)OwnerClientId;
                 if (teamType == TeamBehavior.OwnerTeam)
                 {
-                    Global.Instance.localPlayer.ownedEntities.Add(this);
-                    Global.Instance.localPlayer.lastSpawnedEntity = this;
+                    RTSPlayer playerController = Global.Instance.localPlayer;
+                    playerController.ownedEntities.Add(this);
+                    playerController.lastSpawnedEntity = this;
+                    controllerOfThis = playerController;
 
                     if (!fullyBuilt)
                     {
                         RequestBuilders();
                     }
-                    ChangePopulation(consumePopulationAmount);
                 }
+            }
+            //place effect dependent on "controller of this" being defined after this line
+            if (fogUnit != null) fogUnit.team = desiredTeamNumber;
+            if (teamType == TeamBehavior.OwnerTeam)
+            {
+                ChangePopulation(consumePopulationAmount);
             }
             if (hitPoints.Value <= 0 && !constructionBegun) //buildings begun as untargetable (by enemies)
             {
@@ -366,7 +394,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         hitPoints.OnValueChanged += OnHitPointsChanged;
         damagedThreshold = (sbyte)(maxHP / 2);
-        rallyPoint = transform.position;  
+        rallyPoint = transform.position;
 
         if (targetIndicator != null)
         {
@@ -384,10 +412,10 @@ public class SelectableEntity : NetworkBehaviour
         localTeamNumber = System.Convert.ToInt32(net.OwnerClientId);
     }
     private void Start() //call stuff here so that network variables are valid (isSpawned)
-    { 
+    {
         PlaySpawnSound();
         TryToRegisterRallyMission();
-        SetInitialVisuals(); 
+        SetInitialVisuals();
         aiControlled = desiredTeamNumber < 0;
         if (isKeystone && Global.Instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
         {
@@ -435,8 +463,8 @@ public class SelectableEntity : NetworkBehaviour
         //Debug.Log("Team Value" + teamNumber.Value); //team number is unchanged during initialization :(
     }
     private void SetInitialVisuals()
-    { 
-        FixFogTeam();
+    {
+        //FixFogTeam();
         SetHideFogTeam();
         UpdateTeamRenderers();
     }
@@ -451,28 +479,13 @@ public class SelectableEntity : NetworkBehaviour
       /// One time event to set fog hide team
       /// </summary>
     private void SetHideFogTeam()
-    { 
+    {
         //if we don't own this, then set its' hide fog team equal to our team
-        if (IsSpawned)
+        if (FogHideable())
         {
-            if (!IsOwner)
+            if (Global.Instance.localPlayer != null)
             {
-                if (Global.Instance.localPlayer != null)
-                {
-                    hideFogTeam = (int)Global.Instance.localPlayer.OwnerClientId;
-
-                    FogOfWarTeam fow = FogOfWarTeam.GetTeam(hideFogTeam);
-                    visibleInFog = fow.GetFogValue(transform.position) < minFogStrength * 255;
-
-                    for (int i = 0; i < allMeshes.Length; i++)
-                    {
-                        if (allMeshes[i] != null) allMeshes[i].enabled = visibleInFog;
-                    }
-                    for (int i = 0; i < attackEffects.Length; i++)
-                    {
-                        attackEffects[i].enabled = showAttackEffects && visibleInFog;
-                    }
-                }
+                hideFogTeam = (int)Global.Instance.localPlayer.OwnerClientId;
             }
         }
     }
@@ -645,7 +658,7 @@ public class SelectableEntity : NetworkBehaviour
                         //if construction in progress, half refund
                         if (constructionBegun)
                         {
-                            Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost/2);
+                            Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost / 2);
                         }
                         else
                         {
@@ -813,14 +826,16 @@ public class SelectableEntity : NetworkBehaviour
             UpdateVisibilityFromFogOfWar();
             DetectIfShouldUnghost();
             DetectIfBuilt();
-            if (!fullyBuilt) return; //do not pass if not built
-            UpdateRallyVariables();
-            UpdateTimers();
-            UpdateAppliedEffects();
-            UpdateUsedAbilities();
-            UpdateInteractors(); //costly for loop
-            //DetectIfDamaged();
-            DetectChangeHarvestedResourceAmount();
+            UpdateInteractors();
+            if (fullyBuilt)
+            {
+                UpdateRallyVariables();
+                UpdateTimers();
+                UpdateAppliedEffects();
+                UpdateUsedAbilities();
+                //DetectIfDamaged();
+                DetectChangeHarvestedResourceAmount();
+            }
         }
     }
     private float attackEffectTimer = 0;
@@ -840,7 +855,7 @@ public class SelectableEntity : NetworkBehaviour
                 else
                 {
                     count = 0;
-                    UpdateBuildQueue();
+                    OwnerUpdateBuildQueue();
                 }
                 //walking sounds
                 if (minionController != null)
@@ -1126,6 +1141,10 @@ public class SelectableEntity : NetworkBehaviour
         }
     } */
     private int interactorIndex = 0;
+    private int othersInteractorIndex = 0;
+    /// <summary>
+    /// Remove any units that are no longer interacting with this from its list
+    /// </summary>
     private void UpdateInteractors()
     {
         if (workersInteracting.Count > 0)
@@ -1146,44 +1165,47 @@ public class SelectableEntity : NetworkBehaviour
                 {
                     othersInteracting.RemoveAt(interactorIndex);
                 }
-            }  
+            }
         }
         interactorIndex++;
+        othersInteractorIndex++;
         if (interactorIndex >= workersInteracting.Count) interactorIndex = 0;
+        if (othersInteractorIndex >= othersInteracting.Count) othersInteractorIndex = 0;
     }
-    [HideInInspector] public readonly float minFogStrength = 0.45f;
     [HideInInspector] public bool visibleInFog = false;
     [HideInInspector] public bool oldVisibleInFog = false;
     public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
-    [HideInInspector] public bool shouldHideInFog = true; // gold should not be hidden
-
+    public bool shouldHideInFog = true; // gold should not be hidden
+    private bool oneTimeForceUpdateFog = false;
     private void UpdateVisibilityFromFogOfWar()
     {
-        if (IsSpawned && (!IsOwner || aiControlled)) //only hide in fog if not owner, or is ai controlled
+        if (FogHideable())
         {
-            if (shouldHideInFog)
+            FogOfWarTeam fow = FogOfWarTeam.GetTeam(hideFogTeam);
+            visibleInFog = fow.GetFogValue(transform.position) < Global.Instance.minFogStrength * 255;
+            if (visibleInFog != oldVisibleInFog || oneTimeForceUpdateFog == false) //update if there is a change
             {
-                FogOfWarTeam fow = FogOfWarTeam.GetTeam(hideFogTeam);
-                visibleInFog = fow.GetFogValue(transform.position) < minFogStrength * 255;
-                if (visibleInFog != oldVisibleInFog) //update if there is a change
-                {
-                    oldVisibleInFog = visibleInFog;
+                oneTimeForceUpdateFog = true;
+                oldVisibleInFog = visibleInFog;
 
-                    for (int i = 0; i < allMeshes.Length; i++)
-                    {
-                        if (allMeshes[i] != null) allMeshes[i].enabled = visibleInFog;
-                    }
-                }
-                for (int i = 0; i < attackEffects.Length; i++)
+                for (int i = 0; i < allMeshes.Length; i++)
                 {
-                    attackEffects[i].enabled = showAttackEffects && visibleInFog;
+                    if (allMeshes[i] != null) allMeshes[i].enabled = visibleInFog;
                 }
             }
-            else
+            for (int i = 0; i < attackEffects.Length; i++)
             {
-                visibleInFog = true;
+                attackEffects[i].enabled = showAttackEffects && visibleInFog;
             }
         }
+        /*else
+        {
+            visibleInFog = true;
+        }*/
+    }
+    private bool FogHideable()
+    {
+        return IsSpawned && (!IsOwner || aiControlled) && shouldHideInFog;
     }
     private void UpdateTimers()
     {
@@ -1199,7 +1221,7 @@ public class SelectableEntity : NetworkBehaviour
     }
 
     bool hideFogTeamSet = false;
-   
+
 
     private void StructureCosmeticDestruction()
     {
@@ -1243,13 +1265,18 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void ChangeMaxPopulation(int change)
     {
-        if (IsOwner && teamType == TeamBehavior.OwnerTeam) Global.Instance.localPlayer.maxPopulation += change;
+        if (IsOwner && teamType == TeamBehavior.OwnerTeam)
+        {
+            if (controllerOfThis != null) controllerOfThis.maxPopulation += change;
+            //Global.Instance.localPlayer.maxPopulation += change;
+        }
     }
     private void ChangePopulation(int change)
     {
         if (IsOwner && teamType == TeamBehavior.OwnerTeam)
         {
-            Global.Instance.localPlayer.population += change;
+            //Global.Instance.localPlayer.population += change;
+            if (controllerOfThis != null) controllerOfThis.population += change; 
         }
     }
     private readonly float deathDuration = 10;
@@ -1288,10 +1315,10 @@ public class SelectableEntity : NetworkBehaviour
         GameObject game = obj;
         //Destroy(game);
         net.Despawn(game);
-    } 
+    }
     public bool IsHarvestable()
     {
-        return selfHarvestableType != ResourceType.None; 
+        return selfHarvestableType != ResourceType.None;
     }
     public void SetRally()
     {
@@ -1334,7 +1361,7 @@ public class SelectableEntity : NetworkBehaviour
                     }
                 }
                 else if (target.teamType == TeamBehavior.FriendlyNeutral)
-                { 
+                {
                     if (target.IsHarvestable())
                     {
                         rallyMission = RallyMission.Harvest;
@@ -1383,7 +1410,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         //fire locally 
         if (sounds.Length > 0)
-        { 
+        {
             AudioClip clip = sounds[id];
             Global.Instance.PlayClipAtPoint(clip, transform.position, 0.1f);
             //request server to send to other clients
@@ -1404,7 +1431,7 @@ public class SelectableEntity : NetworkBehaviour
             Global.Instance.PlayClipAtPoint(clip, transform.position, 0.25f);
         }
     }
-    private void UpdateBuildQueue()
+    private void OwnerUpdateBuildQueue()
     {
         if (buildQueue.Count > 0)
         {
@@ -1414,14 +1441,19 @@ public class SelectableEntity : NetworkBehaviour
             {
                 fac.spawnTimeCost--;
             }
-            if (fac.spawnTimeCost <= 0 && consumePopulationAmount <= Global.Instance.localPlayer.maxPopulation - Global.Instance.localPlayer.population)
+            if (fac.spawnTimeCost <= 0 
+                && consumePopulationAmount <= controllerOfThis.maxPopulation - controllerOfThis.population)
             { //spawn the unit
                 //Debug.Log("spawn");
 
                 BuildQueueSpawn(fac);
             }
         }
-        Global.Instance.localPlayer.UpdateBuildQueue();
+        if (controllerOfThis is RTSPlayer)
+        {
+            RTSPlayer rts = controllerOfThis as RTSPlayer;
+            rts.UpdateBuildQueueGUI();
+        } 
     }
     private void BuildQueueSpawn(FactionUnit unit)
     {
@@ -1441,8 +1473,16 @@ public class SelectableEntity : NetworkBehaviour
         {
             pos = select.transform.position;
         }
-        //GenericSpawnMinion(pos, id, true, rally);
-        Global.Instance.localPlayer.GenericSpawnMinion(pos, unit, this);
+        if (controllerOfThis is RTSPlayer)
+        {
+            RTSPlayer rts = controllerOfThis as RTSPlayer;
+            rts.GenericSpawnMinion(pos, unit, this);
+        }
+        else if (controllerOfThis is AIPlayer)
+        { 
+            AIPlayer ai = controllerOfThis as AIPlayer;
+            ai.SpawnMinion(pos, unit);
+        }
     }
     private Vector3[] LineArray(Vector3 des)
     {

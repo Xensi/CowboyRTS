@@ -9,26 +9,19 @@ using System.Linq;
 using FoW;
 using UnityEngine.Rendering;
 using System;
-using UnityEditor.Playables;
+/*using UnityEditor.Playables;
 using UnityEditor.ShaderGraph.Internal;
 using Unity.Burst.CompilerServices;
-using static UnityEditor.Progress;
+using static UnityEditor.Progress;*/
 
-public class RTSPlayer : NetworkBehaviour
+public class RTSPlayer : Player
 {
     public NetworkVariable<bool> inTheGame = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public List<SelectableEntity> keystoneUnits = new();
-    public int gold = 100;
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
-    public List<SelectableEntity> ownedEntities; //must be serialized or public
     public List<SelectableEntity> selectedEntities;
-    public List<SelectableEntity> enemyEntities;
-
-    //[SerializeField] private FactionScriptableObject _faction; 
-    public Faction playerFaction;
-
-    //[SerializeField] private int _entitiesIndex = 0; //used to pick a prefab from faction list
+    public List<SelectableEntity> enemyEntities; 
     private Vector3 _mousePosition;
     private Vector3 _offset;
     public Vector3 cursorWorldPosition;
@@ -52,8 +45,7 @@ public class RTSPlayer : NetworkBehaviour
     private LayerMask blockingLayer;
     public SelectableEntity lastSpawnedEntity;
     public bool placementBlocked = false;
-    private GameObject followCursorObject;
-    //private byte buildingPlacingID = 0;
+    private GameObject followCursorObject; 
     private MeshRenderer[] meshes;
     private bool oldPlacement = false;
     public Portal startPortal;
@@ -65,18 +57,40 @@ public class RTSPlayer : NetworkBehaviour
     private readonly float camScroll = 0.5f;
     public byte starterUnitID = 0;
     private Transform camParent;
-    public int population = 0;
-    public int maxPopulation = 10;
     public LayerMask placementGhost;
     public LayerMask gameLayer;
     public Camera mainCam;
     private Camera[] cams;
+    private bool active = true;
+    public int teamID = 0;
+    public enum ActionType
+    {
+        Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget
+    }
+    private ActionType actionType = ActionType.Move;
+    private FactionBuilding buildingToPlace = null;
+    public List<SelectableEntity> militaryList = new();
+    public List<SelectableEntity> builderList = new();
+    public List<SelectableEntity> productionList = new();
+    private Vector3 startWallPosition;
+    public List<Vector3> predictedWallPositions = new();
+    public List<bool> predictedWallPositionsShouldBePlaced = new();
+    public List<GameObject> wallGhosts = new();
+    private List<SelectableEntity> fakeSpawns = new();
+    private List<ushort> fakeSpawnsReadyForReplacement = new();
+    private List<FactionBuilding> availableConstructionOptions = new();
+    [SerializeField] private List<FactionAbility> availableAbilities = new();
+    private List<FactionUnit> availableUnitSpawns = new();
+    private Vector3 buildOffset = Vector3.zero;
+    public bool placingPortal = false;
+    public List<byte> indices;
     public void LoseGame()
     {
         inTheGame.Value = false;
     }
-    void Start()
+    public override void Start()
     {
+        base.Start();
         groundLayer = LayerMask.GetMask("Ground");
         blockingLayer = LayerMask.GetMask("Entity", "Obstacle");
         entityLayer = LayerMask.GetMask("Entity");
@@ -93,7 +107,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             MoveCamToSpawn();
         }
-    }
+    } 
     private void MoveCamToSpawn()
     {
         Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
@@ -110,8 +124,6 @@ public class RTSPlayer : NetworkBehaviour
     {
         Global.Instance.uninitializedPlayers.Remove(this);
     }
-    private bool active = true;
-    public int teamID = 0;
     public override void OnNetworkSpawn()
     {
         teamID = System.Convert.ToInt32(OwnerClientId);
@@ -143,7 +155,7 @@ public class RTSPlayer : NetworkBehaviour
         {
             active = false;
         }
-        playerFaction = Global.Instance.factions[teamID];
+        //playerFaction = Global.Instance.factions[teamID];
     }
     private bool MouseOverUI()
     {
@@ -159,11 +171,6 @@ public class RTSPlayer : NetworkBehaviour
             cams[i].orthographicSize = Mathf.Clamp(cams[i].orthographicSize - Input.mouseScrollDelta.y * camScroll, 1, 10); ;
         }
     }
-    public enum ActionType
-    {
-        Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget
-    }
-    private ActionType actionType = ActionType.Move;
 
     private void SelectedAttackMove()
     {
@@ -402,18 +409,17 @@ public class RTSPlayer : NetworkBehaviour
         /*if (Input.GetKeyDown(KeyCode.RightAlt))
         {
             GenericSpawnMinion(cursorWorldPosition, 2, this);
-        }
+        }*/
         if (Input.GetKeyDown(KeyCode.RightControl))
         {
-            GenericSpawnMinion(cursorWorldPosition, 3, this);
+            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[3], this);
         }
-        if (Input.GetKeyDown(KeyCode.UpArrow))
+        /*if (Input.GetKeyDown(KeyCode.UpArrow))
         {
             GenericSpawnMinion(cursorWorldPosition, 11, this);
         }*/
 #endif
     }
-    private FactionBuilding buildingToPlace = null;
     void Update()
     {
         /*FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
@@ -503,9 +509,6 @@ public class RTSPlayer : NetworkBehaviour
         //TryReplaceFakeSpawn();
         UpdateGUIFromSelections();// this might be expensive ...
     }
-    public List<SelectableEntity> militaryList = new();
-    public List<SelectableEntity> builderList = new();
-    public List<SelectableEntity> productionList = new();
     private void SelectWithinBounds() //rectangle select, finish drag select
     {
         RectTransform SelectionBox = Global.Instance.selectionRect;
@@ -602,7 +605,6 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
     }
-    private Vector3 startWallPosition;
     private void PlaceBuilding(FactionBuilding building)
     {
         switch (linkedState)
@@ -691,9 +693,6 @@ public class RTSPlayer : NetworkBehaviour
             }
         }*/
     }
-    public List<Vector3> predictedWallPositions = new();
-    public List<bool> predictedWallPositionsShouldBePlaced = new();
-    public List<GameObject> wallGhosts = new();
     private void ClearWallGhosts()
     {
         foreach (GameObject item in wallGhosts)
@@ -978,7 +977,6 @@ public class RTSPlayer : NetworkBehaviour
     }
     #region SpawnMinion
 
-    private List<SelectableEntity> fakeSpawns = new();
     private void FakeClientSideSpawn(Vector3 spawn, byte minionID)
     {
         /*Vector3 spawnPosition = spawn;//new(spawn.x, 0, spawn.y); //get spawn position 
@@ -1111,8 +1109,7 @@ public class RTSPlayer : NetworkBehaviour
                     //select.net.Spawn(); 
                     if (select.net == null) select.net = select.GetComponent<NetworkObject>();
 
-                    select.net.SpawnWithOwnership(clientID);
-
+                    select.net.SpawnWithOwnership(clientID); 
                     //change fog of war unit to the correct team
                     //select.localTeamNumber = clientID;
                     //if (select.fogUnit != null) select.fogUnit.team = clientID;
@@ -1134,7 +1131,6 @@ public class RTSPlayer : NetworkBehaviour
             }
         }
     }
-    private List<ushort> fakeSpawnsReadyForReplacement = new();
     /// <summary>
     /// Tell client that their fake spawn is ready to be replaced with the real thing
     /// </summary>
@@ -1232,7 +1228,7 @@ public class RTSPlayer : NetworkBehaviour
         //UpdateIndices();
         UpdateGUIBasedOnSelectedUnitCount();
         UpdateButtonsFromSelectedUnits();
-        UpdateBuildQueue();
+        UpdateBuildQueueGUI();
     }
     private void UpdateGUIBasedOnSelectedUnitCount()
     {
@@ -1270,9 +1266,6 @@ public class RTSPlayer : NetworkBehaviour
             Debug.LogError("a GUI element needs to be assigned.");
         }
     }
-    private List<FactionBuilding> availableConstructionOptions = new();
-    [SerializeField] private List<FactionAbility> availableAbilities = new();
-    private List<FactionUnit> availableUnitSpawns = new();
 
 
     /// <summary>
@@ -1407,7 +1400,7 @@ public class RTSPlayer : NetworkBehaviour
             && entity.alive && entity.usableAbilities.Contains(ability)
             && entity.AbilityOffCooldown(ability));
     }
-    public void UpdateBuildQueue()
+    public void UpdateBuildQueueGUI()
     {
         Global.Instance.queueParent.gameObject.SetActive(false);
         if (selectedEntities.Count != 1) return; //only works with a single unit for now
@@ -1475,7 +1468,7 @@ public class RTSPlayer : NetworkBehaviour
             gold -= cost;
             select.buildQueue.Add(newUnit);
         }
-        UpdateBuildQueue();
+        UpdateBuildQueueGUI();
     }
     private bool TargetCanSpawnThisEntity(SelectableEntity target, FactionEntity entity)
     {
@@ -1485,7 +1478,6 @@ public class RTSPlayer : NetworkBehaviour
         }
         return false;
     }
-    private Vector3 buildOffset = Vector3.zero;
     /// <summary>
     /// Create building ghost showing where building will be placed
     /// </summary>
@@ -1532,8 +1524,6 @@ public class RTSPlayer : NetworkBehaviour
             colliders[i].isTrigger = true;
         }
     }
-    public bool placingPortal = false;
-    public List<byte> indices;
     private void SingleSelect()
     {
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);

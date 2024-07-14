@@ -45,7 +45,7 @@ public class Global : NetworkBehaviour
     public Volume fogVolume;
     public List<SelectableEntity> allFactionEntities = new();
     public GraphUpdateScene graphUpdateScenePrefab;
-    public List<AITeamController> aiTeamControllers = new();
+    public List<AIPlayer> aiTeamControllers = new();
     public int maxMapSize = 25; //radius
     public float allowedNonOwnerError = 1.5f; //should be greater than real loc threshold
     public float updateRealLocThreshold = .5f; //1
@@ -53,6 +53,7 @@ public class Global : NetworkBehaviour
     public int maximumQueuedRealLocations = 5;
     public float closeEnoughDist = .3f;
     public float lerpScale = 1;
+    public readonly float minFogStrength = 0.45f;
     //[SerializeField] public Camera mainCam;
     //[SerializeField] public Camera lineCam;
     public Camera[] cams;

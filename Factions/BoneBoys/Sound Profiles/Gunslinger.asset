@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 03adb7ce97633d9459373ee32b03e856, type: 3}
-  m_Name: SkeletonSoundProfile
+  m_Name: Gunslinger
   m_EditorClassIdentifier: 
   sounds:
   - {fileID: 8300000, guid: e12124de62f005543a8b08aff5493439, type: 3}
-  - {fileID: 8300000, guid: f44f3479724a08e4e8c995e2f633bbfe, type: 3}
+  - {fileID: 8300000, guid: ece1bbbbedff32a48b397650f27eed3d, type: 3}
   - {fileID: 8300000, guid: f36c995b0cc52224ebecea1e5b408cfa, type: 3}

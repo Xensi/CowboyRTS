@@ -193,7 +193,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 56881033
+  GlobalObjectIdHash: 2641155720
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -282,6 +282,7 @@ MonoBehaviour:
   desiredTeamNumber: 0
   clientIDToSpawnUnder: 0
   aiControlled: 0
+  controllerOfThis: {fileID: 0}
   initialized: 0
   usedAbilities: []
   fogUnit: {fileID: 0}
@@ -332,6 +333,7 @@ MonoBehaviour:
     m_InternalValue: {x: 0, y: 0, z: 0}
   destination:
     m_InternalValue: {x: 0, y: 0, z: 0}
+  manualControlPathfinding: 0
   nonOwnerRealLocationList: []
   shouldAutoSeekOutEnemies: 1
   lastCommand:
@@ -439,7 +441,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   version: 1073741824
-  radius: 0.2
+  radius: 0.15
   height: 1
   canMove: 1
   maxSpeed: 2
@@ -494,7 +496,7 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.2
+  m_Radius: 0.15
   m_Height: 1
   m_Direction: 1
   m_Center: {x: 0, y: 0.5, z: 0}

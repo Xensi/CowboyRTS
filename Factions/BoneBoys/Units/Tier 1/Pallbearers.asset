@@ -13,6 +13,36 @@ MonoBehaviour:
   m_Name: Pallbearers
   m_EditorClassIdentifier: 
   productionName: Pallbearers
-  goldCost: 40
+  description: 
   prefabToSpawn: {fileID: 8532064031720343334, guid: a0161a0a83f36a64cbeabb6fc555ca3d, type: 3}
-  timeCost: 5
+  goldCost: 40
+  maxHP: 10
+  isKeystone: 0
+  consumePopulationAmount: 1
+  raisePopulationLimitBy: 0
+  shouldHideInFog: 1
+  soundProfile: {fileID: 11400000, guid: ff7bffcb71726924386899d0f67a42ee, type: 2}
+  teamType: 0
+  constructableBuildings: []
+  usableAbilities: []
+  depositType: 0
+  selfHarvestableType: 1
+  attackType: 0
+  damage: 1
+  directionalAttack: 0
+  attackRange: 1
+  attackDuration: 1
+  impactTime: 0.5
+  areaOfEffectRadius: 1
+  shouldAutoSeekEnemies: 0
+  spawnableUnits: []
+  spawnableAtOnce: 1
+  isHarvester: 0
+  harvestCapacity: 5
+  depositRange: 1
+  expandGarrisonOptions: 0
+  passengersAreTargetable: 0
+  acceptsHeavy: 0
+  spawnTimeCost: 5
+  isHeavy: 0
+  canAttackWhileMoving: 0

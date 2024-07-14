@@ -830,7 +830,8 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 7
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4114946824336576489, guid: 4df2c8dd6df68a346a0542c9ca69ac12, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 7343110324544056130, guid: 4df2c8dd6df68a346a0542c9ca69ac12, type: 3}
@@ -845,7 +846,7 @@ PrefabInstance:
       addedObject: {fileID: 5048197532384652380}
     - targetCorrespondingSourceObject: {fileID: 401075918764670025, guid: 4df2c8dd6df68a346a0542c9ca69ac12, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1877032818913776165}
+      addedObject: {fileID: 6491567716640147195}
   m_SourcePrefab: {fileID: 100100000, guid: 4df2c8dd6df68a346a0542c9ca69ac12, type: 3}
 --- !u!23 &1213167683427604842 stripped
 MeshRenderer:
@@ -908,7 +909,7 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &1877032818913776165
+--- !u!114 &6491567716640147195
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
