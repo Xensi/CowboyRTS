@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Linq;
 using static UnityEditor.Progress;
+using Pathfinding.Drawing;
 /// <summary>
 /// AI that is governed by the server
 /// </summary>
@@ -13,7 +14,6 @@ public class AIPlayer : Player
     public float actionTime = 2;
     private float timer = 0;
     public Transform spawnPosition;
-    public int AITeamNumber = -1;
     public override void OnNetworkSpawn()
     {
         if (IsOwner) //spawn initial minions/buildings  
@@ -66,7 +66,7 @@ public class AIPlayer : Player
     private void EvaluateVisibleResources()
     {
         visibleResources.Clear();
-        FogOfWarTeam fow = FogOfWarTeam.GetTeam(AITeamNumber);
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam(teamID);
         foreach (SelectableEntity item in Global.Instance.harvestableResources)
         {
             bool visibleInFog = fow.GetFogValue(item.transform.position) < Global.Instance.minFogStrength * 255;
@@ -118,15 +118,51 @@ public class AIPlayer : Player
                 }
             }
         }
-        //find a valid position for the building
-        //try selecting random position. make sure it's low fog and no collisions
-        //try within small radius and increase//center on random unit
+        Vector3 validPosition = Vector3.zero;
         if (chosenEntity != null && building != null)
         {
-            gold -= building.goldCost;
-            SelectableEntity last = SpawnMinion(chosenEntity.transform.position, building);
-            chosenEntity.minionController.ForceBuildTarget(last);
+            bool foundValidPosition = false;
+            //pick a random point around the keystone
+            for (int i = 0; i < 100; i++)
+            {
+                Vector2 randomCircle = Random.insideUnitCircle * 5;
+                int verticalOffset = 10;
+                Vector3 randCircle3D = new Vector3(randomCircle.x, verticalOffset, randomCircle.y);
+                Vector3 randomPosition = ownedEntities[0].transform.position + randCircle3D;
+                //ray cast down
+                bool rayHit = Physics.Raycast(randomPosition, Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.groundLayer);
+                if (rayHit)
+                {
+                    Grid grid = Global.Instance.grid;
+                    if (grid != null)
+                    {
+                        Vector3 buildOffset = building.buildOffset;
+                        Vector3Int gridPos = grid.WorldToCell(hit.point);
+                        Vector3 worldGridPos = grid.CellToWorld(gridPos) + buildOffset;
+                        worldGridPos = new Vector3(worldGridPos.x, hit.point.y, worldGridPos.z);
+
+                        if (IsPositionBlocked(worldGridPos))
+                        {
+                            Debug.DrawRay(worldGridPos, transform.up, Color.red, 10);
+                        }
+                        else
+                        {
+                            Debug.DrawRay(worldGridPos, transform.up, Color.green, 10);
+                            validPosition = worldGridPos;
+                            foundValidPosition = true;
+                            break;
+                        } 
+                    }
+                } 
+            }
+            if (foundValidPosition)
+            { 
+                gold -= building.goldCost;
+                SelectableEntity last = SpawnMinion(validPosition, building);
+                chosenEntity.minionController.ForceBuildTarget(last);
+            }
         }
+
     }
     private void TryToCreateUnit()
     {
@@ -155,7 +191,7 @@ public class AIPlayer : Player
             gold -= cost;
             chosenEntity.buildQueue.Add(newUnit);
         }
-    } 
+    }
     /// <summary>
     /// The server will spawn in a minion at a position.
     /// </summary> 
@@ -178,7 +214,7 @@ public class AIPlayer : Player
                 }
                 if (select != null)
                 {
-                    select.desiredTeamNumber = (sbyte)AITeamNumber; //necessary for it to spawn as AI controlled
+                    select.desiredTeamNumber = (sbyte)teamID; //necessary for it to spawn as AI controlled
                     if (select.net == null) select.net = select.GetComponent<NetworkObject>();
                     select.net.Spawn();
                 }

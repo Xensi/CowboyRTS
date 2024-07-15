@@ -62,7 +62,6 @@ public class RTSPlayer : Player
     public Camera mainCam;
     private Camera[] cams;
     private bool active = true;
-    public int teamID = 0;
     public enum ActionType
     {
         Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget
@@ -875,58 +874,7 @@ public class RTSPlayer : Player
             }
         }
         wallGhosts.Clear();
-    }
-    private bool CheckIfPositionIsOnRamp(Vector3 position)
-    {
-        int use;
-        //first check if hit position is very close to integer
-        int checkAgainst = Mathf.RoundToInt(position.y);
-        if (Mathf.Abs(checkAgainst - position.y) < 0.01f) //
-        {
-            use = checkAgainst;
-        }
-        else
-        {
-            use = Mathf.CeilToInt(position.y);
-        }
-
-        float buffer = 0.5f;
-        Vector3 testPosition = new Vector3(position.x, use + buffer, position.z);
-        if (Physics.Raycast(testPosition, Vector3.down, out RaycastHit rampHit, Mathf.Infinity, groundLayer))
-        {
-            float distance = Mathf.Abs(testPosition.y - rampHit.point.y);
-            return distance > 0.01f + buffer || distance < buffer - 0.01f;
-        }
-        return false;
-    }
-    private bool IsPositionBlocked(Vector3 position)
-    {
-        bool onRamp = CheckIfPositionIsOnRamp(position);
-        bool placementBlocked = false;
-
-        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
-        if (fow.GetFogValue(position) > 0.1f * 255)
-        {
-            placementBlocked = true;
-        }
-        else
-        {
-            if (onRamp)
-            {
-                placementBlocked = true;
-            }
-            else
-            {
-
-                float sides = .24f;
-                float height = .5f;
-                Vector3 halfExtents = new Vector3(sides, height, sides);
-                Vector3 center = new Vector3(position.x, position.y + height, position.z);
-                placementBlocked = Physics.CheckBox(center, halfExtents, Quaternion.identity, blockingLayer, QueryTriggerInteraction.Ignore);
-            }
-        }
-        return placementBlocked;
-    }
+    } 
     public void UpdatePlacementBlockedStatus()
     {
         placementBlocked = IsPositionBlocked(cursorWorldPosition);

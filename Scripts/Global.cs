@@ -57,9 +57,14 @@ public class Global : NetworkBehaviour
     //[SerializeField] public Camera mainCam;
     //[SerializeField] public Camera lineCam;
     public Camera[] cams;
+    public LayerMask groundLayer;
+    public LayerMask blockingLayer;
 
+    public Grid grid;
     private void Awake()
     {
+        groundLayer = LayerMask.GetMask("Ground");
+        blockingLayer = LayerMask.GetMask("Entity", "Obstacle");
         // If there is an instance, and it's not me, delete myself.
 
         if (Instance != null && Instance != this)

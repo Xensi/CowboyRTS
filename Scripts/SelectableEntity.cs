@@ -66,7 +66,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
     public SelectableEntity interactionTarget;
 
-    [HideInInspector] public List<FactionUnit> buildQueue;
+    public List<FactionUnit> buildQueue;
     public MeshRenderer[] allMeshes;
     //when fog of war changes, check if we should hide or show attack effects
     private bool damaged = false;
@@ -1142,6 +1142,10 @@ public class SelectableEntity : NetworkBehaviour
     } */
     private int interactorIndex = 0;
     private int othersInteractorIndex = 0;
+    public bool IsBusy()
+    {
+        return interactionTarget != null;
+    }
     /// <summary>
     /// Remove any units that are no longer interacting with this from its list
     /// </summary>
