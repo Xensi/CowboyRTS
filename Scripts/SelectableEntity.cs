@@ -68,6 +68,8 @@ public class SelectableEntity : NetworkBehaviour
 
     public List<FactionUnit> buildQueue;
     public MeshRenderer[] allMeshes;
+    public MeshRenderer[] unbuiltRenderers;
+    public MeshRenderer[] finishedRenderers;
     //when fog of war changes, check if we should hide or show attack effects
     private bool damaged = false;
     private readonly int delay = 50;
@@ -148,8 +150,6 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private Material damagedState;
     [HideInInspector] public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
     public LineRenderer lineIndicator;
-    public MeshRenderer[] unbuiltRenderers;
-    public MeshRenderer[] finishedRenderers;
     [SerializeField] private MeshRenderer[] damageableMeshes;
     [SerializeField] private MeshRenderer[] resourceCollectingMeshes;
     [SerializeField] private GameObject selectIndicator;
@@ -1191,11 +1191,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 oneTimeForceUpdateFog = true;
                 oldVisibleInFog = visibleInFog;
-
-                for (int i = 0; i < allMeshes.Length; i++)
-                {
-                    if (allMeshes[i] != null) allMeshes[i].enabled = visibleInFog;
-                }
+                UpdateMeshVisibility(visibleInFog);
             }
             for (int i = 0; i < attackEffects.Length; i++)
             {
@@ -1206,6 +1202,33 @@ public class SelectableEntity : NetworkBehaviour
         {
             visibleInFog = true;
         }*/
+    }
+    private void UpdateMeshVisibility(bool val)
+    {
+        if (minionController == null)
+        {
+            if (fullyBuilt)
+            {
+                for (int i = 0; i < finishedRenderers.Length; i++)
+                {
+                    if (finishedRenderers[i] != null) finishedRenderers[i].enabled = val;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < unbuiltRenderers.Length; i++)
+                {
+                    if (unbuiltRenderers[i] != null) unbuiltRenderers[i].enabled = val;
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < allMeshes.Length; i++)
+            {
+                if (allMeshes[i] != null) allMeshes[i].enabled = val;
+            }
+        }
     }
     private bool FogHideable()
     {

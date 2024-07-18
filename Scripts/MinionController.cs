@@ -1843,7 +1843,7 @@ public class MinionController : NetworkBehaviour
     /// <returns></returns>
     private SelectableEntity FindClosestHarvestable()
     {
-        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)entity.controllerOfThis.teamID);
         SelectableEntity[] list = Global.Instance.harvestableResources;
 
         SelectableEntity closest = null;

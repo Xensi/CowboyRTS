@@ -20,7 +20,7 @@ public class RTSPlayer : Player
     public List<SelectableEntity> keystoneUnits = new();
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
-    public List<SelectableEntity> selectedEntities;
+    public List<SelectableEntity> selectedEntities; //selected and we can control them 
     public List<SelectableEntity> enemyEntities; 
     private Vector3 _mousePosition;
     private Vector3 _offset;
@@ -363,6 +363,7 @@ public class RTSPlayer : Player
     {
         return target.teamType == SelectableEntity.TeamBehavior.OwnerTeam && ownedEntities.Contains(target);
     }
+    private SelectableEntity infoSelectedEntity;
     /// <summary>
     /// Try to select an entity. This will only succeed if they're on our team or neutral.
     /// </summary>
@@ -370,11 +371,15 @@ public class RTSPlayer : Player
     private bool TrySelectEntity(SelectableEntity entity) //later make this able to info select
     {
         bool val = false;
-        if (IsTargetExplicitlyOnOurTeam(entity) || entity.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral)
+        if (IsTargetExplicitlyOnOurTeam(entity))
         {
             selectedEntities.Add(entity);
             entity.Select(true);
             val = true;
+        }
+        else
+        {
+            infoSelectedEntity = entity;
         }
         UpdateGUIFromSelections();
         return val;
@@ -438,6 +443,7 @@ public class RTSPlayer : Player
             }
             if (Input.GetMouseButtonDown(0)) //left click
             {
+                infoSelectedEntity = null;
                 StartMousePosition = Input.mousePosition;
                 ResizeSelection();
                 Global.Instance.selectionRect.gameObject.SetActive(true);
@@ -1183,7 +1189,20 @@ public class RTSPlayer : Player
         if (Global.Instance.selectedParent != null && Global.Instance.resourcesParent != null && Global.Instance.resourceText != null
             && Global.Instance.nameText != null && Global.Instance.descText != null && Global.Instance.singleUnitInfoParent != null)
         {
-            if (selectedEntities.Count <= 0)
+            if (infoSelectedEntity != null && selectedEntities.Count == 0)
+            {
+                Global.Instance.selectedParent.SetActive(true);
+                Global.Instance.singleUnitInfoParent.SetActive(true);
+                Global.Instance.nameText.text = infoSelectedEntity.displayName;
+                Global.Instance.descText.text = infoSelectedEntity.desc;
+                Global.Instance.hpText.text = "HP: " + infoSelectedEntity.hitPoints.Value + "/" + infoSelectedEntity.maxHP;
+                if (infoSelectedEntity.isHarvester)
+                {
+                    Global.Instance.resourcesParent.SetActive(true);
+                    Global.Instance.resourceText.text = "Stored gold: " + infoSelectedEntity.harvestedResourceAmount + "/" + infoSelectedEntity.harvestCapacity;
+                }
+            }
+            else if (selectedEntities.Count <= 0)
             {
                 Global.Instance.selectedParent.SetActive(false);
                 Global.Instance.resourcesParent.SetActive(false);
@@ -1200,7 +1219,7 @@ public class RTSPlayer : Player
                     Global.Instance.resourcesParent.SetActive(true);
                     Global.Instance.resourceText.text = "Stored gold: " + selectedEntities[0].harvestedResourceAmount + "/" + selectedEntities[0].harvestCapacity;
                 }
-            }
+            } 
             else
             {
                 Global.Instance.selectedParent.SetActive(true);
@@ -1213,9 +1232,7 @@ public class RTSPlayer : Player
         {
             Debug.LogError("a GUI element needs to be assigned.");
         }
-    }
-
-
+    } 
     /// <summary>
     /// Update button abilities displayed based on selected units.
     /// </summary>
