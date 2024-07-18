@@ -5,6 +5,7 @@ using Unity.Netcode;
 using System.Linq;
 using static UnityEditor.Progress;
 using Pathfinding.Drawing;
+using Unity.VisualScripting;
 /// <summary>
 /// AI that is governed by the server
 /// </summary>
@@ -34,15 +35,65 @@ public class AIPlayer : Player
             PerformAction();
         }
     }
+    public int desiredHarvesters = 5;
+    public int desiredUnitCreators = 2;
+    public int desiredFighters = 10;
+    private int numberOfHarvesters = 0;
+    private int numberOfSpawners = 0;
+    private int numberOfFighters = 0; 
+    private void EvaluateNumberOfTypes()
+    {
+        int harvesters = 0;
+        int spawners = 0;
+        int fighters = 0;
+        foreach (SelectableEntity item in ownedEntities)
+        {
+            if (item.CanHarvest())
+            {
+                harvesters++;
+            } 
+            if (item.CanProduceUnits())
+            {
+                spawners++;
+            }
+            if (!item.CanProduceUnits() && !item.CanHarvest())
+            {
+                fighters++;
+            }
+        }
+        numberOfHarvesters = harvesters;
+        numberOfSpawners = spawners;
+        numberOfFighters = fighters;
+    }
+    
     private void PerformAction()
     {
+        EvaluateNumberOfTypes();
         if (visibleResources.Count < 1)
         {
             EvaluateVisibleResources();
         }
         else
+        { 
+            TellInactiveMinersToHarvest();
+        }
+        if (numberOfHarvesters < desiredHarvesters)
         {
-            int rand = Random.Range(0, 3);
+            TryToCreateHarvesters();
+        }
+        if (numberOfSpawners < desiredUnitCreators)
+        {
+            TryToConstructSpawner();
+        }
+        if (numberOfFighters < desiredFighters)
+        {
+            TryToCreateFighters();
+        }
+        if (numberOfFighters >= desiredFighters && numberOfHarvesters >= desiredHarvesters && numberOfSpawners >= desiredUnitCreators)
+        {
+            ExpandDesires();
+        }
+        /*int rand = Random.Range(0, 3);
             if (rand == 0)
             {
                 TryToCreateUnit();
@@ -58,9 +109,154 @@ public class AIPlayer : Player
             else if (rand == 3)
             {
                 AttackMoveWithCombatUnits();
+            }*/
+
+    }
+    private void ExpandDesires()
+    {
+        int rand = Random.Range(0, 3);
+        if (rand == 0)
+        {
+            desiredFighters++;
+        }
+        else if (rand == 1)
+        {
+            desiredHarvesters++;
+        }
+        else if (rand == 2)
+        {
+            desiredUnitCreators++;
+        } 
+    }
+    private void TryToConstructSpawner()
+    { 
+        Debug.Log("Trying to build spawner");
+        //pick a unit/building that can spawn units. try to queue up a unit
+        SelectableEntity chosenEntity = null;
+        FactionBuilding building = null;
+        foreach (SelectableEntity item in ownedEntities)
+        {
+            if (item.CanConstruct())
+            {
+                for (int i = 0; i < item.constructableBuildings.Length; i++) //check if this has a unit we can spawn
+                {
+                    if (item.constructableBuildings[i].goldCost <= gold && item.constructableBuildings[i].spawnableUnits.Length > 0) //if this is affordable
+                    {
+                        chosenEntity = item;
+                        building = item.constructableBuildings[i];
+                    }
+                }
             }
         }
+        Vector3 validPosition = Vector3.zero;
+        if (chosenEntity != null && building != null)
+        {
+            bool foundValidPosition = false;
+            //pick a random point around the keystone
+            for (int i = 0; i < 100; i++)
+            {
+                Vector2 randomCircle = Random.insideUnitCircle * 5;
+                int verticalOffset = 10;
+                Vector3 randCircle3D = new Vector3(randomCircle.x, verticalOffset, randomCircle.y);
+                Vector3 randomPosition = ownedEntities[0].transform.position + randCircle3D;
+                //ray cast down
+                bool rayHit = Physics.Raycast(randomPosition, Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.groundLayer);
+                if (rayHit)
+                {
+                    Grid grid = Global.Instance.grid;
+                    if (grid != null)
+                    {
+                        Vector3 buildOffset = building.buildOffset;
+                        Vector3Int gridPos = grid.WorldToCell(hit.point);
+                        Vector3 worldGridPos = grid.CellToWorld(gridPos) + buildOffset;
+                        worldGridPos = new Vector3(worldGridPos.x, hit.point.y, worldGridPos.z);
 
+                        if (IsPositionBlocked(worldGridPos))
+                        {
+                            Debug.DrawRay(worldGridPos, transform.up, Color.red, 10);
+                        }
+                        else
+                        {
+                            Debug.DrawRay(worldGridPos, transform.up, Color.green, 10);
+                            validPosition = worldGridPos;
+                            foundValidPosition = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (foundValidPosition)
+            {
+                gold -= building.goldCost;
+                SelectableEntity last = SpawnMinion(validPosition, building);
+                chosenEntity.minionController.ForceBuildTarget(last);
+            }
+        } 
+    } 
+    private void TryToCreateHarvesters()
+    {
+        Debug.Log("Trying to create harvester");
+        //pick a unit/building that can spawn units. try to queue up a unit
+        SelectableEntity chosenEntity = null;
+        FactionUnit unit = null;
+        List<FactionUnit> options = new();
+        foreach (SelectableEntity item in ownedEntities)
+        {
+            if (item.CanProduceUnits())
+            {
+                for (int i = 0; i < item.spawnableUnits.Length; i++) //check if this has a unit we can spawn
+                {
+                    if (item.spawnableUnits[i].goldCost <= gold && item.spawnableUnits[i].isHarvester)
+                    {
+                        chosenEntity = item;
+                        options.Add(item.spawnableUnits[i]);
+                    }
+                }
+            }
+        }
+        int rand = Random.Range(0, options.Count);
+        if (options.Count > 0) unit = options[rand];
+        if (chosenEntity != null && unit != null)
+        {
+            FactionUnit newUnit = FactionUnit.CreateInstance(unit.prefabToSpawn.name, unit.spawnTimeCost, unit.prefabToSpawn, unit.goldCost);
+            int cost = newUnit.goldCost;
+            gold -= cost;
+            chosenEntity.buildQueue.Add(newUnit);
+        }
+    }
+
+    private void TryToCreateFighters()
+    {
+        Debug.Log("Trying to create fighter");
+        //pick a unit/building that can spawn units. try to queue up a unit
+        SelectableEntity chosenEntity = null;
+        FactionUnit unit = null;
+
+        List<FactionUnit> options = new();
+        foreach (SelectableEntity item in ownedEntities)
+        {
+            if (item.CanProduceUnits())
+            {
+                for (int i = 0; i < item.spawnableUnits.Length; i++) //check if this has a unit we can spawn
+                {
+                    if (item.spawnableUnits[i].goldCost <= gold && !item.spawnableUnits[i].isHarvester && item.spawnableUnits[i].spawnableUnits.Length == 0)
+                    {
+                        chosenEntity = item;
+                        options.Add(item.spawnableUnits[i]);
+                    }
+                }
+            }
+        }
+        int rand = Random.Range(0, options.Count);
+        if (options.Count > 0) unit = options[rand];
+
+        if (chosenEntity != null && unit != null)
+        {
+            FactionUnit newUnit = FactionUnit.CreateInstance(unit.prefabToSpawn.name, unit.spawnTimeCost, unit.prefabToSpawn, unit.goldCost);
+            int cost = newUnit.goldCost;
+            gold -= cost;
+            chosenEntity.buildQueue.Add(newUnit);
+        }
     }
     public List<SelectableEntity> visibleResources = new();
     private void EvaluateVisibleResources()
@@ -87,8 +283,11 @@ public class AIPlayer : Player
                 {
                     case MinionController.MinionStates.Idle:
                     case MinionController.MinionStates.FindInteractable:
-                        int rand = Random.Range(0, visibleResources.Count);
-                        item.minionController.CommandHarvestTarget(visibleResources[rand]);
+                        if (visibleResources.Count > 0)
+                        {
+                            int rand = Random.Range(0, visibleResources.Count);
+                            item.minionController.CommandHarvestTarget(visibleResources[rand]); 
+                        }
                         break;
                 }
             }
