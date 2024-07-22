@@ -125,16 +125,16 @@ public class RTSPlayer : Player
     }
     public override void OnNetworkSpawn()
     {
-        teamID = System.Convert.ToInt32(OwnerClientId);
+        playerTeamID = System.Convert.ToInt32(OwnerClientId);
         Global.Instance.uninitializedPlayers.Add(this);
         if (IsOwner) //spawn initial minions/buildings  
         {
             inTheGame.Value = true;
             Global.Instance.localPlayer = this;
             Vector3 spawnPosition;
-            if (teamID < Global.Instance.playerSpawn.Count)
+            if (playerTeamID < Global.Instance.playerSpawn.Count)
             {
-                spawnPosition = Global.Instance.playerSpawn[teamID].position;
+                spawnPosition = Global.Instance.playerSpawn[playerTeamID].position;
             }
             else
             {
@@ -147,7 +147,7 @@ public class RTSPlayer : Player
             VolumeProfile profile = Global.Instance.fogVolume.sharedProfile;
             if (profile != null && profile.TryGet(out FogOfWarURP fow))
             {
-                fow.team.value = teamID;
+                fow.team.value = playerTeamID;
             }
         }
         else
@@ -1507,7 +1507,7 @@ public class RTSPlayer : Player
             }
         }
     }
-    private void DoubleSelectDetected()
+    private void DoubleSelectDetected() //double click
     {
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
@@ -1549,16 +1549,16 @@ public class RTSPlayer : Player
     }
     private void SelectAllSameTypeExcludingInGarrisons(SelectableEntity entity)
     {
-        foreach (SelectableEntity item in ownedEntities)
+        foreach (SelectableEntity potential in ownedEntities)
         {
-            if (item.occupiedGarrison == null)
+            if (potential.occupiedGarrison == null)
             {
-                if ((entity.CanConstruct() && item.CanConstruct()) ||
-                    (entity.minionController != null && entity.minionController.attackType != MinionController.AttackType.None
-                    && item.minionController != null && item.minionController.attackType != MinionController.AttackType.None) ||
-                    (entity.CanProduceUnits() && item.CanProduceUnits()))
+                if ((entity.CanConstruct() && potential.CanConstruct()) ||
+                    (entity.CanHarvest() && potential.CanHarvest()) ||
+                    (entity.CannotConstructHarvestProduce() && potential.CannotConstructHarvestProduce()) ||
+                    (entity.CanProduceUnits() && potential.CanProduceUnits()))
                 {
-                    TrySelectEntity(item);
+                    TrySelectEntity(potential);
                 }
             }
         }

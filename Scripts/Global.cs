@@ -39,13 +39,10 @@ public class Global : NetworkBehaviour
     public Projectile cannonBall;
     public AudioClip explosion;
     public GameObject singleUnitInfoParent;
-    public List<RTSPlayer> uninitializedPlayers = new();
-    public List<RTSPlayer> initializedPlayers = new();
     public TMP_Text popText;
     public Volume fogVolume;
     public List<SelectableEntity> allFactionEntities = new();
     public GraphUpdateScene graphUpdateScenePrefab;
-    public List<AIPlayer> aiTeamControllers = new();
     public int maxMapSize = 25; //radius
     public float allowedNonOwnerError = 1.5f; //should be greater than real loc threshold
     public float updateRealLocThreshold = .5f; //1
@@ -59,7 +56,10 @@ public class Global : NetworkBehaviour
     public Camera[] cams;
     public LayerMask groundLayer;
     public LayerMask blockingLayer;
-
+    public List<RTSPlayer> uninitializedPlayers = new();
+    public List<RTSPlayer> initializedPlayers = new();
+    public List<AIPlayer> aiTeamControllers = new();
+    public List<Player> allPlayers = new();
     public Grid grid;
     private void Awake()
     {
@@ -137,6 +137,7 @@ public class Global : NetworkBehaviour
             if (player.inTheGame.Value == true)
             {
                 initializedPlayers.Add(player);
+                allPlayers.Add(player);
                 movedPlayers.Add(player);
             }
         }

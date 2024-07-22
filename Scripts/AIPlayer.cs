@@ -12,9 +12,13 @@ using Unity.VisualScripting;
 public class AIPlayer : Player
 {
     //to give a unit to the AI, set its desired team to a negative number 
-    public float actionTime = 2;
+    private float actionTime = 1;
+    private float attackTime = 5;
     private float timer = 0;
+    private float attackTimer = 0;
     public Transform spawnPosition;
+    public List<SelectableEntity> knownEnemyStructures = new();
+    public List<SelectableEntity> knownEnemyUnits = new();
     public override void OnNetworkSpawn()
     {
         if (IsOwner) //spawn initial minions/buildings  
@@ -25,6 +29,8 @@ public class AIPlayer : Player
     public override void Start()
     {
         base.Start();
+        Global.Instance.aiTeamControllers.Add(this);
+        Global.Instance.allPlayers.Add(this);
     }
     void Update()
     {
@@ -34,18 +40,32 @@ public class AIPlayer : Player
             timer = 0;
             PerformAction();
         }
+        attackTimer += Time.deltaTime;
+        if (attackTimer >= attackTime)
+        {
+            attackTimer = 0;
+            AggressiveAction();
+        }
     }
+    private void AggressiveAction()
+    { 
+        CheckIfCanSeeEnemy();
+        SendFightersToKnownPositions();
+    }
+    public int desiredPopAdders = 0;
     public int desiredHarvesters = 5;
-    public int desiredUnitCreators = 2;
+    public int desiredUnitSpawner = 2;
     public int desiredFighters = 10;
     private int numberOfHarvesters = 0;
     private int numberOfSpawners = 0;
-    private int numberOfFighters = 0; 
+    private int numberOfFighters = 0;
+    private int numberOfPopAdders = 0;
     private void EvaluateNumberOfTypes()
     {
         int harvesters = 0;
         int spawners = 0;
         int fighters = 0;
+        int popadders = 0;
         foreach (SelectableEntity item in ownedEntities)
         {
             if (item.CanHarvest())
@@ -60,36 +80,185 @@ public class AIPlayer : Player
             {
                 fighters++;
             }
+            if (item.raisePopulationLimitBy > 0)
+            {
+                popadders++;
+            }
         }
         numberOfHarvesters = harvesters;
         numberOfSpawners = spawners;
         numberOfFighters = fighters;
+        numberOfPopAdders = popadders;
     }
-    
+    private void CheckIfCanSeeEnemy()
+    {
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam(playerTeamID);
+        //run through initialized players and AI team controllers (check their allegiance)
+        foreach (Player player in Global.Instance.allPlayers)
+        {
+            if (player != null && player != this && player.allegianceTeamID != allegianceTeamID) //player exists and is enemy
+            {
+                foreach (SelectableEntity entity in player.ownedEntities)
+                {
+                    bool visible = fow.GetFogValue(entity.transform.position) < Global.Instance.minFogStrength * 255;
+                    if (visible)
+                    {
+                        if (entity.IsUnit() && !knownEnemyUnits.Contains(entity))
+                        { 
+                            knownEnemyUnits.Add(entity);
+                        }
+                        else if (!entity.IsUnit() && !knownEnemyStructures.Contains(entity))
+                        { 
+                            knownEnemyStructures.Add(entity);
+                        }
+                    }
+                    else
+                    {
+                        if (entity.IsUnit() && knownEnemyUnits.Contains(entity))
+                        {
+                            knownEnemyUnits.Remove(entity);
+                        }
+                        //we don't remove structures that have slipped into fog
+                    }
+                }
+            }
+        }
+        CleanKnownLists();
+    }
+    private void CleanKnownLists()
+    {
+        for (int i = knownEnemyUnits.Count - 1; i >= 0; i--)
+        {
+            SelectableEntity current = knownEnemyUnits[i];
+            if (current == null || !current.alive) knownEnemyUnits.RemoveAt(i);
+        } 
+        for (int i = knownEnemyStructures.Count - 1; i >= 0; i--)
+        {
+            SelectableEntity current = knownEnemyStructures[i];
+            if (current == null || !current.alive) knownEnemyStructures.RemoveAt(i);
+        }
+    }
+    private void SendFightersToKnownPositions()
+    {
+        //pick a known position
+        Vector3 pos = Vector3.zero;
+        bool hasPosition = false;
+        if (knownEnemyUnits.Count > 0)
+        {
+            pos = knownEnemyUnits[0].transform.position;
+            hasPosition = true;
+        }
+        else if (knownEnemyStructures.Count > 0)
+        {
+            pos = knownEnemyStructures[0].transform.position;
+            hasPosition = true;
+        }
+
+        if (hasPosition)
+        { 
+            List<MinionController> fighters = new();
+            foreach (MinionController item in ownedMinions)
+            {
+                if (item != null && item.entity != null && item.entity.factionEntity != null)
+                { 
+                    if (item.entity.factionEntity is FactionUnit)
+                    { 
+                        FactionUnit facUnit = item.entity.factionEntity as FactionUnit;
+                        if (facUnit != null && facUnit.IsFighter())
+                        {
+                            fighters.Add(item);
+                        }
+                    }
+                }
+            }
+            foreach (MinionController item in fighters)
+            {
+                item.AIAttackMove(pos);
+            }
+        }
+        else
+        {
+            SendScoutingParty();
+        }
+    }
+    private void SendScoutingParty()
+    {
+        MinionController scout = null;
+        foreach (MinionController item in ownedMinions)
+        {
+            if (item != null && item.entity != null && item.entity.factionEntity != null && item.minionState == MinionController.MinionStates.Idle)
+            {
+                if (item.entity.factionEntity is FactionUnit)
+                {
+                    FactionUnit facUnit = item.entity.factionEntity as FactionUnit;
+                    if (facUnit != null && facUnit.IsFighter())
+                    {
+                        scout = item;
+                        break;
+                    }
+                }
+            }
+        }
+        if (scout != null && scout.ai != null) //only move if not busy
+        { 
+            int max = Global.Instance.maxMapSize;
+            FogOfWarTeam fow = FogOfWarTeam.GetTeam(playerTeamID); 
+            for (int i = 0; i < 100; i++)
+            {
+                Vector3 randomTarget = new Vector3(Random.Range(-max, max), 0, Random.Range(-max, max));
+                bool visible = fow.GetFogValue(randomTarget) < Global.Instance.minFogStrength * 255;
+                if (!visible)
+                { 
+                    currentScoutingDestination = randomTarget;
+                    scout.AIAttackMove(currentScoutingDestination);
+                    Debug.DrawRay(currentScoutingDestination, Vector3.up, Color.green, 2);
+                    break;
+                }
+                else
+                { 
+                    Debug.DrawRay(randomTarget, Vector3.up, Color.red, 1);
+                }
+            } 
+        }
+    }
+    Vector3 currentScoutingDestination; 
     private void PerformAction()
     {
+        UpdateUnbuilt();
         EvaluateNumberOfTypes();
         if (visibleResources.Count < 1)
         {
             EvaluateVisibleResources();
         }
         else
-        { 
+        {
+            TellInactiveBuildersToBuild();
             TellInactiveMinersToHarvest();
         }
-        if (numberOfHarvesters < desiredHarvesters)
+        if (population >= maxPopulation && numberOfPopAdders >= desiredPopAdders)
         {
-            TryToCreateHarvesters();
+            desiredPopAdders++;
         }
-        if (numberOfSpawners < desiredUnitCreators)
+        if (numberOfPopAdders < desiredPopAdders)
         {
-            TryToConstructSpawner();
+            TryToConstructType(BuildingDesire.PopulationAdder);
         }
-        if (numberOfFighters < desiredFighters)
+        else
+        { 
+            if (numberOfHarvesters < desiredHarvesters)
+            {
+                TryToSpawnType(UnitDesire.Harvester);
+            }
+            if (numberOfFighters < desiredFighters)
+            {
+                TryToSpawnType(UnitDesire.Fighter);
+            }
+        }
+        if (numberOfSpawners < desiredUnitSpawner)
         {
-            TryToCreateFighters();
+            TryToConstructType(BuildingDesire.UnitSpawner);
         }
-        if (numberOfFighters >= desiredFighters && numberOfHarvesters >= desiredHarvesters && numberOfSpawners >= desiredUnitCreators)
+        if (numberOfFighters >= desiredFighters && numberOfHarvesters >= desiredHarvesters && numberOfSpawners >= desiredUnitSpawner || gold >= 500)
         {
             ExpandDesires();
         }
@@ -114,37 +283,69 @@ public class AIPlayer : Player
     }
     private void ExpandDesires()
     {
-        int rand = Random.Range(0, 3);
-        if (rand == 0)
+        int rand = Random.Range(0, 100);
+        if (rand <= 40)
         {
-            desiredFighters++;
+            desiredHarvesters += 5;
         }
-        else if (rand == 1)
+        else if (rand <= 80)
         {
-            desiredHarvesters++;
+            desiredFighters += 5;
         }
-        else if (rand == 2)
+        else if (rand <= 100)
         {
-            desiredUnitCreators++;
+            desiredUnitSpawner++;
         } 
     }
-    private void TryToConstructSpawner()
-    { 
-        Debug.Log("Trying to build spawner");
+    private enum BuildingDesire
+    {
+        UnitSpawner, PopulationAdder
+    }
+    private enum UnitDesire
+    {
+        Harvester, Fighter
+    }
+    private bool CanAfford(FactionEntity entity)
+    {
+        return entity.goldCost <= gold;
+    }
+    private void TryToConstructType(BuildingDesire desire)
+    {  
         //pick a unit/building that can spawn units. try to queue up a unit
         SelectableEntity chosenEntity = null;
         FactionBuilding building = null;
-        foreach (SelectableEntity item in ownedEntities)
+        foreach (MinionController minion in ownedMinions)
         {
-            if (item.CanConstruct())
+            if (minion == null) continue;
+            SelectableEntity minionEntity = minion.entity;
+            if (minionEntity == null) continue;
+            if (minionEntity.CanConstruct() && !minion.IsBuilding())
             {
-                for (int i = 0; i < item.constructableBuildings.Length; i++) //check if this has a unit we can spawn
+                for (int i = 0; i < minionEntity.constructableBuildings.Length; i++) //check if this has a unit we can spawn
                 {
-                    if (item.constructableBuildings[i].goldCost <= gold && item.constructableBuildings[i].spawnableUnits.Length > 0) //if this is affordable
-                    {
-                        chosenEntity = item;
-                        building = item.constructableBuildings[i];
-                    }
+                    FactionBuilding entity = minionEntity.constructableBuildings[i];
+                    if (CanAfford(entity))
+                    { 
+                        switch (desire)
+                        {
+                            case BuildingDesire.UnitSpawner:
+                                if (entity.IsSpawner())
+                                { 
+                                    chosenEntity = minionEntity;
+                                    building = entity;
+                                }
+                                break; 
+                            case BuildingDesire.PopulationAdder:
+                                if (entity.IsPopulationAdder())
+                                {
+                                    chosenEntity = minionEntity;
+                                    building = entity;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    } 
                 }
             }
         }
@@ -193,76 +394,61 @@ public class AIPlayer : Player
             }
         } 
     } 
-    private void TryToCreateHarvesters()
-    {
-        Debug.Log("Trying to create harvester");
+    private void TryToSpawnType(UnitDesire desire)
+    { 
         //pick a unit/building that can spawn units. try to queue up a unit
-        SelectableEntity chosenEntity = null;
-        FactionUnit unit = null;
-        List<FactionUnit> options = new();
         foreach (SelectableEntity item in ownedEntities)
         {
+            if (item == null) continue;
             if (item.CanProduceUnits())
             {
+                SelectableEntity chosenEntity = null;
+                FactionUnit unit = null;
+                List<FactionUnit> options = new();
                 for (int i = 0; i < item.spawnableUnits.Length; i++) //check if this has a unit we can spawn
                 {
-                    if (item.spawnableUnits[i].goldCost <= gold && item.spawnableUnits[i].isHarvester)
+                    FactionUnit entity = item.spawnableUnits[i];
+                    if (entity.goldCost <= gold)
                     {
-                        chosenEntity = item;
-                        options.Add(item.spawnableUnits[i]);
+                        switch (desire)
+                        {
+                            case UnitDesire.Harvester:
+                                if (entity.IsHarvester())
+                                { 
+                                    chosenEntity = item;
+                                    options.Add(item.spawnableUnits[i]);
+                                }
+                                break;
+                            case UnitDesire.Fighter: 
+                                if (entity.IsFighter())
+                                {
+                                    chosenEntity = item;
+                                    options.Add(item.spawnableUnits[i]);
+                                }
+                                break;
+                            default:
+                                break;
+                        }
                     }
+                }
+                int rand = Random.Range(0, options.Count);
+                if (options.Count > 0) unit = options[rand];
+                if (chosenEntity != null && unit != null)
+                {
+                    FactionUnit newUnit = FactionUnit.CreateInstance(unit.prefabToSpawn.name, unit.spawnTimeCost, unit.prefabToSpawn, unit.goldCost);
+                    int cost = newUnit.goldCost;
+                    gold -= cost;
+                    chosenEntity.buildQueue.Add(newUnit);
                 }
             }
         }
-        int rand = Random.Range(0, options.Count);
-        if (options.Count > 0) unit = options[rand];
-        if (chosenEntity != null && unit != null)
-        {
-            FactionUnit newUnit = FactionUnit.CreateInstance(unit.prefabToSpawn.name, unit.spawnTimeCost, unit.prefabToSpawn, unit.goldCost);
-            int cost = newUnit.goldCost;
-            gold -= cost;
-            chosenEntity.buildQueue.Add(newUnit);
-        }
     }
-
-    private void TryToCreateFighters()
-    {
-        Debug.Log("Trying to create fighter");
-        //pick a unit/building that can spawn units. try to queue up a unit
-        SelectableEntity chosenEntity = null;
-        FactionUnit unit = null;
-
-        List<FactionUnit> options = new();
-        foreach (SelectableEntity item in ownedEntities)
-        {
-            if (item.CanProduceUnits())
-            {
-                for (int i = 0; i < item.spawnableUnits.Length; i++) //check if this has a unit we can spawn
-                {
-                    if (item.spawnableUnits[i].goldCost <= gold && !item.spawnableUnits[i].isHarvester && item.spawnableUnits[i].spawnableUnits.Length == 0)
-                    {
-                        chosenEntity = item;
-                        options.Add(item.spawnableUnits[i]);
-                    }
-                }
-            }
-        }
-        int rand = Random.Range(0, options.Count);
-        if (options.Count > 0) unit = options[rand];
-
-        if (chosenEntity != null && unit != null)
-        {
-            FactionUnit newUnit = FactionUnit.CreateInstance(unit.prefabToSpawn.name, unit.spawnTimeCost, unit.prefabToSpawn, unit.goldCost);
-            int cost = newUnit.goldCost;
-            gold -= cost;
-            chosenEntity.buildQueue.Add(newUnit);
-        }
-    }
+     
     public List<SelectableEntity> visibleResources = new();
     private void EvaluateVisibleResources()
     {
         visibleResources.Clear();
-        FogOfWarTeam fow = FogOfWarTeam.GetTeam(teamID);
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam(playerTeamID);
         foreach (SelectableEntity item in Global.Instance.harvestableResources)
         {
             bool visibleInFog = fow.GetFogValue(item.transform.position) < Global.Instance.minFogStrength * 255;
@@ -272,12 +458,40 @@ public class AIPlayer : Player
             }
         }
     }
+    private void UpdateUnbuilt()
+    {
+        foreach (SelectableEntity building in unbuiltStructures) //get an unbuilt structure
+        {
+            if (building != null && building.IsFullyBuilt())
+            {
+                unbuiltStructures.Remove(building);
+                break;
+            }
+        }
+    }
+    private void TellInactiveBuildersToBuild()
+    { 
+        foreach (SelectableEntity building in unbuiltStructures) //get an unbuilt structure
+        {
+            if (building != null && building.IsNotYetBuilt())
+            {
+                foreach (SelectableEntity builder in ownedEntities) //get a builder
+                {
+                    if (builder.minionController != null && builder.CanConstruct() && !builder.minionController.IsBuilding()) //minion
+                    {
+                        builder.minionController.CommandBuildTarget(building);
+                        break;
+                    }
+                }
+            } 
+        }
+    }
     private void TellInactiveMinersToHarvest()
     {
         Debug.Log("Telling miners to harvest");
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item.minionController != null && item.CanHarvest()) //minion
+            if (item.minionController != null && item.CanHarvest() && !item.minionController.IsBuilding()) //minion
             {
                 switch (item.minionController.minionState)
                 {
@@ -296,101 +510,7 @@ public class AIPlayer : Player
     private void SetRallyPoint()
     {
 
-    }
-    private void TryToBuildStructure()
-    {
-        Debug.Log("Trying to build structure");
-        //pick a unit/building that can spawn units. try to queue up a unit
-        SelectableEntity chosenEntity = null;
-        FactionBuilding building = null;
-        foreach (SelectableEntity item in ownedEntities)
-        {
-            if (item.CanConstruct())
-            {
-                for (int i = 0; i < item.constructableBuildings.Length; i++) //check if this has a unit we can spawn
-                {
-                    if (item.constructableBuildings[i].goldCost <= gold) //if this is affordable
-                    {
-                        chosenEntity = item;
-                        building = item.constructableBuildings[i];
-                    }
-                }
-            }
-        }
-        Vector3 validPosition = Vector3.zero;
-        if (chosenEntity != null && building != null)
-        {
-            bool foundValidPosition = false;
-            //pick a random point around the keystone
-            for (int i = 0; i < 100; i++)
-            {
-                Vector2 randomCircle = Random.insideUnitCircle * 5;
-                int verticalOffset = 10;
-                Vector3 randCircle3D = new Vector3(randomCircle.x, verticalOffset, randomCircle.y);
-                Vector3 randomPosition = ownedEntities[0].transform.position + randCircle3D;
-                //ray cast down
-                bool rayHit = Physics.Raycast(randomPosition, Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.groundLayer);
-                if (rayHit)
-                {
-                    Grid grid = Global.Instance.grid;
-                    if (grid != null)
-                    {
-                        Vector3 buildOffset = building.buildOffset;
-                        Vector3Int gridPos = grid.WorldToCell(hit.point);
-                        Vector3 worldGridPos = grid.CellToWorld(gridPos) + buildOffset;
-                        worldGridPos = new Vector3(worldGridPos.x, hit.point.y, worldGridPos.z);
-
-                        if (IsPositionBlocked(worldGridPos))
-                        {
-                            Debug.DrawRay(worldGridPos, transform.up, Color.red, 10);
-                        }
-                        else
-                        {
-                            Debug.DrawRay(worldGridPos, transform.up, Color.green, 10);
-                            validPosition = worldGridPos;
-                            foundValidPosition = true;
-                            break;
-                        } 
-                    }
-                } 
-            }
-            if (foundValidPosition)
-            { 
-                gold -= building.goldCost;
-                SelectableEntity last = SpawnMinion(validPosition, building);
-                chosenEntity.minionController.ForceBuildTarget(last);
-            }
-        }
-
-    }
-    private void TryToCreateUnit()
-    {
-        Debug.Log("Trying to spawn unit");
-        //pick a unit/building that can spawn units. try to queue up a unit
-        SelectableEntity chosenEntity = null;
-        FactionUnit unit = null;
-        foreach (SelectableEntity item in ownedEntities)
-        {
-            if (item.CanProduceUnits())
-            {
-                for (int i = 0; i < item.spawnableUnits.Length; i++) //check if this has a unit we can spawn
-                {
-                    if (item.spawnableUnits[i].goldCost <= gold) //if this is affordable
-                    {
-                        chosenEntity = item;
-                        unit = item.spawnableUnits[i];
-                    }
-                }
-            }
-        }
-        if (chosenEntity != null && unit != null)
-        {
-            FactionUnit newUnit = FactionUnit.CreateInstance(unit.prefabToSpawn.name, unit.spawnTimeCost, unit.prefabToSpawn, unit.goldCost);
-            int cost = newUnit.goldCost;
-            gold -= cost;
-            chosenEntity.buildQueue.Add(newUnit);
-        }
-    }
+    }  
     /// <summary>
     /// The server will spawn in a minion at a position.
     /// </summary> 
@@ -413,7 +533,7 @@ public class AIPlayer : Player
                 }
                 if (select != null)
                 {
-                    select.desiredTeamNumber = (sbyte)teamID; //necessary for it to spawn as AI controlled
+                    select.desiredTeamNumber = (sbyte)playerTeamID; //necessary for it to spawn as AI controlled
                     if (select.net == null) select.net = select.GetComponent<NetworkObject>();
                     select.net.Spawn();
                 }
@@ -421,19 +541,5 @@ public class AIPlayer : Player
             }
         }
         return null;
-    }
-    private void AttackMoveWithCombatUnits()
-    {
-        Debug.Log("Attack moving");
-        int max = Global.Instance.maxMapSize;
-        Vector3 randomTarget = new Vector3(Random.Range(-max, max), 0, Random.Range(-max, max));
-        foreach (SelectableEntity item in ownedEntities)
-        {
-            if (item.minionController != null && !item.CanHarvest()) //minion
-            {
-                item.minionController.AIAttackMove(randomTarget);
-            }
-        }
-    }
-
+    } 
 }

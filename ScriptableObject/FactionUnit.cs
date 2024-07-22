@@ -27,4 +27,8 @@ public class FactionUnit : FactionEntity
         data.Init(name, spawnTime, prefab, goldCost);
         return data;
     }
+    public bool IsFighter()
+    {
+        return isHarvester == false && spawnableUnits.Length == 0;
+    }
 }

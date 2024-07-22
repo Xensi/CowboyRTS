@@ -16,8 +16,8 @@ MonoBehaviour:
   description: Worker that harvests gold, builds, and repairs. Has a pitiful melee
     attack.
   prefabToSpawn: {fileID: 2545681379473208697, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
-  goldCost: 20
-  maxHP: 10
+  goldCost: 40
+  maxHP: 20
   isKeystone: 0
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
@@ -37,7 +37,7 @@ MonoBehaviour:
   damage: 1
   directionalAttack: 0
   attackRange: 1
-  attackDuration: 1
+  attackDuration: 1.5
   impactTime: 0.5
   areaOfEffectRadius: 1
   shouldAutoSeekEnemies: 0
@@ -49,6 +49,6 @@ MonoBehaviour:
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  spawnTimeCost: 5
+  spawnTimeCost: 10
   isHeavy: 0
   canAttackWhileMoving: 0

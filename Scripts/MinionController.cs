@@ -6,6 +6,7 @@ using Pathfinding;
 using FoW;
 using static UnityEditorInternal.VersionControl.ListControl;
 using static UnityEngine.GraphicsBuffer;
+using static SelectableEntity;
 //using UnityEngine.Rendering;
 //using UnityEngine.Windows;
 
@@ -167,7 +168,7 @@ public class MinionController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         if (IsOwner)
-        {
+        { 
             realLocation.Value = transform.position;
             //destination.Value = transform.position; 
             SetDestination(transform.position);
@@ -205,7 +206,10 @@ public class MinionController : NetworkBehaviour
         }
     }
     private int maxDetectable;
-
+    public bool IsBuilding()
+    {
+        return minionState == MinionStates.Building || minionState == MinionStates.WalkToInteractable && lastState == MinionStates.Building;
+    }
 
     /// <summary>
     /// Tells server this minion's destination so it can pathfind there on other clients
@@ -1086,8 +1090,11 @@ public class MinionController : NetworkBehaviour
                             else
                             {
                                 animator.Play("Walk");
-                                Vector3 closest = entity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
-                                SetDestinationIfHighDiff(closest);
+                                if (entity.interactionTarget != null && entity.interactionTarget.physicalCollider != null)
+                                { 
+                                    Vector3 closest = entity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
+                                    SetDestinationIfHighDiff(closest);
+                                }
                             }
                             /*if (selectableEntity.interactionTarget.type == SelectableEntity.EntityTypes.Portal) //walk into
                             {
@@ -1675,7 +1682,7 @@ public class MinionController : NetworkBehaviour
     private bool AnimatorPlaying()
     {
         return animator.GetCurrentAnimatorStateInfo(0).length > animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
-    }
+    } 
     private void HarvestTarget(SelectableEntity target)
     {
         entity.SimplePlaySound(1); //play impact sound 
@@ -1843,7 +1850,7 @@ public class MinionController : NetworkBehaviour
     /// <returns></returns>
     private SelectableEntity FindClosestHarvestable()
     {
-        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)entity.controllerOfThis.teamID);
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)entity.controllerOfThis.playerTeamID);
         SelectableEntity[] list = Global.Instance.harvestableResources;
 
         SelectableEntity closest = null;
@@ -1864,7 +1871,7 @@ public class MinionController : NetworkBehaviour
             }
         }
         return closest;
-    }
+    } 
     private SelectableEntity FindClosestDeposit() //right now resource agnostic
     {
         List<SelectableEntity> list = entity.controllerOfThis.ownedEntities;

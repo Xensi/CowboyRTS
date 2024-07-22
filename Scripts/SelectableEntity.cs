@@ -336,6 +336,18 @@ public class SelectableEntity : NetworkBehaviour
     {
         return isHarvester;
     }
+    public bool IsNotYetBuilt()
+    {
+        return !fullyBuilt && !isBuildIndicator;
+    }
+    public bool IsFullyBuilt()
+    {
+        return fullyBuilt && !isBuildIndicator;
+    }
+    public bool IsUnit()
+    {
+        return minionController != null;
+    }
     public override void OnNetworkSpawn()
     {
         //Debug.Log("NetworkSpawn");
@@ -353,6 +365,11 @@ public class SelectableEntity : NetworkBehaviour
                 {
                     AIPlayer AIController = Global.Instance.aiTeamControllers[Mathf.Abs(desiredTeamNumber) - 1];
                     AIController.ownedEntities.Add(this);
+                    AIController.ownedMinions.Add(minionController);
+                    if (IsNotYetBuilt())
+                    {
+                        AIController.unbuiltStructures.Add(this);
+                    }
                     controllerOfThis = AIController;
                 }
                 //fogUnit.enabled = false;
@@ -364,6 +381,7 @@ public class SelectableEntity : NetworkBehaviour
                 {
                     RTSPlayer playerController = Global.Instance.localPlayer;
                     playerController.ownedEntities.Add(this);
+                    playerController.ownedMinions.Add(minionController);
                     playerController.lastSpawnedEntity = this;
                     controllerOfThis = playerController;
 
@@ -488,6 +506,10 @@ public class SelectableEntity : NetworkBehaviour
                 hideFogTeam = (int)Global.Instance.localPlayer.OwnerClientId;
             }
         }
+    }
+    public bool CannotConstructHarvestProduce()
+    {
+        return !CanConstruct() && !CanHarvest() && !CanProduceUnits();
     }
 
     //private bool teamRenderersUpdated = false;
@@ -1146,6 +1168,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         return interactionTarget != null;
     }
+
     /// <summary>
     /// Remove any units that are no longer interacting with this from its list
     /// </summary>
@@ -1176,7 +1199,7 @@ public class SelectableEntity : NetworkBehaviour
         if (interactorIndex >= workersInteracting.Count) interactorIndex = 0;
         if (othersInteractorIndex >= othersInteracting.Count) othersInteractorIndex = 0;
     }
-    [HideInInspector] public bool visibleInFog = false;
+    public bool visibleInFog = false;
     [HideInInspector] public bool oldVisibleInFog = false;
     public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
     public bool shouldHideInFog = true; // gold should not be hidden
@@ -1198,11 +1221,11 @@ public class SelectableEntity : NetworkBehaviour
                 attackEffects[i].enabled = showAttackEffects && visibleInFog;
             }
         }
-        /*else
+        else
         {
             visibleInFog = true;
-        }*/
-    }
+        }
+    } 
     private void UpdateMeshVisibility(bool val)
     {
         if (minionController == null)

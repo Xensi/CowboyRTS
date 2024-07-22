@@ -49,4 +49,17 @@ public class FactionEntity : ScriptableObject
     [SerializeField, HideInInspector] public bool passengersAreTargetable = false;
     [SerializeField, HideInInspector] public bool acceptsHeavy = false;
 
+    public bool IsHarvester()
+    {
+        return isHarvester;
+    }
+    public bool IsSpawner()
+    {
+        return spawnableUnits.Length > 0;
+    }
+    public bool IsPopulationAdder()
+    {
+        return raisePopulationLimitBy > 0;
+    }
+
 }

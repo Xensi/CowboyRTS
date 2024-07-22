@@ -8710,14 +8710,10 @@ MonoBehaviour:
   cannonBall: {fileID: 4931648679904400479, guid: ff26c0b7fbc2c1e439bd021472664b90, type: 3}
   explosion: {fileID: 8300000, guid: 53ce377f4f8f57347a834ce5d017add5, type: 3}
   singleUnitInfoParent: {fileID: 72769718}
-  uninitializedPlayers: []
-  initializedPlayers: []
   popText: {fileID: 316702969}
   fogVolume: {fileID: 1126431706}
   allFactionEntities: []
   graphUpdateScenePrefab: {fileID: 8171473213557650441, guid: 71e0c50986a2e6c41beebb97b98491ab, type: 3}
-  aiTeamControllers:
-  - {fileID: 1458377489}
   maxMapSize: 25
   allowedNonOwnerError: 1.5
   updateRealLocThreshold: 0.75
@@ -8734,6 +8730,10 @@ MonoBehaviour:
   blockingLayer:
     serializedVersion: 2
     m_Bits: 0
+  uninitializedPlayers: []
+  initializedPlayers: []
+  aiTeamControllers: []
+  allPlayers: []
   grid: {fileID: 846622945}
   playerHasWon: 0
 --- !u!4 &833777888
@@ -14453,12 +14453,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerFaction: {fileID: 11400000, guid: 48d2654104c708448a90a4bfe3b2baa9, type: 2}
   ownedEntities: []
+  ownedMinions: []
+  unbuiltStructures: []
   gold: 100
   population: 0
   maxPopulation: 10
-  teamID: -1
+  playerTeamID: -1
+  allegianceTeamID: 1
   actionTime: 4
   spawnPosition: {fileID: 8693161}
+  knownEnemyStructures: []
+  knownEnemyUnits: []
+  desiredPopAdders: 0
+  desiredHarvesters: 5
+  desiredUnitSpawner: 2
+  desiredFighters: 10
   visibleResources: []
 --- !u!4 &1458377490
 Transform:

@@ -9,11 +9,13 @@ public class Player : NetworkBehaviour
 {
     public Faction playerFaction;
     public List<SelectableEntity> ownedEntities;
+    public List<MinionController> ownedMinions;
+    public List<SelectableEntity> unbuiltStructures;
     public int gold = 100;
     public int population = 0;
     public int maxPopulation = 10;
-    public int teamID = 0;
-
+    public int playerTeamID = 0; //used for a player's fog of war
+    public int allegianceTeamID = 0; //used to determine who is friendly and who is enemy. by default: 0 is player, 1 is AI
     public virtual void Start()
     {
         if (playerFaction != null)
@@ -52,7 +54,7 @@ public class Player : NetworkBehaviour
         bool onRamp = CheckIfPositionIsOnRamp(position);
         bool placementBlocked = false;
 
-        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)teamID);
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)playerTeamID);
         if (fow.GetFogValue(position) > 0.1f * 255)
         {
             placementBlocked = true;
