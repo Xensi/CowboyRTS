@@ -16,6 +16,7 @@ public class Player : NetworkBehaviour
     public int maxPopulation = 10;
     public int playerTeamID = 0; //used for a player's fog of war
     public int allegianceTeamID = 0; //used to determine who is friendly and who is enemy. by default: 0 is player, 1 is AI
+    public FogOfWarTeam fow;
     public virtual void Start()
     {
         if (playerFaction != null)
@@ -24,6 +25,15 @@ public class Player : NetworkBehaviour
             gold = playerFaction.startingGold;
             maxPopulation = playerFaction.startingMaxPopulation;
         }
+         fow = FogOfWarTeam.GetTeam((int)playerTeamID);
+    }
+    public bool PositionFullyVisible(Vector3 position)
+    {
+        return fow.GetFogValue(position) < Global.Instance.minFogStrength * 255;
+    }
+    public bool PositionExplored(Vector3 position)
+    {
+        return fow.GetFogValue(position) <= Global.Instance.exploredFogStrength * 255;
     }
     public bool CheckIfPositionIsOnRamp(Vector3 position)
     {

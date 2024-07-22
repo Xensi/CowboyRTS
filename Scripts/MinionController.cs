@@ -4,7 +4,7 @@ using UnityEngine;
 using Unity.Netcode;
 using Pathfinding;
 using FoW;
-using static UnityEditorInternal.VersionControl.ListControl;
+//using static UnityEditorInternal.VersionControl.ListControl;
 using static UnityEngine.GraphicsBuffer;
 using static SelectableEntity;
 //using UnityEngine.Rendering;
@@ -2135,20 +2135,15 @@ public class MinionController : NetworkBehaviour
         //destination.Value = target;
         orderedDestination = target;
     } 
-    public void SetAttackMoveDestination() //called by local player
+    public void SetAttackMoveDestination(Vector3 target) //called by local player
     {
         lastCommand.Value = CommandTypes.Attack;
         ClearTargets();
         basicallyIdleInstances = 0;
         SwitchState(MinionStates.WalkBeginFindEnemies);
         playedAttackMoveSound = false;
-        Ray ray = cam.ScreenPointToRay(UnityEngine.Input.mousePosition);
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity))
-        {
-            SetDestination(hit.point);
-            //destination.Value = hit.point;
-            orderedDestination = destination.Value;
-        }
+        SetDestination(target); 
+        orderedDestination = destination.Value;
     }
     public void PlaceOnGround()
     {

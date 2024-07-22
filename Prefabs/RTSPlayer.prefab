@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 4183589894
+  GlobalObjectIdHash: 707310657
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -67,16 +67,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71c860c2c52a0fe4abb2551a872b5d92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerFaction: {fileID: 11400000, guid: 48d2654104c708448a90a4bfe3b2baa9, type: 2}
+  ownedEntities: []
+  ownedMinions: []
+  unbuiltStructures: []
+  gold: 100
+  population: 0
+  maxPopulation: 10
+  playerTeamID: 0
+  allegianceTeamID: 0
   inTheGame:
     m_InternalValue: 0
   keystoneUnits: []
-  gold: 100
   grid: {fileID: 2084301759269820934}
-  ownedEntities: []
   selectedEntities: []
   enemyEntities: []
-  playerFaction: {fileID: 11400000, guid: 48d2654104c708448a90a4bfe3b2baa9, type: 2}
-  _entitiesIndex: 0
   cursorWorldPosition: {x: 0, y: 0, z: 0}
   linkedState: 0
   mouseState: 0
@@ -92,8 +97,6 @@ MonoBehaviour:
   endPortal: {fileID: 0}
   placingLinkedBuilding: 0
   starterUnitID: 8
-  population: 0
-  maxPopulation: 20
   placementGhost:
     serializedVersion: 2
     m_Bits: 0
@@ -101,13 +104,16 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   mainCam: {fileID: 0}
-  teamID: 0
+  militaryList: []
+  builderList: []
+  productionList: []
   predictedWallPositions: []
   predictedWallPositionsShouldBePlaced: 
   wallGhosts: []
   availableAbilities: []
   placingPortal: 0
   indices: 
+  UnitOrdersQueue: []
 --- !u!1 &8508829344168354121
 GameObject:
   m_ObjectHideFlags: 0

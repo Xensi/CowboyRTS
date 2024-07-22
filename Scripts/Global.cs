@@ -51,6 +51,7 @@ public class Global : NetworkBehaviour
     public float closeEnoughDist = .3f;
     public float lerpScale = 1;
     public readonly float minFogStrength = 0.45f;
+    public readonly float exploredFogStrength = 0.51f;
     //[SerializeField] public Camera mainCam;
     //[SerializeField] public Camera lineCam;
     public Camera[] cams;

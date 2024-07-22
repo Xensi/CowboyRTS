@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using System.Linq;
-using static UnityEditor.Progress;
+//using static UnityEditor.Progress;
 using Pathfinding.Drawing;
 using Unity.VisualScripting;
 /// <summary>
@@ -12,7 +12,7 @@ using Unity.VisualScripting;
 public class AIPlayer : Player
 {
     //to give a unit to the AI, set its desired team to a negative number 
-    private float actionTime = 1;
+    private float actionTime = 3;
     private float attackTime = 5;
     private float timer = 0;
     private float attackTimer = 0;
@@ -123,9 +123,8 @@ public class AIPlayer : Player
                 }
             }
         }
-        CleanKnownLists();
     }
-    private void CleanKnownLists()
+    private void CleanLists()
     {
         for (int i = knownEnemyUnits.Count - 1; i >= 0; i--)
         {
@@ -136,6 +135,16 @@ public class AIPlayer : Player
         {
             SelectableEntity current = knownEnemyStructures[i];
             if (current == null || !current.alive) knownEnemyStructures.RemoveAt(i);
+        }
+        for (int i = ownedEntities.Count - 1; i >= 0; i--)
+        {
+            SelectableEntity current = ownedEntities[i];
+            if (current == null || !current.alive) ownedEntities.RemoveAt(i);
+        }
+        for (int i = ownedMinions.Count - 1; i >= 0; i--)
+        {
+            MinionController current = ownedMinions[i];
+            if (current == null || !current.entity.alive) ownedMinions.RemoveAt(i);
         }
     }
     private void SendFightersToKnownPositions()
@@ -279,6 +288,7 @@ public class AIPlayer : Player
             {
                 AttackMoveWithCombatUnits();
             }*/
+        CleanLists();
 
     }
     private void ExpandDesires()

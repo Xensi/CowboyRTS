@@ -9,6 +9,7 @@ using System.Linq;
 using FoW;
 using UnityEngine.Rendering;
 using System;
+//using static UnityEditor.Progress;
 /*using UnityEditor.Playables;
 using UnityEditor.ShaderGraph.Internal;
 using Unity.Burst.CompilerServices;
@@ -21,7 +22,7 @@ public class RTSPlayer : Player
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
     public List<SelectableEntity> selectedEntities; //selected and we can control them 
-    public List<SelectableEntity> enemyEntities; 
+    public List<SelectableEntity> enemyEntities;
     private Vector3 _mousePosition;
     private Vector3 _offset;
     public Vector3 cursorWorldPosition;
@@ -45,7 +46,7 @@ public class RTSPlayer : Player
     private LayerMask blockingLayer;
     public SelectableEntity lastSpawnedEntity;
     public bool placementBlocked = false;
-    private GameObject followCursorObject; 
+    private GameObject followCursorObject;
     private MeshRenderer[] meshes;
     private bool oldPlacement = false;
     public Portal startPortal;
@@ -64,7 +65,7 @@ public class RTSPlayer : Player
     private bool active = true;
     public enum ActionType
     {
-        Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget
+        Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget, AttackMove
     }
     private ActionType actionType = ActionType.Move;
     private FactionBuilding buildingToPlace = null;
@@ -106,7 +107,7 @@ public class RTSPlayer : Player
         {
             MoveCamToSpawn();
         }
-    } 
+    }
     private void MoveCamToSpawn()
     {
         Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
@@ -173,53 +174,72 @@ public class RTSPlayer : Player
 
     private void SelectedAttackMove()
     {
-        foreach (SelectableEntity item in selectedEntities)
+        Vector3 clickedPosition;
+        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
         {
-            if (item.minionController != null) //minion
+            clickedPosition = hit.point;
+            foreach (SelectableEntity item in selectedEntities)
             {
-                print("attack moving");
-                //item.minionController.ClearGivenMission();
-                item.minionController.SetAttackMoveDestination();
+                if (item.minionController != null) //minion
+                {
+                    /*print("attack moving"); 
+                    item.minionController.SetAttackMoveDestination();*/
+
+                    UnitOrder order = new();
+                    order.unit = item.minionController;
+                    order.targetPosition = clickedPosition;
+                    order.action = ActionType.AttackMove;
+                    UnitOrdersQueue.Add(order);
+                }
             }
-        }
+        } 
     }
-    private void SetSelectedDestination() //RTS entity right click behavior
+    public List<UnitOrder> UnitOrdersQueue = new();
+    [Serializable]
+    public class UnitOrder
     {
-        //when player right clicks, get position on map
-        //tell other clients that this happened
+        public MinionController unit;
+        public ActionType action;
+        public SelectableEntity target;
+        public Vector3 targetPosition;
+    }
+    private bool Allied(SelectableEntity foreign)
+    {
+        return foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
+    }
+    private void QueueUnitOrders()
+    { 
         Vector3 clickedPosition;
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.gameLayer))
         {
             clickedPosition = hit.point;
-
-            FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
-            SelectableEntity select = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
-            //SelectableEntity select = hit.collider.GetComponent<SelectableEntity>();
-            if (select != null && fow.GetFogValue(select.transform.position) <= 0.51f * 255) //if exists and is explored at least
+            SelectableEntity hitEntity = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
+            //determine action type
+            if (hitEntity != null && PositionExplored(clickedPosition)) //if exists and is explored at least
             {
-                if (select.teamType == SelectableEntity.TeamBehavior.OwnerTeam)
+                if (hitEntity.teamType == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
-                    if (select.net.OwnerClientId == OwnerClientId) //same team
+                    if (Allied(hitEntity)) //same team //hitEntity.net.OwnerClientId == OwnerClientId
                     {
-                        if ((select.depositType == SelectableEntity.DepositType.Gold || select.depositType == SelectableEntity.DepositType.All)
-                            && select.fullyBuilt) //if deposit point
+                        if ((hitEntity.depositType == SelectableEntity.DepositType.Gold || hitEntity.depositType == SelectableEntity.DepositType.All)
+                            && hitEntity.fullyBuilt) //if deposit point
                         {
                             actionType = ActionType.Deposit;
                         }
-                        else if (!select.fullyBuilt || select.IsDamaged()) //if buildable
+                        else if (!hitEntity.fullyBuilt || hitEntity.IsDamaged()) //if buildable
                         {
-                            Debug.Log("not full built");
                             actionType = ActionType.BuildTarget;
                         }
-                        else if (select.fullyBuilt && select.HasEmptyGarrisonablePosition())
+                        else if (hitEntity.fullyBuilt && hitEntity.HasEmptyGarrisonablePosition())
                         { //target can be garrisoned, and passenger cannot garrison, then enter
                             actionType = ActionType.Garrison;
                         }
-                        else if (select.occupiedGarrison != null && select.occupiedGarrison.HasEmptyGarrisonablePosition())
+                        else if (hitEntity.occupiedGarrison != null && hitEntity.occupiedGarrison.HasEmptyGarrisonablePosition())
                         { //target is passenger of garrison, then enter garrison
                             actionType = ActionType.Garrison;
-                            select = select.occupiedGarrison;
+                            hitEntity = hitEntity.occupiedGarrison;
                         }
                     }
                     else //enemy
@@ -227,9 +247,9 @@ public class RTSPlayer : Player
                         actionType = ActionType.AttackTarget;
                     }
                 }
-                else if (select.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral)
+                else if (hitEntity.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral)
                 {
-                    if (select.selfHarvestableType != SelectableEntity.ResourceType.None)
+                    if (hitEntity.selfHarvestableType != SelectableEntity.ResourceType.None)
                     {
                         actionType = ActionType.Harvest;
                     }
@@ -239,71 +259,87 @@ public class RTSPlayer : Player
             {
                 actionType = ActionType.Move;
             }
-            for (int i = 0; i < selectedEntities.Count; i++)
+            //finished determining action type
+
+            foreach (SelectableEntity selected in selectedEntities)
             {
-                SelectableEntity item = selectedEntities[i];
-                /*Vector2 circle = UnityEngine.Random.insideUnitCircle * i * 0.5f;
-                Vector3 vec = clickedPosition + new Vector3(circle.x, 0, circle.y);*/
-                if (item.minionController != null) //minion
+                if (selected.minionController != null)
                 {
-                    //item.minionController.ClearGivenMission();
-                    switch (actionType)
+                    UnitOrder order = new();
+                    order.unit = selected.minionController;
+                    order.targetPosition = clickedPosition;
+                    order.action = actionType;
+                    order.target = hitEntity;
+                    UnitOrdersQueue.Add(order);
+                }
+            }
+        }
+    }
+    
+    private void ProcessOrders()
+    {
+        if (UnitOrdersQueue.Count > 0)
+        {
+            MinionController orderedUnit = null;
+            UnitOrder order = UnitOrdersQueue[0];
+            if (order != null)
+            {
+                foreach (SelectableEntity item in ownedEntities)
+                {
+                    if (item.minionController != null && item.minionController == order.unit)
                     {
+                        orderedUnit = item.minionController;
+                        break;
+                    }
+                }
+                if (orderedUnit != null)
+                {
+                    Vector3 targetPosition = order.targetPosition;
+                    SelectableEntity target = order.target;
+
+                    switch (order.action)
+                    {
+                        case ActionType.AttackMove: 
+                            orderedUnit.SetAttackMoveDestination(targetPosition);
+                            break;
                         case ActionType.Move:
-                            item.minionController.MoveTo(clickedPosition);
+                            orderedUnit.MoveTo(targetPosition);
                             break;
                         case ActionType.AttackTarget:
-                            item.minionController.AttackTarget(select);
+                            orderedUnit.AttackTarget(target);
                             break;
                         case ActionType.Harvest:
-                            item.minionController.CommandHarvestTarget(select);
+                            orderedUnit.CommandHarvestTarget(target);
                             break;
                         case ActionType.Deposit: //try to deposit if we have stuff to deposit
-                            if (item.HasResourcesToDeposit())
-                            { 
-                                item.minionController.DepositTo(select);
+                            if (orderedUnit.entity.HasResourcesToDeposit())
+                            {
+                                orderedUnit.DepositTo(target);
                             }
-                            else if (select.IsDamaged() && item.CanConstruct()) //if its damaged, we can try to build it
-                            { 
-                                item.minionController.CommandBuildTarget(select);
+                            else if (target.IsDamaged() && orderedUnit.entity.CanConstruct()) //if its damaged, we can try to build it
+                            {
+                                orderedUnit.CommandBuildTarget(target);
                             }
                             break;
                         case ActionType.Garrison:
-                            item.minionController.GarrisonInto(select);
+                            orderedUnit.GarrisonInto(target);
                             break;
                         case ActionType.BuildTarget://try determining how many things need to be built in total, and grabbing closest ones
-                            if (item.CanConstruct())
-                            { 
-                                item.minionController.CommandBuildTarget(select);
+                            if (orderedUnit.entity.CanConstruct())
+                            {
+                                orderedUnit.CommandBuildTarget(target);
                             }
                             else
-                            { 
-                                item.minionController.GarrisonInto(select);
+                            {
+                                orderedUnit.GarrisonInto(target);
                             }
                             break;
-                        default:
-                            break;
                     }
-                }
-                else //building
-                {
-                    item.SetRally();
+                    UnitOrdersQueue.RemoveAt(0);
                 }
             }
-            /*if (IsServer)
-            {
-                Debug.Log("Server telling client about the order");
-                ReportOrderClientRpc(actionType, clickedPosition);
-            }*/
         }
-
-        /*else
-        { 
-            Debug.Log("client tells server about order but doesn't execute it yet");
-            ReportOrderServerRpc();
-        }*/
-    }
-
+    }  
     public void ReadySetRallyPoint()
     {
         mouseState = MouseState.ReadyToSetRallyPoint;
@@ -365,11 +401,13 @@ public class RTSPlayer : Player
     }
     private SelectableEntity infoSelectedEntity;
     /// <summary>
-    /// Try to select an entity. This will only succeed if they're on our team or neutral.
+    /// Try to select an entity.
     /// </summary>
     /// <param name="entity"></param>
-    private bool TrySelectEntity(SelectableEntity entity) //later make this able to info select
+    private bool TrySelectEntity(SelectableEntity entity)
     {
+        if (!PositionFullyVisible(entity.transform.position)) return false;
+        if (!entity.alive) return false;
         bool val = false;
         if (IsTargetExplicitlyOnOurTeam(entity))
         {
@@ -424,11 +462,11 @@ public class RTSPlayer : Player
         }*/
 #endif
     }
+    Vector3 oldCursorWorldPosition;
     void Update()
-    {
-        /*FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
-        Debug.Log(fow.GetFogValue(cursorWorldPosition));*/
+    { 
         if (!active) return;
+        ProcessOrders();
         UpdatePlacementBlockedStatus();
         UpdateGridVisual();
         DetectHotkeys();
@@ -439,7 +477,11 @@ public class RTSPlayer : Player
 
             if (linkedState == LinkedState.PlacingEnd)
             {
-                CalculateFillCost(startWallPosition, cursorWorldPosition, buildingToPlace);
+                if (cursorWorldPosition != oldCursorWorldPosition)
+                {
+                    oldCursorWorldPosition = cursorWorldPosition;
+                    CalculateFillCost(startWallPosition, cursorWorldPosition, buildingToPlace);
+                }
             }
             if (Input.GetMouseButtonDown(0)) //left click
             {
@@ -475,7 +517,7 @@ public class RTSPlayer : Player
                 switch (mouseState)
                 {
                     case MouseState.Waiting:
-                        SetSelectedDestination();
+                        QueueUnitOrders();
                         break;
                     case MouseState.ReadyToPlace:
                         if (!placingLinkedBuilding)
@@ -716,8 +758,7 @@ public class RTSPlayer : Player
         int cost = building.goldCost;
         float distance = Vector3.Distance(start, end); //greater distance means more walls
 
-        ClearWallGhosts();
-        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)OwnerClientId);
+        ClearWallGhosts(); 
         //float halfExtents = 0.1f;
         if (distance > 0)
         {
@@ -880,7 +921,7 @@ public class RTSPlayer : Player
             }
         }
         wallGhosts.Clear();
-    } 
+    }
     public void UpdatePlacementBlockedStatus()
     {
         placementBlocked = IsPositionBlocked(cursorWorldPosition);
@@ -913,6 +954,9 @@ public class RTSPlayer : Player
             }
         }
     }
+    /// <summary>
+    /// Updates cursor world position onto grid
+    /// </summary>
     private void GetMouseWorldPosition()
     {
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
@@ -1063,7 +1107,7 @@ public class RTSPlayer : Player
                     //select.net.Spawn(); 
                     if (select.net == null) select.net = select.GetComponent<NetworkObject>();
 
-                    select.net.SpawnWithOwnership(clientID); 
+                    select.net.SpawnWithOwnership(clientID);
                     //change fog of war unit to the correct team
                     //select.localTeamNumber = clientID;
                     //if (select.fogUnit != null) select.fogUnit.team = clientID;
@@ -1078,8 +1122,8 @@ public class RTSPlayer : Player
                             TargetClientIds = new ulong[] { clientID }
                         }
                     };
-                    
-                    
+
+
                     //SendReferenceToSpawnedMinionClientRpc((ushort)select.NetworkObjectId, spawner, clientRpcParams);
                 }
             }
@@ -1219,7 +1263,7 @@ public class RTSPlayer : Player
                     Global.Instance.resourcesParent.SetActive(true);
                     Global.Instance.resourceText.text = "Stored gold: " + selectedEntities[0].harvestedResourceAmount + "/" + selectedEntities[0].harvestCapacity;
                 }
-            } 
+            }
             else
             {
                 Global.Instance.selectedParent.SetActive(true);
@@ -1232,7 +1276,7 @@ public class RTSPlayer : Player
         {
             Debug.LogError("a GUI element needs to be assigned.");
         }
-    } 
+    }
     /// <summary>
     /// Update button abilities displayed based on selected units.
     /// </summary>
@@ -1490,7 +1534,7 @@ public class RTSPlayer : Player
         }
     }
     private void SingleSelect()
-    {
+    { 
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
         {
@@ -1501,7 +1545,7 @@ public class RTSPlayer : Player
             //SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
 
             SelectableEntity entity = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
-            if (entity != null)
+            if (entity != null && PositionFullyVisible(entity.transform.position))
             {
                 TrySelectEntity(entity);
             }
