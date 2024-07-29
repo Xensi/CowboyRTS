@@ -31,7 +31,7 @@ MonoBehaviour:
   damage: 2
   directionalAttack: 0
   attackRange: 5
-  attackDuration: 2.5
+  attackDuration: 2
   impactTime: 0.5
   areaOfEffectRadius: 1
   shouldAutoSeekEnemies: 1
@@ -43,6 +43,6 @@ MonoBehaviour:
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  spawnTimeCost: 5
+  spawnTimeCost: 10
   isHeavy: 0
   canAttackWhileMoving: 0

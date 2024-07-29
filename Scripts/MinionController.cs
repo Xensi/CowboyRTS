@@ -7,6 +7,7 @@ using FoW;
 //using static UnityEditorInternal.VersionControl.ListControl;
 using static UnityEngine.GraphicsBuffer;
 using static SelectableEntity;
+using static UnityEditor.Experimental.GraphView.GraphView;
 //using UnityEngine.Rendering;
 //using UnityEngine.Windows;
 
@@ -34,6 +35,7 @@ public class MinionController : NetworkBehaviour
         Spawn,
         Die,
         Harvesting,
+        AttackCooldown,
         AfterHarvestCheck,
         Depositing,
         AfterDepositCheck,
@@ -66,11 +68,11 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] public Vector3 orderedDestination; //remembers where player told minion to go
     private float basicallyIdleInstances = 0;
     private readonly int idleThreshold = 3; //seconds of being stuck
-    private float attackReadyTimer = 0;
+    public float attackReadyTimer = 0;
     private float change;
     public readonly float walkAnimThreshold = 0.0001f;
     private Vector3 oldPosition;
-    private bool attackReady = true;
+    public bool attackReady = true;
     [HideInInspector] public AIPath ai;
     [HideInInspector] public Collider col;
     [HideInInspector] private Rigidbody rigid;
@@ -917,6 +919,7 @@ public class MinionController : NetworkBehaviour
                             }
                             else if (attackReady)
                             {
+                                stateTimer = 0;
                                 attackReady = false;
                                 switch (attackType)
                                 {
@@ -1140,6 +1143,7 @@ public class MinionController : NetworkBehaviour
                             }
                             else if (attackReady)
                             {
+                                stateTimer = 0;
                                 attackReady = false;
                                 BuildTarget(entity.interactionTarget);
                             }
@@ -1170,12 +1174,17 @@ public class MinionController : NetworkBehaviour
                     SwitchState(MinionStates.FindInteractable);
                     lastState = MinionStates.Harvesting;
                 }
+                else if (ReachedResourceCap() && attackReady)
+                { 
+                    SwitchState(MinionStates.FindInteractable);
+                    lastState = MinionStates.Depositing;
+                }
                 else
                 {
                     LookAtTarget(entity.interactionTarget.transform);
                     if (attackReady)
-                    {
-                        animator.Play("Attack");
+                    { 
+                        animator.Play("Attack"); 
                         if (AnimatorPlaying())
                         {
                             if (stateTimer < impactTime)
@@ -1184,19 +1193,18 @@ public class MinionController : NetworkBehaviour
                             }
                             else if (attackReady)
                             {
+                                stateTimer = 0;
                                 attackReady = false;
-                                HarvestTarget(entity.interactionTarget);
-                                //Debug.Log("impact");
+                                HarvestTarget(entity.interactionTarget); 
                             }
                         }
-                        else //animation finished
-                        {
-                            //Debug.Log("harvest over");
+                        else
+                        { 
                             SwitchState(MinionStates.AfterHarvestCheck);
                         }
                     }
                 }
-                break;
+                break; 
             case MinionStates.AfterHarvestCheck:
                 animator.Play("Idle");
                 if (entity.harvestedResourceAmount >= entity.harvestCapacity) //we're full so deposit
@@ -1274,6 +1282,10 @@ public class MinionController : NetworkBehaviour
         {
             animator.SetFloat("AttackSpeed", 0);
         }*/
+    }
+    private bool ReachedResourceCap()
+    {
+        return entity.harvestedResourceAmount >= entity.harvestCapacity;
     }
     private void DrawPath()
     {

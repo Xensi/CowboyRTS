@@ -88,6 +88,22 @@ public class RTSPlayer : Player
     {
         inTheGame.Value = false;
     }
+    private void MoveCamToSpawn()
+    {
+        Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
+        camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
+    }
+    public void UpdateHPText()
+    {
+        if (selectedEntities.Count == 1)
+        {
+            Global.Instance.hpText.text = "HP: " + selectedEntities[0].hitPoints.Value + "/" + selectedEntities[0].maxHP;
+        }
+    }
+    private void OnDisable()
+    {
+        Global.Instance.uninitializedPlayers.Remove(this);
+    }
     public override void Start()
     {
         base.Start();
@@ -108,21 +124,8 @@ public class RTSPlayer : Player
             MoveCamToSpawn();
         }
     }
-    private void MoveCamToSpawn()
-    {
-        Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
-        camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
-    }
-    public void UpdateHPText()
-    {
-        if (selectedEntities.Count == 1)
-        {
-            Global.Instance.hpText.text = "HP: " + selectedEntities[0].hitPoints.Value + "/" + selectedEntities[0].maxHP;
-        }
-    }
-    private void OnDisable()
-    {
-        Global.Instance.uninitializedPlayers.Remove(this);
+    private void Awake()
+    { 
     }
     public override void OnNetworkSpawn()
     {
@@ -156,6 +159,7 @@ public class RTSPlayer : Player
             active = false;
         }
         //playerFaction = Global.Instance.factions[teamID];
+        allegianceTeamID = playerTeamID;
     }
     private bool MouseOverUI()
     {

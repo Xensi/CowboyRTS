@@ -392,7 +392,12 @@ public class SelectableEntity : NetworkBehaviour
                 }
             }
             //place effect dependent on "controller of this" being defined after this line
-            if (fogUnit != null) fogUnit.team = desiredTeamNumber;
+            if (controllerOfThis != null)
+            {
+                if (fogUnit != null) fogUnit.team = controllerOfThis.allegianceTeamID;
+                Debug.Log("Setting fog unit to: " + controllerOfThis.allegianceTeamID + " with playerteamID: " + controllerOfThis.playerTeamID); 
+            }
+
             if (teamType == TeamBehavior.OwnerTeam)
             {
                 ChangePopulation(consumePopulationAmount);
@@ -485,15 +490,8 @@ public class SelectableEntity : NetworkBehaviour
         //FixFogTeam();
         SetHideFogTeam();
         UpdateTeamRenderers();
-    }
-    private void FixFogTeam() //temporary fix
-    {
-        if (fogUnit != null) // && fogUnit.team != teamNumber.Value
-        {
-            fogUnit.team = localTeamNumber;//teamNumber.Value;
-            Debug.Log("setting fog unit team to" + fogUnit.team);
-        }
-    } /// <summary>
+    } 
+    /// <summary>
       /// One time event to set fog hide team
       /// </summary>
     private void SetHideFogTeam()

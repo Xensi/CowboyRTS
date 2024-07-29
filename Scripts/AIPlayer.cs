@@ -24,7 +24,7 @@ public class AIPlayer : Player
         if (IsOwner) //spawn initial minions/buildings  
         {
             if (spawnPosition != null) SpawnMinion(spawnPosition.position, playerFaction.spawnableEntities[0]);
-        }
+        } 
     }
     public override void Start()
     {
@@ -34,17 +34,20 @@ public class AIPlayer : Player
     }
     void Update()
     {
-        timer += Time.deltaTime;
-        if (timer >= actionTime)
-        {
-            timer = 0;
-            PerformAction();
-        }
-        attackTimer += Time.deltaTime;
-        if (attackTimer >= attackTime)
-        {
-            attackTimer = 0;
-            AggressiveAction();
+        if (IsOwner)
+        { 
+            timer += Time.deltaTime;
+            if (timer >= actionTime)
+            {
+                timer = 0;
+                PerformAction();
+            }
+            attackTimer += Time.deltaTime;
+            if (attackTimer >= attackTime)
+            {
+                attackTimer = 0;
+                AggressiveAction();
+            }
         }
     }
     private void AggressiveAction()
@@ -100,25 +103,28 @@ public class AIPlayer : Player
             {
                 foreach (SelectableEntity entity in player.ownedEntities)
                 {
-                    bool visible = fow.GetFogValue(entity.transform.position) < Global.Instance.minFogStrength * 255;
-                    if (visible)
-                    {
-                        if (entity.IsUnit() && !knownEnemyUnits.Contains(entity))
-                        { 
-                            knownEnemyUnits.Add(entity);
-                        }
-                        else if (!entity.IsUnit() && !knownEnemyStructures.Contains(entity))
-                        { 
-                            knownEnemyStructures.Add(entity);
-                        }
-                    }
-                    else
-                    {
-                        if (entity.IsUnit() && knownEnemyUnits.Contains(entity))
+                    if (entity != null)
+                    { 
+                        bool visible = fow.GetFogValue(entity.transform.position) < Global.Instance.minFogStrength * 255;
+                        if (visible)
                         {
-                            knownEnemyUnits.Remove(entity);
+                            if (entity.IsUnit() && !knownEnemyUnits.Contains(entity))
+                            {
+                                knownEnemyUnits.Add(entity);
+                            }
+                            else if (!entity.IsUnit() && !knownEnemyStructures.Contains(entity))
+                            {
+                                knownEnemyStructures.Add(entity);
+                            }
                         }
-                        //we don't remove structures that have slipped into fog
+                        else
+                        {
+                            if (entity.IsUnit() && knownEnemyUnits.Contains(entity))
+                            {
+                                knownEnemyUnits.Remove(entity);
+                            }
+                            //we don't remove structures that have slipped into fog
+                        }
                     }
                 }
             }
