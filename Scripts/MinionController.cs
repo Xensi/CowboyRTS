@@ -86,7 +86,7 @@ public class MinionController : NetworkBehaviour
     #region Variables
 
     [Header("Behavior Settings")]
-    public AttackType attackType = AttackType.Instant;
+    [HideInInspector] public AttackType attackType = AttackType.Instant;
     [HideInInspector] public bool directionalAttack = false;
 
     [HideInInspector] public float attackRange = 1;
@@ -96,8 +96,8 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] public bool canMoveWhileAttacking = false;
     [SerializeField] private Transform attackEffectSpawnPosition;
     [HideInInspector] public sbyte damage = 1;
-    [SerializeField] public float attackDuration = 1;
-    [SerializeField] public float impactTime = .5f;
+    [HideInInspector] public float attackDuration = 1;
+    [HideInInspector] public float impactTime = .5f;
     [HideInInspector] public float defaultMoveSpeed = 0;
     [HideInInspector] public float defaultAttackDuration = 0;
     [HideInInspector] public float defaultImpactTime = 0;
@@ -1184,7 +1184,7 @@ public class MinionController : NetworkBehaviour
                     LookAtTarget(entity.interactionTarget.transform);
                     if (attackReady)
                     { 
-                        animator.Play("Attack"); 
+                        animator.Play("Harvest"); 
                         if (AnimatorPlaying())
                         {
                             if (stateTimer < impactTime)

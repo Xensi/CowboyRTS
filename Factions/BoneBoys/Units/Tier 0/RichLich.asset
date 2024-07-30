@@ -21,20 +21,20 @@ MonoBehaviour:
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0
   shouldHideInFog: 1
-  soundProfile: {fileID: 11400000, guid: ff7bffcb71726924386899d0f67a42ee, type: 2}
+  soundProfile: {fileID: 11400000, guid: 29f47e755f09c694b84170e4c7c354cb, type: 2}
   teamType: 0
   constructableBuildings: []
   usableAbilities: []
   depositType: 1
   selfHarvestableType: 1
-  attackType: 0
-  damage: 1
+  attackType: 1
+  damage: 5
   directionalAttack: 0
-  attackRange: 1
-  attackDuration: 1
+  attackRange: 5
+  attackDuration: 2
   impactTime: 0.5
   areaOfEffectRadius: 1
-  shouldAutoSeekEnemies: 0
+  shouldAutoSeekEnemies: 1
   spawnableUnits:
   - {fileID: 11400000, guid: 04ae84b5d643fbc498358c09db111adb, type: 2}
   spawnableAtOnce: 1
@@ -45,5 +45,5 @@ MonoBehaviour:
   passengersAreTargetable: 0
   acceptsHeavy: 0
   spawnTimeCost: 5
-  isHeavy: 0
+  isHeavy: 1
   canAttackWhileMoving: 0

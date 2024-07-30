@@ -31,6 +31,7 @@ public class AIPlayer : Player
         base.Start();
         Global.Instance.aiTeamControllers.Add(this);
         Global.Instance.allPlayers.Add(this);
+        allegianceTeamID = playerTeamID; //by default
     }
     void Update()
     {
@@ -48,7 +49,7 @@ public class AIPlayer : Player
                 attackTimer = 0;
                 AggressiveAction();
             }
-        }
+        } 
     }
     private void AggressiveAction()
     { 
@@ -463,6 +464,7 @@ public class AIPlayer : Player
     public List<SelectableEntity> visibleResources = new();
     private void EvaluateVisibleResources()
     {
+        Debug.Log("Evaluating visible resources");
         visibleResources.Clear();
         FogOfWarTeam fow = FogOfWarTeam.GetTeam(playerTeamID);
         foreach (SelectableEntity item in Global.Instance.harvestableResources)
