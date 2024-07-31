@@ -114,6 +114,16 @@ public class LobbyManager : MonoBehaviour
             ChangeLobbyUIStatus(false);
         }
     }
+    public void JoinLocalHost()
+    {
+        if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
+        {
+            NetworkManager.Singleton.NetworkConfig.NetworkTransport = singleplayerTransport;
+            NetworkManager.Singleton.StartClient();
+            ChangeGameUIStatus(true);
+            ChangeLobbyUIStatus(false);
+        }
+    }
     private async Task Authenticate()
     {
         var options = new InitializationOptions();

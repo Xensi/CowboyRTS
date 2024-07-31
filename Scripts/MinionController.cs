@@ -114,13 +114,12 @@ public class MinionController : NetworkBehaviour
     #region NetworkVariables
     //maybe optimize this as vector 2 later
     [HideInInspector]
-    public NetworkVariable<Vector3> realLocation = new NetworkVariable<Vector3>(default,
+    public NetworkVariable<Vector2Int> realLocation = new NetworkVariable<Vector2Int>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    private Vector3 oldRealLocation;
     //controls where the AI will pathfind to
     [HideInInspector]
-    public NetworkVariable<Vector3> destination = new NetworkVariable<Vector3>(default,
-        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-
+    public Vector3 destination;
     #endregion
     #region Core
     //private MinionObstacle obstacle;
@@ -167,11 +166,30 @@ public class MinionController : NetworkBehaviour
         }
         maxDetectable = Mathf.RoundToInt(20 * attackRange);
     }
+    private Vector2Int QuantizePosition(Vector3 vec) //(5.55)
+    {
+        int x = Mathf.RoundToInt(vec.x * 10); //56
+        int y = Mathf.RoundToInt(vec.z * 10);
+
+        return new Vector2Int(x, y);
+    }
+    private Vector3 DequantizePosition(Vector2Int vec) //(5.55)
+    {
+        float x = vec.x; //5.6
+        float z = vec.y;
+
+        return new Vector3(x / 10, 0, z / 10);
+    }
+    private void SetRealLocation()
+    {
+        oldRealLocation = transform.position; 
+        realLocation.Value = QuantizePosition(transform.position);
+    }
     public override void OnNetworkSpawn()
     {
         if (IsOwner)
-        { 
-            realLocation.Value = transform.position;
+        {
+            SetRealLocation();
             //destination.Value = transform.position; 
             SetDestination(transform.position);
             SwitchState(MinionStates.Spawn);
@@ -190,8 +208,7 @@ public class MinionController : NetworkBehaviour
               ai.enabled = false;
               rayMod.enabled = false;
               seeker.enabled = false;*/
-        }
-        destination.OnValueChanged += OnDestinationChanged;
+        } 
         realLocation.OnValueChanged += OnRealLocationChanged;
         //enabled = IsOwner;
         oldPosition = transform.position;
@@ -220,7 +237,7 @@ public class MinionController : NetworkBehaviour
     private void SetDestination(Vector3 position)
     {
         //print("setting destination");
-        if (IsOwner) destination.Value = position; //tell server where we're going
+        destination = position; //tell server where we're going
         UpdateSetterTargetPosition(); //move pathfinding target
     }
     public bool manualControlPathfinding = false;
@@ -229,7 +246,7 @@ public class MinionController : NetworkBehaviour
     /// </summary>
     private void UpdateSetterTargetPosition()
     {
-        if (!manualControlPathfinding) pathfindingTarget.position = destination.Value;
+        if (!manualControlPathfinding) pathfindingTarget.position = destination;
     }
     private void NonOwnerPathfindToOldestRealLocation()
     {
@@ -285,12 +302,18 @@ public class MinionController : NetworkBehaviour
             //Debug.Log(change);
         }
     }
-    private void OnRealLocationChanged(Vector3 prev, Vector3 cur)
+    private void OnRealLocationChanged(Vector2Int prev, Vector2Int cur)
     {
         finishedInitializingRealLocation = true;
         if (!IsOwner)
         {
-            nonOwnerRealLocationList.Add(realLocation.Value);
+            //may have to ray cast down to retrieve height data
+            Vector3 deq = DequantizePosition(realLocation.Value);
+            if (Physics.Raycast(deq + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.groundLayer))
+            { 
+                deq.y = hit.point.y; 
+            } 
+            nonOwnerRealLocationList.Add(deq);
         }
     }
     public List<Vector3> nonOwnerRealLocationList = new(); //only used by non owners to store real locations that should be pathfound to sequentially
@@ -525,42 +548,19 @@ public class MinionController : NetworkBehaviour
     private void UpdateRealLocation()
     {
         //float updateThreshold = 1f; //does not need to be equal to allowed error, but seems to work when it is
-        Vector3 offset = transform.position - realLocation.Value;
+        Vector3 offset = transform.position - oldRealLocation;
         float dist = offset.sqrMagnitude;//Vector3.Distance(transform.position, realLocation.Value);
 
         if (dist > Global.Instance.updateRealLocThreshold * Global.Instance.updateRealLocThreshold) //square the distance to compare against
         {
             //realLocationReached = false;
-            realLocation.Value = transform.position; //only update when different enough 
+            SetRealLocation();
         }
     }
     //private bool realLocationReached = false;
     //private float updateRealLocThreshold = 1f; //1
     //private readonly float allowedNonOwnerError = 1.5f; //1.5 ideally higher than real loc update; don't want to lerp to old position
-    private bool highPrecisionMovement = false;
-    private void CatchUpIfHighError()
-    {
-        //owner can change real location with impunity
-        //other clients: when their value for real location syncs up with owner, check if it's different enough to warrant a teleport
-        //in future lerp to new location? 
-        if (!IsOwner && entity.alive) //prevents dead units from teleporting
-        { //|| highPrecisionMovement
-            if (Vector3.Distance(realLocation.Value, transform.position) > Global.Instance.allowedNonOwnerError) //&& realLocationReached == false
-            {
-                //Debug.Log("Telporting because distance too great");
-                //transform.position = realLocation.Value;
-                transform.position = LerpPosition(transform.position, realLocation.Value);
-                if (rigid != null) rigid.isKinematic = true;
-                if (ai != null) ai.enabled = false;
-            }
-            else
-            {
-                //realLocationReached = true;
-                if (rigid != null) rigid.isKinematic = false;
-                if (ai != null) ai.enabled = true;
-            }
-        }
-    }
+    private bool highPrecisionMovement = false; 
     // Calculated start for the most recent interpolation
     Vector3 m_LerpStart;
 
@@ -627,6 +627,10 @@ public class MinionController : NetworkBehaviour
             {
                 Gizmos.DrawWireSphere(loc, .1f);
             }
+        }
+        else
+        { 
+            Gizmos.DrawWireSphere(DequantizePosition(realLocation.Value), .1f);
         }
     }
     #endregion
@@ -775,7 +779,7 @@ public class MinionController : NetworkBehaviour
     }
     private void SetDestinationIfHighDiff(Vector3 target)
     {
-        Vector3 offset = target - destination.Value;
+        Vector3 offset = target - destination;
         if (Vector3.SqrMagnitude(offset) > Mathf.Pow(0.1f, 2))
         {
             SetDestination(target);
@@ -1393,7 +1397,7 @@ public class MinionController : NetworkBehaviour
     /// <param name="ent"></param>
     public void SetBuildDestination(Vector3 pos, SelectableEntity ent)
     {
-        destination.Value = pos;
+        destination = pos;
         entity.interactionTarget = ent;
         lastState = MinionStates.Building;
         SwitchState(MinionStates.WalkToInteractable);
@@ -1576,7 +1580,7 @@ public class MinionController : NetworkBehaviour
     {
         if (IsOwner)
         {
-            realLocation.Value = transform.position;
+            SetRealLocation();
         }
     }
     private void LookAtTarget(Transform target)
@@ -2155,7 +2159,7 @@ public class MinionController : NetworkBehaviour
         SwitchState(MinionStates.WalkBeginFindEnemies);
         playedAttackMoveSound = false;
         SetDestination(target); 
-        orderedDestination = destination.Value;
+        orderedDestination = destination;
     }
     public void PlaceOnGround()
     {
