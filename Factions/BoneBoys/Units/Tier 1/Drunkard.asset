@@ -31,7 +31,7 @@ MonoBehaviour:
   damage: 2
   directionalAttack: 0
   attackRange: 0.75
-  attackDuration: 1.25
+  attackDuration: 1
   impactTime: 0.5
   areaOfEffectRadius: 1
   shouldAutoSeekEnemies: 1

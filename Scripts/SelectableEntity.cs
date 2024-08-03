@@ -188,6 +188,10 @@ public class SelectableEntity : NetworkBehaviour
             UpdateResourceCollectableMeshes();
         }
     }
+    public bool IsMinion()
+    {
+        return minionController != null;
+    } 
     private void UpdateResourceCollectableMeshes()
     {
         if (resourceCollectingMeshes.Length == 0) return;
@@ -319,7 +323,7 @@ public class SelectableEntity : NetworkBehaviour
             if (minionController != null) minionController.canMoveWhileAttacking = factionUnit.canAttackWhileMoving;
             startingHP = maxHP;
         }
-    }
+    } 
     public bool IsDamaged()
     {
         return hitPoints.Value < maxHP;
@@ -557,10 +561,11 @@ public class SelectableEntity : NetworkBehaviour
             //assign mission to last
             switch (spawnerRallyMission)
             {
-                case RallyMission.None:
+                case RallyMission.None: 
+                    minionController.SetDestination(transform.position);
                     break;
-                case RallyMission.Move:
-                    minionController.rallyTarget = rallyPoint;
+                case RallyMission.Move:  
+                    minionController.SetDestination(rallyPoint); 
                     break;
                 case RallyMission.Harvest:
                     interactionTarget = rallyTarget;
@@ -1033,18 +1038,18 @@ public class SelectableEntity : NetworkBehaviour
                 }
             }
         }
-    }
+    } 
     public void UnloadPassenger(MinionController exiting)
     {
         foreach (GarrisonablePosition item in garrisonablePositions)
         {
             if (item.passenger == exiting)
             {
-                item.passenger = null;
-                //exiting.transform.parent = null;
+                item.passenger = null; 
                 exiting.entity.occupiedGarrison = null;
                 if (IsOwner)
                 {
+                    exiting.ChangeRVOStatus(true);
                     exiting.entity.isTargetable.Value = true;
                     exiting.entity.PlaceOnGround();
                     if (IsServer)
@@ -1054,13 +1059,9 @@ public class SelectableEntity : NetworkBehaviour
                     else
                     {
                         exiting.entity.PlaceOnGroundServerRpc();
-                    }
-
-                    /*if (exiting.minionNetwork != null) exiting.minionNetwork.verticalPosition.Value = 0;*/
+                    } 
                 }
-                exiting.col.isTrigger = false;
-
-                //exiting.minionNetwork.positionDifferenceThreshold = exiting.minionNetwork.defaultPositionDifferenceThreshold;
+                exiting.col.isTrigger = false; 
                 break;
             }
         }
@@ -1368,7 +1369,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         return selfHarvestableType != ResourceType.None;
     }
-    public void SetRally()
+    public void SetRally() //later have this take in a vector3?
     {
         Debug.Log("Setting rally");
         rallyMission = RallyMission.Move;
@@ -1376,7 +1377,7 @@ public class SelectableEntity : NetworkBehaviour
         //determine if spawned units should be given a mission
 
         Ray ray = Global.Instance.localPlayer.mainCam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.gameLayer))
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
         {
             rallyPoint = hit.point;
             if (rallyVisual != null)
@@ -1417,7 +1418,7 @@ public class SelectableEntity : NetworkBehaviour
                     }
                 }
             }
-        }
+        } 
     }
     public MeshRenderer[] attackEffects;
 

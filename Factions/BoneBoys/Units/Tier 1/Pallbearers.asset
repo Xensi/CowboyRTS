@@ -16,7 +16,7 @@ MonoBehaviour:
   description: 
   prefabToSpawn: {fileID: 8532064031720343334, guid: a0161a0a83f36a64cbeabb6fc555ca3d, type: 3}
   goldCost: 40
-  maxHP: 10
+  maxHP: 40
   isKeystone: 0
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
@@ -27,12 +27,12 @@ MonoBehaviour:
   usableAbilities: []
   depositType: 0
   selfHarvestableType: 1
-  attackType: 0
-  damage: 1
+  attackType: 1
+  damage: 5
   directionalAttack: 0
   attackRange: 1
-  attackDuration: 1
-  impactTime: 0.5
+  attackDuration: 1.8
+  impactTime: 0.811
   areaOfEffectRadius: 1
   shouldAutoSeekEnemies: 0
   spawnableUnits: []
@@ -43,6 +43,6 @@ MonoBehaviour:
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  spawnTimeCost: 5
-  isHeavy: 0
+  spawnTimeCost: 15
+  isHeavy: 1
   canAttackWhileMoving: 0

@@ -57,6 +57,7 @@ public class Global : NetworkBehaviour
     public Camera[] cams;
     public LayerMask groundLayer;
     public LayerMask blockingLayer;
+    public LayerMask gameLayer;
     public List<RTSPlayer> uninitializedPlayers = new();
     public List<RTSPlayer> initializedPlayers = new();
     public List<AIPlayer> aiTeamControllers = new();
@@ -66,6 +67,7 @@ public class Global : NetworkBehaviour
     {
         groundLayer = LayerMask.GetMask("Ground");
         blockingLayer = LayerMask.GetMask("Entity", "Obstacle");
+        gameLayer = LayerMask.GetMask("Entity", "Obstacle", "Ground");
         // If there is an instance, and it's not me, delete myself.
 
         if (Instance != null && Instance != this)

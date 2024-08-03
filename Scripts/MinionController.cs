@@ -109,7 +109,7 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] public float areaOfEffectRadius = 1; //ignore if not selfdestructer
     public MinionStates minionState = MinionStates.Spawn;
     [HideInInspector] public SelectableEntity.RallyMission givenMission = SelectableEntity.RallyMission.None;
-    [HideInInspector] public Vector3 rallyTarget;
+    [HideInInspector] public Vector3 rallyPosition; //deprecated
     #endregion
     #region NetworkVariables
     //maybe optimize this as vector 2 later
@@ -191,7 +191,7 @@ public class MinionController : NetworkBehaviour
         {
             SetRealLocation();
             //destination.Value = transform.position; 
-            SetDestination(transform.position);
+
             SwitchState(MinionStates.Spawn);
             Invoke(nameof(FinishSpawning), spawnDuration);
             finishedInitializingRealLocation = true;
@@ -234,7 +234,7 @@ public class MinionController : NetworkBehaviour
     /// Tells server this minion's destination so it can pathfind there on other clients
     /// </summary>
     /// <param name="position"></param>
-    private void SetDestination(Vector3 position)
+    public void SetDestination(Vector3 position)
     {
         //print("setting destination");
         destination = position; //tell server where we're going
@@ -334,6 +334,7 @@ public class MinionController : NetworkBehaviour
                 UpdateInteractors();
                 OwnerUpdateState();
                 UpdateSetterTargetPosition();
+                FixGarrisonObstacle();
             }
             else // if (finishedInitializingRealLocation) //not owned by us
             {
@@ -342,6 +343,13 @@ public class MinionController : NetworkBehaviour
                 //NonOwnerUpdateAnimationBasedOnContext(); //maybe there is issue with this 
                 //if (ai != null) ai.destination = destination.Value;
             }
+        }
+    }
+    private void FixGarrisonObstacle()
+    {
+        if (graphUpdateScene != null && graphUpdateScene.setWalkability == false && IsGarrisoned())
+        {
+            ClearObstacle();
         }
     }
     //float stopDistIncreaseThreshold = 0.01f;
@@ -1544,24 +1552,35 @@ public class MinionController : NetworkBehaviour
     //public bool allowBecomingObstacles = false;
     private void BecomeObstacle()
     {
-        //tell graph update scene to start blocking
-        if (graphUpdateScene != null)
+        if (graphUpdateScene != null && !IsGarrisoned())
         {
+            Debug.Log("Becoming obstacle");
             graphUpdateScene.transform.position = transform.position;
             graphUpdateScene.setWalkability = false;
             Invoke(nameof(UpdateGraph), graphUpdateTime); //this delay is necessary or it will not work
         }
+        /*if (IsGarrisoned())
+        { 
+            ClearObstacle();
+        }
+        else
+        {
+            //tell graph update scene to start blocking
+            
+        }*/
     }
     private void UpdateGraph()
     {
         if (graphUpdateScene != null) graphUpdateScene.Apply();
         //AstarPath.active.FlushGraphUpdates(); 
     }
+    //private Vector3 previousObstaclePositionToClear;
     public void ClearObstacle()
     {
         //tell graph update scene to stop blocking
         if (graphUpdateScene != null)
         {
+            Debug.Log("Clearing obstacle");
             graphUpdateScene.transform.position = transform.position;
             graphUpdateScene.setWalkability = true;
             graphUpdateScene.Apply();
@@ -2259,11 +2278,15 @@ public class MinionController : NetworkBehaviour
             lastState = MinionStates.Building;
         }
     }
-    public void GarrisonInto(SelectableEntity garrison)
+    private bool IsGarrisoned()
+    {
+        return entity.occupiedGarrison != null;
+    }
+    public void WorkOnGarrisoningInto(SelectableEntity garrison)
     {
         //Debug.Log("Trying to garrison");
         SelectableEntity justLeftGarrison = null;
-        if (entity.occupiedGarrison != null) //we are currently garrisoned
+        if (IsGarrisoned()) //we are currently garrisoned
         {
             justLeftGarrison = entity.occupiedGarrison;
             entity.occupiedGarrison.UnloadPassenger(this); //leave garrison by moving out of it
@@ -2282,24 +2305,31 @@ public class MinionController : NetworkBehaviour
         }
         lastCommand.Value = CommandTypes.Move;
         /*SelectableEntity garrison = select.occupiedGarrison;
-
         selectableEntity.tryingToTeleport = true;
         selectableEntity.interactionTarget = select;
         state = State.WalkToInteractable;
         lastState = State.Garrisoning;*/
     }
+    public void ChangeRVOStatus(bool val)
+    { 
+        if (entity.RVO != null) entity.RVO.enabled = val;
+    }
     private void LoadPassengerInto(SelectableEntity garrison)
     {
-        SwitchState(MinionStates.Idle);
-        garrison.ReceivePassenger(this);
-        //we should tell other players that we're locked to a certain passenger seat
-        if (IsServer)
+        if (garrison.controllerOfThis.playerTeamID == entity.controllerOfThis.playerTeamID)
         {
-            LockToSeatClientRpc(garrison);
-        }
-        else
-        {
-            LockToSeatServerRpc(garrison);
+            ChangeRVOStatus(false);
+            SwitchState(MinionStates.Idle);
+            garrison.ReceivePassenger(this);
+            //we should tell other players that we're locked to a certain passenger seat
+            if (IsServer)
+            {
+                LockToSeatClientRpc(garrison);
+            }
+            else
+            {
+                LockToSeatServerRpc(garrison);
+            }
         }
     }
     [ServerRpc]

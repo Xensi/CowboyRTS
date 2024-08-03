@@ -19,8 +19,10 @@ public class AIPlayer : Player
     public Transform spawnPosition;
     public List<SelectableEntity> knownEnemyStructures = new();
     public List<SelectableEntity> knownEnemyUnits = new();
+    public bool enable = false;
     public override void OnNetworkSpawn()
     {
+        if (!enable) return;
         if (IsOwner) //spawn initial minions/buildings  
         {
             if (spawnPosition != null) SpawnMinion(spawnPosition.position, playerFaction.spawnableEntities[0]);
@@ -28,6 +30,7 @@ public class AIPlayer : Player
     }
     public override void Start()
     {
+        if (!enable) return;
         base.Start();
         Global.Instance.aiTeamControllers.Add(this);
         Global.Instance.allPlayers.Add(this);
@@ -35,6 +38,7 @@ public class AIPlayer : Player
     }
     void Update()
     {
+        if (!enable) return;
         if (IsOwner)
         { 
             timer += Time.deltaTime;

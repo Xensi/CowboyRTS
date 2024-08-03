@@ -215,24 +215,32 @@ public class RTSPlayer : Player
     private void QueueUnitOrders()
     { 
         Vector3 clickedPosition;
-        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.gameLayer))
+        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition); 
+        bool groundWasHit = Physics.Raycast(ray.origin, ray.direction, out RaycastHit groundHit, Mathf.Infinity, Global.Instance.groundLayer);
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
         {
-            clickedPosition = hit.point;
+            if (groundWasHit)
+            {
+                clickedPosition = groundHit.point;
+            }
+            else
+            { 
+                clickedPosition = hit.point;
+            }
             SelectableEntity hitEntity = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
             //determine action type
             if (hitEntity != null && PositionExplored(clickedPosition)) //if exists and is explored at least
             {
                 if (hitEntity.teamType == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
-                    if (Allied(hitEntity)) //same team //hitEntity.net.OwnerClientId == OwnerClientId
+                    if (Allied(hitEntity)) //same team
                     {
                         if ((hitEntity.depositType == SelectableEntity.DepositType.Gold || hitEntity.depositType == SelectableEntity.DepositType.All)
                             && hitEntity.fullyBuilt) //if deposit point
                         {
                             actionType = ActionType.Deposit;
                         }
-                        else if (!hitEntity.fullyBuilt || hitEntity.IsDamaged()) //if buildable
+                        else if (!hitEntity.fullyBuilt || hitEntity.IsDamaged() && !hitEntity.IsMinion()) //if buildable
                         {
                             actionType = ActionType.BuildTarget;
                         }
@@ -244,6 +252,10 @@ public class RTSPlayer : Player
                         { //target is passenger of garrison, then enter garrison
                             actionType = ActionType.Garrison;
                             hitEntity = hitEntity.occupiedGarrison;
+                        }
+                        else
+                        {
+                            actionType = ActionType.Move;
                         }
                     }
                     else //enemy
@@ -326,7 +338,7 @@ public class RTSPlayer : Player
                             }
                             break;
                         case ActionType.Garrison:
-                            orderedUnit.GarrisonInto(target);
+                            orderedUnit.WorkOnGarrisoningInto(target);
                             break;
                         case ActionType.BuildTarget://try determining how many things need to be built in total, and grabbing closest ones
                             if (orderedUnit.entity.CanConstruct())
@@ -335,7 +347,7 @@ public class RTSPlayer : Player
                             }
                             else
                             {
-                                orderedUnit.GarrisonInto(target);
+                                orderedUnit.WorkOnGarrisoningInto(target);
                             }
                             break;
                     }
@@ -522,6 +534,7 @@ public class RTSPlayer : Player
                 {
                     case MouseState.Waiting:
                         QueueUnitOrders();
+                        SetBuildingRallies();
                         break;
                     case MouseState.ReadyToPlace:
                         if (!placingLinkedBuilding)
@@ -530,7 +543,7 @@ public class RTSPlayer : Player
                         }
                         break;
                     case MouseState.ReadyToSetRallyPoint:
-                        mouseState = MouseState.Waiting;
+                        mouseState = MouseState.Waiting; 
                         break;
                     default:
                         break;
@@ -559,6 +572,16 @@ public class RTSPlayer : Player
         }
         //TryReplaceFakeSpawn();
         UpdateGUIFromSelections();// this might be expensive ...
+    }
+    private void SetBuildingRallies()
+    {
+        foreach (SelectableEntity item in selectedEntities)
+        {
+            if (!item.IsMinion())
+            {
+                item.SetRally();
+            }
+        }
     }
     private void SelectWithinBounds() //rectangle select, finish drag select
     {
@@ -1603,7 +1626,8 @@ public class RTSPlayer : Player
             {
                 if ((entity.CanConstruct() && potential.CanConstruct()) ||
                     (entity.CanHarvest() && potential.CanHarvest()) ||
-                    (entity.CannotConstructHarvestProduce() && potential.CannotConstructHarvestProduce()) ||
+                    (entity.CannotConstructHarvestProduce() && potential.CannotConstructHarvestProduce() && entity.IsMinion() && potential.IsMinion()) ||
+                    (entity.CannotConstructHarvestProduce() && potential.CannotConstructHarvestProduce() && !entity.IsMinion() && !potential.IsMinion()) ||
                     (entity.CanProduceUnits() && potential.CanProduceUnits()))
                 {
                     TrySelectEntity(potential);
