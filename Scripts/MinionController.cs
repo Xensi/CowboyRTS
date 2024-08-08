@@ -938,7 +938,7 @@ public class MinionController : NetworkBehaviour
                                     case AttackType.Instant:
                                         DamageSpecifiedEnemy(targetEnemy, damage);
                                         break;
-                                    case AttackType.SelfDestruct:
+                                    case AttackType.SelfDestruct: 
                                         SelfDestruct(areaOfEffectRadius);
                                         break;
                                     case AttackType.Artillery:
@@ -1983,10 +1983,11 @@ public class MinionController : NetworkBehaviour
     {
         if (!hasSelfDestructed)
         {
+            Debug.Log("self destructing");
             hasSelfDestructed = true;
             Global.Instance.localPlayer.CreateExplosionAtPoint(transform.position, explodeRadius, damage);
             SimpleExplosionEffect(transform.position);
-            Global.Instance.localPlayer.DamageEntity(damage, entity);
+            Global.Instance.localPlayer.DamageEntity(99, entity); //it is a self destruct, after all
             //selectableEntity.ProperDestroyEntity();
             //DamageSpecifiedEnemy(selectableEntity, damage);
         }

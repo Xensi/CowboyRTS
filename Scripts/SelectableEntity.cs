@@ -83,7 +83,8 @@ public class SelectableEntity : NetworkBehaviour
 
     [HideInInspector] public RallyMission rallyMission;
     [HideInInspector] public SelectableEntity rallyTarget;
-    [HideInInspector] public Collider physicalCollider;
+    public Collider physicalCollider;
+    public Collider[] allPhysicalColliders; 
     [Header("Behavior Settings")]
     [HideInInspector] public string displayName = "name";
     //[TextArea(2, 4)]
@@ -622,7 +623,7 @@ public class SelectableEntity : NetworkBehaviour
                             variableToChange = target.minionController.ai.maxSpeed;
                         }
                         break;
-                    case StatusEffect.AttackSpeed:
+                    case StatusEffect.AttackDuration:
                         if (target.minionController != null)
                         {
                             variableToChange = target.minionController.attackDuration;
@@ -667,7 +668,7 @@ public class SelectableEntity : NetworkBehaviour
                             target.minionController.animator.SetFloat("moveSpeedMultiplier", moveSpeedMultiplier); //if we are halving, double animation speed
                         }
                         break;
-                    case TargetedEffects.StatusEffect.AttackSpeed:
+                    case TargetedEffects.StatusEffect.AttackDuration:
                         if (target.minionController != null)
                         {
                             target.minionController.attackDuration = variableToChange;
@@ -690,6 +691,9 @@ public class SelectableEntity : NetworkBehaviour
                             Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost);
                         }
                         target.DestroyThis();
+                        break;
+                    case StatusEffect.ToggleGate:
+                        ToggleGate();
                         break;
                 }
                 if (effect.applyAsLingeringEffect)
@@ -764,7 +768,7 @@ public class SelectableEntity : NetworkBehaviour
                     minionController.animator.SetFloat("moveSpeedMultiplier", 1); //if we are halving, double animation speed
                 }
                 break;
-            case TargetedEffects.StatusEffect.AttackSpeed:
+            case TargetedEffects.StatusEffect.AttackDuration:
                 if (minionController != null)
                 {
                     minionController.attackDuration = minionController.defaultAttackDuration;
@@ -823,11 +827,22 @@ public class SelectableEntity : NetworkBehaviour
             Unghost();
         }
     }
-    private void Unghost() //sets thong to look solid and not transparent
+    private void Unghost() //sets building to look solid and not transparent
     {
         if (IsOwner) isTargetable.Value = true;
 
-        physicalCollider.isTrigger = false;
+        if (allPhysicalColliders.Length > 1)
+        { 
+            for (int i = 0; i < allPhysicalColliders.Length; i++)
+            {
+                allPhysicalColliders[i].isTrigger = false;
+            }
+        }
+        else
+        { 
+            physicalCollider.isTrigger = false;
+        }
+         
         //rigid.isKinematic = false;
         for (int i = 0; i < unbuiltRenderers.Length; i++)
         {
@@ -1167,6 +1182,13 @@ public class SelectableEntity : NetworkBehaviour
     {
         return interactionTarget != null;
     }
+    private bool gateOpenStatus = true;
+    [SerializeField] private GameObject toggleableObject;
+    private void ToggleGate()
+    {
+        gateOpenStatus = !gateOpenStatus;
+        toggleableObject.SetActive(gateOpenStatus);
+    }
 
     /// <summary>
     /// Remove any units that are no longer interacting with this from its list
@@ -1494,8 +1516,29 @@ public class SelectableEntity : NetworkBehaviour
                 && consumePopulationAmount <= controllerOfThis.maxPopulation - controllerOfThis.population)
             { //spawn the unit
                 //Debug.Log("spawn");
+                //first check if the position is blocked;
+                if (Physics.Raycast(positionToSpawnMinions.position + (new Vector3(0, 100, 0)), Vector3.down, 
+                    out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
+                { 
+                    SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
+                    if (target != null) //something blocking
+                    {
+                        if (target.minionController != null && target.controllerOfThis == controllerOfThis)
+                        { 
+                            //tell blocker to get out of the way.
+                            float randRadius = 1;
+                            Vector2 randCircle = Random.insideUnitCircle * randRadius;
+                            Vector3 rand = target.transform.position + new Vector3(randCircle.x, 0, randCircle.y);
+                            target.minionController.MoveTo(rand);
+                            Debug.Log("trying to move blocking unit to: " + rand);
+                        }
+                    }
+                    else
+                    {
+                        BuildQueueSpawn(fac);
+                    }
+                }
 
-                BuildQueueSpawn(fac);
             }
         }
         if (controllerOfThis is RTSPlayer)

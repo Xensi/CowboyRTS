@@ -7,6 +7,7 @@ public class FactionBuilding : FactionEntity
     public bool needsConstructing = true;
     public Vector3 buildOffset = new Vector3(0.5f, 0, 0.5f);
     public bool extendable = false; //should this building be placed in a line?
+    public bool rotatable = false;
     //public GameObject linkedPrefab;
 
     public enum BuildingTypes

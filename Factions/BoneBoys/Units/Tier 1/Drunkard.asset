@@ -24,7 +24,8 @@ MonoBehaviour:
   soundProfile: {fileID: 11400000, guid: ff7bffcb71726924386899d0f67a42ee, type: 2}
   teamType: 0
   constructableBuildings: []
-  usableAbilities: []
+  usableAbilities:
+  - {fileID: 11400000, guid: 5f176f98524f7504ca68506ecda226d8, type: 2}
   depositType: 0
   selfHarvestableType: 1
   attackType: 1

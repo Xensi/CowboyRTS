@@ -9,6 +9,8 @@ using System.Linq;
 using FoW;
 using UnityEngine.Rendering;
 using System;
+using UnityEngine.UIElements;
+using UnityEditor.PackageManager;
 //using static UnityEditor.Progress;
 /*using UnityEditor.Playables;
 using UnityEditor.ShaderGraph.Internal;
@@ -31,6 +33,7 @@ public class RTSPlayer : Player
     {
         Waiting,
         ReadyToPlace,
+        PlacingAndRotating,
         ReadyToSetRallyPoint
     }
     public enum LinkedState
@@ -39,6 +42,10 @@ public class RTSPlayer : Player
         PlacingStart,
         PlacingEnd
     }
+    public enum Direction
+    {
+        Forward, Left, Right, Back
+    }
     public LinkedState linkedState = LinkedState.Waiting;
     public MouseState mouseState = MouseState.Waiting;
     public LayerMask groundLayer;
@@ -46,7 +53,7 @@ public class RTSPlayer : Player
     private LayerMask blockingLayer;
     public SelectableEntity lastSpawnedEntity;
     public bool placementBlocked = false;
-    private GameObject followCursorObject;
+    private SelectableEntity buildingGhost;
     private MeshRenderer[] meshes;
     private bool oldPlacement = false;
     public Portal startPortal;
@@ -125,7 +132,7 @@ public class RTSPlayer : Player
         }
     }
     private void Awake()
-    { 
+    {
     }
     public override void OnNetworkSpawn()
     {
@@ -197,7 +204,7 @@ public class RTSPlayer : Player
                     UnitOrdersQueue.Add(order);
                 }
             }
-        } 
+        }
     }
     public List<UnitOrder> UnitOrdersQueue = new();
     [Serializable]
@@ -213,9 +220,9 @@ public class RTSPlayer : Player
         return foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
     }
     private void QueueUnitOrders()
-    { 
+    {
         Vector3 clickedPosition;
-        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition); 
+        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         bool groundWasHit = Physics.Raycast(ray.origin, ray.direction, out RaycastHit groundHit, Mathf.Infinity, Global.Instance.groundLayer);
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
         {
@@ -224,7 +231,7 @@ public class RTSPlayer : Player
                 clickedPosition = groundHit.point;
             }
             else
-            { 
+            {
                 clickedPosition = hit.point;
             }
             SelectableEntity hitEntity = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
@@ -291,7 +298,7 @@ public class RTSPlayer : Player
             }
         }
     }
-    
+
     private void ProcessOrders()
     {
         if (UnitOrdersQueue.Count > 0)
@@ -315,7 +322,7 @@ public class RTSPlayer : Player
 
                     switch (order.action)
                     {
-                        case ActionType.AttackMove: 
+                        case ActionType.AttackMove:
                             orderedUnit.SetAttackMoveDestination(targetPosition);
                             break;
                         case ActionType.Move:
@@ -355,7 +362,7 @@ public class RTSPlayer : Player
                 }
             }
         }
-    }  
+    }
     public void ReadySetRallyPoint()
     {
         mouseState = MouseState.ReadyToSetRallyPoint;
@@ -480,7 +487,7 @@ public class RTSPlayer : Player
     }
     Vector3 oldCursorWorldPosition;
     void Update()
-    { 
+    {
         if (!active) return;
         ProcessOrders();
         UpdatePlacementBlockedStatus();
@@ -499,12 +506,9 @@ public class RTSPlayer : Player
                     CalculateFillCost(startWallPosition, cursorWorldPosition, buildingToPlace);
                 }
             }
-            if (Input.GetMouseButtonDown(0)) //left click
+            if (Input.GetMouseButtonDown(0)) //left click pressed
             {
                 infoSelectedEntity = null;
-                StartMousePosition = Input.mousePosition;
-                ResizeSelection();
-                Global.Instance.selectionRect.gameObject.SetActive(true);
                 switch (mouseState)
                 {
                     case MouseState.Waiting:
@@ -512,15 +516,84 @@ public class RTSPlayer : Player
                         break;
                     case MouseState.ReadyToPlace:
                         if (!placementBlocked)
-                        {
-                            PlaceBuilding(buildingToPlace);
+                        { 
+                            if (buildingToPlace.rotatable)
+                            { 
+                                mouseState = MouseState.PlacingAndRotating; //if the building can't rotate place it immediately
+                            }
+                            else
+                            {
+                                Debug.Log("Attempting to place building");
+                                PlaceBuilding(buildingToPlace, cursorWorldPosition);
+                                if (buildingToPlace.extendable && buildingGhost != null)
+                                { 
+                                    Destroy(buildingGhost.gameObject);
+                                    buildingGhost = null;
+                                }
+                            }
+                        }
+                        else if (placementBlocked && buildingToPlace.rotatable) //if not placeable, we may be able to rotate it so that it is
+                        { 
+                            mouseState = MouseState.PlacingAndRotating; 
                         }
                         break;
                     case MouseState.ReadyToSetRallyPoint:
                         mouseState = MouseState.Waiting;
                         SetSelectedRallyPoint();
                         break;
+                    case MouseState.PlacingAndRotating:
+                        /*Vector3 alignedForward = SnapToNearestWorldAxis(buildingGhost.transform.forward);
+                        Vector3 alignedUp = SnapToNearestWorldAxis(buildingGhost.transform.up);
+                        Quaternion quaternion = Quaternion.LookRotation(alignedForward, alignedUp);*/
+                        //PlaceBuildingWithRotation(buildingToPlace, buildingGhost.transform.position, quaternion);
+                        break;
                     default:
+                        break;
+                }
+            }
+            switch (mouseState)
+            {
+                case MouseState.Waiting:
+                    break;
+                case MouseState.ReadyToPlace:
+                    if (buildingGhost != null)
+                    {
+                        buildingGhost.transform.position = cursorWorldPosition;
+                        //followCursorObject.transform.LookAt(cursorWorldPosition);
+                    }
+                    break;
+                case MouseState.ReadyToSetRallyPoint:
+                    break;
+                case MouseState.PlacingAndRotating:
+                    if (buildingGhost != null)
+                    {
+                        //followCursorObject.transform.position = cursorWorldPosition;
+                        buildingGhost.transform.LookAt(cursorWorldPosition);
+                        Vector3 alignedForward = SnapToNearestWorldAxis(buildingGhost.transform.forward);
+                        Vector3 alignedUp = SnapToNearestWorldAxis(buildingGhost.transform.up);
+                        buildingGhost.transform.rotation = Quaternion.LookRotation(alignedForward, alignedUp);
+                    }
+                    break;
+            }
+            if (Input.GetMouseButtonUp(0)) //left click released
+            {
+                switch (mouseState)
+                {
+                    case MouseState.Waiting:
+                        break;
+                    case MouseState.ReadyToPlace:
+                        break;
+                    case MouseState.ReadyToSetRallyPoint:
+                        break;
+                    case MouseState.PlacingAndRotating:
+                        if (!placementBlocked)
+                        { 
+                            FinishPlacingRotatedBuilding();
+                        }
+                        else
+                        {
+                            StopPlacingBuilding();
+                        }
                         break;
                 }
             }
@@ -537,30 +610,55 @@ public class RTSPlayer : Player
                         SetBuildingRallies();
                         break;
                     case MouseState.ReadyToPlace:
-                        if (!placingLinkedBuilding)
-                        {
-                            StopPlacingBuilding();
-                        }
+                        StopPlacingBuilding();
+                        //if (!placingLinkedBuilding) 
                         break;
                     case MouseState.ReadyToSetRallyPoint:
-                        mouseState = MouseState.Waiting; 
+                        mouseState = MouseState.Waiting;
+                        break;
+                    case MouseState.PlacingAndRotating:
+                        StopPlacingBuilding();
                         break;
                     default:
                         break;
                 }
             }
         }
-        if (Global.Instance.selectionRect.gameObject.activeSelf)
+
+        switch (mouseState)
         {
-            if (Input.GetMouseButton(0))
-            {
-                ResizeSelection();
-            }
-            if (Input.GetMouseButtonUp(0))
-            {
-                SelectWithinBounds();
-            }
+            case MouseState.Waiting:
+                if (Input.GetMouseButtonDown(0) && !MouseOverUI())
+                {
+                    StartMousePosition = Input.mousePosition;
+                    Global.Instance.selectionRect.gameObject.SetActive(true);
+                }
+                if (Global.Instance.selectionRect.gameObject.activeSelf)
+                {
+                    if (Input.GetMouseButton(0))
+                    {
+                        ResizeSelection();
+                    }
+                    if (Input.GetMouseButtonUp(0))
+                    {
+                        SelectWithinBounds();
+                    }
+                }
+                break;
+            case MouseState.ReadyToPlace:
+                Global.Instance.selectionRect.gameObject.SetActive(false);
+                break;
+            case MouseState.ReadyToSetRallyPoint:
+                Global.Instance.selectionRect.gameObject.SetActive(false);
+                break;
+            case MouseState.PlacingAndRotating:
+                Global.Instance.selectionRect.gameObject.SetActive(false);
+                break;
+            default:
+                break;
         }
+
+
         if (!Input.GetMouseButton(0) && finishedSelection)
         {
             Global.Instance.selectionRect.gameObject.SetActive(false);
@@ -572,6 +670,84 @@ public class RTSPlayer : Player
         }
         //TryReplaceFakeSpawn();
         UpdateGUIFromSelections();// this might be expensive ...
+    }
+    private void FinishPlacingRotatedBuilding()
+    { 
+        //PlaceBuilding(buildingToPlace, buildingGhost.transform.position); 
+        Vector3 alignedForward = SnapToNearestWorldAxis(buildingGhost.transform.forward);
+        Vector3 alignedUp = SnapToNearestWorldAxis(buildingGhost.transform.up);
+        Quaternion quaternion = Quaternion.LookRotation(alignedForward, alignedUp);
+        Direction dir = ConvertForwardToEnum(alignedForward);
+
+        if (gold < buildingToPlace.goldCost) return;
+        gold -= buildingToPlace.goldCost;
+        SpawnBuildingWithRotation(buildingToPlace, buildingGhost.transform.position, dir, quaternion); 
+        SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
+        TellSelectedToBuild(last); 
+        StopPlacingBuilding(); 
+    }
+    private Direction ConvertForwardToEnum(Vector3 alignedForward)
+    {
+        Direction dir = Direction.Forward;
+        if (alignedForward == Vector3.forward)
+        {
+            dir = Direction.Forward;
+        }
+        else if (alignedForward == Vector3.back)
+        {
+            dir = Direction.Back;
+        }
+        else if (alignedForward == Vector3.left)
+        {
+            dir = Direction.Left;
+        }
+        else if (alignedForward == Vector3.right)
+        {
+            dir = Direction.Right;
+        }
+        return dir;
+    }
+    private Vector3 ConvertDirectionToVector(Direction dir)
+    { 
+        Vector3 vec = Vector3.forward;
+        switch (dir)
+        {
+            case Direction.Forward:
+                vec = Vector3.forward;
+                break;
+            case Direction.Left:
+                vec = Vector3.left;
+                break;
+            case Direction.Right:
+                vec = Vector3.right;
+                break;
+            case Direction.Back:
+                vec = Vector3.back;
+                break;
+            default:
+                break;
+        }
+        return vec;
+    }
+    private static Vector3 SnapToNearestWorldAxis(Vector3 vec)
+    {
+        if (Mathf.Abs(vec.x) < Mathf.Abs(vec.y))
+        {
+            vec.x = 0;
+            if (Mathf.Abs(vec.y) < Mathf.Abs(vec.z))
+                vec.y = 0;
+            else
+                vec.z = 0;
+        }
+        else
+        {
+            vec.y = 0;
+            if (Mathf.Abs(vec.x) < Mathf.Abs(vec.z))
+                vec.x = 0;
+            else
+                vec.z = 0;
+        }
+        return vec;
     }
     private void SetBuildingRallies()
     {
@@ -659,7 +835,7 @@ public class RTSPlayer : Player
         return Position.x > Bounds.min.x && Position.x < Bounds.max.x
             && Position.y > Bounds.min.y && Position.y < Bounds.max.y;
     }
-    private void ResizeSelection()
+    private void ResizeSelection() //drag selection
     {
         finishedSelection = false;
         RectTransform SelectionBox = Global.Instance.selectionRect;
@@ -679,17 +855,17 @@ public class RTSPlayer : Player
             }
         }
     }
-    private void PlaceBuilding(FactionBuilding building)
+    private void PlaceBuilding(FactionBuilding building, Vector3 position)
     {
         switch (linkedState)
         {
             case LinkedState.Waiting:
-                NormalPlaceBuilding(building);
+                NormalPlaceBuilding(building, position);
                 break;
             case LinkedState.PlacingStart:
                 linkedState = LinkedState.PlacingEnd;
                 startWallPosition = cursorWorldPosition;
-                Destroy(followCursorObject);
+                Destroy(buildingGhost);
                 break;
             case LinkedState.PlacingEnd:
                 int cost = CalculateFillCost(startWallPosition, cursorWorldPosition, building);
@@ -704,16 +880,16 @@ public class RTSPlayer : Player
                 break;
         }
     }
-    private void NormalPlaceBuilding(FactionBuilding building)
+    private void NormalPlaceBuilding(FactionBuilding building, Vector3 position)
     {
         if (gold < building.goldCost) return;
         gold -= building.goldCost;
         Debug.Log("Trying to place" + building.name);
-        GenericSpawnMinion(cursorWorldPosition, building, this);
+        GenericSpawnMinion(position, building, this);
         SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
         TellSelectedToBuild(last);
-        //temporary: later re-implement two-part buildings and holding shift to continue placing
-        StopPlacingBuilding();
+
+        StopPlacingBuilding(); //temporary: later re-implement two-part buildings and holding shift to continue placing
 
 
         //is building a two-parter? 
@@ -785,7 +961,7 @@ public class RTSPlayer : Player
         int cost = building.goldCost;
         float distance = Vector3.Distance(start, end); //greater distance means more walls
 
-        ClearWallGhosts(); 
+        ClearWallGhosts();
         //float halfExtents = 0.1f;
         if (distance > 0)
         {
@@ -934,8 +1110,12 @@ public class RTSPlayer : Player
     //private byte wallID = 0;
     private void StopPlacingBuilding()
     {
-        Destroy(followCursorObject);
-        followCursorObject = null;
+        //Debug.Log("Stopping building placement and destroying ghosts");
+        if (buildingGhost != null)
+        { 
+            Destroy(buildingGhost.gameObject);
+            buildingGhost = null;
+        }
         mouseState = MouseState.Waiting;
         linkedState = LinkedState.Waiting;
         placingLinkedBuilding = false;
@@ -950,13 +1130,17 @@ public class RTSPlayer : Player
         wallGhosts.Clear();
     }
     public void UpdatePlacementBlockedStatus()
-    {
-        placementBlocked = IsPositionBlocked(cursorWorldPosition);
-        if (placementBlocked != oldPlacement)
+    { 
+        if (buildingGhost != null && buildingGhost.gameObject.activeInHierarchy)
         {
-            oldPlacement = placementBlocked;
-            UpdatePlacementMeshes();
-        }
+            //placementBlocked = IsPositionBlocked(buildingGhost.transform.position);
+            placementBlocked = IsPositionBlockedByEntity(buildingGhost);
+            if (placementBlocked != oldPlacement)
+            {
+                oldPlacement = placementBlocked;
+                UpdatePlacementMeshes();
+            }
+        }  
     }
     private void UpdatePlacementMeshes()
     {
@@ -994,10 +1178,6 @@ public class RTSPlayer : Player
             _gridPosition = grid.WorldToCell(_mousePosition);
             cursorWorldPosition = grid.CellToWorld(_gridPosition) + buildOffset;
             cursorWorldPosition = new Vector3(cursorWorldPosition.x, hit.point.y, cursorWorldPosition.z);
-            if (followCursorObject != null)
-            {
-                followCursorObject.transform.position = cursorWorldPosition;//new Vector3(cursorWorldPosition.x, hit.point.y, cursorWorldPosition.z);// + new Vector3(0, 5, 0);
-            }
         }
     }
     #region SpawnMinion
@@ -1035,7 +1215,91 @@ public class RTSPlayer : Player
             }
             fakeSpawns.Add(select);
         }  */
+    } 
+    private void SpawnBuildingWithRotation(FactionBuilding building, Vector3 spawnPosition, Direction dir, Quaternion quat)
+    {
+        if (playerFaction == null)
+        {
+            Debug.LogError("Missing player faction");
+            return;
+        }
+        byte ownerID = (byte)OwnerClientId;
+        if (IsServer)
+        {
+            ServerSpawnBuilding(building, spawnPosition, ownerID, quat);
+        }
+        else //clients ask server to spawn it
+        {
+            byte id = 0;
+            bool foundID = false;
+            for (int i = 0; i < playerFaction.spawnableEntities.Count; i++)
+            {
+                if (playerFaction.spawnableEntities[i].productionName == building.productionName)
+                {
+                    id = (byte)i;
+                    foundID = true;
+                    break;
+                }
+            }
+            if (foundID)
+            {
+                RequestSpawnBuildingServerRpc(spawnPosition, id, ownerID, dir);
+            }
+            else
+            {
+                Debug.LogError("Missing: " + building.productionName + "; Make sure it's added to the faction's spawnable entities.");
+            }
+        }
+        //UpdateButtons();
     }
+
+    private void ServerSpawnBuilding(FactionBuilding building, Vector3 spawnPosition, byte clientID, Quaternion rotation)
+    { 
+        if (!IsServer) return; 
+        if (building != null && building.prefabToSpawn != null)
+        { 
+            GameObject buildingObject = Instantiate(building.prefabToSpawn.gameObject, spawnPosition, rotation); //spawn the minion
+            SelectableEntity select = null;
+            if (buildingObject != null)
+            {
+                select = buildingObject.GetComponent<SelectableEntity>(); //get select
+            }
+            if (select != null)
+            { 
+                //grant ownership 
+                if (NetworkManager.ConnectedClients.ContainsKey(clientID))
+                {
+                    select.clientIDToSpawnUnder = clientID;
+                    Debug.Log("Granting ownership of " + select.name + " to client " + clientID); 
+                    if (select.net == null) select.net = select.GetComponent<NetworkObject>();
+
+                    select.net.SpawnWithOwnership(clientID); 
+                    ClientRpcParams clientRpcParams = new ClientRpcParams
+                    {
+                        Send = new ClientRpcSendParams
+                        {
+                            TargetClientIds = new ulong[] { clientID }
+                        }
+                    }; 
+                }
+            }
+        }
+    }
+
+    [ServerRpc]
+    private void RequestSpawnBuildingServerRpc(Vector3 spawnPosition, byte unit, byte clientID, Direction dir)
+    { 
+        if (playerFaction == null)
+        {
+            Debug.LogError("Missing player faction");
+            return;
+        }
+        FactionBuilding building = playerFaction.spawnableEntities[unit] as FactionBuilding;
+        Vector3 vec = ConvertDirectionToVector(dir); 
+        Quaternion quat = Quaternion.LookRotation(vec, Vector3.up);
+        ServerSpawnBuilding(building, spawnPosition, clientID, quat);
+    }
+
     /// <summary>
     /// Tell the server to spawn in a minion at a position.
     /// </summary> 
@@ -1324,7 +1588,7 @@ public class RTSPlayer : Player
                 //get abilities
                 foreach (FactionAbility abilityOption in entity.usableAbilities)
                 {
-                    if (!abilityOption.usableOnlyWhenBuilt || entity.fullyBuilt)
+                    if ((!abilityOption.usableOnlyWhenBuilt && !entity.fullyBuilt) || (entity.fullyBuilt && abilityOption.usableOnlyWhenBuilt))
                     {
                         if (!availableAbilities.Contains(abilityOption)) availableAbilities.Add(abilityOption);
                     }
@@ -1346,7 +1610,7 @@ public class RTSPlayer : Player
         for (byte i = 0; i < Global.Instance.productionButtons.Count; i++)
         {
             if (i >= Global.Instance.productionButtons.Count) break; //met limit
-            Button button = Global.Instance.productionButtons[i];
+            UnityEngine.UI.Button button = Global.Instance.productionButtons[i];
             button.gameObject.SetActive(true);
             TMP_Text text = button.GetComponentInChildren<TMP_Text>();
             button.onClick.RemoveAllListeners();
@@ -1460,7 +1724,7 @@ public class RTSPlayer : Player
     }
     private void UpdateButton(SelectableEntity select, int i = 0)
     {
-        Button button = Global.Instance.queueButtons[i];
+        UnityEngine.UI.Button button = Global.Instance.queueButtons[i];
         button.gameObject.SetActive(true);
         TMP_Text text = button.GetComponentInChildren<TMP_Text>();
         FactionUnit fac = select.buildQueue[i];
@@ -1548,7 +1812,7 @@ public class RTSPlayer : Player
             linkedState = LinkedState.Waiting;
         }
         entity.isBuildIndicator = true;
-        followCursorObject = spawn;
+        buildingGhost = entity;
         meshes = spawn.GetComponentsInChildren<MeshRenderer>();
         for (int i = 0; i < meshes.Length; i++)
         {
@@ -1561,7 +1825,7 @@ public class RTSPlayer : Player
         }
     }
     private void SingleSelect()
-    { 
+    {
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
         {

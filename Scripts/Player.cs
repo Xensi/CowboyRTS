@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 [RequireComponent(typeof(NetworkObject))]
 public class Player : NetworkBehaviour
@@ -58,7 +59,52 @@ public class Player : NetworkBehaviour
         }
         return false;
     }
+    public bool IsPositionBlockedByEntity(SelectableEntity entity)
+    {
+        BoxCollider box = entity.physicalCollider as BoxCollider;
+        if (box == null) return false;
+        Vector3 position = entity.transform.position;
+        bool onRamp = CheckIfPositionIsOnRamp(position);
+        bool placementBlocked = false;
 
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)playerTeamID);
+        if (fow.GetFogValue(position) > 0.1f * 255)
+        {
+            placementBlocked = true;
+        }
+        else
+        {
+            if (onRamp)
+            {
+                placementBlocked = true;
+            }
+            else
+            {
+                //float sides = .24f;
+                //float height = .5f;
+                //Vector3 halfExtents = new Vector3(sides, height, sides);
+                //Vector3 center = new Vector3(position.x, position.y + height, position.z);
+
+
+                Vector3 worldCenter = box.transform.TransformPoint(box.center);
+                Vector3 worldHalfExtents = Vector3.Scale(box.size, box.transform.lossyScale) * 0.45f; 
+                placementBlocked = Physics.CheckBox(worldCenter, worldHalfExtents, entity.transform.rotation,
+                    Global.Instance.blockingLayer, QueryTriggerInteraction.Ignore);
+
+                debugPos = worldCenter;
+                debugSize = box.size;
+            }
+        }
+        return placementBlocked;
+    }
+    Vector3 debugPos;
+    Vector3 debugSize;
+
+    private void OnDrawGizmos()
+    { 
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(debugPos, debugSize);
+    }
     public bool IsPositionBlocked(Vector3 position)
     {
         bool onRamp = CheckIfPositionIsOnRamp(position);

@@ -46,3 +46,4 @@ MonoBehaviour:
   needsConstructing: 1
   buildOffset: {x: 0, y: 0, z: 0}
   extendable: 0
+  rotatable: 1

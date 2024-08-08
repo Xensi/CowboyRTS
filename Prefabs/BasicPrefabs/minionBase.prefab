@@ -230,6 +230,8 @@ MonoBehaviour:
   interactionTarget: {fileID: 0}
   buildQueue: []
   allMeshes: []
+  unbuiltRenderers: []
+  finishedRenderers: []
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
   rallyMission: 0
@@ -268,8 +270,6 @@ MonoBehaviour:
   - {fileID: 8300000, guid: f44f3479724a08e4e8c995e2f633bbfe, type: 3}
   - {fileID: 8300000, guid: f36c995b0cc52224ebecea1e5b408cfa, type: 3}
   lineIndicator: {fileID: 555440906972586300}
-  unbuiltRenderers: []
-  finishedRenderers: []
   damageableMeshes: []
   resourceCollectingMeshes: []
   selectIndicator: {fileID: 8821975901658637110}
@@ -308,6 +308,8 @@ MonoBehaviour:
   entity: {fileID: 0}
   attackMoving: 0
   orderedDestination: {x: 0, y: 0, z: 0}
+  attackReadyTimer: 0
+  attackReady: 1
   ai: {fileID: 0}
   col: {fileID: 0}
   animator: {fileID: 0}
@@ -328,11 +330,10 @@ MonoBehaviour:
   areaOfEffectRadius: 1
   minionState: 10
   givenMission: 0
-  rallyTarget: {x: 0, y: 0, z: 0}
+  rallyPosition: {x: 0, y: 0, z: 0}
   realLocation:
-    m_InternalValue: {x: 0, y: 0, z: 0}
-  destination:
-    m_InternalValue: {x: 0, y: 0, z: 0}
+    m_InternalValue: {x: 0, y: 0}
+  destination: {x: 0, y: 0, z: 0}
   manualControlPathfinding: 0
   nonOwnerRealLocationList: []
   shouldAutoSeekOutEnemies: 1

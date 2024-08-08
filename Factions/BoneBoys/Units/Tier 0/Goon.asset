@@ -26,6 +26,7 @@ MonoBehaviour:
   teamType: 0
   constructableBuildings:
   - {fileID: 11400000, guid: c0ef745a8df8be4478d8040e4830b3d3, type: 2}
+  - {fileID: 11400000, guid: 485e05449a61a6e4886ef481caae3584, type: 2}
   - {fileID: 11400000, guid: fdac55644c8edd44b95e22406f27474f, type: 2}
   - {fileID: 11400000, guid: 9272fcf1d648ea143823dcd20788f7fa, type: 2}
   - {fileID: 11400000, guid: caa5c448d3a92e04e8c3b58c5fa5488c, type: 2}

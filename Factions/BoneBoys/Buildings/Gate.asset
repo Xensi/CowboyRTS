@@ -10,22 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5040608eb03c21941b0df73233e2ec94, type: 3}
-  m_Name: Grave
+  m_Name: Gate
   m_EditorClassIdentifier: 
-  productionName: Grave
+  productionName: Gate
   description: 
-  prefabToSpawn: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
-  goldCost: 100
+  prefabToSpawn: {fileID: 3798861697192735719, guid: b41d31a1070b3ac45ac5de86cb8758e4, type: 3}
+  goldCost: 10
   maxHP: 50
   isKeystone: 0
   consumePopulationAmount: 0
-  raisePopulationLimitBy: 10
+  raisePopulationLimitBy: 0
   shouldHideInFog: 1
   soundProfile: {fileID: 0}
   teamType: 0
   constructableBuildings: []
-  usableAbilities: []
-  depositType: 2
+  usableAbilities:
+  - {fileID: 11400000, guid: 03392326ce6a40f4b875c34b554fc626, type: 2}
+  - {fileID: 11400000, guid: c102f875ae1d8c74c85709f84ac92c50, type: 2}
+  depositType: 0
   selfHarvestableType: 1
   attackType: 0
   damage: 1

@@ -28,13 +28,13 @@ MonoBehaviour:
   depositType: 0
   selfHarvestableType: 1
   attackType: 2
-  damage: 1
+  damage: 10
   directionalAttack: 0
-  attackRange: 1
-  attackDuration: 1
+  attackRange: 0.75
+  attackDuration: 1.25
   impactTime: 0.5
   areaOfEffectRadius: 1
-  shouldAutoSeekEnemies: 0
+  shouldAutoSeekEnemies: 1
   spawnableUnits: []
   spawnableAtOnce: 1
   isHarvester: 0
