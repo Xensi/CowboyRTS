@@ -11,6 +11,7 @@ using UnityEngine.Rendering;
 using System;
 using UnityEngine.UIElements;
 using UnityEditor.PackageManager;
+using static UnityEditor.Progress;
 //using static UnityEditor.Progress;
 /*using UnityEditor.Playables;
 using UnityEditor.ShaderGraph.Internal;
@@ -24,6 +25,7 @@ public class RTSPlayer : Player
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
     public List<SelectableEntity> selectedEntities; //selected and we can control them 
+    public List<MinionController> selectedBuilders;
     public List<SelectableEntity> enemyEntities;
     private Vector3 _mousePosition;
     private Vector3 _offset;
@@ -77,7 +79,7 @@ public class RTSPlayer : Player
     private ActionType actionType = ActionType.Move;
     private FactionBuilding buildingToPlace = null;
     public List<SelectableEntity> militaryList = new();
-    public List<SelectableEntity> builderList = new();
+    private List<SelectableEntity> builderListSelection = new();
     public List<SelectableEntity> productionList = new();
     private Vector3 startWallPosition;
     public List<Vector3> predictedWallPositions = new();
@@ -250,6 +252,9 @@ public class RTSPlayer : Player
                         else if (!hitEntity.fullyBuilt || hitEntity.IsDamaged() && !hitEntity.IsMinion()) //if buildable
                         {
                             actionType = ActionType.BuildTarget;
+
+                            AssignBuildersBasedOnDistance();
+                            
                         }
                         else if (hitEntity.fullyBuilt && hitEntity.HasEmptyGarrisonablePosition())
                         { //target can be garrisoned, and passenger cannot garrison, then enter
@@ -435,6 +440,12 @@ public class RTSPlayer : Player
         if (IsTargetExplicitlyOnOurTeam(entity))
         {
             selectedEntities.Add(entity);
+
+            if (entity.factionEntity.constructableBuildings.Length > 0)
+            {
+                selectedBuilders.Add(entity.minionController);
+            }
+
             entity.Select(true);
             val = true;
         }
@@ -486,9 +497,56 @@ public class RTSPlayer : Player
 #endif
     }
     Vector3 oldCursorWorldPosition;
+    private int requiredAssignments = 0;
+
+    private void AssignBuildersBasedOnDistance()
+    {
+        Debug.Log("Starting to assign");
+        requiredAssignments = unbuiltStructures.Count;
+    } 
+    private void AssignBuildersSelectedWorkhorse()
+    {
+        float maxAllowableDistance = 10;
+        float distance = Mathf.Infinity;
+        SelectableEntity currentBuilding = null;
+        MinionController closestBuilder = null;
+        //get building and builder that have the least distance
+        foreach (SelectableEntity building in unbuiltStructures)
+        {
+            if (building.workersInteracting.Count < building.allowedWorkers)
+            {
+                //get the closest available builder in builder list
+                foreach (MinionController builder in selectedBuilders)
+                {
+                    if (!builder.IsCurrentlyBuilding())
+                    {
+                        float newDist = Vector3.SqrMagnitude(building.transform.position - builder.transform.position);
+                        //float newDist = Vector3.Distance(building.transform.position, builder.transform.position);
+                        if (newDist < distance)
+                        {
+                            currentBuilding = building;
+                            closestBuilder = builder;
+                            distance = newDist;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (closestBuilder != null && currentBuilding != null && distance <= maxAllowableDistance)
+        {
+            closestBuilder.CommandBuildTarget(currentBuilding);
+        }
+    }
     void Update()
     {
-        if (!active) return;
+        if (!active) return; 
+        if (requiredAssignments > 0)
+        {
+            requiredAssignments--;
+
+            AssignBuildersSelectedWorkhorse();
+        }
         ProcessOrders();
         UpdatePlacementBlockedStatus();
         UpdateGridVisual();
@@ -516,9 +574,9 @@ public class RTSPlayer : Player
                         break;
                     case MouseState.ReadyToPlace:
                         if (!placementBlocked)
-                        { 
+                        {
                             if (buildingToPlace.rotatable)
-                            { 
+                            {
                                 mouseState = MouseState.PlacingAndRotating; //if the building can't rotate place it immediately
                             }
                             else
@@ -526,15 +584,15 @@ public class RTSPlayer : Player
                                 Debug.Log("Attempting to place building");
                                 PlaceBuilding(buildingToPlace, cursorWorldPosition);
                                 if (buildingToPlace.extendable && buildingGhost != null)
-                                { 
+                                {
                                     Destroy(buildingGhost.gameObject);
                                     buildingGhost = null;
                                 }
                             }
                         }
                         else if (placementBlocked && buildingToPlace.rotatable) //if not placeable, we may be able to rotate it so that it is
-                        { 
-                            mouseState = MouseState.PlacingAndRotating; 
+                        {
+                            mouseState = MouseState.PlacingAndRotating;
                         }
                         break;
                     case MouseState.ReadyToSetRallyPoint:
@@ -587,7 +645,7 @@ public class RTSPlayer : Player
                         break;
                     case MouseState.PlacingAndRotating:
                         if (!placementBlocked)
-                        { 
+                        {
                             FinishPlacingRotatedBuilding();
                         }
                         else
@@ -672,7 +730,7 @@ public class RTSPlayer : Player
         UpdateGUIFromSelections();// this might be expensive ...
     }
     private void FinishPlacingRotatedBuilding()
-    { 
+    {
         //PlaceBuilding(buildingToPlace, buildingGhost.transform.position); 
         Vector3 alignedForward = SnapToNearestWorldAxis(buildingGhost.transform.forward);
         Vector3 alignedUp = SnapToNearestWorldAxis(buildingGhost.transform.up);
@@ -681,10 +739,10 @@ public class RTSPlayer : Player
 
         if (gold < buildingToPlace.goldCost) return;
         gold -= buildingToPlace.goldCost;
-        SpawnBuildingWithRotation(buildingToPlace, buildingGhost.transform.position, dir, quaternion); 
+        SpawnBuildingWithRotation(buildingToPlace, buildingGhost.transform.position, dir, quaternion);
         SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
-        TellSelectedToBuild(last); 
-        StopPlacingBuilding(); 
+        //TellSelectedToBuild(last); 
+        StopPlacingBuilding();
     }
     private Direction ConvertForwardToEnum(Vector3 alignedForward)
     {
@@ -708,7 +766,7 @@ public class RTSPlayer : Player
         return dir;
     }
     private Vector3 ConvertDirectionToVector(Direction dir)
-    { 
+    {
         Vector3 vec = Vector3.forward;
         switch (dir)
         {
@@ -784,13 +842,13 @@ public class RTSPlayer : Player
                 }
             }
             militaryList = new();
-            builderList = new();
+            builderListSelection = new();
             productionList = new();
             foreach (SelectableEntity item in evaluation)
             {
                 if (item.CanConstruct())
                 {
-                    builderList.Add(item);
+                    builderListSelection.Add(item);
                 }
                 else if (item.minionController != null && item.minionController.attackType != MinionController.AttackType.None)
                 {
@@ -802,7 +860,7 @@ public class RTSPlayer : Player
                 }
             }
             int mil = militaryList.Count;
-            int build = builderList.Count;
+            int build = builderListSelection.Count;
             int prod = productionList.Count;
             List<SelectableEntity> useList = new();
             if (mil > 0 || build > 0) //then ignore prod
@@ -813,7 +871,7 @@ public class RTSPlayer : Player
                 }
                 else
                 {
-                    useList = builderList;
+                    useList = builderListSelection;
                 }
             }
             else
@@ -845,14 +903,37 @@ public class RTSPlayer : Player
         SelectionBox.anchoredPosition = StartMousePosition + new Vector2(width / 2, height / 2);
         SelectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
     }
-    private void TellSelectedToBuild(SelectableEntity last)
-    {
-        foreach (SelectableEntity item in selectedEntities)
+    private void TellSelectedToBuild(SelectableEntity building)
+    { 
+        if (selectedBuilders.Count == 1)
         {
-            if (item.minionController != null)
+            selectedBuilders[0].ForceBuildTarget(building);
+        }
+        else if (selectedBuilders.Count > 1)
+        {
+            //tell closest builder to go build it
+            FindClosestBuilderToBuildStructure(building);
+        }
+    }
+
+    private void FindClosestBuilderToBuildStructure(SelectableEntity building)
+    { 
+        float distance = Mathf.Infinity; 
+        MinionController closestBuilder = null;
+
+        //get the closest available builder in builder list
+        foreach (MinionController builder in selectedBuilders)
+        { 
+            float newDist = Vector3.SqrMagnitude(building.transform.position - builder.transform.position);
+            if (newDist < distance)
             {
-                item.minionController.ForceBuildTarget(item);
+                closestBuilder = builder;
+                distance = newDist;
             }
+        }
+        if (closestBuilder != null)
+        {
+            closestBuilder.CommandBuildTarget(building);
         }
     }
     private void PlaceBuilding(FactionBuilding building, Vector3 position)
@@ -873,6 +954,8 @@ public class RTSPlayer : Player
                 {
                     gold -= cost;
                     WallFill(building);
+
+                    AssignBuildersBasedOnDistance();
                     StopPlacingBuilding();
                 }
                 break;
@@ -1112,7 +1195,7 @@ public class RTSPlayer : Player
     {
         //Debug.Log("Stopping building placement and destroying ghosts");
         if (buildingGhost != null)
-        { 
+        {
             Destroy(buildingGhost.gameObject);
             buildingGhost = null;
         }
@@ -1130,7 +1213,7 @@ public class RTSPlayer : Player
         wallGhosts.Clear();
     }
     public void UpdatePlacementBlockedStatus()
-    { 
+    {
         if (buildingGhost != null && buildingGhost.gameObject.activeInHierarchy)
         {
             //placementBlocked = IsPositionBlocked(buildingGhost.transform.position);
@@ -1140,7 +1223,7 @@ public class RTSPlayer : Player
                 oldPlacement = placementBlocked;
                 UpdatePlacementMeshes();
             }
-        }  
+        }
     }
     private void UpdatePlacementMeshes()
     {
@@ -1215,7 +1298,7 @@ public class RTSPlayer : Player
             }
             fakeSpawns.Add(select);
         }  */
-    } 
+    }
     private void SpawnBuildingWithRotation(FactionBuilding building, Vector3 spawnPosition, Direction dir, Quaternion quat)
     {
         if (playerFaction == null)
@@ -1254,10 +1337,10 @@ public class RTSPlayer : Player
     }
 
     private void ServerSpawnBuilding(FactionBuilding building, Vector3 spawnPosition, byte clientID, Quaternion rotation)
-    { 
-        if (!IsServer) return; 
+    {
+        if (!IsServer) return;
         if (building != null && building.prefabToSpawn != null)
-        { 
+        {
             GameObject buildingObject = Instantiate(building.prefabToSpawn.gameObject, spawnPosition, rotation); //spawn the minion
             SelectableEntity select = null;
             if (buildingObject != null)
@@ -1265,22 +1348,22 @@ public class RTSPlayer : Player
                 select = buildingObject.GetComponent<SelectableEntity>(); //get select
             }
             if (select != null)
-            { 
+            {
                 //grant ownership 
                 if (NetworkManager.ConnectedClients.ContainsKey(clientID))
                 {
                     select.clientIDToSpawnUnder = clientID;
-                    Debug.Log("Granting ownership of " + select.name + " to client " + clientID); 
+                    Debug.Log("Granting ownership of " + select.name + " to client " + clientID);
                     if (select.net == null) select.net = select.GetComponent<NetworkObject>();
 
-                    select.net.SpawnWithOwnership(clientID); 
+                    select.net.SpawnWithOwnership(clientID);
                     ClientRpcParams clientRpcParams = new ClientRpcParams
                     {
                         Send = new ClientRpcSendParams
                         {
                             TargetClientIds = new ulong[] { clientID }
                         }
-                    }; 
+                    };
                 }
             }
         }
@@ -1288,14 +1371,14 @@ public class RTSPlayer : Player
 
     [ServerRpc]
     private void RequestSpawnBuildingServerRpc(Vector3 spawnPosition, byte unit, byte clientID, Direction dir)
-    { 
+    {
         if (playerFaction == null)
         {
             Debug.LogError("Missing player faction");
             return;
         }
         FactionBuilding building = playerFaction.spawnableEntities[unit] as FactionBuilding;
-        Vector3 vec = ConvertDirectionToVector(dir); 
+        Vector3 vec = ConvertDirectionToVector(dir);
         Quaternion quat = Quaternion.LookRotation(vec, Vector3.up);
         ServerSpawnBuilding(building, spawnPosition, clientID, quat);
     }
@@ -1912,6 +1995,7 @@ public class RTSPlayer : Player
             item.Select(false);
         }
         selectedEntities.Clear();
+        selectedBuilders.Clear();
         UpdateGUIFromSelections();
     }
     #endregion

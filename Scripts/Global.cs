@@ -176,6 +176,7 @@ public class Global : NetworkBehaviour
     public AudioSource PlayClipAtPoint(AudioClip clip, Vector3 pos, float volume = 1, float pitch = 1, bool useChorus = true)
     {
         GameObject tempGO = new("TempAudio"); // create the temp object
+        tempGO.transform.SetParent(transform);
         tempGO.transform.position = pos; // set its position
         AudioSource tempASource = tempGO.AddComponent<AudioSource>(); // add an audio source
         if (useChorus)

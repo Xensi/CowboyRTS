@@ -340,7 +340,7 @@ public class AIPlayer : Player
             if (minion == null) continue;
             SelectableEntity minionEntity = minion.entity;
             if (minionEntity == null) continue;
-            if (minionEntity.CanConstruct() && !minion.IsBuilding())
+            if (minionEntity.CanConstruct() && !minion.IsCurrentlyBuilding())
             {
                 for (int i = 0; i < minionEntity.constructableBuildings.Length; i++) //check if this has a unit we can spawn
                 {
@@ -499,7 +499,7 @@ public class AIPlayer : Player
             {
                 foreach (SelectableEntity builder in ownedEntities) //get a builder
                 {
-                    if (builder.minionController != null && builder.CanConstruct() && !builder.minionController.IsBuilding()) //minion
+                    if (builder.minionController != null && builder.CanConstruct() && !builder.minionController.IsCurrentlyBuilding()) //minion
                     {
                         builder.minionController.CommandBuildTarget(building);
                         break;
@@ -513,7 +513,7 @@ public class AIPlayer : Player
         Debug.Log("Telling miners to harvest");
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item.minionController != null && item.CanHarvest() && !item.minionController.IsBuilding()) //minion
+            if (item.minionController != null && item.CanHarvest() && !item.minionController.IsCurrentlyBuilding()) //minion
             {
                 switch (item.minionController.minionState)
                 {

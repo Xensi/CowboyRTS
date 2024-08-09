@@ -51,7 +51,7 @@ public class MinionController : NetworkBehaviour
         Gatling, //for gatling gun
     }
     #endregion
-    [HideInInspector] public MinionStates lastState = MinionStates.Idle;
+    public MinionStates lastState = MinionStates.Idle;
     #region Hidden
     LayerMask enemyMask;
     private Camera cam;
@@ -216,7 +216,7 @@ public class MinionController : NetworkBehaviour
         if (IsOwner)
         { 
             if (Global.Instance.graphUpdateScenePrefab != null)
-                graphUpdateScene = Instantiate(Global.Instance.graphUpdateScenePrefab, transform.position, Quaternion.identity);
+                graphUpdateScene = Instantiate(Global.Instance.graphUpdateScenePrefab, transform.position, Quaternion.identity, Global.Instance.transform);
             if (graphUpdateScene != null && ai != null)
             {
                 graphUpdateSceneCollider = graphUpdateScene.GetComponent<SphereCollider>();
@@ -225,7 +225,7 @@ public class MinionController : NetworkBehaviour
         }
     }
     private int maxDetectable;
-    public bool IsBuilding()
+    public bool IsCurrentlyBuilding()
     {
         return minionState == MinionStates.Building || minionState == MinionStates.WalkToInteractable && lastState == MinionStates.Building;
     }
@@ -682,7 +682,7 @@ public class MinionController : NetworkBehaviour
                 lastState = MinionStates.Harvesting;
                 break;
             case SelectableEntity.RallyMission.Build:
-                if (entity.CanConstruct())
+                /*if (entity.CanConstruct())
                 {
                     if (entity.interactionTarget == null || entity.interactionTarget.fullyBuilt)
                     {
@@ -693,7 +693,7 @@ public class MinionController : NetworkBehaviour
                         SwitchState(MinionStates.WalkToInteractable);
                         lastState = MinionStates.Building;
                     }
-                }
+                }*/
                 break;
             case SelectableEntity.RallyMission.Garrison:
                 SwitchState(MinionStates.WalkToInteractable);
@@ -1409,7 +1409,7 @@ public class MinionController : NetworkBehaviour
         entity.interactionTarget = ent;
         lastState = MinionStates.Building;
         SwitchState(MinionStates.WalkToInteractable);
-    }
+    } 
     #endregion
     #region DetectionFunctions
     private void DetectIfShouldStopFollowingMoveOrder()
@@ -2272,6 +2272,12 @@ public class MinionController : NetworkBehaviour
     {
         if (entity.CanConstruct())
         {
+            if (select.workersInteracting.Count == 1 && select.workersInteracting[0].minionController.minionState != MinionStates.Building)
+            {
+                select.workersInteracting[0].interactionTarget = null;
+                select.workersInteracting.Clear();
+            }
+
             //Debug.Log("can build");
             lastCommand.Value = CommandTypes.Build;
             entity.interactionTarget = select;

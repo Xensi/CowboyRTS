@@ -12,6 +12,7 @@ public class Player : NetworkBehaviour
     public List<SelectableEntity> ownedEntities;
     public List<MinionController> ownedMinions;
     public List<SelectableEntity> unbuiltStructures;
+    public List<MinionController> ownedBuilders;
     public int gold = 100;
     public int population = 0;
     public int maxPopulation = 10;

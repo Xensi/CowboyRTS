@@ -5,6 +5,7 @@ using Pathfinding;
 using Pathfinding.RVO;
 using FoW;
 using static TargetedEffects;
+using System.Linq;
 public class SelectableEntity : NetworkBehaviour
 {
     [HideInInspector] public bool fakeSpawn = false;
@@ -379,7 +380,7 @@ public class SelectableEntity : NetworkBehaviour
                 }
                 //fogUnit.enabled = false;
             }
-            else
+            else //player controlled
             {
                 teamNumber.Value = (sbyte)OwnerClientId;
                 if (teamType == TeamBehavior.OwnerTeam)
@@ -390,10 +391,19 @@ public class SelectableEntity : NetworkBehaviour
                     playerController.lastSpawnedEntity = this;
                     controllerOfThis = playerController;
 
-                    if (!fullyBuilt)
+                    if (factionEntity.constructableBuildings.Length > 0)
+                    {
+                        playerController.ownedBuilders.Add(minionController);
+                    }
+
+                    if (IsNotYetBuilt())
+                    {
+                        playerController.unbuiltStructures.Add(this);
+                    }
+                    /*if (!fullyBuilt)
                     {
                         RequestBuilders();
-                    }
+                    }*/
                 }
             }
             //place effect dependent on "controller of this" being defined after this line
@@ -897,7 +907,7 @@ public class SelectableEntity : NetworkBehaviour
                     count = 0;
                     OwnerUpdateBuildQueue();
                 }
-                //walking sounds
+                //walking sounds. client side only
                 if (minionController != null)
                 {
                     if (minionController.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart")
@@ -1333,6 +1343,8 @@ public class SelectableEntity : NetworkBehaviour
         {
             obstacle.enabled = true;
         }
+
+        controllerOfThis.unbuiltStructures.Remove(this);
     }
     private void ChangeMaxPopulation(int change)
     {
