@@ -1344,7 +1344,10 @@ public class SelectableEntity : NetworkBehaviour
             obstacle.enabled = true;
         }
 
-        controllerOfThis.unbuiltStructures.Remove(this);
+        if (IsOwner)
+        { 
+            controllerOfThis.unbuiltStructures.Remove(this);
+        }
     }
     private void ChangeMaxPopulation(int change)
     {

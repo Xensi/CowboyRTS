@@ -2173,6 +2173,7 @@ public class MinionController : NetworkBehaviour
     } 
     public void SetAttackMoveDestination(Vector3 target) //called by local player
     {
+        if (IsGarrisoned()) return;
         lastCommand.Value = CommandTypes.Attack;
         ClearTargets();
         basicallyIdleInstances = 0;

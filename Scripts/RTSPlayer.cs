@@ -217,9 +217,9 @@ public class RTSPlayer : Player
         public SelectableEntity target;
         public Vector3 targetPosition;
     }
-    private bool Allied(SelectableEntity foreign)
+    private bool SameTeam(SelectableEntity foreign)
     {
-        return foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
+        return foreign.teamNumber.Value == (sbyte)playerTeamID;//foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
     }
     private void QueueUnitOrders()
     {
@@ -242,7 +242,7 @@ public class RTSPlayer : Player
             {
                 if (hitEntity.teamType == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
-                    if (Allied(hitEntity)) //same team
+                    if (SameTeam(hitEntity)) //same team
                     {
                         if ((hitEntity.depositType == SelectableEntity.DepositType.Gold || hitEntity.depositType == SelectableEntity.DepositType.All)
                             && hitEntity.fullyBuilt) //if deposit point
@@ -381,17 +381,17 @@ public class RTSPlayer : Player
     }
     private bool IsEntityGarrrisoned(SelectableEntity entity)
     {
-        return entity.occupiedGarrison == null;
+        return entity.occupiedGarrison != null;
     }
     private void SelectAllAttackers()
     {
         DeselectAll();
-        foreach (SelectableEntity item in ownedEntities)
+        foreach (MinionController item in ownedMinions)
         {
-            if (item != null && item.minionController != null &&
-                item.minionController.attackType != MinionController.AttackType.None && !IsEntityGarrrisoned(item))
+            if (item != null && item.attackType != MinionController.AttackType.None && !IsEntityGarrrisoned(item.entity)
+                && !item.entity.CanProduceUnits() && !item.entity.CanHarvest()) 
             {
-                TrySelectEntity(item);
+                TrySelectEntity(item.entity);
             }
         }
     }
@@ -465,8 +465,9 @@ public class RTSPlayer : Player
     }
     private void DetectHotkeys()
     {
-        if (Input.GetKeyDown(KeyCode.Q))
+        if (Input.GetKeyDown(KeyCode.Space))
         {
+            Debug.Log("Spacebar");
             SelectAllAttackers();
         }
         if (Input.GetKeyDown(KeyCode.E))
@@ -482,10 +483,10 @@ public class RTSPlayer : Player
         {
             GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[1], this);
         }
-        /*if (Input.GetKeyDown(KeyCode.RightAlt))
+        if (Input.GetKeyDown(KeyCode.RightAlt))
         {
-            GenericSpawnMinion(cursorWorldPosition, 2, this);
-        }*/
+            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[4], this);
+        }
         if (Input.GetKeyDown(KeyCode.RightControl))
         {
             GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[3], this);
@@ -2006,7 +2007,7 @@ public class RTSPlayer : Player
     public void CreateExplosionAtPoint(Vector3 center, float explodeRadius, sbyte damage = 10)
     {
         Collider[] hitColliders = new Collider[40];
-        int numColliders = Physics.OverlapSphereNonAlloc(center, explodeRadius, hitColliders, entityLayer);
+        int numColliders = Physics.OverlapSphereNonAlloc(center, explodeRadius, hitColliders, Global.Instance.entityLayer);
         for (int i = 0; i < numColliders; i++)
         {
             if (hitColliders[i] == null) continue;
@@ -2024,6 +2025,7 @@ public class RTSPlayer : Player
             {
                 continue;
             }
+            Debug.Log("Explosion affecting: " + select.name);
             DamageEntity(damage, select);
         }
     }

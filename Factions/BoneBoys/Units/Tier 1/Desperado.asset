@@ -33,7 +33,7 @@ MonoBehaviour:
   attackRange: 0.75
   attackDuration: 1.25
   impactTime: 0.5
-  areaOfEffectRadius: 1
+  areaOfEffectRadius: 10
   shouldAutoSeekEnemies: 1
   spawnableUnits: []
   spawnableAtOnce: 1
