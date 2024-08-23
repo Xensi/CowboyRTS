@@ -301,7 +301,7 @@ public class SelectableEntity : NetworkBehaviour
             minionController.attackDuration = factionEntity.attackDuration;
             minionController.impactTime = factionEntity.impactTime;
             minionController.areaOfEffectRadius = factionEntity.areaOfEffectRadius;
-            minionController.shouldAutoSeekOutEnemies = factionEntity.shouldAutoSeekEnemies;
+            minionController.shouldAggressivelySeekEnemies = factionEntity.shouldAggressivelySeekEnemies;
         }
 
         if (factionEntity is FactionBuilding)
@@ -568,27 +568,39 @@ public class SelectableEntity : NetworkBehaviour
             RallyMission spawnerRallyMission = spawnerThatSpawnedThis.rallyMission;
             SelectableEntity rallyTarget = spawnerThatSpawnedThis.rallyTarget;
             Vector3 rallyPoint = spawnerThatSpawnedThis.rallyPoint;
-            minionController.givenMission = spawnerRallyMission;
             //assign mission to last
             switch (spawnerRallyMission)
             {
                 case RallyMission.None: 
                     minionController.SetDestination(transform.position);
+                    minionController.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Move:  
-                    minionController.SetDestination(rallyPoint); 
+                    minionController.SetDestination(rallyPoint);
+                    minionController.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Harvest:
-                    interactionTarget = rallyTarget;
+                    if (isHarvester)
+                    { 
+                        interactionTarget = rallyTarget;
+                        minionController.givenMission = spawnerRallyMission;
+                    }
+                    else
+                    { 
+                        minionController.SetDestination(transform.position);
+                    }
                     break;
                 case RallyMission.Build:
                     interactionTarget = rallyTarget;
+                    minionController.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Garrison:
                     interactionTarget = rallyTarget;
+                    minionController.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Attack:
                     minionController.targetEnemy = rallyTarget;
+                    minionController.givenMission = spawnerRallyMission;
                     break;
             }
         }
@@ -1594,7 +1606,6 @@ public class SelectableEntity : NetworkBehaviour
                 && fac.consumePopulationAmount <= controllerOfThis.maxPopulation - controllerOfThis.population)
             { //spawn the unit 
                 //Debug.Log("Population check on spawn:" + fac.consumePopulationAmount + ", " + controllerOfThis.maxPopulation + ", " + controllerOfThis.population);
-                //Debug.Log("spawn");
                 //first check if the position is blocked;
                 if (Physics.Raycast(positionToSpawnMinions.position + (new Vector3(0, 100, 0)), Vector3.down, 
                     out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
@@ -1609,7 +1620,7 @@ public class SelectableEntity : NetworkBehaviour
                             Vector2 randCircle = Random.insideUnitCircle * randRadius;
                             Vector3 rand = target.transform.position + new Vector3(randCircle.x, 0, randCircle.y);
                             target.minionController.MoveTo(rand);
-                            Debug.Log("trying to move blocking unit to: " + rand);
+                            //Debug.Log("trying to move blocking unit to: " + rand);
                         }
                     }
                     else

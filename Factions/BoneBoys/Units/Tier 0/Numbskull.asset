@@ -34,7 +34,7 @@ MonoBehaviour:
   attackDuration: 1
   impactTime: 0.5
   areaOfEffectRadius: 1
-  shouldAutoSeekEnemies: 1
+  shouldAggressivelySeekEnemies: 1
   spawnableUnits: []
   spawnableAtOnce: 1
   isHarvester: 0

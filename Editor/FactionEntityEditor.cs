@@ -14,7 +14,7 @@ public class FactionEntityEditor : Editor
     SerializedProperty attackDuration;
     SerializedProperty impactTime;
     SerializedProperty areaOfEffectRadius;
-    SerializedProperty shouldAutoSeekEnemies;
+    SerializedProperty shouldAggressivelySeekEnemies;
 
     SerializedProperty isHarvester;
     SerializedProperty harvestCapacity;
@@ -36,7 +36,7 @@ public class FactionEntityEditor : Editor
         attackDuration = serializedObject.FindProperty("attackDuration");
         impactTime = serializedObject.FindProperty("impactTime");
         areaOfEffectRadius = serializedObject.FindProperty("areaOfEffectRadius");
-        shouldAutoSeekEnemies = serializedObject.FindProperty("shouldAutoSeekEnemies");
+        shouldAggressivelySeekEnemies = serializedObject.FindProperty("shouldAggressivelySeekEnemies");
 
 
         isHarvester = serializedObject.FindProperty("isHarvester");
@@ -66,7 +66,7 @@ public class FactionEntityEditor : Editor
             EditorGUILayout.PropertyField(attackRange);
             EditorGUILayout.PropertyField(attackDuration);
             EditorGUILayout.PropertyField(impactTime);
-            EditorGUILayout.PropertyField(shouldAutoSeekEnemies);
+            EditorGUILayout.PropertyField(shouldAggressivelySeekEnemies);
         }
         if (attackType.intValue == 2) //self destruct 
         { 

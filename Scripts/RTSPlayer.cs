@@ -194,7 +194,7 @@ public class RTSPlayer : Player
             clickedPosition = hit.point;
             foreach (SelectableEntity item in selectedEntities)
             {
-                if (item.minionController != null) //minion
+                if (item.minionController != null && item.minionController.IsValidAttacker()) //minion
                 {
                     /*print("attack moving"); 
                     item.minionController.SetAttackMoveDestination();*/

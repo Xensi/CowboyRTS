@@ -36,7 +36,7 @@ public class FactionEntity : ScriptableObject
     [SerializeField, HideInInspector] public float attackDuration = 1;
     [SerializeField, HideInInspector] public float impactTime = 0.5f;
     [SerializeField, HideInInspector] public float areaOfEffectRadius = 1;
-    [SerializeField, HideInInspector] public bool shouldAutoSeekEnemies = false;
+    [SerializeField, HideInInspector] public bool shouldAggressivelySeekEnemies = false;
 
     [SerializeField, HideInInspector] public FactionUnit[] spawnableUnits;
     [SerializeField, HideInInspector] public int spawnableAtOnce = 1; //how many build queue units can be spawned at once

@@ -721,16 +721,17 @@ public class MinionController : NetworkBehaviour
     }
     private void AutoSeekEnemies()
     {
-        if (shouldAutoSeekOutEnemies)
+        if (shouldAggressivelySeekEnemies)
         {
-            if (TargetIsValidEnemy(targetEnemy))
-            {
-                SwitchState(MinionStates.WalkToEnemy);
-            }
-            else
-            {
-                targetEnemy = FindEnemyToWalkTowards(attackRange);
-            }
+            targetEnemy = FindEnemyToWalkTowards(attackRange, true);
+        }
+        else
+        { 
+            targetEnemy = FindEnemyToWalkTowards(attackRange, false);
+        }
+        if (TargetIsValidEnemy(targetEnemy))
+        {
+            SwitchState(MinionStates.WalkToEnemy);
         }
     }
     private void GarrisonedSeekEnemies()
@@ -1737,7 +1738,7 @@ public class MinionController : NetworkBehaviour
             return Vector3.Distance(transform.position, target.transform.position) <= range;
         }
     }
-    [HideInInspector] public bool shouldAutoSeekOutEnemies = true;
+    [HideInInspector] public bool shouldAggressivelySeekEnemies = true;
     private bool InvalidBuildable(SelectableEntity target)
     {
         /*if (target == null)
@@ -1896,7 +1897,7 @@ public class MinionController : NetworkBehaviour
             return true;
         }
     }
-    private SelectableEntity FindEnemyToWalkTowards(float range)
+    private SelectableEntity FindEnemyToWalkTowards(float range, bool shouldExtendAttackRange = true)
     {
         if (attackType == AttackType.None) return null;
 
@@ -1907,7 +1908,7 @@ public class MinionController : NetworkBehaviour
         }
         else
         {
-            range += 1;
+            if (shouldExtendAttackRange) range += 1;
         }
 
         SelectableEntity valid = null;
@@ -2340,7 +2341,10 @@ public class MinionController : NetworkBehaviour
         //destination.Value = target; //set destination
         orderedDestination = target; //remember where we set destination 
     }
-
+    public bool IsValidAttacker()
+    {
+        return attackType != AttackType.None;
+    }
     public void MoveToTarget(SelectableEntity target)
     {
         if (target == null) return;

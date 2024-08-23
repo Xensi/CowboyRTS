@@ -34,7 +34,7 @@ MonoBehaviour:
   attackDuration: 2
   impactTime: 0.5
   areaOfEffectRadius: 1
-  shouldAutoSeekEnemies: 1
+  shouldAggressivelySeekEnemies: 0
   spawnableUnits:
   - {fileID: 11400000, guid: 04ae84b5d643fbc498358c09db111adb, type: 2}
   - {fileID: 11400000, guid: 5482cede677f6c94299d9143b7094d12, type: 2}
