@@ -10,18 +10,31 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bed587974d8ce26488166d15dd758416, type: 3}
-  m_Name: Drink
+  m_Name: DrunkardDrink
   m_EditorClassIdentifier: 
   abilityName: Drink
-  cooldownTime: 60
+  usableOnlyWhenBuilt: 1
+  cooldownTime: 999
+  shouldCooldown: 0
+  visitBuildingToRefresh:
+  - building: {fileID: 11400000, guid: caa5c448d3a92e04e8c3b58c5fa5488c, type: 2}
+    cost: 2
   effectsToApply:
   - targets: 0
     status: 0
+    applyAsLingeringEffect: 1
     expirationTime: 10
     operation: 2
-    statusNumber: 1.5
+    statusNumber: 1.35
   - targets: 0
     status: 1
+    applyAsLingeringEffect: 1
     expirationTime: 10
     operation: 3
-    statusNumber: 1.5
+    statusNumber: 1.35
+  - targets: 0
+    status: 2
+    applyAsLingeringEffect: 0
+    expirationTime: 0
+    operation: 1
+    statusNumber: 2

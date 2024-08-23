@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b888e0fe913eaf4095ed4e0fccd988e, type: 3}
   m_Name: RichLich
   m_EditorClassIdentifier: 
-  productionName: Rich Lich
-  description: 
+  productionName: Lich
+  description: Protect at all costs.
   prefabToSpawn: {fileID: 277787794319671239, guid: 27bf33d358ef0194aa8fa42cf69b6502, type: 3}
   goldCost: 20
   maxHP: 200
@@ -37,6 +37,7 @@ MonoBehaviour:
   shouldAutoSeekEnemies: 1
   spawnableUnits:
   - {fileID: 11400000, guid: 04ae84b5d643fbc498358c09db111adb, type: 2}
+  - {fileID: 11400000, guid: 5482cede677f6c94299d9143b7094d12, type: 2}
   spawnableAtOnce: 1
   isHarvester: 1
   harvestCapacity: 1

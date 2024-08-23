@@ -13,8 +13,7 @@ MonoBehaviour:
   m_Name: Goon
   m_EditorClassIdentifier: 
   productionName: Goon
-  description: Worker that harvests gold, builds, and repairs. Has a pitiful melee
-    attack.
+  description: 'Harvests resources, builds, and repairs. '
   prefabToSpawn: {fileID: 2545681379473208697, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
   goldCost: 40
   maxHP: 20
@@ -22,7 +21,7 @@ MonoBehaviour:
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
   shouldHideInFog: 1
-  soundProfile: {fileID: 11400000, guid: ff7bffcb71726924386899d0f67a42ee, type: 2}
+  soundProfile: {fileID: 11400000, guid: 308c891582e140c449c3ad8db4ebba40, type: 2}
   teamType: 0
   constructableBuildings:
   - {fileID: 11400000, guid: c0ef745a8df8be4478d8040e4830b3d3, type: 2}
@@ -34,8 +33,8 @@ MonoBehaviour:
   usableAbilities: []
   depositType: 0
   selfHarvestableType: 1
-  attackType: 1
-  damage: 1
+  attackType: 0
+  damage: 0
   directionalAttack: 0
   attackRange: 1
   attackDuration: 1

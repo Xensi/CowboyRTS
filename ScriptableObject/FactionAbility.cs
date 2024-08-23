@@ -8,15 +8,25 @@ public class FactionAbility : ScriptableObject
 {
     public string abilityName = "Ability Name";
     public bool usableOnlyWhenBuilt = true;
-    public float cooldownTime = 60; //used only if needsConstructing is false 
+    public float cooldownTime = 60; //used only if needsConstructing is false
+    public bool shouldCooldown = true; //should cooldown timer tick down?
+    public List<BuildingAndCost> visitBuildingToRefresh = new(); //can we visit a building to refresh this ability?
     public List<TargetedEffects> effectsToApply = new(); //effects to activate when this ability is used
 }
 
+[System.Serializable]
+public class BuildingAndCost
+{
+    public FactionBuilding building;
+    public int cost;
+}
 [System.Serializable]
 public class AbilityOnCooldown
 { 
     public string abilityName = "Ability Name";
     public float cooldownTime = 60; //used only if needsConstructing is false 
+    public bool shouldCooldown = true; //should cooldown timer tick down?
+    public List<BuildingAndCost> visitBuildingToRefresh = new(); //can we visit a building to refresh this ability?
 }
 
 [System.Serializable]

@@ -74,7 +74,7 @@ public class RTSPlayer : Player
     private bool active = true;
     public enum ActionType
     {
-        Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget, AttackMove
+        Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget, AttackMove, MoveToTarget
     }
     private ActionType actionType = ActionType.Move;
     private FactionBuilding buildingToPlace = null;
@@ -267,8 +267,8 @@ public class RTSPlayer : Player
                         }
                         else
                         {
-                            actionType = ActionType.Move;
-                        }
+                            actionType = ActionType.MoveToTarget;
+                        } 
                     }
                     else //enemy
                     { //try to target this enemy specifically
@@ -303,7 +303,6 @@ public class RTSPlayer : Player
             }
         }
     }
-
     private void ProcessOrders()
     {
         if (UnitOrdersQueue.Count > 0)
@@ -320,49 +319,9 @@ public class RTSPlayer : Player
                         break;
                     }
                 }
-                if (orderedUnit != null)
+                if (orderedUnit != null && orderedUnit.canReceiveNewCommands)
                 {
-                    Vector3 targetPosition = order.targetPosition;
-                    SelectableEntity target = order.target;
-
-                    switch (order.action)
-                    {
-                        case ActionType.AttackMove:
-                            orderedUnit.SetAttackMoveDestination(targetPosition);
-                            break;
-                        case ActionType.Move:
-                            orderedUnit.MoveTo(targetPosition);
-                            break;
-                        case ActionType.AttackTarget:
-                            orderedUnit.AttackTarget(target);
-                            break;
-                        case ActionType.Harvest:
-                            orderedUnit.CommandHarvestTarget(target);
-                            break;
-                        case ActionType.Deposit: //try to deposit if we have stuff to deposit
-                            if (orderedUnit.entity.HasResourcesToDeposit())
-                            {
-                                orderedUnit.DepositTo(target);
-                            }
-                            else if (target.IsDamaged() && orderedUnit.entity.CanConstruct()) //if its damaged, we can try to build it
-                            {
-                                orderedUnit.CommandBuildTarget(target);
-                            }
-                            break;
-                        case ActionType.Garrison:
-                            orderedUnit.WorkOnGarrisoningInto(target);
-                            break;
-                        case ActionType.BuildTarget://try determining how many things need to be built in total, and grabbing closest ones
-                            if (orderedUnit.entity.CanConstruct())
-                            {
-                                orderedUnit.CommandBuildTarget(target);
-                            }
-                            else
-                            {
-                                orderedUnit.WorkOnGarrisoningInto(target);
-                            }
-                            break;
-                    }
+                    orderedUnit.ProcessOrder(order);
                     UnitOrdersQueue.RemoveAt(0);
                 }
             }
@@ -447,11 +406,15 @@ public class RTSPlayer : Player
             }
 
             entity.Select(true);
-            val = true;
+            val = true; 
         }
         else
         {
             infoSelectedEntity = entity;
+        }
+        if (entity.IsStructure())
+        {
+            Global.Instance.PlayStructureSelectSound(entity);
         }
         UpdateGUIFromSelections();
         return val;
@@ -483,18 +446,18 @@ public class RTSPlayer : Player
         {
             GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[1], this);
         }
-        if (Input.GetKeyDown(KeyCode.RightAlt))
+        if (Input.GetKeyDown(KeyCode.Period))
         {
-            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[4], this);
+            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[2], this);
         }
         if (Input.GetKeyDown(KeyCode.RightControl))
         {
             GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[3], this);
         }
-        /*if (Input.GetKeyDown(KeyCode.UpArrow))
+        if (Input.GetKeyDown(KeyCode.RightAlt))
         {
-            GenericSpawnMinion(cursorWorldPosition, 11, this);
-        }*/
+            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[4], this);
+        } 
 #endif
     }
     Vector3 oldCursorWorldPosition;
@@ -514,6 +477,7 @@ public class RTSPlayer : Player
         //get building and builder that have the least distance
         foreach (SelectableEntity building in unbuiltStructures)
         {
+            if (building == null) continue;
             if (building.workersInteracting.Count < building.allowedWorkers)
             {
                 //get the closest available builder in builder list
@@ -732,6 +696,7 @@ public class RTSPlayer : Player
     }
     private void FinishPlacingRotatedBuilding()
     {
+        Debug.Log("Finishing placing rotated building");
         //PlaceBuilding(buildingToPlace, buildingGhost.transform.position); 
         Vector3 alignedForward = SnapToNearestWorldAxis(buildingGhost.transform.forward);
         Vector3 alignedUp = SnapToNearestWorldAxis(buildingGhost.transform.up);
@@ -742,7 +707,7 @@ public class RTSPlayer : Player
         gold -= buildingToPlace.goldCost;
         SpawnBuildingWithRotation(buildingToPlace, buildingGhost.transform.position, dir, quaternion);
         SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
-        //TellSelectedToBuild(last); 
+        TellSelectedToBuild(last); 
         StopPlacingBuilding();
     }
     private Direction ConvertForwardToEnum(Vector3 alignedForward)
@@ -905,7 +870,8 @@ public class RTSPlayer : Player
         SelectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
     }
     private void TellSelectedToBuild(SelectableEntity building)
-    { 
+    {
+        Debug.Log("Attempting selected build: " + building.name);
         if (selectedBuilders.Count == 1)
         {
             selectedBuilders[0].ForceBuildTarget(building);
@@ -970,11 +936,10 @@ public class RTSPlayer : Player
         gold -= building.goldCost;
         Debug.Log("Trying to place" + building.name);
         GenericSpawnMinion(position, building, this);
-        SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
-        TellSelectedToBuild(last);
+        SelectableEntity spawnedBuilding = Global.Instance.localPlayer.ownedEntities.Last();
+        TellSelectedToBuild(spawnedBuilding);
 
-        StopPlacingBuilding(); //temporary: later re-implement two-part buildings and holding shift to continue placing
-
+        StopPlacingBuilding(); //temporary: later re-implement two-part buildings and holding shift to continue placing 
 
         //is building a two-parter? 
 
@@ -1773,16 +1738,24 @@ public class RTSPlayer : Player
                 //skip if not built, not spawned, n
                 if (EntityCanUseAbility(entity, ability))
                 {
-                    entity.UseAbility(ability);
+                    if (entity.IsMinion())
+                    { 
+                        entity.StartUsingAbility(ability);
+                    }
+                    else
+                    {
+                        entity.ActivateAbility(ability);
+                    }
                 }
             }
         }
     }
     private bool EntityCanUseAbility(SelectableEntity entity, FactionAbility ability)
     {
-        return (entity != null && (entity.fullyBuilt || !ability.usableOnlyWhenBuilt) && entity.net.IsSpawned
+        return entity != null && ability != null && (entity.fullyBuilt || !ability.usableOnlyWhenBuilt) && entity.net.IsSpawned
             && entity.alive && entity.usableAbilities.Contains(ability)
-            && entity.AbilityOffCooldown(ability));
+            && entity.AbilityOffCooldown(ability)
+            && (entity.IsBuilding() || entity.minionController.minionState != MinionController.MinionStates.UsingAbility);
     }
     public void UpdateBuildQueueGUI()
     {

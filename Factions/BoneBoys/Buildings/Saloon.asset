@@ -21,7 +21,7 @@ MonoBehaviour:
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0
   shouldHideInFog: 1
-  soundProfile: {fileID: 0}
+  soundProfile: {fileID: 11400000, guid: 58c4f57c5002ce348a36785e6a06bad4, type: 2}
   teamType: 0
   constructableBuildings: []
   usableAbilities: []
@@ -36,6 +36,7 @@ MonoBehaviour:
   areaOfEffectRadius: 1
   shouldAutoSeekEnemies: 0
   spawnableUnits:
+  - {fileID: 11400000, guid: 5482cede677f6c94299d9143b7094d12, type: 2}
   - {fileID: 11400000, guid: 062fe0b231fb3b54289b317e0e999443, type: 2}
   - {fileID: 11400000, guid: cb023bde7bc23994d82355c43644efc7, type: 2}
   - {fileID: 11400000, guid: 780c8c6df0f384c40ae61e992fc342b0, type: 2}

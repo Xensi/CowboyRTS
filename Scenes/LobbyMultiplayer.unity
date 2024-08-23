@@ -18749,7 +18749,7 @@ MonoBehaviour:
   spawnPosition: {fileID: 128478810}
   knownEnemyStructures: []
   knownEnemyUnits: []
-  enable: 0
+  enable: 1
   desiredPopAdders: 0
   desiredHarvesters: 5
   desiredUnitSpawner: 2
@@ -20437,6 +20437,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   gameLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  entityLayer:
     serializedVersion: 2
     m_Bits: 0
   uninitializedPlayers: []

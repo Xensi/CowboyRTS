@@ -8,6 +8,8 @@ using FoW;
 using static UnityEngine.GraphicsBuffer;
 using static SelectableEntity;
 using static UnityEditor.Experimental.GraphView.GraphView;
+using static UnityEngine.UIElements.UxmlAttributeDescription;
+using static RTSPlayer;
 //using UnityEngine.Rendering;
 //using UnityEngine.Windows;
 
@@ -41,7 +43,9 @@ public class MinionController : NetworkBehaviour
         AfterDepositCheck,
         Garrisoning,
         AfterGarrisonCheck,
-        WalkToRally
+        WalkToRally,
+        WalkToTarget,
+        UsingAbility,
     }
 
     public enum AttackType
@@ -120,6 +124,7 @@ public class MinionController : NetworkBehaviour
     //controls where the AI will pathfind to
     [HideInInspector]
     public Vector3 destination;
+    public bool canReceiveNewCommands = true;
     #endregion
     #region Core
     //private MinionObstacle obstacle;
@@ -182,7 +187,7 @@ public class MinionController : NetworkBehaviour
     }
     private void SetRealLocation()
     {
-        oldRealLocation = transform.position; 
+        oldRealLocation = transform.position;
         realLocation.Value = QuantizePosition(transform.position);
     }
     public override void OnNetworkSpawn()
@@ -208,13 +213,13 @@ public class MinionController : NetworkBehaviour
               ai.enabled = false;
               rayMod.enabled = false;
               seeker.enabled = false;*/
-        } 
+        }
         realLocation.OnValueChanged += OnRealLocationChanged;
         //enabled = IsOwner;
         oldPosition = transform.position;
         orderedDestination = transform.position;
         if (IsOwner)
-        { 
+        {
             if (Global.Instance.graphUpdateScenePrefab != null)
                 graphUpdateScene = Instantiate(Global.Instance.graphUpdateScenePrefab, transform.position, Quaternion.identity, Global.Instance.transform);
             if (graphUpdateScene != null && ai != null)
@@ -252,7 +257,7 @@ public class MinionController : NetworkBehaviour
     {
         if (nonOwnerRealLocationList.Count > 0)
         {
-            if (nonOwnerRealLocationList.Count >= Global.Instance.maximumQueuedRealLocations )
+            if (nonOwnerRealLocationList.Count >= Global.Instance.maximumQueuedRealLocations)
             {
                 nonOwnerRealLocationList.RemoveAt(0); //remove oldest 
 
@@ -272,7 +277,7 @@ public class MinionController : NetworkBehaviour
             {
                 Vector3 offset = transform.position - pathfindingTarget.position;
                 float dist = offset.sqrMagnitude;
-                 //for best results, make this higher than unit's slow down distance. at time of writing slowdown dist is .2
+                //for best results, make this higher than unit's slow down distance. at time of writing slowdown dist is .2
                 if (dist < Global.Instance.closeEnoughDist * Global.Instance.closeEnoughDist) //square the distance to compare against
                 {
                     nonOwnerRealLocationList.RemoveAt(0); //remove oldest 
@@ -310,9 +315,9 @@ public class MinionController : NetworkBehaviour
             //may have to ray cast down to retrieve height data
             Vector3 deq = DequantizePosition(realLocation.Value);
             if (Physics.Raycast(deq + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.groundLayer))
-            { 
-                deq.y = hit.point.y; 
-            } 
+            {
+                deq.y = hit.point.y;
+            }
             nonOwnerRealLocationList.Add(deq);
         }
     }
@@ -372,7 +377,7 @@ public class MinionController : NetworkBehaviour
     private void IdleOrWalkContextuallyAnimationOnly()
     {
         float limit = 0.1f;
-        if (change < limit * limit || ai.reachedDestination) //basicallyIdleInstances > idleThreshold
+        if (change < limit * limit && walkStartTimer <= 0 || ai.reachedDestination) //basicallyIdleInstances > idleThreshold
         {
             animator.Play("Idle");
         }
@@ -568,7 +573,7 @@ public class MinionController : NetworkBehaviour
     //private bool realLocationReached = false;
     //private float updateRealLocThreshold = 1f; //1
     //private readonly float allowedNonOwnerError = 1.5f; //1.5 ideally higher than real loc update; don't want to lerp to old position
-    private bool highPrecisionMovement = false; 
+    private bool highPrecisionMovement = false;
     // Calculated start for the most recent interpolation
     Vector3 m_LerpStart;
 
@@ -637,7 +642,7 @@ public class MinionController : NetworkBehaviour
             }
         }
         else
-        { 
+        {
             Gizmos.DrawWireSphere(DequantizePosition(realLocation.Value), .1f);
         }
     }
@@ -745,7 +750,6 @@ public class MinionController : NetworkBehaviour
     }
     public void SwitchState(MinionStates stateToSwitchTo)
     {
-        minionState = stateToSwitchTo;
         switch (stateToSwitchTo)
         {
             case MinionStates.Attacking:
@@ -753,6 +757,7 @@ public class MinionController : NetworkBehaviour
             case MinionStates.Building:
                 stateTimer = 0;
                 FreezeRigid(true, false);
+                canReceiveNewCommands = true;
                 break;
             case MinionStates.Idle:
             case MinionStates.Die:
@@ -764,6 +769,13 @@ public class MinionController : NetworkBehaviour
             case MinionStates.AfterAttackCheck:
             case MinionStates.AfterBuildCheck:
                 FreezeRigid(true, true);
+                canReceiveNewCommands = true;
+                break;
+            case MinionStates.UsingAbility:
+                FreezeRigid(true, true);
+                animator.Play("UseAbility");
+                canReceiveNewCommands = false;
+                skipFirstFrame = true;
                 break;
             case MinionStates.Walk:
             case MinionStates.WalkBeginFindEnemies:
@@ -772,12 +784,16 @@ public class MinionController : NetworkBehaviour
             case MinionStates.WalkToRally:
             case MinionStates.Garrisoning:
             case MinionStates.Depositing:
+            case MinionStates.WalkToTarget:
                 ai.endReachedDistance = defaultEndReachedDistance;
                 ClearObstacle();
                 FreezeRigid(false, false);
+                canReceiveNewCommands = true;
                 break;
         }
+        minionState = stateToSwitchTo;
     }
+    private bool skipFirstFrame = true;
     private void DetectIfShouldReturnToIdle()
     {
         if (basicallyIdleInstances > idleThreshold || (walkStartTimer <= 0 && ai.reachedDestination))
@@ -797,28 +813,86 @@ public class MinionController : NetworkBehaviour
     {
         //givenMission = SelectableEntity.RallyMission.None;
     }
+    public UnitOrder lastOrder = null;
+    private bool OrderValid(UnitOrder order)
+    {
+        return order != null && order.unit != null;
+    }
+    private void ResumeLastOrder()
+    {
+        if (OrderValid(lastOrder))
+        {
+            ProcessOrder(lastOrder);
+        }
+    }
+    public void ProcessOrder(UnitOrder order)
+    {
+        Vector3 targetPosition = order.targetPosition;
+        SelectableEntity target = order.target;
+
+        switch (order.action)
+        {
+            case ActionType.MoveToTarget:
+                MoveToTarget(target);
+                break;
+            case ActionType.AttackMove:
+                SetAttackMoveDestination(targetPosition);
+                break;
+            case ActionType.Move:
+                MoveTo(targetPosition);
+                break;
+            case ActionType.AttackTarget:
+                AttackTarget(target);
+                break;
+            case ActionType.Harvest:
+                CommandHarvestTarget(target);
+                break;
+            case ActionType.Deposit: //try to deposit if we have stuff to deposit
+                if (entity.HasResourcesToDeposit())
+                {
+                    DepositTo(target);
+                }
+                else if (target.IsDamaged() && entity.CanConstruct()) //if its damaged, we can try to build it
+                {
+                    CommandBuildTarget(target);
+                }
+                else
+                {
+                    MoveToTarget(target);
+                }
+                break;
+            case ActionType.Garrison:
+                WorkOnGarrisoningInto(target);
+                break;
+            case ActionType.BuildTarget://try determining how many things need to be built in total, and grabbing closest ones
+                if (entity.CanConstruct())
+                {
+                    CommandBuildTarget(target);
+                }
+                else
+                {
+                    WorkOnGarrisoningInto(target);
+                }
+                break;
+        }
+        lastOrder = order;
+    }
+    private bool AnimatorTransitioning()
+    {
+        return animator.IsInTransition(0);
+    }
     private void OwnerUpdateState()
     {
         switch (minionState)
         {
             case MinionStates.Spawn: //play the spawn animation  
                 animator.Play("Spawn");
-                //if (IsOwner) SetDestination(transform.position);//destination.Value = transform.position; 
-                /*if (Physics.Raycast(transform.position + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.entityLayer))
-                {
-                    Collider col = hit.collider;
-                    Rigidbody rigid = col.GetComponent<Rigidbody>();
-                    rigid.AddForce(transform.forward * 1); 
-                }*/
-                //PlaceOnGround(); 
                 break;
             case MinionStates.Die:
                 animator.Play("Die");
                 break;
             case MinionStates.Idle:
                 IdleOrWalkContextuallyAnimationOnly();
-                //HideMoveIndicator(); 
-
                 if (entity.occupiedGarrison == null) //if not in garrison
                 {
                     FollowGivenMission(); //if we have a rally mission, attempt to do it
@@ -829,23 +903,62 @@ public class MinionController : NetworkBehaviour
                     GarrisonedSeekEnemies();
                 }
                 break;
+            case MinionStates.UsingAbility:
+                if (skipFirstFrame) //neccesary to give animator a chance to catch up
+                {
+                    skipFirstFrame = false;
+                }
+                else if (!animator.GetCurrentAnimatorStateInfo(0).IsName("UseAbility"))
+                {
+                    entity.ActivateAbility(entity.abilityToUse);
+                    SwitchState(MinionStates.Idle);
+                    ResumeLastOrder();
+                }
+                break;
             case MinionStates.Walk:
                 UpdateStopDistance();
                 IdleOrWalkContextuallyAnimationOnly();
                 DetectIfShouldReturnToIdle();
-                //UpdateMoveIndicator(); 
-                //SetDestination(orderedDestination);//destination.Value = orderedDestination; 
+                break;
+            case MinionStates.WalkToTarget:
+                UpdateStopDistance();
+                IdleOrWalkContextuallyAnimationOnly();
+                if (entity.interactionTarget != null)
+                {
+                    SetOrderedDestination(entity.interactionTarget.transform.position);
+                }
+                if (InRangeOfEntity(entity.interactionTarget, attackRange)) //if in range, check if this has an ability that can be satisfied
+                {
+                    if (entity.usedAbilities.Count > 0)
+                    {
+                        for (int i = entity.usedAbilities.Count - 1; i >= 0; i--)
+                        {
+                            AbilityOnCooldown used = entity.usedAbilities[i];
+                            if (used == null) continue;
+                            if (used.shouldCooldown) continue;
+                            if (used != null && used.visitBuildingToRefresh.Count > 0)
+                            {
+                                foreach (BuildingAndCost b in used.visitBuildingToRefresh)
+                                {
+                                    if (b == null) continue;
+                                    if (b.building == entity.interactionTarget.factionEntity && b.cost <= entity.controllerOfThis.gold) //this works
+                                    {
+                                        entity.usedAbilities.Remove(used);
+                                        entity.controllerOfThis.gold -= b.cost;
+
+                                        Global.Instance.PlayMinionRefreshSound(entity);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 break;
             case MinionStates.WalkToRally:
-                //UpdateMoveIndicator();
-                //if (IsOwner) SetDestination(rallyTarget);//destination.Value = rallyTarget;
                 IdleOrWalkContextuallyAnimationOnly();
                 break;
-            case MinionStates.WalkBeginFindEnemies: //"ATTACK MOVE" 
-                //UpdateMoveIndicator();
-                //FreezeRigid(false, false);
-                //SetDestination(orderedDestination);//destination.Value = orderedDestination;
-
+            case MinionStates.WalkBeginFindEnemies: //"ATTACK MOVE"   
                 if (!animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
                 {
                     if (!playedAttackMoveSound)
@@ -923,7 +1036,7 @@ public class MinionController : NetworkBehaviour
                     if (attackReady && CheckFacingTowards(targetEnemy.transform.position))
                     {
                         animator.Play("Attack");
-                        if (AnimatorPlaying())
+                        if (AnimatorUnfinished())
                         {
                             if (stateTimer < impactTime)
                             {
@@ -938,7 +1051,7 @@ public class MinionController : NetworkBehaviour
                                     case AttackType.Instant:
                                         DamageSpecifiedEnemy(targetEnemy, damage);
                                         break;
-                                    case AttackType.SelfDestruct: 
+                                    case AttackType.SelfDestruct:
                                         SelfDestruct(areaOfEffectRadius);
                                         break;
                                     case AttackType.Artillery:
@@ -1106,7 +1219,7 @@ public class MinionController : NetworkBehaviour
                             {
                                 animator.Play("Walk");
                                 if (entity.interactionTarget != null && entity.interactionTarget.physicalCollider != null)
-                                { 
+                                {
                                     Vector3 closest = entity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
                                     SetDestinationIfHighDiff(closest);
                                 }
@@ -1147,7 +1260,7 @@ public class MinionController : NetworkBehaviour
                     {
                         animator.Play("Attack");
 
-                        if (AnimatorPlaying())
+                        if (AnimatorUnfinished())
                         {
                             if (stateTimer < impactTime)
                             {
@@ -1187,7 +1300,7 @@ public class MinionController : NetworkBehaviour
                     lastState = MinionStates.Harvesting;
                 }
                 else if (ReachedResourceCap() && attackReady)
-                { 
+                {
                     SwitchState(MinionStates.FindInteractable);
                     lastState = MinionStates.Depositing;
                 }
@@ -1195,9 +1308,9 @@ public class MinionController : NetworkBehaviour
                 {
                     LookAtTarget(entity.interactionTarget.transform);
                     if (attackReady)
-                    { 
-                        animator.Play("Harvest"); 
-                        if (AnimatorPlaying())
+                    {
+                        animator.Play("Harvest");
+                        if (AnimatorUnfinished())
                         {
                             if (stateTimer < impactTime)
                             {
@@ -1207,16 +1320,16 @@ public class MinionController : NetworkBehaviour
                             {
                                 stateTimer = 0;
                                 attackReady = false;
-                                HarvestTarget(entity.interactionTarget); 
+                                HarvestTarget(entity.interactionTarget);
                             }
                         }
                         else
-                        { 
+                        {
                             SwitchState(MinionStates.AfterHarvestCheck);
                         }
                     }
                 }
-                break; 
+                break;
             case MinionStates.AfterHarvestCheck:
                 animator.Play("Idle");
                 if (entity.harvestedResourceAmount >= entity.harvestCapacity) //we're full so deposit
@@ -1252,7 +1365,7 @@ public class MinionController : NetworkBehaviour
                         if (entity.controllerOfThis is RTSPlayer)
                         {
                             RTSPlayer rts = entity.controllerOfThis as RTSPlayer;
-                            rts.UpdateGUIFromSelections();  
+                            rts.UpdateGUIFromSelections();
                         }
                     }
                     minionState = MinionStates.AfterDepositCheck;
@@ -1311,6 +1424,7 @@ public class MinionController : NetworkBehaviour
                 case MinionStates.WalkToEnemy:
                 case MinionStates.WalkToInteractable:
                 case MinionStates.WalkToRally:
+                case MinionStates.WalkToTarget:
                     var buffer = new List<Vector3>();
                     ai.GetRemainingPath(buffer, out bool stale);
                     entity.UpdatePathIndicator(buffer.ToArray());
@@ -1387,8 +1501,8 @@ public class MinionController : NetworkBehaviour
         if (entity.controllerOfThis is RTSPlayer)
         {
             RTSPlayer rts = entity.controllerOfThis as RTSPlayer;
-            rts.selectedEntities.Remove(entity); 
-        } 
+            rts.selectedEntities.Remove(entity);
+        }
         entity.Select(false);
         SwitchState(MinionStates.Die);
         ai.enabled = false;
@@ -1409,7 +1523,7 @@ public class MinionController : NetworkBehaviour
         entity.interactionTarget = ent;
         lastState = MinionStates.Building;
         SwitchState(MinionStates.WalkToInteractable);
-    } 
+    }
     #endregion
     #region DetectionFunctions
     private void DetectIfShouldStopFollowingMoveOrder()
@@ -1554,7 +1668,7 @@ public class MinionController : NetworkBehaviour
     {
         if (graphUpdateScene != null && !IsGarrisoned())
         {
-            Debug.Log("Becoming obstacle");
+            //Debug.Log("Becoming obstacle");
             graphUpdateScene.transform.position = transform.position;
             graphUpdateScene.setWalkability = false;
             Invoke(nameof(UpdateGraph), graphUpdateTime); //this delay is necessary or it will not work
@@ -1580,7 +1694,7 @@ public class MinionController : NetworkBehaviour
         //tell graph update scene to stop blocking
         if (graphUpdateScene != null)
         {
-            Debug.Log("Clearing obstacle");
+            //Debug.Log("Clearing obstacle");
             graphUpdateScene.transform.position = transform.position;
             graphUpdateScene.setWalkability = true;
             graphUpdateScene.Apply();
@@ -1714,10 +1828,10 @@ public class MinionController : NetworkBehaviour
         float frames = seconds * 50;
         return frames;
     }
-    private bool AnimatorPlaying()
+    private bool AnimatorUnfinished()
     {
-        return animator.GetCurrentAnimatorStateInfo(0).length > animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
-    } 
+        return animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1; //animator.GetCurrentAnimatorStateInfo(0).length > 
+    }
     private void HarvestTarget(SelectableEntity target)
     {
         entity.SimplePlaySound(1); //play impact sound 
@@ -1739,8 +1853,8 @@ public class MinionController : NetworkBehaviour
             if (entity.controllerOfThis is RTSPlayer)
             {
                 RTSPlayer rts = entity.controllerOfThis as RTSPlayer;
-                rts.UpdateGUIFromSelections(); 
-            } 
+                rts.UpdateGUIFromSelections();
+            }
         }
         else if (target != null && !target.IsSpawned)
         {
@@ -1906,7 +2020,7 @@ public class MinionController : NetworkBehaviour
             }
         }
         return closest;
-    } 
+    }
     private SelectableEntity FindClosestDeposit() //right now resource agnostic
     {
         List<SelectableEntity> list = entity.controllerOfThis.ownedEntities;
@@ -2170,7 +2284,7 @@ public class MinionController : NetworkBehaviour
         SetDestination(target);
         //destination.Value = target;
         orderedDestination = target;
-    } 
+    }
     public void SetAttackMoveDestination(Vector3 target) //called by local player
     {
         if (IsGarrisoned()) return;
@@ -2179,7 +2293,7 @@ public class MinionController : NetworkBehaviour
         basicallyIdleInstances = 0;
         SwitchState(MinionStates.WalkBeginFindEnemies);
         playedAttackMoveSound = false;
-        SetDestination(target); 
+        SetDestination(target);
         orderedDestination = destination;
     }
     public void PlaceOnGround()
@@ -2225,6 +2339,30 @@ public class MinionController : NetworkBehaviour
         SetDestination(target);
         //destination.Value = target; //set destination
         orderedDestination = target; //remember where we set destination 
+    }
+
+    public void MoveToTarget(SelectableEntity target)
+    {
+        if (target == null) return;
+        Debug.Log("Moving to target");
+        lastCommand.Value = CommandTypes.Move;
+        if (minionState != MinionStates.Spawn)
+        {
+            ClearTargets();
+            BecomeUnstuck();
+            SwitchState(MinionStates.WalkToTarget);
+            entity.interactionTarget = target;
+            SetOrderedDestination(entity.interactionTarget.transform.position);
+            walkStartTimer = walkStartTimerSet;
+
+            SelectableEntity justLeftGarrison = null;
+            if (entity.occupiedGarrison != null) //we are currently garrisoned
+            {
+                justLeftGarrison = entity.occupiedGarrison;
+                RemovePassengerFrom(entity.occupiedGarrison);
+                PlaceOnGround(); //snap to ground
+            }
+        }
     }
     public void MoveTo(Vector3 target)
     {
@@ -2292,34 +2430,41 @@ public class MinionController : NetworkBehaviour
     }
     public void WorkOnGarrisoningInto(SelectableEntity garrison)
     {
-        //Debug.Log("Trying to garrison");
-        SelectableEntity justLeftGarrison = null;
-        if (IsGarrisoned()) //we are currently garrisoned
+        if (garrison.garrisonablePositions.Count <= 0)
         {
-            justLeftGarrison = entity.occupiedGarrison;
-            entity.occupiedGarrison.UnloadPassenger(this); //leave garrison by moving out of it
-            PlaceOnGround(); //snap to ground
+            MoveToTarget(garrison);
         }
-        // && selectableEntity.garrisonablePositions.Count <= 0
-        if (justLeftGarrison != garrison) //not perfect, fails on multiple units
-        {
-            if (garrison.acceptsHeavy || !entity.isHeavy)
+        else
+        { 
+            //Debug.Log("Trying to garrison");
+            SelectableEntity justLeftGarrison = null;
+            if (IsGarrisoned()) //we are currently garrisoned
             {
-                entity.interactionTarget = garrison;
-                SwitchState(MinionStates.WalkToInteractable);
-                lastState = MinionStates.Garrisoning;
-                //Debug.Log("Moving into garrison");
+                justLeftGarrison = entity.occupiedGarrison;
+                entity.occupiedGarrison.UnloadPassenger(this); //leave garrison by moving out of it
+                PlaceOnGround(); //snap to ground
             }
+            // && selectableEntity.garrisonablePositions.Count <= 0
+            if (justLeftGarrison != garrison) //not perfect, fails on multiple units
+            {
+                if (garrison.acceptsHeavy || !entity.isHeavy)
+                {
+                    entity.interactionTarget = garrison;
+                    SwitchState(MinionStates.WalkToInteractable);
+                    lastState = MinionStates.Garrisoning;
+                    //Debug.Log("Moving into garrison");
+                }
+            }
+            lastCommand.Value = CommandTypes.Move;
+            /*SelectableEntity garrison = select.occupiedGarrison;
+            selectableEntity.tryingToTeleport = true;
+            selectableEntity.interactionTarget = select;
+            state = State.WalkToInteractable;
+            lastState = State.Garrisoning;*/
         }
-        lastCommand.Value = CommandTypes.Move;
-        /*SelectableEntity garrison = select.occupiedGarrison;
-        selectableEntity.tryingToTeleport = true;
-        selectableEntity.interactionTarget = select;
-        state = State.WalkToInteractable;
-        lastState = State.Garrisoning;*/
     }
     public void ChangeRVOStatus(bool val)
-    { 
+    {
         if (entity.RVO != null) entity.RVO.enabled = val;
     }
     private void LoadPassengerInto(SelectableEntity garrison)

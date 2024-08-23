@@ -510,7 +510,7 @@ public class AIPlayer : Player
     }
     private void TellInactiveMinersToHarvest()
     {
-        Debug.Log("Telling miners to harvest");
+        //Debug.Log("Telling miners to harvest");
         foreach (SelectableEntity item in ownedEntities)
         {
             if (item.minionController != null && item.CanHarvest() && !item.minionController.IsCurrentlyBuilding()) //minion

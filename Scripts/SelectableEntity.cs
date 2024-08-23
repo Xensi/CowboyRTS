@@ -605,19 +605,38 @@ public class SelectableEntity : NetworkBehaviour
     {
         for (int i = 0; i < usedAbilities.Count; i++)
         {
-            if (usedAbilities[i].abilityName == ability.name) return false; //if ability is in the used abilities list, then we still need to wait  
+            Debug.Log("Checking ability:" + ability.abilityName + "against: " + usedAbilities[i].abilityName);
+            if (usedAbilities[i].abilityName == ability.abilityName) return false; //if ability is in the used abilities list, then we still need to wait  
         }
         return true;
     }
-    public void UseAbility(FactionAbility ability)
+    public bool IsBuilding()
     {
+        return minionController == null;
+    }
+    public void StartUsingAbility(FactionAbility ability)
+    {
+        abilityToUse = ability;
+        Global.Instance.PlayMinionAbilitySound(this);
+        if (minionController != null)
+        {
+            minionController.SwitchState(MinionController.MinionStates.UsingAbility);
+        }
+    }
+    public FactionAbility abilityToUse;
+    public void ActivateAbility(FactionAbility ability)
+    {
+        Debug.Log("Activating ability: " + ability.name);
         List<SelectableEntity> targetedEntities = new();
         foreach (TargetedEffects effect in ability.effectsToApply)
         {
             switch (effect.targets)
             {
                 case TargetedEffects.Targets.Self:
-                    targetedEntities.Add(this);
+                    if (!targetedEntities.Contains(this))
+                    { 
+                        targetedEntities.Add(this);
+                    }
                     break;
             }
             foreach (SelectableEntity target in targetedEntities)
@@ -686,8 +705,10 @@ public class SelectableEntity : NetworkBehaviour
                             target.minionController.animator.SetFloat("attackMultiplier", attackAnimMultiplier); //if we are halving, double animation speed
                         }
                         break;
-                    case StatusEffect.HP:
+                    case StatusEffect.HP: 
+                        variableToChange = Mathf.Clamp(variableToChange, 0, maxHP); 
                         hitPoints.Value = (short)variableToChange;
+                        Debug.Log("setting hitpoints to: " + variableToChange);
                         break;
                     case StatusEffect.CancelInProgress:
                         //if target is ghost, full refund
@@ -716,7 +737,21 @@ public class SelectableEntity : NetworkBehaviour
                         operation = effect.operation,
                         statusNumber = effect.statusNumber
                     };
-                    appliedEffects.Add(newEffect);
+                    bool foundMatch = false;
+                    foreach (TargetedEffects item in appliedEffects) //extend matching effects
+                    {
+                        if (item != null && item.status == newEffect.status && item.operation == newEffect.operation
+                            && item.statusNumber == effect.statusNumber && item.expirationTime < newEffect.expirationTime)
+                        {
+                            foundMatch = true;
+                            item.expirationTime = newEffect.expirationTime;
+                            break;
+                        }
+                    }
+                    if (!foundMatch)
+                    {
+                        appliedEffects.Add(newEffect); 
+                    }
                 }
 
                 if (!UsedSameNameAbility(ability)) //if this unit has not used this ability already, mark it as used
@@ -724,7 +759,9 @@ public class SelectableEntity : NetworkBehaviour
                     AbilityOnCooldown newAbility = new()
                     {
                         abilityName = ability.abilityName,
-                        cooldownTime = ability.cooldownTime
+                        cooldownTime = ability.cooldownTime,
+                        shouldCooldown = ability.shouldCooldown,
+                        visitBuildingToRefresh = ability.visitBuildingToRefresh, 
                     };
                     usedAbilities.Add(newAbility);
                 }
@@ -743,15 +780,18 @@ public class SelectableEntity : NetworkBehaviour
         return false;
     }
     public List<AbilityOnCooldown> usedAbilities = new();
-    private List<TargetedEffects> appliedEffects = new();
+    public List<TargetedEffects> appliedEffects = new();
     private void UpdateUsedAbilities()
     {
         for (int i = usedAbilities.Count - 1; i >= 0; i--)
         {
-            usedAbilities[i].cooldownTime -= Time.deltaTime;
-            if (usedAbilities[i].cooldownTime <= 0)
-            {
-                usedAbilities.RemoveAt(i);
+            if (usedAbilities[i].shouldCooldown)
+            { 
+                usedAbilities[i].cooldownTime -= Time.deltaTime;
+                if (usedAbilities[i].cooldownTime <= 0)
+                {
+                    usedAbilities.RemoveAt(i);
+                }
             }
         }
     }
@@ -764,16 +804,34 @@ public class SelectableEntity : NetworkBehaviour
             {
                 ResetVariableFromStatusEffect(appliedEffects[i]);
                 appliedEffects.RemoveAt(i);
+                /*TargetedEffects effect = appliedEffects[i];
+                bool foundAnother = false;
+                foreach (TargetedEffects item in appliedEffects)
+                {
+                    if (item == null || item == appliedEffects[i]) continue;
+                    if (item.status == effect.status)
+                    {
+                        foundAnother = true;
+                        break;
+                    }
+                }
+                //search for another iteration of the same effect. if it doesn't exist, reset the variable
+                if (!foundAnother)
+                { 
+                    ResetVariableFromStatusEffect(effect);
+                } 
+                appliedEffects.RemoveAt(i);*/
+
             }
         }
     }
-    private void ResetVariableFromStatusEffect(TargetedEffects effect)
+    private void ResetVariableFromStatusEffect(TargetedEffects effect) //this will work for now but will not work if multiple buffs are stacked
     {
         switch (effect.status)
         {
             case TargetedEffects.StatusEffect.MoveSpeed:
                 if (minionController != null && minionController.ai != null)
-                {
+                { 
                     minionController.ai.maxSpeed = minionController.defaultMoveSpeed;
                     minionController.animator.SetFloat("moveSpeedMultiplier", 1); //if we are halving, double animation speed
                 }
@@ -1508,6 +1566,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         PlaySoundClientRpc(id);
     }
+
     [ClientRpc]
     private void PlaySoundClientRpc(byte id)
     {
@@ -1516,6 +1575,10 @@ public class SelectableEntity : NetworkBehaviour
             AudioClip clip = sounds[id];
             Global.Instance.PlayClipAtPoint(clip, transform.position, 0.25f);
         }
+    }
+    public bool IsStructure()
+    {
+        return minionController == null;
     }
     private void OwnerUpdateBuildQueue()
     {
@@ -1528,8 +1591,9 @@ public class SelectableEntity : NetworkBehaviour
                 fac.spawnTimeCost--;
             }
             if (fac.spawnTimeCost <= 0 
-                && consumePopulationAmount <= controllerOfThis.maxPopulation - controllerOfThis.population)
-            { //spawn the unit
+                && fac.consumePopulationAmount <= controllerOfThis.maxPopulation - controllerOfThis.population)
+            { //spawn the unit 
+                //Debug.Log("Population check on spawn:" + fac.consumePopulationAmount + ", " + controllerOfThis.maxPopulation + ", " + controllerOfThis.population);
                 //Debug.Log("spawn");
                 //first check if the position is blocked;
                 if (Physics.Raycast(positionToSpawnMinions.position + (new Vector3(0, 100, 0)), Vector3.down, 
@@ -1690,9 +1754,16 @@ public class SelectableEntity : NetworkBehaviour
         if (selectIndicator != null) selectIndicator.SetActive(selected);
         //UpdateTargetIndicator();
         if (rallyVisual != null)
-        {
-            rallyVisual.transform.position = rallyPoint;
-            rallyVisual.enabled = selected;
+        { 
+            if (CanProduceUnits())
+            { 
+                rallyVisual.transform.position = rallyPoint;
+                rallyVisual.enabled = selected;
+            }
+            else
+            {
+                rallyVisual.enabled = false;
+            }
         }
     }
     public void Select(bool val)

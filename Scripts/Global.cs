@@ -63,7 +63,34 @@ public class Global : NetworkBehaviour
     public List<RTSPlayer> initializedPlayers = new();
     public List<AIPlayer> aiTeamControllers = new();
     public List<Player> allPlayers = new();
-    public Grid grid;
+    public Grid grid; 
+
+    //Minion sound profile mapping:
+    // 0: spawn
+    // 1: damage
+    // 2: attack move
+    // 3: ability used
+    // 4: ability refresh
+
+    //Structure sound profile mapping:
+    //0: spawn
+    //1: selection
+    //
+    //
+
+    public void PlayStructureSelectSound(SelectableEntity entity)
+    {  
+        if (entity.sounds.Length > 1) PlayClipAtPoint(entity.sounds[1], entity.transform.position, .75f);
+    }
+    public void PlayMinionRefreshSound(SelectableEntity entity)
+    {
+        if (entity.sounds.Length > 4) PlayClipAtPoint(entity.sounds[4], entity.transform.position, 1f, 1, true);
+    }
+    public void PlayMinionAbilitySound(SelectableEntity entity)
+    {
+        if (entity.sounds.Length > 3) PlayClipAtPoint(entity.sounds[3], entity.transform.position, .5f, 1, true);
+    }
+
     private void Awake()
     {
         groundLayer = LayerMask.GetMask("Ground");

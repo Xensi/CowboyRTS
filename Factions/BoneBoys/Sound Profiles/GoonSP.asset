@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 03adb7ce97633d9459373ee32b03e856, type: 3}
-  m_Name: DefaultSoundProfile
+  m_Name: GoonSP
   m_EditorClassIdentifier: 
   sounds:
   - {fileID: 8300000, guid: e12124de62f005543a8b08aff5493439, type: 3}
-  - {fileID: 8300000, guid: f44f3479724a08e4e8c995e2f633bbfe, type: 3}
+  - {fileID: 8300000, guid: bdfda0f78de561f4b958ec7e0912d0c2, type: 3}
   - {fileID: 8300000, guid: f36c995b0cc52224ebecea1e5b408cfa, type: 3}
   - {fileID: 8300000, guid: e35db37246a71654db43f2f4bdb37b4a, type: 3}

@@ -10,14 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b888e0fe913eaf4095ed4e0fccd988e, type: 3}
-  m_Name: Drunkard
+  m_Name: Numbskull
   m_EditorClassIdentifier: 
-  productionName: Drunkard
-  description: Tough bar brawler. Drink to heal and speed up. Buy new drinks at the
-    saloon.
-  prefabToSpawn: {fileID: 2545681379473208697, guid: 1207c82d488d9984dbc660e0682325ed, type: 3}
-  goldCost: 20
-  maxHP: 12
+  productionName: Numbskull
+  description: Early melee unit. Only useful in numbers.
+  prefabToSpawn: {fileID: 2545681379473208697, guid: c3824196b058c8e478af507efde0a492, type: 3}
+  goldCost: 10
+  maxHP: 6
   isKeystone: 0
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
@@ -25,8 +24,7 @@ MonoBehaviour:
   soundProfile: {fileID: 11400000, guid: e98d0a54573c90c45b60a981325e5ab6, type: 2}
   teamType: 0
   constructableBuildings: []
-  usableAbilities:
-  - {fileID: 11400000, guid: 5f176f98524f7504ca68506ecda226d8, type: 2}
+  usableAbilities: []
   depositType: 0
   selfHarvestableType: 1
   attackType: 1
