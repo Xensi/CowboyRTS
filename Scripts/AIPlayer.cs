@@ -20,6 +20,11 @@ public class AIPlayer : Player
     public List<SelectableEntity> knownEnemyStructures = new();
     public List<SelectableEntity> knownEnemyUnits = new();
     public bool enable = false;
+    public enum AIBehavior
+    {
+        Default, DefendStructuresOnly,
+    }
+    public AIBehavior behavior = AIBehavior.Default;
     public override void OnNetworkSpawn()
     {
         if (!enable) return;
@@ -45,13 +50,32 @@ public class AIPlayer : Player
             if (timer >= actionTime)
             {
                 timer = 0;
-                PerformAction();
+                switch (behavior)
+                {
+                    case AIBehavior.Default:
+                        EconAction();
+                        break;
+                    case AIBehavior.DefendStructuresOnly:
+                        break;
+                    default:
+                        break;
+                }
             }
             attackTimer += Time.deltaTime;
             if (attackTimer >= attackTime)
             {
                 attackTimer = 0;
-                AggressiveAction();
+
+                switch (behavior)
+                {
+                    case AIBehavior.Default:
+                        AggressiveAction();
+                        break;
+                    case AIBehavior.DefendStructuresOnly:
+                        break;
+                    default:
+                        break;
+                }
             }
         } 
     }
@@ -242,7 +266,7 @@ public class AIPlayer : Player
         }
     }
     Vector3 currentScoutingDestination; 
-    private void PerformAction()
+    private void EconAction()
     {
         UpdateUnbuilt();
         EvaluateNumberOfTypes();

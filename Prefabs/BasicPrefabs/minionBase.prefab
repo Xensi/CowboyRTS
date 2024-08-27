@@ -466,7 +466,7 @@ MonoBehaviour:
   endReachedDistance: 0.1
   whenCloseToDestination: 0
   rvoDensityBehavior:
-    enabled: 1
+    enabled: 0
     densityThreshold: 0.5
     returnAfterBeingPushedAway: 1
     progressAverage: 0

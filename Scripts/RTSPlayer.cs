@@ -198,6 +198,7 @@ public class RTSPlayer : Player
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
         {
             clickedPosition = hit.point;
+            UnitOrdersQueue.Clear();
             foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.minionController != null && item.minionController.IsValidAttacker()) //minion
@@ -295,7 +296,7 @@ public class RTSPlayer : Player
                 actionType = ActionType.Move;
             }
             //finished determining action type
-
+            UnitOrdersQueue.Clear();
             foreach (SelectableEntity selected in selectedEntities)
             {
                 if (selected.minionController != null)
@@ -309,16 +310,16 @@ public class RTSPlayer : Player
                 }
             }
         }
-    }
+    } 
     private void ProcessOrders()
     {
         if (UnitOrdersQueue.Count > 0)
         {
             MinionController orderedUnit = null;
-            UnitOrder order = UnitOrdersQueue[0];
+            UnitOrder order = UnitOrdersQueue[0]; //fetch first order
             if (order != null)
-            {
-                foreach (SelectableEntity item in ownedEntities)
+            { 
+                foreach (SelectableEntity item in ownedEntities) //find the unit with the order
                 {
                     if (item.minionController != null && item.minionController == order.unit)
                     {

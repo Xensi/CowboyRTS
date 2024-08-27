@@ -618,11 +618,11 @@ public class MinionController : NetworkBehaviour
     }
     private void OnDrawGizmos()
     {
-        if (entity.IsMelee())
+        /*if (entity.IsMelee())
         {
             float defaultDetectionRange = 5;
             Gizmos.DrawWireSphere(transform.position, defaultDetectionRange);
-        }
+        }*/
         /*if (!IsOwner)
         {
             foreach (Vector3 loc in nonOwnerRealLocationList)
