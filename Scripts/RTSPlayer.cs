@@ -99,7 +99,7 @@ public class RTSPlayer : Player
     }
     private void MoveCamToSpawn()
     {
-        Vector3 spawn = Global.Instance.playerSpawn[System.Convert.ToInt32(OwnerClientId)].position;
+        Vector3 spawn = playerSpawns.spawnsList[Convert.ToInt32(OwnerClientId)].position;
         camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
     }
     public void UpdateHPText()
@@ -136,26 +136,32 @@ public class RTSPlayer : Player
     private void Awake()
     {
     }
+    private LevelInfo playerSpawns; 
+    private void RetrieveSpawnPositionsList()
+    {
+        playerSpawns = null;
+        playerSpawns = FindFirstObjectByType<LevelInfo>(); 
+    }
     public override void OnNetworkSpawn()
     {
         playerTeamID = System.Convert.ToInt32(OwnerClientId);
         Global.Instance.uninitializedPlayers.Add(this);
+        RetrieveSpawnPositionsList();
         if (IsOwner) //spawn initial minions/buildings  
         {
             inTheGame.Value = true;
             Global.Instance.localPlayer = this;
             Vector3 spawnPosition;
-            if (playerTeamID < Global.Instance.playerSpawn.Count)
+            if (playerTeamID < playerSpawns.spawnsList.Count)
             {
-                spawnPosition = Global.Instance.playerSpawn[playerTeamID].position;
+                spawnPosition = playerSpawns.spawnsList[playerTeamID].position;
             }
             else
             {
                 spawnPosition = new Vector3(UnityEngine.Random.Range(-9, 9), 0, UnityEngine.Random.Range(-9, 9));
             }
 
-            GenericSpawnMinion(spawnPosition, playerFaction.spawnableEntities[0], this);
-            //GenericSpawnMinion(spawn, starterUnitID, this);
+            //GenericSpawnMinion(spawnPosition, playerFaction.spawnableEntities[0], this); 
 
             VolumeProfile profile = Global.Instance.fogVolume.sharedProfile;
             if (profile != null && profile.TryGet(out FogOfWarURP fow))
@@ -273,6 +279,7 @@ public class RTSPlayer : Player
                     else //enemy
                     { //try to target this enemy specifically
                         actionType = ActionType.AttackTarget;
+                        Debug.Log("Trying to attack " + hitEntity.name);
                     }
                 }
                 else if (hitEntity.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral)

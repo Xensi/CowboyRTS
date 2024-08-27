@@ -52,7 +52,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 174441591
+  GlobalObjectIdHash: 1827683345
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -88,12 +88,15 @@ MonoBehaviour:
   harvestedResourceAmount: 0
   interactionTarget: {fileID: 0}
   buildQueue: []
-  interactors: []
+  allMeshes: []
+  unbuiltRenderers: []
+  finishedRenderers: []
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0
   rallyMission: 0
   rallyTarget: {fileID: 0}
   physicalCollider: {fileID: 1740862975100282267}
+  allPhysicalColliders: []
   displayName: name
   desc: desc
   hitPoints:
@@ -105,7 +108,10 @@ MonoBehaviour:
   isHeavy: 0
   fullyBuilt: 0
   isKeystone: 0
+  allowedWorkers: 1
   allowedInteractors: 1
+  workersInteracting: []
+  othersInteracting: []
   buildOffset: {x: 0.5, y: 0, z: 0.5}
   spawnableAtOnce: 1
   spawnableUnits: []
@@ -122,8 +128,6 @@ MonoBehaviour:
   sounds:
   - {fileID: 8300000, guid: 19b2c63a1be878745af73c2bcd27620d, type: 3}
   lineIndicator: {fileID: 0}
-  unbuiltRenderers: []
-  finishedRenderers: []
   damageableMeshes: []
   resourceCollectingMeshes: []
   selectIndicator: {fileID: 1429755578989971349}
@@ -133,18 +137,25 @@ MonoBehaviour:
   RVO: {fileID: 0}
   teamNumber:
     m_InternalValue: 0
+  localTeamNumber: 0
   desiredTeamNumber: 0
   clientIDToSpawnUnder: 0
   aiControlled: 0
+  controllerOfThis: {fileID: 0}
+  fullyBuiltInScene: 0
   initialized: 0
+  abilityToUse: {fileID: 0}
   usedAbilities: []
+  appliedEffects: []
   fogUnit: {fileID: 0}
+  toggleableObject: {fileID: 0}
   visibleInFog: 0
   oldVisibleInFog: 0
   hideFogTeam: 0
   shouldHideInFog: 1
   attackEffects: []
   spawnerThatSpawnedThis: {fileID: 0}
+  deathEffect: {fileID: 1596140512904530975, guid: 67836dd37cc44c24eaf1ccca6de50459, type: 3}
 --- !u!54 &6443730291645010253
 Rigidbody:
   m_ObjectHideFlags: 0

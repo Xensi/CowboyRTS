@@ -25,7 +25,7 @@ public class AIPlayer : Player
         if (!enable) return;
         if (IsOwner) //spawn initial minions/buildings  
         {
-            if (spawnPosition != null) SpawnMinion(spawnPosition.position, playerFaction.spawnableEntities[0]);
+            //if (spawnPosition != null) SpawnMinion(spawnPosition.position, playerFaction.spawnableEntities[0]);
         } 
     }
     public override void Start()
@@ -468,7 +468,7 @@ public class AIPlayer : Player
     public List<SelectableEntity> visibleResources = new();
     private void EvaluateVisibleResources()
     {
-        Debug.Log("Evaluating visible resources");
+        //Debug.Log("Evaluating visible resources");
         visibleResources.Clear();
         FogOfWarTeam fow = FogOfWarTeam.GetTeam(playerTeamID);
         foreach (SelectableEntity item in Global.Instance.harvestableResources)

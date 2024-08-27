@@ -32,8 +32,8 @@ MonoBehaviour:
   directionalAttack: 0
   attackRange: 0.75
   attackDuration: 1.25
-  impactTime: 0.5
-  areaOfEffectRadius: 1.5
+  impactTime: 0
+  areaOfEffectRadius: 0.75
   shouldAggressivelySeekEnemies: 1
   spawnableUnits: []
   spawnableAtOnce: 1

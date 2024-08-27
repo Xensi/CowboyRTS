@@ -9,34 +9,33 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5040608eb03c21941b0df73233e2ec94, type: 3}
-  m_Name: Grave
+  m_Script: {fileID: 11500000, guid: 5b888e0fe913eaf4095ed4e0fccd988e, type: 3}
+  m_Name: Deadeye
   m_EditorClassIdentifier: 
-  productionName: Grave
-  description: Adds 10 population.
-  prefabToSpawn: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
-  goldCost: 100
-  maxHP: 50
+  productionName: Gunslinger
+  description: 
+  prefabToSpawn: {fileID: 6726110510975844004, guid: 1c97fa97d1117814cbf2debcd600bf24, type: 3}
+  goldCost: 30
+  maxHP: 10
   isKeystone: 0
-  consumePopulationAmount: 0
-  raisePopulationLimitBy: 10
+  consumePopulationAmount: 1
+  raisePopulationLimitBy: 0
   shouldHideInFog: 1
-  soundProfile: {fileID: 0}
+  soundProfile: {fileID: 11400000, guid: 29f47e755f09c694b84170e4c7c354cb, type: 2}
   teamType: 0
   constructableBuildings: []
   usableAbilities: []
   depositType: 0
   selfHarvestableType: 1
-  attackType: 0
-  damage: 1
+  attackType: 1
+  damage: 2
   directionalAttack: 0
-  attackRange: 1
-  attackDuration: 1
+  attackRange: 5
+  attackDuration: 2
   impactTime: 0.5
   areaOfEffectRadius: 1
-  shouldAggressivelySeekEnemies: 0
-  spawnableUnits:
-  - {fileID: 11400000, guid: 5482cede677f6c94299d9143b7094d12, type: 2}
+  shouldAggressivelySeekEnemies: 1
+  spawnableUnits: []
   spawnableAtOnce: 1
   isHarvester: 0
   harvestCapacity: 5
@@ -44,7 +43,6 @@ MonoBehaviour:
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  needsConstructing: 1
-  buildOffset: {x: 0.25, y: 0, z: 0.25}
-  extendable: 0
-  rotatable: 1
+  spawnTimeCost: 10
+  isHeavy: 0
+  canAttackWhileMoving: 0

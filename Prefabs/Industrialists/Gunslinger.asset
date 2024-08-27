@@ -10,41 +10,39 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b888e0fe913eaf4095ed4e0fccd988e, type: 3}
-  m_Name: RichLich
+  m_Name: Gunslinger
   m_EditorClassIdentifier: 
-  productionName: Lich
-  description: Protect at all costs.
-  prefabToSpawn: {fileID: 277787794319671239, guid: 27bf33d358ef0194aa8fa42cf69b6502, type: 3}
-  goldCost: 20
-  maxHP: 200
-  isKeystone: 1
-  consumePopulationAmount: 0
+  productionName: Gunslinger
+  description: 
+  prefabToSpawn: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+  goldCost: 30
+  maxHP: 6
+  isKeystone: 0
+  consumePopulationAmount: 1
   raisePopulationLimitBy: 0
   shouldHideInFog: 1
   soundProfile: {fileID: 11400000, guid: 29f47e755f09c694b84170e4c7c354cb, type: 2}
   teamType: 0
   constructableBuildings: []
   usableAbilities: []
-  depositType: 1
+  depositType: 0
   selfHarvestableType: 1
   attackType: 1
-  damage: 5
+  damage: 1
   directionalAttack: 0
   attackRange: 5
   attackDuration: 2
   impactTime: 0.5
   areaOfEffectRadius: 1
-  shouldAggressivelySeekEnemies: 0
-  spawnableUnits:
-  - {fileID: 11400000, guid: 04ae84b5d643fbc498358c09db111adb, type: 2}
-  - {fileID: 11400000, guid: 5482cede677f6c94299d9143b7094d12, type: 2}
+  shouldAggressivelySeekEnemies: 1
+  spawnableUnits: []
   spawnableAtOnce: 1
-  isHarvester: 1
-  harvestCapacity: 1
+  isHarvester: 0
+  harvestCapacity: 5
   depositRange: 1
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  spawnTimeCost: 5
-  isHeavy: 1
+  spawnTimeCost: 10
+  isHeavy: 0
   canAttackWhileMoving: 0

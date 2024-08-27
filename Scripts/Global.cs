@@ -14,8 +14,7 @@ public class Global : NetworkBehaviour
     public List<Material> colors;
     public List<Color> teamColors;
     public List<Color> aiTeamColors;
-    public List<Faction> factions;
-    public List<Transform> playerSpawn;
+    public List<Faction> factions; 
     public List<Button> productionButtons;
     public Material transparent;
     public Material blocked;
@@ -41,7 +40,6 @@ public class Global : NetworkBehaviour
     public GameObject singleUnitInfoParent;
     public TMP_Text popText;
     public Volume fogVolume;
-    public List<SelectableEntity> allFactionEntities = new();
     public GraphUpdateScene graphUpdateScenePrefab;
     public int maxMapSize = 25; //radius
     public float allowedNonOwnerError = 1.5f; //should be greater than real loc threshold
@@ -63,8 +61,10 @@ public class Global : NetworkBehaviour
     public List<RTSPlayer> initializedPlayers = new();
     public List<AIPlayer> aiTeamControllers = new();
     public List<Player> allPlayers = new();
-    public Grid grid; 
+    public Grid grid;
 
+    public List<SelectableEntity> allFactionEntities = new();
+    public List<SelectableEntity> enemyEntities = new();
     //Minion sound profile mapping:
     // 0: spawn
     // 1: damage
@@ -144,7 +144,10 @@ public class Global : NetworkBehaviour
     {
         InitializePlayers();
         if (!playerHasWon) CheckIfAPlayerHasWon();
-
+        CleanEntityLists();
+    }
+    private void CleanEntityLists()
+    {
         if (allFactionEntities.Count > 0)
         {
             if (indexer >= Instance.allFactionEntities.Count)
@@ -159,7 +162,22 @@ public class Global : NetworkBehaviour
             indexer++;
             if (indexer >= allFactionEntities.Count) indexer = 0;
         }
+        if (enemyEntities.Count > 0)
+        {
+            if (enemyIndexer >= Instance.enemyEntities.Count)
+            {
+                enemyIndexer = Instance.enemyEntities.Count - 1;
+            }
+            SelectableEntity entity = enemyEntities[enemyIndexer];
+            if (entity == null || !entity.alive)
+            {
+                enemyEntities.RemoveAt(enemyIndexer);
+            }
+            enemyIndexer++;
+            if (enemyIndexer >= enemyEntities.Count) enemyIndexer = 0;
+        }
     }
+    private int enemyIndexer = 0;
     public bool playerHasWon = false;
     private void InitializePlayers()
     {

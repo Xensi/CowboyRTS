@@ -6,6 +6,8 @@ using Pathfinding.RVO;
 using FoW;
 using static TargetedEffects;
 using System.Linq;
+using System;
+using static UnityEditor.PlayerSettings;
 public class SelectableEntity : NetworkBehaviour
 {
     [HideInInspector] public bool fakeSpawn = false;
@@ -65,10 +67,10 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public bool isBuildIndicator = false;
     [HideInInspector] public bool tryingToTeleport = false;
     [HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
-    public SelectableEntity interactionTarget;
+    [HideInInspector] public SelectableEntity interactionTarget;
 
-    public List<FactionUnit> buildQueue;
-    public MeshRenderer[] allMeshes;
+    [HideInInspector] public List<FactionUnit> buildQueue;
+    [HideInInspector] public MeshRenderer[] allMeshes;
     public MeshRenderer[] unbuiltRenderers;
     public MeshRenderer[] finishedRenderers;
     //when fog of war changes, check if we should hide or show attack effects
@@ -104,7 +106,7 @@ public class SelectableEntity : NetworkBehaviour
     public EntityTypes entityType = EntityTypes.Melee;
     [HideInInspector]
     public bool isHeavy = false; //heavy units can't garrison into pallbearers
-    public bool fullyBuilt = true; //[HideInInspector] 
+    [HideInInspector] public bool fullyBuilt = true; //[HideInInspector] 
     [HideInInspector]
     public bool isKeystone = false;
     public int allowedWorkers = 1; //how many can build/repair/harvest at a time
@@ -159,16 +161,16 @@ public class SelectableEntity : NetworkBehaviour
     public List<MeshRenderer> teamRenderers;
     private DynamicGridObstacle obstacle;
     [HideInInspector] public RVOController RVO;
-    public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
+    [HideInInspector] public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); //negative team numbers are AI controlled
 
-    public int localTeamNumber = 0;
+    [HideInInspector] public int localTeamNumber = 0;
 
-    public sbyte desiredTeamNumber = 0; //only matters if negative
+    [HideInInspector] public sbyte desiredTeamNumber = 0; //only matters if negative
     #endregion
     #region NetworkSpawn 
     [HideInInspector] public byte clientIDToSpawnUnder = 0;
-    public bool aiControlled = false;
+    [HideInInspector] public bool aiControlled = false;
     private Rigidbody rigid;
     //private bool hasRegisteredRallyMission = false;
     private List<Material> savedMaterials = new();
@@ -220,18 +222,6 @@ public class SelectableEntity : NetworkBehaviour
                 }
             }
         }
-    }
-    public bool CanProduceUnits()
-    {
-        return spawnableUnits.Length > 0;
-    }
-    public bool CanConstruct()
-    {
-        return constructableBuildings.Length > 0;
-    }
-    public bool HasResourcesToDeposit()
-    {
-        return harvestedResourceAmount > 0;
     }
     private void Initialize()
     {
@@ -308,14 +298,22 @@ public class SelectableEntity : NetworkBehaviour
         {
             FactionBuilding factionBuilding = factionEntity as FactionBuilding;
             buildOffset = factionBuilding.buildOffset;
-            fullyBuilt = !factionBuilding.needsConstructing;
-            if (factionBuilding.needsConstructing)
+            if (fullyBuiltInScene)
             {
-                startingHP = 0;
+                fullyBuilt = false;
+                startingHP = maxHP; 
             }
             else
-            {
-                startingHP = maxHP;
+            { 
+                fullyBuilt = !factionBuilding.needsConstructing;
+                if (factionBuilding.needsConstructing)
+                {
+                    startingHP = 0;
+                }
+                else
+                {
+                    startingHP = maxHP;
+                }
             }
         }
         else if (factionEntity is FactionUnit)
@@ -325,7 +323,8 @@ public class SelectableEntity : NetworkBehaviour
             if (minionController != null) minionController.canMoveWhileAttacking = factionUnit.canAttackWhileMoving;
             startingHP = maxHP;
         }
-    } 
+    }
+    public bool fullyBuiltInScene = false; //set to true to override needs constructing value
     public bool IsDamaged()
     {
         return hitPoints.Value < maxHP;
@@ -337,7 +336,7 @@ public class SelectableEntity : NetworkBehaviour
         InitializeEntityInfo();
         initialized = true;
     }
-    public bool initialized = false;
+    [HideInInspector] public bool initialized = false;
     public bool CanHarvest()
     {
         return isHarvester;
@@ -364,53 +363,75 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (IsOwner)
         {
-            if (desiredTeamNumber < 0) //AI controlled
+            if (controllerOfThis != null) // placed in scene manually
             {
-                teamNumber.Value = desiredTeamNumber;
-                if (teamType == TeamBehavior.OwnerTeam)
+                teamNumber.Value = (sbyte)controllerOfThis.playerTeamID;
+                if (controllerOfThis is AIPlayer)
                 {
-                    AIPlayer AIController = Global.Instance.aiTeamControllers[Mathf.Abs(desiredTeamNumber) - 1];
-                    AIController.ownedEntities.Add(this);
-                    AIController.ownedMinions.Add(minionController);
-                    if (IsNotYetBuilt())
-                    {
-                        AIController.unbuiltStructures.Add(this);
-                    }
-                    controllerOfThis = AIController;
-                }
-                //fogUnit.enabled = false;
+                    if (teamType == TeamBehavior.OwnerTeam)
+                    { 
+                        controllerOfThis.ownedEntities.Add(this);
+                        controllerOfThis.ownedMinions.Add(minionController);
+                        if (IsNotYetBuilt())
+                        {
+                            controllerOfThis.unbuiltStructures.Add(this);
+                        }
+                    } 
+                } 
             }
-            else //player controlled
-            {
-                teamNumber.Value = (sbyte)OwnerClientId;
-                if (teamType == TeamBehavior.OwnerTeam)
+            else
+            { 
+                if (desiredTeamNumber < 0) //AI controlled
                 {
-                    RTSPlayer playerController = Global.Instance.localPlayer;
-                    playerController.ownedEntities.Add(this);
-                    playerController.ownedMinions.Add(minionController);
-                    playerController.lastSpawnedEntity = this;
-                    controllerOfThis = playerController;
-
-                    if (factionEntity.constructableBuildings.Length > 0)
+                    teamNumber.Value = desiredTeamNumber;
+                    if (teamType == TeamBehavior.OwnerTeam)
                     {
-                        playerController.ownedBuilders.Add(minionController);
+                        if (controllerOfThis == null)
+                        {
+                            AIPlayer AIController = Global.Instance.aiTeamControllers[Mathf.Abs(desiredTeamNumber) - 1];
+                            controllerOfThis = AIController;
+                        }
+                        controllerOfThis.ownedEntities.Add(this);
+                        controllerOfThis.ownedMinions.Add(minionController);
+                        if (IsNotYetBuilt())
+                        {
+                            controllerOfThis.unbuiltStructures.Add(this);
+                        }
                     }
-
-                    if (IsNotYetBuilt())
-                    {
-                        playerController.unbuiltStructures.Add(this);
-                    }
-                    /*if (!fullyBuilt)
-                    {
-                        RequestBuilders();
-                    }*/
+                    //fogUnit.enabled = false;
                 }
-            }
+                else //player controlled
+                {
+                    teamNumber.Value = (sbyte)OwnerClientId;
+                    if (teamType == TeamBehavior.OwnerTeam)
+                    {
+                        RTSPlayer playerController = Global.Instance.localPlayer;
+                        playerController.ownedEntities.Add(this);
+                        playerController.ownedMinions.Add(minionController);
+                        playerController.lastSpawnedEntity = this;
+                        controllerOfThis = playerController;
+
+                        if (factionEntity.constructableBuildings.Length > 0)
+                        {
+                            playerController.ownedBuilders.Add(minionController);
+                        }
+
+                        if (IsNotYetBuilt())
+                        {
+                            playerController.unbuiltStructures.Add(this);
+                        }
+                        /*if (!fullyBuilt)
+                        {
+                            RequestBuilders();
+                        }*/
+                    }
+                }
+            } 
             //place effect dependent on "controller of this" being defined after this line
             if (controllerOfThis != null)
             {
                 if (fogUnit != null) fogUnit.team = controllerOfThis.allegianceTeamID;
-                Debug.Log("Setting fog unit to: " + controllerOfThis.allegianceTeamID + " with playerteamID: " + controllerOfThis.playerTeamID); 
+                //Debug.Log("Setting fog unit to: " + controllerOfThis.allegianceTeamID + " with playerteamID: " + controllerOfThis.playerTeamID); 
             }
 
             if (teamType == TeamBehavior.OwnerTeam)
@@ -498,6 +519,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (rallyVisual != null) rallyVisual.enabled = false;
         if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allFactionEntities.Add(this);
+        if (controllerOfThis != null && controllerOfThis.allegianceTeamID != Global.Instance.localPlayer.allegianceTeamID) Global.Instance.enemyEntities.Add(this);
         //Debug.Log("Team Value" + teamNumber.Value); //team number is unchanged during initialization :(
     }
     private void SetInitialVisuals()
@@ -635,7 +657,7 @@ public class SelectableEntity : NetworkBehaviour
             minionController.SwitchState(MinionController.MinionStates.UsingAbility);
         }
     }
-    public FactionAbility abilityToUse;
+    [HideInInspector] public FactionAbility abilityToUse;
     public void ActivateAbility(FactionAbility ability)
     {
         Debug.Log("Activating ability: " + ability.name);
@@ -791,8 +813,8 @@ public class SelectableEntity : NetworkBehaviour
         }
         return false;
     }
-    public List<AbilityOnCooldown> usedAbilities = new();
-    public List<TargetedEffects> appliedEffects = new();
+    [HideInInspector] public List<AbilityOnCooldown> usedAbilities = new();
+    [HideInInspector] public List<TargetedEffects> appliedEffects = new();
     private void UpdateUsedAbilities()
     {
         for (int i = usedAbilities.Count - 1; i >= 0; i--)
@@ -991,7 +1013,7 @@ public class SelectableEntity : NetworkBehaviour
                         else
                         {
                             footstepCount = 0;
-                            Global.Instance.PlayClipAtPoint(Global.Instance.footsteps[Random.Range(0, Global.Instance.footsteps.Length)], transform.position, .01f);
+                            Global.Instance.PlayClipAtPoint(Global.Instance.footsteps[UnityEngine.Random.Range(0, Global.Instance.footsteps.Length)], transform.position, .01f);
                         }
                     }
                 }
@@ -1062,10 +1084,21 @@ public class SelectableEntity : NetworkBehaviour
 
         foreach (MeshRenderer item in allMeshes)
         {
-            if (item != null && !teamRenderers.Contains(item))
+            if (IsStructure())
             {
-                item.material.color = Color.gray;
+                if (item != null)
+                {
+                    item.enabled = false;
+                }
             }
+            else
+            { 
+                if (item != null && !teamRenderers.Contains(item))
+                {
+                    item.material.color = Color.gray;
+                }
+            }
+
         }
         if (minionController != null)
         {
@@ -1074,12 +1107,17 @@ public class SelectableEntity : NetworkBehaviour
 
             Invoke(nameof(Die), deathDuration);
         }
-        else
+        else 
         {
             //StructureCosmeticDestruction();
             Invoke(nameof(Die), deathDuration); //structures cannot be deleted immediately because we need some time
             //for values to updated. better method is to destroy cosmetically
         }
+        if (deathEffect != null)
+        {  
+            Instantiate(deathEffect, transform.position, Quaternion.identity);
+        }
+        enabled = false;
     }
     private void CheckGameVictoryState()
     {
@@ -1319,7 +1357,7 @@ public class SelectableEntity : NetworkBehaviour
             }
             for (int i = 0; i < attackEffects.Length; i++)
             {
-                attackEffects[i].enabled = showAttackEffects && visibleInFog;
+                if (attackEffects[i] != null) attackEffects[i].enabled = showAttackEffects && visibleInFog; 
             }
         }
         else
@@ -1371,7 +1409,7 @@ public class SelectableEntity : NetworkBehaviour
         }
     }
 
-    bool hideFogTeamSet = false;
+    //bool hideFogTeamSet = false;
 
 
     private void StructureCosmeticDestruction()
@@ -1617,10 +1655,14 @@ public class SelectableEntity : NetworkBehaviour
                         { 
                             //tell blocker to get out of the way.
                             float randRadius = 1;
-                            Vector2 randCircle = Random.insideUnitCircle * randRadius;
+                            Vector2 randCircle = UnityEngine.Random.insideUnitCircle * randRadius;
                             Vector3 rand = target.transform.position + new Vector3(randCircle.x, 0, randCircle.y);
                             target.minionController.MoveTo(rand);
                             //Debug.Log("trying to move blocking unit to: " + rand);
+                        }
+                        else
+                        {
+                            Debug.Log("Spawning of " + name + " blocked");
                         }
                     }
                     else
@@ -1702,6 +1744,7 @@ public class SelectableEntity : NetworkBehaviour
             }
         }*/
     }
+    public GameObject deathEffect = null;
     public void UpdatePathIndicator(Vector3[] list)
     {
         lineIndicator.positionCount = list.Length;
@@ -1788,5 +1831,17 @@ public class SelectableEntity : NetworkBehaviour
             selected = false;
         }
         UpdateIndicator();
+    }
+    public bool CanProduceUnits()
+    {
+        return spawnableUnits.Length > 0;
+    }
+    public bool CanConstruct()
+    {
+        return constructableBuildings.Length > 0;
+    }
+    public bool HasResourcesToDeposit()
+    {
+        return harvestedResourceAmount > 0;
     }
 }

@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5979901183641035642}
   - component: {fileID: 555440906972586300}
-  m_Layer: 7
+  m_Layer: 10
   m_Name: line
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -237,6 +237,7 @@ MonoBehaviour:
   rallyMission: 0
   rallyTarget: {fileID: 0}
   physicalCollider: {fileID: 0}
+  allPhysicalColliders: []
   displayName: name
   desc: desc
   hitPoints:
@@ -283,15 +284,20 @@ MonoBehaviour:
   clientIDToSpawnUnder: 0
   aiControlled: 0
   controllerOfThis: {fileID: 0}
+  fullyBuiltInScene: 0
   initialized: 0
+  abilityToUse: {fileID: 0}
   usedAbilities: []
+  appliedEffects: []
   fogUnit: {fileID: 0}
+  toggleableObject: {fileID: 0}
   visibleInFog: 0
   oldVisibleInFog: 0
   hideFogTeam: 0
   shouldHideInFog: 1
   attackEffects: []
   spawnerThatSpawnedThis: {fileID: 0}
+  deathEffect: {fileID: 0}
 --- !u!114 &1556607826778985850
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -334,11 +340,18 @@ MonoBehaviour:
   realLocation:
     m_InternalValue: {x: 0, y: 0}
   destination: {x: 0, y: 0, z: 0}
+  canReceiveNewCommands: 1
   manualControlPathfinding: 0
   nonOwnerRealLocationList: []
-  shouldAutoSeekOutEnemies: 1
+  lastOrder:
+    unit: {fileID: 0}
+    action: 0
+    target: {fileID: 0}
+    targetPosition: {x: 0, y: 0, z: 0}
+  shouldAggressivelySeekEnemies: 1
   lastCommand:
     m_InternalValue: 0
+  sqrDistToTargetEnemy: Infinity
 --- !u!54 &7586105387906439370
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -453,9 +466,9 @@ MonoBehaviour:
   endReachedDistance: 0.1
   whenCloseToDestination: 0
   rvoDensityBehavior:
-    enabled: 0
+    enabled: 1
     densityThreshold: 0.5
-    returnAfterBeingPushedAway: 0
+    returnAfterBeingPushedAway: 1
     progressAverage: 0
     lastJobDensityResult: 0
   centerOffsetCompatibility: NaN

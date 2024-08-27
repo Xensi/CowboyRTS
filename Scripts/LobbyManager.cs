@@ -106,13 +106,17 @@ public class LobbyManager : MonoBehaviour
     public UnityTransport singleplayerTransport;
     public void StartSinglePlayerGame()
     {
+        LevelManager.Instance.LoadLevel(LevelManager.Instance.LEVEL1, StartSinglePlayerGameCallback); 
+    }
+    private void StartSinglePlayerGameCallback()
+    {
         if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
         {
             NetworkManager.Singleton.NetworkConfig.NetworkTransport = singleplayerTransport;
             NetworkManager.Singleton.StartHost();
             ChangeGameUIStatus(true);
             ChangeLobbyUIStatus(false);
-        }
+        } 
     }
     public void JoinLocalHost()
     {

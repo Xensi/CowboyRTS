@@ -6,13 +6,11 @@ AnimatorOverrideController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: gunslinger
+  m_Name: humanGunslinger
   m_Controller: {fileID: 9100000, guid: c71b7ba23e3d5924792e0dd2c40bc864, type: 2}
   m_Clips:
-  - m_OriginalClip: {fileID: 7400000, guid: a9aa2ad668eb42f4bae1697e38b6995c, type: 2}
-    m_OverrideClip: {fileID: 1963079803359675471, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
   - m_OriginalClip: {fileID: -623603649343465320, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
-    m_OverrideClip: {fileID: -623603649343465320, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+    m_OverrideClip: {fileID: -623603649343465320, guid: 3ea6c2f6937005c468a8dcde1dd4eb12, type: 3}
   - m_OriginalClip: {fileID: -8206857311389296499, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
     m_OverrideClip: {fileID: -8206857311389296499, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
   - m_OriginalClip: {fileID: -626948583029366203, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
@@ -22,4 +20,4 @@ AnimatorOverrideController:
   - m_OriginalClip: {fileID: -4807389317913785953, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
     m_OverrideClip: {fileID: -4807389317913785953, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
   - m_OriginalClip: {fileID: 723096430288179899, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
-    m_OverrideClip: {fileID: -4885119122951247324, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+    m_OverrideClip: {fileID: -3692877260685233286, guid: 3ea6c2f6937005c468a8dcde1dd4eb12, type: 3}
