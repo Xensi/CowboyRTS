@@ -30,7 +30,7 @@ MonoBehaviour:
   attackType: 2
   damage: 10
   directionalAttack: 0
-  attackRange: 0.75
+  attackRange: 0.25
   attackDuration: 1.25
   impactTime: 0
   areaOfEffectRadius: 0.75

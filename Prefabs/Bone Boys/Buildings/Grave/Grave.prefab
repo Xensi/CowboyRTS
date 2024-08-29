@@ -426,6 +426,10 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 2663820948
       objectReference: {fileID: 0}
+    - target: {fileID: 4564327094069148930, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0.75
+      objectReference: {fileID: 0}
     - target: {fileID: 4776985718830456247, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: uniqueID
       value: 2541734739248109926

@@ -65,6 +65,8 @@ public class Global : NetworkBehaviour
 
     public List<SelectableEntity> allFactionEntities = new();
     public List<SelectableEntity> enemyEntities = new();
+    public Canvas gameCanvas;
+
     //Minion sound profile mapping:
     // 0: spawn
     // 1: damage

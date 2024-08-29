@@ -1838,7 +1838,7 @@ public class MinionController : NetworkBehaviour
         entity.SimplePlaySound(1); //play impact sound 
         if (target != null && target.IsSpawned)
         {
-            int actualHarvested = Mathf.Clamp(harvestAmount, 0, target.hitPoints.Value); //max amount we can harvest clamped by hitpoints remaining
+            int actualHarvested = Mathf.Clamp(harvestAmount, 0, target.currentHP.Value); //max amount we can harvest clamped by hitpoints remaining
             int diff = entity.harvestCapacity - entity.harvestedResourceAmount;
             actualHarvested = Mathf.Clamp(actualHarvested, 0, diff); //max amount we can harvest clamped by remaining carrying capacity
             if (IsServer)

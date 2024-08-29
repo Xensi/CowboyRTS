@@ -56,6 +56,8 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public NetworkVariable<bool> isTargetable = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
     #region Hidden
+
+    public ProgressBar healthBar;
     public FactionEntity factionEntity;
     [HideInInspector] public MinionController minionController;
     [HideInInspector] public bool selected = false;
@@ -93,7 +95,7 @@ public class SelectableEntity : NetworkBehaviour
     //[TextArea(2, 4)]
     [HideInInspector]
     public string desc = "desc";
-    public NetworkVariable<short> hitPoints = new();
+    public NetworkVariable<short> currentHP = new();
 
     //[SerializeField] 
     private short startingHP = 10; //buildings usually don't start with full HP
@@ -327,15 +329,23 @@ public class SelectableEntity : NetworkBehaviour
     public bool fullyBuiltInScene = false; //set to true to override needs constructing value
     public bool IsDamaged()
     {
-        return hitPoints.Value < maxHP;
+        return currentHP.Value < maxHP;
     }
     private void Awake() //awake, networkspawn, start; verified through testing
     {
         //Debug.Log("Awake");
         Initialize();
         InitializeEntityInfo();
+        RetainHealthBarPosition();
         initialized = true;
     }
+    private Vector3 healthBarOffset;
+    private void RetainHealthBarPosition()
+    {
+        healthBarOffset = healthBar.transform.position - transform.position;
+    }
+
+
     [HideInInspector] public bool initialized = false;
     public bool CanHarvest()
     {
@@ -438,7 +448,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 ChangePopulation(consumePopulationAmount);
             }
-            if (hitPoints.Value <= 0 && !constructionBegun) //buildings begun as untargetable (by enemies)
+            if (currentHP.Value <= 0 && !constructionBegun) //buildings begun as untargetable (by enemies)
             {
                 isTargetable.Value = false;
             }
@@ -449,9 +459,9 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (IsServer)
         {
-            hitPoints.Value = startingHP;
+            currentHP.Value = startingHP;
         }
-        hitPoints.OnValueChanged += OnHitPointsChanged;
+        currentHP.OnValueChanged += OnHitPointsChanged;
         damagedThreshold = (sbyte)(maxHP / 2);
         rallyPoint = transform.position;
 
@@ -520,7 +530,9 @@ public class SelectableEntity : NetworkBehaviour
         if (rallyVisual != null) rallyVisual.enabled = false;
         if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allFactionEntities.Add(this);
         if (controllerOfThis != null && controllerOfThis.allegianceTeamID != Global.Instance.localPlayer.allegianceTeamID) Global.Instance.enemyEntities.Add(this);
-        //Debug.Log("Team Value" + teamNumber.Value); //team number is unchanged during initialization :(
+
+        healthBar.entity = this;
+        healthBar.SetVisible(false);
     }
     private void SetInitialVisuals()
     {
@@ -694,7 +706,7 @@ public class SelectableEntity : NetworkBehaviour
                         }
                         break;
                     case StatusEffect.HP:
-                        variableToChange = target.hitPoints.Value;
+                        variableToChange = target.currentHP.Value;
                         break;
                 }
                 float attackAnimMultiplier = 1;
@@ -741,7 +753,7 @@ public class SelectableEntity : NetworkBehaviour
                         break;
                     case StatusEffect.HP: 
                         variableToChange = Mathf.Clamp(variableToChange, 0, maxHP); 
-                        hitPoints.Value = (short)variableToChange;
+                        currentHP.Value = (short)variableToChange;
                         Debug.Log("setting hitpoints to: " + variableToChange);
                         break;
                     case StatusEffect.CancelInProgress:
@@ -893,7 +905,7 @@ public class SelectableEntity : NetworkBehaviour
     bool constructionBegun = false;
     private void DetectIfBuilt()
     {
-        if (!fullyBuilt && hitPoints.Value >= maxHP) //detect if built
+        if (!fullyBuilt && currentHP.Value >= maxHP) //detect if built
         {
             BecomeFullyBuilt();
         }
@@ -911,7 +923,7 @@ public class SelectableEntity : NetworkBehaviour
         {
             minionController.SwitchState(MinionController.MinionStates.Die);
         }
-        if (hitPoints.Value <= 0 && constructionBegun && alive) //detect death if "present" in game world ie not ghost/corpse
+        if (currentHP.Value <= 0 && constructionBegun && alive) //detect death if "present" in game world ie not ghost/corpse
         {
             alive = false;
             PrepareForEntityDestruction();
@@ -923,7 +935,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void DetectIfShouldUnghost()
     {
-        if (!isBuildIndicator && !constructionBegun && hitPoints.Value > 0)
+        if (!isBuildIndicator && !constructionBegun && currentHP.Value > 0)
         {
             constructionBegun = true;
             Unghost();
@@ -980,6 +992,22 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
+    private Camera mainCam;
+    private void UpdateHealthBarPosition()
+    {
+        if (mainCam == null) mainCam = Global.Instance.localPlayer.mainCam;
+        if (healthBar != null)
+        {
+            healthBar.barParent.transform.position = transform.position + healthBarOffset;
+            healthBar.barParent.transform.LookAt(transform.position + mainCam.transform.rotation * Vector3.forward,
+                mainCam.transform.rotation * Vector3.up);
+        }
+    }
+    
+    void LateUpdate() //Orient the camera after all movement is completed this frame to avoid jittering
+    {
+        UpdateHealthBarPosition();
+    }
     private float attackEffectTimer = 0;
     private void FixedUpdate()
     {
@@ -1032,7 +1060,7 @@ public class SelectableEntity : NetworkBehaviour
     [ServerRpc]
     public void ChangeHitPointsServerRpc(sbyte value)
     {
-        hitPoints.Value = value;
+        currentHP.Value = value;
     }
     private void FixPopulationOnDeath()
     {
@@ -1041,6 +1069,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void PrepareForEntityDestruction()
     {
+        healthBar.Delete();
         Global.Instance.allFactionEntities.Remove(this);
         if (IsOwner)
         {
@@ -1138,6 +1167,7 @@ public class SelectableEntity : NetworkBehaviour
         {
             Global.Instance.localPlayer.UpdateHPText();
         }
+        if (healthBar != null) healthBar.SetRatioBasedOnHP(current, maxHP);
     }
     public override void OnNetworkDespawn()
     {
@@ -1252,16 +1282,16 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void TakeDamage(sbyte damage) //always managed by SERVER
     {
-        hitPoints.Value -= damage;
+        currentHP.Value -= damage;
     }
     public void Harvest(sbyte amount) //always managed by SERVER
     {
-        hitPoints.Value -= amount;
+        currentHP.Value -= amount;
     }
     private sbyte damagedThreshold;
     private void CheckIfDamaged()
     {
-        if (hitPoints.Value <= damagedThreshold)
+        if (currentHP.Value <= damagedThreshold)
         {
             damaged = true;
             for (int i = 0; i < damageableMeshes.Length; i++)
@@ -1276,7 +1306,7 @@ public class SelectableEntity : NetworkBehaviour
     public void BuildThis(sbyte delta)
     {
         //hitPoints.Value += delta;
-        hitPoints.Value = (sbyte)Mathf.Clamp(hitPoints.Value + delta, 0, maxHP);
+        currentHP.Value = (sbyte)Mathf.Clamp(currentHP.Value + delta, 0, maxHP);
     }
     /*public void OnTriggerEnter(Collider other)
     {
@@ -1343,7 +1373,7 @@ public class SelectableEntity : NetworkBehaviour
     public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
     public bool shouldHideInFog = true; // gold should not be hidden
     private bool oneTimeForceUpdateFog = false;
-    private void UpdateVisibilityFromFogOfWar()
+    private void UpdateVisibilityFromFogOfWar() //hide in fog
     {
         if (FogHideable())
         {
@@ -1375,6 +1405,7 @@ public class SelectableEntity : NetworkBehaviour
                 {
                     if (finishedRenderers[i] != null) finishedRenderers[i].enabled = val;
                 }
+                healthBar.SetVisible(val);
             }
             else
             {
@@ -1382,6 +1413,7 @@ public class SelectableEntity : NetworkBehaviour
                 {
                     if (unbuiltRenderers[i] != null) unbuiltRenderers[i].enabled = val;
                 }
+                healthBar.SetVisible(val);
             }
         }
         else
@@ -1390,6 +1422,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 if (allMeshes[i] != null) allMeshes[i].enabled = val;
             }
+            healthBar.SetVisible(val);
         }
     }
     private bool FogHideable()
@@ -1476,6 +1509,7 @@ public class SelectableEntity : NetworkBehaviour
     private readonly float deathDuration = 10;
     private void Die()
     {
+
         if (IsOwner) //only the owner does this
         {
             Global.Instance.localPlayer.ownedEntities.Remove(this);

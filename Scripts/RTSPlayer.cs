@@ -106,7 +106,7 @@ public class RTSPlayer : Player
     {
         if (selectedEntities.Count == 1)
         {
-            Global.Instance.hpText.text = "HP: " + selectedEntities[0].hitPoints.Value + "/" + selectedEntities[0].maxHP;
+            Global.Instance.hpText.text = "HP: " + selectedEntities[0].currentHP.Value + "/" + selectedEntities[0].maxHP;
         }
     }
     private void OnDisable()
@@ -177,8 +177,21 @@ public class RTSPlayer : Player
         allegianceTeamID = playerTeamID;
     }
     private bool MouseOverUI()
-    {
-        return EventSystem.current.IsPointerOverGameObject();
+    { 
+        PointerEventData eventDataCurrentPosition = new PointerEventData(EventSystem.current);
+        eventDataCurrentPosition.position = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
+        List<RaycastResult> results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(eventDataCurrentPosition, results);
+        foreach (RaycastResult item in results)
+        {
+            if (item.gameObject.layer == LayerMask.NameToLayer("UI"))
+            {
+                return true;
+            }
+        }
+        return false;
+
+        //return EventSystem.current.IsPointerOverGameObject();
     }
     private void CameraMove()
     {
@@ -1587,7 +1600,7 @@ public class RTSPlayer : Player
                 Global.Instance.singleUnitInfoParent.SetActive(true);
                 Global.Instance.nameText.text = infoSelectedEntity.displayName;
                 Global.Instance.descText.text = infoSelectedEntity.desc;
-                Global.Instance.hpText.text = "HP: " + infoSelectedEntity.hitPoints.Value + "/" + infoSelectedEntity.maxHP;
+                Global.Instance.hpText.text = "HP: " + infoSelectedEntity.currentHP.Value + "/" + infoSelectedEntity.maxHP;
                 if (infoSelectedEntity.isHarvester)
                 {
                     Global.Instance.resourcesParent.SetActive(true);
@@ -1605,7 +1618,7 @@ public class RTSPlayer : Player
                 Global.Instance.singleUnitInfoParent.SetActive(true);
                 Global.Instance.nameText.text = selectedEntities[0].displayName;
                 Global.Instance.descText.text = selectedEntities[0].desc;
-                Global.Instance.hpText.text = "HP: " + selectedEntities[0].hitPoints.Value + "/" + selectedEntities[0].maxHP;
+                Global.Instance.hpText.text = "HP: " + selectedEntities[0].currentHP.Value + "/" + selectedEntities[0].maxHP;
                 if (selectedEntities[0].isHarvester)
                 {
                     Global.Instance.resourcesParent.SetActive(true);
@@ -2028,9 +2041,9 @@ public class RTSPlayer : Player
     private void PredictAndRequestDamage(sbyte damage, SelectableEntity enemy)
     {
         //if we know that this attack will kill that unit, we can kill it client side
-        if (damage >= enemy.hitPoints.Value)
+        if (damage >= enemy.currentHP.Value)
         {
-            Debug.Log("can kill early" + enemy.hitPoints.Value);
+            Debug.Log("can kill early" + enemy.currentHP.Value);
             enemy.PrepareForEntityDestruction();
         }
         Global.Instance.localPlayer.RequestDamageServerRpc(damage, enemy);
