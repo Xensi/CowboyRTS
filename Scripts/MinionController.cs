@@ -4,11 +4,7 @@ using UnityEngine;
 using Unity.Netcode;
 using Pathfinding;
 using FoW;
-//using static UnityEditorInternal.VersionControl.ListControl;
-using static UnityEngine.GraphicsBuffer;
-using static SelectableEntity;
-using static UnityEditor.Experimental.GraphView.GraphView;
-using static UnityEngine.UIElements.UxmlAttributeDescription;
+using System.Linq; 
 using static RTSPlayer;
 //using UnityEngine.Rendering;
 //using UnityEngine.Windows;
@@ -70,7 +66,7 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] public bool attackMoving = false;
     //[HideInInspector] public bool followingMoveOrder = false;
     [HideInInspector] public Vector3 orderedDestination; //remembers where player told minion to go
-    private float basicallyIdleInstances = 0;
+    private float effectivelyIdleInstances = 0;
     private readonly int idleThreshold = 3; //seconds of being stuck
     public float attackReadyTimer = 0;
     private float change;
@@ -410,13 +406,13 @@ public class MinionController : NetworkBehaviour
     }
     private void UpdateIdleCount()
     {
-        if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
+        if (change <= walkAnimThreshold && effectivelyIdleInstances <= idleThreshold)
         {
-            basicallyIdleInstances += Time.deltaTime;
+            effectivelyIdleInstances += Time.deltaTime;
         }
         if (change > walkAnimThreshold)
         {
-            basicallyIdleInstances = 0;
+            effectivelyIdleInstances = 0;
         }
     }
     private void NonOwnerUpdateAnimationBasedOnContext()
@@ -467,7 +463,7 @@ public class MinionController : NetworkBehaviour
     }
     private void ContextualIdleOrHarvestBuild()
     {
-        if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
+        if (effectivelyIdleInstances > idleThreshold || ai.reachedDestination)
         {
             if (clientSideTargetInRange != null)
             {
@@ -483,7 +479,7 @@ public class MinionController : NetworkBehaviour
     }
     private void ContextualIdleOrAttack()
     {
-        if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
+        if (effectivelyIdleInstances > idleThreshold || ai.reachedDestination)
         {
             if (clientSideTargetInRange != null)
             {
@@ -786,10 +782,14 @@ public class MinionController : NetworkBehaviour
     private bool skipFirstFrame = true;
     private void DetectIfShouldReturnToIdle()
     {
-        if (basicallyIdleInstances > idleThreshold || (walkStartTimer <= 0 && ai.reachedDestination))
+        if (IsEffectivelyIdle(idleThreshold) || (walkStartTimer <= 0 && ai.reachedDestination))
         {
             SwitchState(MinionStates.Idle);
         }
+    }
+    private bool IsEffectivelyIdle(float forXSeconds)
+    {
+        return effectivelyIdleInstances > forXSeconds;
     }
     private void SetDestinationIfHighDiff(Vector3 target)
     {
@@ -980,6 +980,10 @@ public class MinionController : NetworkBehaviour
                 }*/
                 break;
             case MinionStates.WalkToEnemy: //seek enemy without switching targets automatically
+                if (!pathReachesTarget && IsEffectivelyIdle(.1f))
+                { 
+                    SwitchState(MinionStates.AttackMoving);
+                }
                 if (TargetIsValidEnemy(targetEnemy))
                 {
                     //UpdateAttackIndicator();
@@ -1409,10 +1413,17 @@ public class MinionController : NetworkBehaviour
             animator.SetFloat("AttackSpeed", 0);
         }*/
     }
+    private bool IsMelee()
+    {
+        return attackRange < 3;
+    }
     private bool ReachedResourceCap()
     {
         return entity.harvestedResourceAmount >= entity.harvestCapacity;
     }
+    /// <summary>
+    /// Get the path and show it with lines.
+    /// </summary>
     private void DrawPath()
     {
         switch (minionState)
@@ -1429,6 +1440,7 @@ public class MinionController : NetworkBehaviour
                     var buffer = new List<Vector3>();
                     ai.GetRemainingPath(buffer, out bool stale);
                     entity.UpdatePathIndicator(buffer.ToArray());
+                    UpdatePathReachesTarget(buffer.Last());
                 }
                 else
                 {
@@ -1436,6 +1448,12 @@ public class MinionController : NetworkBehaviour
                 }
                 break;
         }
+    }
+    public bool pathReachesTarget = false;
+    private void UpdatePathReachesTarget(Vector3 lastPathPos)
+    {
+        float dist = (pathfindingTarget.transform.position - lastPathPos).sqrMagnitude;
+        pathReachesTarget = dist < 0.5f;
     }
     #endregion
     #region UpdaterFunctions
@@ -1529,15 +1547,15 @@ public class MinionController : NetworkBehaviour
     #region DetectionFunctions
     private void DetectIfShouldStopFollowingMoveOrder()
     {
-        if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
+        if (change <= walkAnimThreshold && effectivelyIdleInstances <= idleThreshold)
         {
-            basicallyIdleInstances++;
+            effectivelyIdleInstances++;
         }
         else if (change > walkAnimThreshold)
         {
-            basicallyIdleInstances = 0;
+            effectivelyIdleInstances = 0;
         }
-        if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
+        if (effectivelyIdleInstances > idleThreshold || ai.reachedDestination)
         {
             if (attackMoving)
             {
@@ -1558,15 +1576,15 @@ public class MinionController : NetworkBehaviour
         }
         else
         {
-            if (change <= walkAnimThreshold && basicallyIdleInstances <= idleThreshold)
+            if (change <= walkAnimThreshold && effectivelyIdleInstances <= idleThreshold)
             {
-                basicallyIdleInstances++;
+                effectivelyIdleInstances++;
             }
             else if (change > walkAnimThreshold)
             {
-                basicallyIdleInstances = 0;
+                effectivelyIdleInstances = 0;
             }
-            if (basicallyIdleInstances > idleThreshold || ai.reachedDestination)
+            if (effectivelyIdleInstances > idleThreshold || ai.reachedDestination)
             {
                 val = true;
                 //followingMoveOrder = false;
@@ -1991,7 +2009,14 @@ public class MinionController : NetworkBehaviour
             Vector3 offset = valid.transform.position - transform.position;
             float validDist = offset.sqrMagnitude;
             //get sqr magnitude between this and valid
-            if (targetEnemy == null || validDist < sqrDistToTargetEnemy)
+
+            //if our current target is a structure, jump to minion regardless of distance.
+            //if our current target is a minion, only jump to other minions if lower distance
+            //if our current destination is unreachable, jump to anything closer
+            if (targetEnemy == null || targetEnemy.IsStructure() && valid.IsMinion() || 
+                targetEnemy.IsStructure() && valid.IsStructure() && validDist < sqrDistToTargetEnemy ||
+                targetEnemy.IsMinion() && valid.IsMinion() && validDist < sqrDistToTargetEnemy
+                || !pathReachesTarget && validDist < sqrDistToTargetEnemy)
             {
                 sqrDistToTargetEnemy = validDist;
                 targetEnemy = valid;
@@ -2339,7 +2364,7 @@ public class MinionController : NetworkBehaviour
         if (!entity.alive) return; //dead units cannot be ordered
         lastCommand.Value = CommandTypes.Attack;
         ClearTargets();
-        basicallyIdleInstances = 0;
+        effectivelyIdleInstances = 0;
         SwitchState(MinionStates.AttackMoving);
         playedAttackMoveSound = false;
         SetDestination(target);
@@ -2353,7 +2378,7 @@ public class MinionController : NetworkBehaviour
         if (IsGarrisoned()) return;
         lastCommand.Value = CommandTypes.Attack;
         ClearTargets();
-        basicallyIdleInstances = 0;
+        effectivelyIdleInstances = 0;
         SwitchState(MinionStates.AttackMoving);
         playedAttackMoveSound = false;
         SetDestination(target);
@@ -2395,7 +2420,7 @@ public class MinionController : NetworkBehaviour
     }
     private void BecomeUnstuck()
     {
-        basicallyIdleInstances = 0; //we're not idle anymore
+        effectivelyIdleInstances = 0; //we're not idle anymore
     }
     private void SetOrderedDestination(Vector3 target)
     {

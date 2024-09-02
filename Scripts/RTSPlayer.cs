@@ -136,11 +136,11 @@ public class RTSPlayer : Player
     private void Awake()
     {
     }
-    private LevelInfo playerSpawns; 
+    private LevelInfo playerSpawns;
     private void RetrieveSpawnPositionsList()
     {
         playerSpawns = null;
-        playerSpawns = FindFirstObjectByType<LevelInfo>(); 
+        playerSpawns = FindFirstObjectByType<LevelInfo>();
     }
     public override void OnNetworkSpawn()
     {
@@ -177,7 +177,7 @@ public class RTSPlayer : Player
         allegianceTeamID = playerTeamID;
     }
     private bool MouseOverUI()
-    { 
+    {
         PointerEventData eventDataCurrentPosition = new PointerEventData(EventSystem.current);
         eventDataCurrentPosition.position = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
         List<RaycastResult> results = new List<RaycastResult>();
@@ -215,10 +215,7 @@ public class RTSPlayer : Player
             foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.minionController != null && item.minionController.IsValidAttacker()) //minion
-                {
-                    /*print("attack moving"); 
-                    item.minionController.SetAttackMoveDestination();*/
-
+                { 
                     UnitOrder order = new();
                     order.unit = item.minionController;
                     order.targetPosition = clickedPosition;
@@ -226,6 +223,8 @@ public class RTSPlayer : Player
                     UnitOrdersQueue.Add(order);
                 }
             }
+            totalNumUnitOrders = UnitOrdersQueue.Count;
+            ProcessOrdersInBatches(); //do one pass immediately 
         }
     }
     public List<UnitOrder> UnitOrdersQueue = new();
@@ -274,7 +273,7 @@ public class RTSPlayer : Player
                             actionType = ActionType.BuildTarget;
 
                             AssignBuildersBasedOnDistance();
-                            
+
                         }
                         else if (hitEntity.fullyBuilt && hitEntity.HasEmptyGarrisonablePosition())
                         { //target can be garrisoned, and passenger cannot garrison, then enter
@@ -288,7 +287,7 @@ public class RTSPlayer : Player
                         else
                         {
                             actionType = ActionType.MoveToTarget;
-                        } 
+                        }
                     }
                     else //enemy
                     { //try to target this enemy specifically
@@ -322,29 +321,35 @@ public class RTSPlayer : Player
                     UnitOrdersQueue.Add(order);
                 }
             }
+            totalNumUnitOrders = UnitOrdersQueue.Count;
+            ProcessOrdersInBatches(); //do one pass immediately
         }
+        //ProcessOrders();
     } 
-    private void ProcessOrders()
+    private int totalNumUnitOrders = 0;
+    private void ProcessOrdersInBatches()
     {
-        if (UnitOrdersQueue.Count > 0)
+        //determine how many need to be done this frame based on number of unit orders
+        int framesToProcessAllOrders = 5; //60 frames is 1 second
+        int numToProcess = totalNumUnitOrders / framesToProcessAllOrders;
+        for (int i = 0; i < numToProcess; i++)
         {
-            MinionController orderedUnit = null;
-            UnitOrder order = UnitOrdersQueue[0]; //fetch first order
-            if (order != null)
-            { 
-                foreach (SelectableEntity item in ownedEntities) //find the unit with the order
+            if (UnitOrdersQueue.Count > 0)
+            {
+                UnitOrder order = UnitOrdersQueue[0]; //fetch first order
+                if (order != null)
                 {
-                    if (item.minionController != null && item.minionController == order.unit)
+                    MinionController orderedUnit = order.unit;
+                    if (orderedUnit != null && orderedUnit.canReceiveNewCommands)
                     {
-                        orderedUnit = item.minionController;
-                        break;
+                        orderedUnit.ProcessOrder(order);
+                        UnitOrdersQueue.RemoveAt(0);
                     }
                 }
-                if (orderedUnit != null && orderedUnit.canReceiveNewCommands)
-                {
-                    orderedUnit.ProcessOrder(order);
-                    UnitOrdersQueue.RemoveAt(0);
-                }
+            }
+            else
+            {
+                break;
             }
         }
     }
@@ -369,7 +374,7 @@ public class RTSPlayer : Player
         foreach (MinionController item in ownedMinions)
         {
             if (item != null && item.attackType != MinionController.AttackType.None && !IsEntityGarrrisoned(item.entity)
-                && !item.entity.CanProduceUnits() && !item.entity.CanHarvest()) 
+                && !item.entity.CanProduceUnits() && !item.entity.CanHarvest())
             {
                 TrySelectEntity(item.entity);
             }
@@ -427,7 +432,7 @@ public class RTSPlayer : Player
             }
 
             entity.Select(true);
-            val = true; 
+            val = true;
         }
         else
         {
@@ -478,7 +483,7 @@ public class RTSPlayer : Player
         if (Input.GetKeyDown(KeyCode.RightAlt))
         {
             GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[4], this);
-        } 
+        }
 #endif
     }
     Vector3 oldCursorWorldPosition;
@@ -488,7 +493,7 @@ public class RTSPlayer : Player
     {
         Debug.Log("Starting to assign");
         requiredAssignments = unbuiltStructures.Count;
-    } 
+    }
     private void AssignBuildersSelectedWorkhorse()
     {
         float maxAllowableDistance = 10;
@@ -526,14 +531,14 @@ public class RTSPlayer : Player
     }
     void Update()
     {
-        if (!active) return; 
+        if (!active) return;
         if (requiredAssignments > 0)
         {
             requiredAssignments--;
 
             AssignBuildersSelectedWorkhorse();
         }
-        ProcessOrders();
+        ProcessOrdersInBatches();
         UpdatePlacementBlockedStatus();
         UpdateGridVisual();
         DetectHotkeys();
@@ -728,7 +733,7 @@ public class RTSPlayer : Player
         gold -= buildingToPlace.goldCost;
         SpawnBuildingWithRotation(buildingToPlace, buildingGhost.transform.position, dir, quaternion);
         SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
-        TellSelectedToBuild(last); 
+        TellSelectedToBuild(last);
         StopPlacingBuilding();
     }
     private Direction ConvertForwardToEnum(Vector3 alignedForward)
@@ -905,13 +910,13 @@ public class RTSPlayer : Player
     }
 
     private void FindClosestBuilderToBuildStructure(SelectableEntity building)
-    { 
-        float distance = Mathf.Infinity; 
+    {
+        float distance = Mathf.Infinity;
         MinionController closestBuilder = null;
 
         //get the closest available builder in builder list
         foreach (MinionController builder in selectedBuilders)
-        { 
+        {
             float newDist = Vector3.SqrMagnitude(building.transform.position - builder.transform.position);
             if (newDist < distance)
             {
@@ -1760,7 +1765,7 @@ public class RTSPlayer : Player
                 if (EntityCanUseAbility(entity, ability))
                 {
                     if (entity.IsMinion())
-                    { 
+                    {
                         entity.StartUsingAbility(ability);
                     }
                     else
