@@ -185,7 +185,7 @@ public class RTSPlayer : Player
         foreach (RaycastResult item in results)
         {
             if (item.gameObject.layer == LayerMask.NameToLayer("UI"))
-            {
+            { 
                 return true;
             }
         }
@@ -307,6 +307,8 @@ public class RTSPlayer : Player
             {
                 actionType = ActionType.Move;
             }
+
+            Debug.Log("queuing unit orders " + actionType);
             //finished determining action type
             UnitOrdersQueue.Clear();
             foreach (SelectableEntity selected in selectedEntities)
@@ -319,19 +321,22 @@ public class RTSPlayer : Player
                     order.action = actionType;
                     order.target = hitEntity;
                     UnitOrdersQueue.Add(order);
+                    Debug.Log("adding order to " + selected);
                 }
             }
             totalNumUnitOrders = UnitOrdersQueue.Count;
             ProcessOrdersInBatches(); //do one pass immediately
         }
         //ProcessOrders();
+
     } 
     private int totalNumUnitOrders = 0;
     private void ProcessOrdersInBatches()
     {
         //determine how many need to be done this frame based on number of unit orders
         int framesToProcessAllOrders = 5; //60 frames is 1 second
-        int numToProcess = totalNumUnitOrders / framesToProcessAllOrders;
+        int numToProcess = Mathf.Clamp(totalNumUnitOrders / framesToProcessAllOrders, 1, 100);
+
         for (int i = 0; i < numToProcess; i++)
         {
             if (UnitOrdersQueue.Count > 0)
@@ -342,6 +347,7 @@ public class RTSPlayer : Player
                     MinionController orderedUnit = order.unit;
                     if (orderedUnit != null && orderedUnit.canReceiveNewCommands)
                     {
+                        Debug.Log("Batch processing orders" + orderedUnit);
                         orderedUnit.ProcessOrder(order);
                         UnitOrdersQueue.RemoveAt(0);
                     }
@@ -652,6 +658,7 @@ public class RTSPlayer : Player
             }
             if (Input.GetMouseButtonDown(1)) //right click
             { //used to cancel most commands, or move
+                Debug.Log("right clicked");
                 switch (mouseState)
                 {
                     case MouseState.Waiting:

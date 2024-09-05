@@ -194,7 +194,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 56881033
+  GlobalObjectIdHash: 2641155720
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -242,7 +242,7 @@ MonoBehaviour:
   allPhysicalColliders: []
   displayName: name
   desc: desc
-  hitPoints:
+  currentHP:
     m_InternalValue: 0
   maxHP: 10
   depositType: 0
@@ -350,7 +350,9 @@ MonoBehaviour:
     action: 0
     target: {fileID: 0}
     targetPosition: {x: 0, y: 0, z: 0}
+  pathReachesTarget: 0
   shouldAggressivelySeekEnemies: 1
+  canAttackStructures: 1
   lastCommand:
     m_InternalValue: 0
   sqrDistToTargetEnemy: Infinity
@@ -512,7 +514,7 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.15
+  m_Radius: 0.1
   m_Height: 1
   m_Direction: 1
   m_Center: {x: 0, y: 0.5, z: 0}

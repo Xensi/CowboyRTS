@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5040608eb03c21941b0df73233e2ec94, type: 3}
-  m_Name: Wall
+  m_Name: ThinWall
   m_EditorClassIdentifier: 
   productionName: Wall
   description: 
   prefabToSpawn: {fileID: 3798861697192735719, guid: 0469ba43681a07247aef51cf6ccb8ef9, type: 3}
   goldCost: 2
-  maxHP: 100
+  maxHP: 50
   isKeystone: 0
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0

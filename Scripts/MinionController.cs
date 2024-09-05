@@ -817,6 +817,7 @@ public class MinionController : NetworkBehaviour
     }
     public void ProcessOrder(UnitOrder order)
     {
+        Debug.Log("Processing order to " + order.action);
         Vector3 targetPosition = order.targetPosition;
         SelectableEntity target = order.target;
 
@@ -1906,7 +1907,8 @@ public class MinionController : NetworkBehaviour
     int nearbyIndexer = 0;
     private bool TargetIsValidEnemy(SelectableEntity target)
     {
-        if (target == null || !target.alive || !target.isTargetable.Value || (!entity.aiControlled && !target.visibleInFog))
+        if (target == null || !target.alive || !target.isTargetable.Value || (!entity.aiControlled && !target.visibleInFog)
+            || (!canAttackStructures & target.IsStructure()))
         {
             return false;
         }
@@ -1921,7 +1923,7 @@ public class MinionController : NetworkBehaviour
 
         if (entity.IsMelee())
         {
-            float defaultDetectionRange = 5;
+            float defaultDetectionRange = 2.5f;
             range = defaultDetectionRange;
         }
         else
@@ -1959,6 +1961,7 @@ public class MinionController : NetworkBehaviour
         }
         return valid;
     }
+    [SerializeField] private bool canAttackStructures = true;
     private void FindClosestEnemyToAttackMoveTowards(float range, bool shouldExtendAttackRange = true)
     {
         if (attackType == AttackType.None) return;
@@ -1985,14 +1988,17 @@ public class MinionController : NetworkBehaviour
         if (IsEnemy(check) && check.alive && check.isTargetable.Value)
         //only check on enemies that are alive, targetable, visible, and in range
         {
-            if (entity.aiControlled && InRangeOfEntity(check, entity.fogUnit.circleRadius)
-                && InRangeOfEntity(check, range)) //ai controlled doesn't care about fog
+            if (canAttackStructures || (!check.IsStructure()))
             {
-                valid = check;
-            }
-            else if (check.visibleInFog && InRangeOfEntity(check, range))
-            {
-                valid = check;
+                if (entity.aiControlled && InRangeOfEntity(check, entity.fogUnit.circleRadius)
+                    && InRangeOfEntity(check, range)) //ai controlled doesn't care about fog
+                {
+                    valid = check;
+                }
+                else if (check.visibleInFog && InRangeOfEntity(check, range))
+                {
+                    valid = check;
+                }
             }
         }
         if (TargetIsValidEnemy(targetEnemy)) //ensure this is up to date
