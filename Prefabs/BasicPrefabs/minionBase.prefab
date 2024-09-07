@@ -286,6 +286,7 @@ MonoBehaviour:
   clientIDToSpawnUnder: 0
   aiControlled: 0
   controllerOfThis: {fileID: 0}
+  lootedOnDestructionGold: 0
   fullyBuiltInScene: 0
   initialized: 0
   abilityToUse: {fileID: 0}
@@ -299,6 +300,8 @@ MonoBehaviour:
   shouldHideInFog: 1
   attackEffects: []
   spawnerThatSpawnedThis: {fileID: 0}
+  whenTheseEntitiesKilledTriggerBehavior: []
+  triggerBehavior: 0
   deathEffect: {fileID: 0}
 --- !u!114 &1556607826778985850
 MonoBehaviour:
@@ -514,7 +517,7 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.1
+  m_Radius: 0.15
   m_Height: 1
   m_Direction: 1
   m_Center: {x: 0, y: 0.5, z: 0}

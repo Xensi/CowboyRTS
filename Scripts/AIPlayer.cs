@@ -22,7 +22,9 @@ public class AIPlayer : Player
     public bool enable = false;
     public enum AIBehavior
     {
-        Default, DefendStructuresOnly,
+        Default, 
+        Passive, //literally do nothing
+        Aggressive //send attacks towards visible enemies, no scouting
     }
     public AIBehavior behavior = AIBehavior.Default;
     public override void OnNetworkSpawn()
@@ -55,7 +57,7 @@ public class AIPlayer : Player
                     case AIBehavior.Default:
                         EconAction();
                         break;
-                    case AIBehavior.DefendStructuresOnly:
+                    case AIBehavior.Passive:
                         break;
                     default:
                         break;
@@ -71,13 +73,16 @@ public class AIPlayer : Player
                     case AIBehavior.Default:
                         AggressiveAction();
                         break;
-                    case AIBehavior.DefendStructuresOnly:
+                    case AIBehavior.Passive:
+                        break;
+                    case AIBehavior.Aggressive: 
+                        AggressiveAction();
                         break;
                     default:
                         break;
                 }
             }
-        } 
+        }
     }
     private void AggressiveAction()
     { 
@@ -220,10 +225,10 @@ public class AIPlayer : Player
                 item.AIAttackMove(pos);
             }
         }
-        else
+        /*else
         {
             SendScoutingParty();
-        }
+        }*/
     }
     private void SendScoutingParty()
     {
@@ -587,5 +592,5 @@ public class AIPlayer : Player
             }
         }
         return null;
-    } 
+    }
 }

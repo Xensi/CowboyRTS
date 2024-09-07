@@ -5636,6 +5636,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
+  - {fileID: 1319956302}
   - {fileID: 290658385}
   - {fileID: 1864819900}
   - {fileID: 1720408162}
@@ -7093,13 +7094,13 @@ RectTransform:
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 1120274543}
-  m_Father: {fileID: 2038981963}
+  m_Father: {fileID: 1076464099}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -2146.4, y: -808}
+  m_AnchorMin: {x: 0, y: 0.5}
+  m_AnchorMax: {x: 0, y: 0.5}
+  m_AnchoredPosition: {x: -860.09985, y: -276.75}
   m_SizeDelta: {x: 117, y: 30}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &1319956303
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10163,7 +10164,6 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1319956302}
   - {fileID: 311270009}
   - {fileID: 454398163}
   - {fileID: 923658056}
@@ -10547,7 +10547,7 @@ MonoBehaviour:
   - {r: 0.20784312, g: 0.5234106, b: 0.7647059, a: 1}
   - {r: 0.9308176, g: 0.86704963, b: 0.33661625, a: 1}
   aiTeamColors:
-  - {r: 0.3950199, g: 0.7484276, b: 0.35538536, a: 1}
+  - {r: 1, g: 1, b: 1, a: 1}
   - {r: 0.8238993, g: 0.53098774, b: 0.23576978, a: 1}
   factions:
   - {fileID: 11400000, guid: 48d2654104c708448a90a4bfe3b2baa9, type: 2}
@@ -10633,7 +10633,11 @@ MonoBehaviour:
   grid: {fileID: 1949437213}
   allFactionEntities: []
   enemyEntities: []
+  enemyMinions: []
+  visibleEnemies: []
   gameCanvas: {fileID: 1357281861}
+  maxExpectedUnits: 1
+  maxFramesToFindTarget: 5
   playerHasWon: 0
 --- !u!114 &2114043657
 MonoBehaviour:

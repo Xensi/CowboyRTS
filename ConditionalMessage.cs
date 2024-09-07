@@ -7,7 +7,8 @@ public class ConditionalMessage : MonoBehaviour
 {
     [SerializeField] private List<GameObject> messages;
     [SerializeField] private GameObject bg;
-
+    [SerializeField] private List<SelectableEntity> checkForDestruction;
+    [SerializeField] private AIPlayer ai;
     private void Start()
     {
         ShowMessage(0);
@@ -17,6 +18,7 @@ public class ConditionalMessage : MonoBehaviour
     private bool selectUnitMsgShown = false; //select numbskull unit
     private bool movementMsgShown = false;
     private bool attackSpecificMsgShown = false;
+    private bool middleClickMsgShown = false;
     private void Update()
     {
         if (!trainUnitMsgShown && Global.Instance.localPlayer.selectedEntities.Count > 0)
@@ -39,6 +41,28 @@ public class ConditionalMessage : MonoBehaviour
             attackSpecificMsgShown = true;
             ShowMessage(4);
         }
+        if (!middleClickMsgShown && CheckForDestruction())
+        {
+            middleClickMsgShown = true;
+            MakeAIAggressive();
+            ShowMessage(5);
+        }
+        
+    }
+    private void MakeAIAggressive()
+    {
+        ai.behavior = AIPlayer.AIBehavior.Aggressive;
+    }
+    private bool CheckForDestruction()
+    {
+        foreach (SelectableEntity item in checkForDestruction)
+        {
+            if (!item.alive)
+            {
+                return true;
+            }
+        }
+        return false;
     }
     private void ShowMessage(int id = 0)
     {

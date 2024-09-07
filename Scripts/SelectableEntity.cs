@@ -8,6 +8,7 @@ using static TargetedEffects;
 using System.Linq;
 using System;
 using static UnityEditor.PlayerSettings;
+using Unity.VisualScripting;
 public class SelectableEntity : NetworkBehaviour
 {
     [HideInInspector] public bool fakeSpawn = false;
@@ -72,7 +73,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public SelectableEntity interactionTarget;
 
     [HideInInspector] public List<FactionUnit> buildQueue;
-    [HideInInspector] public MeshRenderer[] allMeshes;
+    public MeshRenderer[] allMeshes;
     public MeshRenderer[] unbuiltRenderers;
     public MeshRenderer[] finishedRenderers;
     //when fog of war changes, check if we should hide or show attack effects
@@ -177,6 +178,8 @@ public class SelectableEntity : NetworkBehaviour
     //private bool hasRegisteredRallyMission = false;
     private List<Material> savedMaterials = new();
     public Player controllerOfThis;
+
+    [SerializeField] private int lootedOnDestructionGold = 0; //gold to give to localplayer
     private void OnDrawGizmos()
     {
         if (fakeSpawn)
@@ -201,7 +204,7 @@ public class SelectableEntity : NetworkBehaviour
     private void UpdateResourceCollectableMeshes()
     {
         if (resourceCollectingMeshes.Length == 0) return;
-        if (visibleInFog)
+        if (isVisibleInFog)
         { 
             //compare max resources against max resourceCollectingMeshes
             float frac = (float)harvestedResourceAmount / harvestCapacity;
@@ -484,8 +487,8 @@ public class SelectableEntity : NetworkBehaviour
     {
         PlaySpawnSound();
         TryToRegisterRallyMission();
-        SetInitialVisuals();
-        aiControlled = desiredTeamNumber < 0;
+        SetInitialVisuals(); 
+        aiControlled = desiredTeamNumber < 0 || controllerOfThis is AIPlayer;
         if (isKeystone && Global.Instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
         {
             Global.Instance.localPlayer.keystoneUnits.Add(this);
@@ -529,10 +532,18 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (rallyVisual != null) rallyVisual.enabled = false;
         if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allFactionEntities.Add(this);
-        if (controllerOfThis != null && controllerOfThis.allegianceTeamID != Global.Instance.localPlayer.allegianceTeamID) Global.Instance.enemyEntities.Add(this);
-
+        if (controllerOfThis != null && controllerOfThis.allegianceTeamID != Global.Instance.localPlayer.allegianceTeamID)
+        {
+            Global.Instance.enemyEntities.Add(this);
+            if (IsMinion())
+            {
+                Global.Instance.enemyMinions.Add(this);
+            }
+        }
         healthBar.entity = this;
         healthBar.SetVisible(false);
+
+        if (whenTheseEntitiesKilledTriggerBehavior.Count > 0) shouldCheckTrigger = true;
     }
     private void SetInitialVisuals()
     {
@@ -546,12 +557,12 @@ public class SelectableEntity : NetworkBehaviour
     private void SetHideFogTeam()
     {
         //if we don't own this, then set its' hide fog team equal to our team
-        if (FogHideable())
+        /*if (FogHideable())
         {
-            if (Global.Instance.localPlayer != null)
-            {
-                hideFogTeam = (int)Global.Instance.localPlayer.OwnerClientId;
-            }
+        }*/
+        if (Global.Instance.localPlayer != null)
+        {
+            hideFogTeam = (int)Global.Instance.localPlayer.OwnerClientId;
         }
     }
     public bool CannotConstructHarvestProduce()
@@ -989,6 +1000,7 @@ public class SelectableEntity : NetworkBehaviour
                 UpdateUsedAbilities();
                 //DetectIfDamaged();
                 DetectChangeHarvestedResourceAmount();
+                CheckIfShouldBeCaptured();
             }
         }
     }
@@ -996,7 +1008,7 @@ public class SelectableEntity : NetworkBehaviour
     private void UpdateHealthBarPosition()
     {
         if (mainCam == null) mainCam = Global.Instance.localPlayer.mainCam;
-        if (healthBar != null)
+        if (healthBar != null && healthBar.isActiveAndEnabled)
         {
             healthBar.barParent.transform.position = transform.position + healthBarOffset;
             healthBar.barParent.transform.LookAt(transform.position + mainCam.transform.rotation * Vector3.forward,
@@ -1069,6 +1081,10 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void PrepareForEntityDestruction()
     {
+        if (lootedOnDestructionGold > 0)
+        {
+            Global.Instance.localPlayer.AddGold(lootedOnDestructionGold);
+        }
         healthBar.Delete();
         Global.Instance.allFactionEntities.Remove(this);
         if (IsOwner)
@@ -1368,32 +1384,34 @@ public class SelectableEntity : NetworkBehaviour
         if (interactorIndex >= workersInteracting.Count) interactorIndex = 0;
         if (othersInteractorIndex >= othersInteracting.Count) othersInteractorIndex = 0;
     }
-    public bool visibleInFog = false;
+    [HideInInspector] public bool isVisibleInFog = false;
     [HideInInspector] public bool oldVisibleInFog = false;
-    public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
-    public bool shouldHideInFog = true; // gold should not be hidden
+    [HideInInspector] public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
+    [HideInInspector] public bool shouldHideInFog = true; // gold should not be hidden
     private bool oneTimeForceUpdateFog = false;
+    //[SerializeField]
+    private float fogValue;
+    //[SerializeField]
+    private FogOfWarTeam fow;
     private void UpdateVisibilityFromFogOfWar() //hide in fog
     {
+        if (fow == null) fow = FogOfWarTeam.GetTeam(hideFogTeam);
+        fogValue = fow.GetFogValue(transform.position);
+        isVisibleInFog = fow.GetFogValue(transform.position) < Global.Instance.minFogStrength * 255;
         if (FogHideable())
         {
-            FogOfWarTeam fow = FogOfWarTeam.GetTeam(hideFogTeam);
-            visibleInFog = fow.GetFogValue(transform.position) < Global.Instance.minFogStrength * 255;
-            if (visibleInFog != oldVisibleInFog || oneTimeForceUpdateFog == false) //update if there is a change
+            //Debug.Log("running fog visibility for" + gameObject);
+            if (isVisibleInFog != oldVisibleInFog || oneTimeForceUpdateFog == false) //update if there is a change
             {
                 oneTimeForceUpdateFog = true;
-                oldVisibleInFog = visibleInFog;
-                UpdateMeshVisibility(visibleInFog);
+                oldVisibleInFog = isVisibleInFog;
+                UpdateMeshVisibility(isVisibleInFog);
             }
             for (int i = 0; i < attackEffects.Length; i++)
             {
-                if (attackEffects[i] != null) attackEffects[i].enabled = showAttackEffects && visibleInFog; 
+                if (attackEffects[i] != null) attackEffects[i].enabled = showAttackEffects && isVisibleInFog; 
             }
-        }
-        else
-        {
-            visibleInFog = true;
-        }
+        } 
     } 
     private void UpdateMeshVisibility(bool val)
     {
@@ -1427,7 +1445,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     private bool FogHideable()
     {
-        return IsSpawned && (!IsOwner || aiControlled) && shouldHideInFog;
+        return shouldHideInFog && IsSpawned && (!IsOwner || aiControlled);
     }
     private void UpdateTimers()
     {
@@ -1463,18 +1481,18 @@ public class SelectableEntity : NetworkBehaviour
         fullyBuilt = true;
 
         Global.Instance.localPlayer.UpdateGUIFromSelections();
-        foreach (MeshRenderer item in finishedRenderers)
-        {
-            if (item != null)
-            {
-                item.enabled = true;
-            }
-        }
         foreach (MeshRenderer item in unbuiltRenderers)
         {
             if (item != null)
             {
                 item.enabled = false;
+            }
+        }
+        foreach (MeshRenderer item in finishedRenderers)
+        {
+            if (item != null)
+            {
+                item.enabled = true;
             }
         }
         if (fogUnit != null) fogUnit.enabled = true;
@@ -1756,6 +1774,85 @@ public class SelectableEntity : NetworkBehaviour
         {
             targetIndicator.SetActive(false);
             lineIndicator.enabled = false;
+        }
+    }
+    public List<SelectableEntity> whenTheseEntitiesKilledTriggerBehavior;
+    public enum TriggerableBehaviors
+    {
+        CaptureThis,
+    }
+    public TriggerableBehaviors triggerBehavior = TriggerableBehaviors.CaptureThis;
+    private bool shouldCheckTrigger = false;
+    private void CheckIfShouldBeCaptured()
+    {
+        if (shouldCheckTrigger)
+        {
+            bool capture = false;
+            if (whenTheseEntitiesKilledTriggerBehavior.Count <= 0) capture = true;
+
+            if (capture)
+            {
+                TriggerBehavior();
+            }
+            else
+            {
+                capture = true;
+                foreach (SelectableEntity item in whenTheseEntitiesKilledTriggerBehavior)
+                {
+                    if (item != null && item.alive)
+                    {
+                        capture = false;
+                        break;
+                    }
+                }
+                if (capture)
+                {
+                    TriggerBehavior();
+                }
+            } 
+        }
+    } 
+    private void TriggerBehavior()
+    {
+        switch (triggerBehavior)
+        {
+            case TriggerableBehaviors.CaptureThis:
+
+                CaptureForLocalPlayer();
+                break;
+            default:
+                break;
+        }
+        shouldCheckTrigger = false;
+    }
+    private void CaptureForLocalPlayer()
+    {
+        Debug.Log("capturing");
+        controllerOfThis = Global.Instance.localPlayer;
+        if (controllerOfThis != null) 
+        {
+            teamNumber.Value = (sbyte)controllerOfThis.playerTeamID;
+            if (fogUnit != null) fogUnit.team = controllerOfThis.allegianceTeamID;
+        }
+        if (teamType == TeamBehavior.OwnerTeam)
+        {
+            ChangePopulation(consumePopulationAmount);
+            ChangeMaxPopulation(raisePopulationLimitBy);
+        }
+        if (teamType == TeamBehavior.OwnerTeam)
+        {
+            RTSPlayer playerController = Global.Instance.localPlayer;
+            playerController.ownedEntities.Add(this);
+            playerController.ownedMinions.Add(minionController);  
+
+            if (factionEntity.constructableBuildings.Length > 0)
+            {
+                playerController.ownedBuilders.Add(minionController);
+            } 
+            if (IsNotYetBuilt())
+            {
+                playerController.unbuiltStructures.Add(this);
+            } 
         }
     }
     public void UpdateAttackIndicator()

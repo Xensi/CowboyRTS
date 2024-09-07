@@ -25,8 +25,7 @@ public class RTSPlayer : Player
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
     public List<SelectableEntity> selectedEntities; //selected and we can control them 
-    public List<MinionController> selectedBuilders;
-    public List<SelectableEntity> enemyEntities;
+    public List<MinionController> selectedBuilders; 
     private Vector3 _mousePosition;
     private Vector3 _offset;
     public Vector3 cursorWorldPosition;
@@ -131,7 +130,7 @@ public class RTSPlayer : Player
         if (IsOwner)
         {
             MoveCamToSpawn();
-        }
+        } 
     }
     private void Awake()
     {

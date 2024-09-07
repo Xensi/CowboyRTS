@@ -65,6 +65,8 @@ public class Global : NetworkBehaviour
 
     public List<SelectableEntity> allFactionEntities = new();
     public List<SelectableEntity> enemyEntities = new();
+    public List<SelectableEntity> enemyMinions = new();
+    public List<SelectableEntity> visibleEnemies = new();
     public Canvas gameCanvas;
 
     //Minion sound profile mapping:
@@ -146,7 +148,43 @@ public class Global : NetworkBehaviour
     {
         InitializePlayers();
         if (!playerHasWon) CheckIfAPlayerHasWon();
+        UpdateVisibilities();
         CleanEntityLists();
+    }
+    private int visibleIndexer = 0;
+    private void UpdateVisibilities()
+    { 
+        if (enemyEntities.Count > 0)
+        {
+            int framesForFullSweep = 30;
+            int numToUpdate = Mathf.Clamp(enemyEntities.Count / framesForFullSweep, 1, 999);
+            for (int i = 0; i < numToUpdate; i++)
+            { 
+                SelectableEntity enemy = enemyEntities[visibleIndexer];
+                bool visible = enemy.isVisibleInFog;
+                if (visible)
+                {
+                    if (!visibleEnemies.Contains(enemy))
+                    {
+                        visibleEnemies.Add(enemy);
+                    }
+                }
+                else
+                {
+                    visibleEnemies.Remove(enemy);
+                }
+
+                visibleIndexer++;
+                if (visibleIndexer >= enemyEntities.Count) visibleIndexer = 0;
+            }
+        }
+    }
+    private void OnDrawGizmos()
+    {
+        foreach (SelectableEntity item in visibleEnemies)
+        {
+            if (item != null) Gizmos.DrawWireSphere(item.transform.position, .1f);
+        }
     }
     private void CleanEntityLists()
     {
@@ -177,9 +215,26 @@ public class Global : NetworkBehaviour
             }
             enemyIndexer++;
             if (enemyIndexer >= enemyEntities.Count) enemyIndexer = 0;
+        } 
+        if (enemyMinions.Count > 0)
+        {
+            if (enemyMinionIndexer >= Instance.enemyMinions.Count)
+            {
+                enemyMinionIndexer = Instance.enemyMinions.Count - 1;
+            }
+            SelectableEntity entity = enemyMinions[enemyMinionIndexer];
+            if (entity == null || !entity.alive)
+            {
+                enemyMinions.RemoveAt(enemyMinionIndexer);
+            }
+            enemyMinionIndexer++;
+            if (enemyMinionIndexer >= enemyMinions.Count) enemyMinionIndexer = 0;
         }
     }
+    public int maxExpectedUnits = 100;
+    public int maxFramesToFindTarget = 30;
     private int enemyIndexer = 0;
+    private int enemyMinionIndexer = 0;
     public bool playerHasWon = false;
     private void InitializePlayers()
     {
