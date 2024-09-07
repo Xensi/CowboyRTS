@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: Gold Storage
   m_EditorClassIdentifier: 
   productionName: Gold Storage
-  description: Break open to steal this wealth.
+  description: Break open to gain 25 gold.
   prefabToSpawn: {fileID: 3798861697192735719, guid: a5e323badc7cabd48aecd127e9799eb0, type: 3}
   goldCost: 0
-  maxHP: 2
+  maxHP: 1
   isKeystone: 0
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0
