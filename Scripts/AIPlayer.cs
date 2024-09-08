@@ -19,7 +19,6 @@ public class AIPlayer : Player
     public Transform spawnPosition;
     public List<SelectableEntity> knownEnemyStructures = new();
     public List<SelectableEntity> knownEnemyUnits = new();
-    public bool enable = false;
     public enum AIBehavior
     {
         Default, 
@@ -40,12 +39,11 @@ public class AIPlayer : Player
         if (!enable) return;
         base.Start();
         Global.Instance.aiTeamControllers.Add(this);
-        Global.Instance.allPlayers.Add(this);
-        allegianceTeamID = playerTeamID; //by default
     }
-    void Update()
+    public override void Update()
     {
         if (!enable) return;
+        base.Update();
         if (IsOwner)
         { 
             timer += Time.deltaTime;

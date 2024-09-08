@@ -14,7 +14,7 @@ public class Global : NetworkBehaviour
     public List<Material> colors;
     public List<Color> teamColors;
     public List<Color> aiTeamColors;
-    public List<Faction> factions; 
+    public List<Faction> factions;
     public List<Button> productionButtons;
     public Material transparent;
     public Material blocked;
@@ -63,10 +63,9 @@ public class Global : NetworkBehaviour
     public List<Player> allPlayers = new();
     public Grid grid;
 
-    public List<SelectableEntity> allFactionEntities = new();
-    public List<SelectableEntity> enemyEntities = new();
-    public List<SelectableEntity> enemyMinions = new();
-    public List<SelectableEntity> visibleEnemies = new();
+    public List<SelectableEntity> allEntities = new();
+    //
+    //public List<SelectableEntity> enemyMinions = new();
     public Canvas gameCanvas;
 
     //Minion sound profile mapping:
@@ -83,7 +82,7 @@ public class Global : NetworkBehaviour
     //
 
     public void PlayStructureSelectSound(SelectableEntity entity)
-    {  
+    {
         if (entity.sounds.Length > 1) PlayClipAtPoint(entity.sounds[1], entity.transform.position, .75f);
     }
     public void PlayMinionRefreshSound(SelectableEntity entity)
@@ -130,7 +129,6 @@ public class Global : NetworkBehaviour
         selectedParent.SetActive(false);
         resourcesParent.SetActive(false);
     }
-    private int indexer = 0;
     public SelectableEntity FindEntityFromObject(GameObject obj)
     {
         SelectableEntity entity = obj.GetComponent<SelectableEntity>();
@@ -148,115 +146,49 @@ public class Global : NetworkBehaviour
     {
         InitializePlayers();
         if (!playerHasWon) CheckIfAPlayerHasWon();
-        UpdateVisibilities();
-        CleanEntityLists();
     }
-    private int visibleIndexer = 0;
-    private void UpdateVisibilities()
-    { 
-        if (enemyEntities.Count > 0)
-        {
-            int framesForFullSweep = 30;
-            int numToUpdate = Mathf.Clamp(enemyEntities.Count / framesForFullSweep, 1, 999);
-            for (int i = 0; i < numToUpdate; i++)
-            { 
-                SelectableEntity enemy = enemyEntities[visibleIndexer];
-                bool visible = enemy.isVisibleInFog;
-                if (visible)
-                {
-                    if (!visibleEnemies.Contains(enemy))
-                    {
-                        visibleEnemies.Add(enemy);
-                    }
-                }
-                else
-                {
-                    visibleEnemies.Remove(enemy);
-                }
 
-                visibleIndexer++;
-                if (visibleIndexer >= enemyEntities.Count) visibleIndexer = 0;
-            }
-        }
-    }
-    private void OnDrawGizmos()
-    {
-        foreach (SelectableEntity item in visibleEnemies)
-        {
-            if (item != null) Gizmos.DrawWireSphere(item.transform.position, .1f);
-        }
-    }
-    private void CleanEntityLists()
-    {
-        if (allFactionEntities.Count > 0)
-        {
-            if (indexer >= Instance.allFactionEntities.Count)
-            {
-                indexer = Instance.allFactionEntities.Count - 1;
-            }
-            SelectableEntity entity = allFactionEntities[indexer];
-            if (entity == null || !entity.alive)
-            {
-                allFactionEntities.RemoveAt(indexer);
-            }
-            indexer++;
-            if (indexer >= allFactionEntities.Count) indexer = 0;
-        }
-        if (enemyEntities.Count > 0)
-        {
-            if (enemyIndexer >= Instance.enemyEntities.Count)
-            {
-                enemyIndexer = Instance.enemyEntities.Count - 1;
-            }
-            SelectableEntity entity = enemyEntities[enemyIndexer];
-            if (entity == null || !entity.alive)
-            {
-                enemyEntities.RemoveAt(enemyIndexer);
-            }
-            enemyIndexer++;
-            if (enemyIndexer >= enemyEntities.Count) enemyIndexer = 0;
-        } 
-        if (enemyMinions.Count > 0)
-        {
-            if (enemyMinionIndexer >= Instance.enemyMinions.Count)
-            {
-                enemyMinionIndexer = Instance.enemyMinions.Count - 1;
-            }
-            SelectableEntity entity = enemyMinions[enemyMinionIndexer];
-            if (entity == null || !entity.alive)
-            {
-                enemyMinions.RemoveAt(enemyMinionIndexer);
-            }
-            enemyMinionIndexer++;
-            if (enemyMinionIndexer >= enemyMinions.Count) enemyMinionIndexer = 0;
-        }
-    }
     public int maxExpectedUnits = 100;
     public int maxFramesToFindTarget = 30;
-    private int enemyIndexer = 0;
-    private int enemyMinionIndexer = 0;
     public bool playerHasWon = false;
+    private bool finishedInitializingNewPlayers = false;
     private void InitializePlayers()
     {
-        List<RTSPlayer> movedPlayers = new();
-        foreach (RTSPlayer player in uninitializedPlayers)
+        if (uninitializedPlayers.Count > 0)
         {
-            if (player.inTheGame.Value == true)
+            List<RTSPlayer> movedPlayers = new();
+            foreach (RTSPlayer player in uninitializedPlayers)
             {
-                initializedPlayers.Add(player);
-                allPlayers.Add(player);
-                movedPlayers.Add(player);
+                if (player.inTheGame.Value == true)
+                {
+                    initializedPlayers.Add(player);
+                    if (!allPlayers.Contains(player)) allPlayers.Add(player);
+                    movedPlayers.Add(player);
+                }
+            }
+            foreach (RTSPlayer player in movedPlayers)
+            {
+                uninitializedPlayers.Remove(player);
+            }
+            if (!finishedInitializingNewPlayers)
+            {
+                finishedInitializingNewPlayers = true;
+                UpdateEnemyLists();
             }
         }
-        foreach (RTSPlayer player in movedPlayers)
+    }
+    public void UpdateEnemyLists()
+    {
+        Debug.Log("Updating Enemy Lists");
+        foreach (SelectableEntity entity in allEntities)
         {
-            uninitializedPlayers.Remove(player);
+            entity.StartGameAddToEnemyLists();
         }
     }
     public void CheckIfAPlayerHasWon()
     {
         if (initializedPlayers.Count <= 1) return;
-        
+
         RTSPlayer potentialWinner = null;
         int inTheGameCount = 0;
         foreach (RTSPlayer item in initializedPlayers)
@@ -287,14 +219,14 @@ public class Global : NetworkBehaviour
         {
             tempGO.AddComponent<AudioChorusFilter>();
         }
-        tempASource.clip = clip;    
+        tempASource.clip = clip;
         tempASource.volume = volume;
-        tempASource.pitch = pitch; 
+        tempASource.pitch = pitch;
         tempASource.spatialBlend = 1; //3d   
         tempASource.Play(); // start the sound
         Destroy(tempGO, tempASource.clip.length * pitch); // destroy object after clip duration (this will not account for whether it is set to loop) 
         return tempASource;
-    } 
+    }
     public void TellRTSPlayerToSetRally()
     {
         localPlayer.ReadySetRallyPoint();

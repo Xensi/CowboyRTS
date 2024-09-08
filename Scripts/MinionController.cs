@@ -422,11 +422,11 @@ public class MinionController : NetworkBehaviour
     }
     private void ClientSeekEnemy()
     {
-        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count)
+        if (nearbyIndexer >= Global.Instance.allEntities.Count)
         {
-            nearbyIndexer = Global.Instance.allFactionEntities.Count - 1;
+            nearbyIndexer = Global.Instance.allEntities.Count - 1;
         }
-        SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range 
+        SelectableEntity check = Global.Instance.allEntities[nearbyIndexer]; //fix this so we don't get out of range 
         if (clientSideTargetInRange == null)
         {
             if (check != null && check.alive && check.teamNumber.Value != entity.teamNumber.Value && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
@@ -435,7 +435,7 @@ public class MinionController : NetworkBehaviour
             }
         }
         nearbyIndexer++;
-        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0;
+        if (nearbyIndexer >= Global.Instance.allEntities.Count) nearbyIndexer = 0;
 
         if (clientSideTargetInRange != null)
         {
@@ -536,11 +536,11 @@ public class MinionController : NetworkBehaviour
     }
     private void ClientSeekHarvestable()
     {
-        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count)
+        if (nearbyIndexer >= Global.Instance.allEntities.Count)
         {
-            nearbyIndexer = Global.Instance.allFactionEntities.Count - 1;
+            nearbyIndexer = Global.Instance.allEntities.Count - 1;
         }
-        SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range 
+        SelectableEntity check = Global.Instance.allEntities[nearbyIndexer]; //fix this so we don't get out of range 
         if (clientSideTargetInRange == null)
         {
             if (check != null && check.alive && check.selfHarvestableType == SelectableEntity.ResourceType.Gold && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
@@ -549,7 +549,7 @@ public class MinionController : NetworkBehaviour
             }
         }
         nearbyIndexer++;
-        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0;
+        if (nearbyIndexer >= Global.Instance.allEntities.Count) nearbyIndexer = 0;
 
         if (clientSideTargetInRange != null)
         {
@@ -559,11 +559,11 @@ public class MinionController : NetworkBehaviour
 
     private void ClientSeekBuildable()
     {
-        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count)
+        if (nearbyIndexer >= Global.Instance.allEntities.Count)
         {
-            nearbyIndexer = Global.Instance.allFactionEntities.Count - 1;
+            nearbyIndexer = Global.Instance.allEntities.Count - 1;
         }
-        SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range 
+        SelectableEntity check = Global.Instance.allEntities[nearbyIndexer]; //fix this so we don't get out of range 
         if (clientSideTargetInRange == null)
         {
             if (check != null && check.alive && check.teamNumber == entity.teamNumber &&
@@ -573,7 +573,7 @@ public class MinionController : NetworkBehaviour
             }
         }
         nearbyIndexer++;
-        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0;
+        if (nearbyIndexer >= Global.Instance.allEntities.Count) nearbyIndexer = 0;
 
         if (clientSideTargetInRange != null)
         {
@@ -1812,11 +1812,12 @@ public class MinionController : NetworkBehaviour
     }
     private void LookAtTarget(Transform target)
     {
-        /*if (target != null)
+        if (target != null)
         {
-            transform.rotation = Quaternion.LookRotation(
-                Vector3.RotateTowards(transform.forward, target.position - transform.position, Time.deltaTime * rotationSpeed, 0));
-        }*/
+            /*transform.rotation = Quaternion.LookRotation(
+                Vector3.RotateTowards(transform.forward, target.position - transform.position, Time.deltaTime * rotationSpeed, 0));*/
+            transform.LookAt(target);
+        }
     }
     private bool InRangeOfEntity(SelectableEntity target, float range)
     {
@@ -1998,7 +1999,8 @@ public class MinionController : NetworkBehaviour
         }
     }
     private readonly float defaultMeleeDetectionRange = 5;
-    private SelectableEntity FindEnemyMinionToAttack(float range, bool shouldExtendAttackRange = true)
+    private SelectableEntity FindEnemyMinionToAttack(float range, bool shouldExtendAttackRange = true) //this doesn't work because it's by global
+        //and not by player
     {
         if (attackType == AttackType.None) return null;
 
@@ -2011,10 +2013,12 @@ public class MinionController : NetworkBehaviour
             if (shouldExtendAttackRange) range += 1;
         }
 
+        List<SelectableEntity> enemyList = entity.controllerOfThis.visibleEnemies;
+        if (enemyList.Count <= 0) return null;
         SelectableEntity valid = null;
-        if (nearbyIndexer >= Global.Instance.enemyEntities.Count)
+        if (nearbyIndexer >= enemyList.Count)
         {
-            nearbyIndexer = Global.Instance.enemyEntities.Count - 1;
+            nearbyIndexer = enemyList.Count - 1;
         }
         //guarantee a target within .5 seconds
         int maxExpectedUnits = 200;
@@ -2022,7 +2026,7 @@ public class MinionController : NetworkBehaviour
         int indexesToRunPerFrame = maxExpectedUnits / maxFramesToFindTarget;
         for (int i = 0; i < indexesToRunPerFrame; i++)
         {
-            SelectableEntity check = Global.Instance.enemyEntities[nearbyIndexer]; //fix this so we don't get out of range
+            SelectableEntity check = enemyList[nearbyIndexer];
             if (IsEnemy(check) && check.alive && check.isTargetable.Value && check.IsMinion())
             //only check on enemies that are alive, targetable, visible, and in range. also only care about enemy minions
             {
@@ -2036,7 +2040,7 @@ public class MinionController : NetworkBehaviour
                 }
             }
             nearbyIndexer++;
-            if (nearbyIndexer >= Global.Instance.enemyEntities.Count) nearbyIndexer = 0;
+            if (nearbyIndexer >= enemyList.Count) nearbyIndexer = 0;
             if (valid != null) return valid;
         }
         return valid;
@@ -2056,15 +2060,19 @@ public class MinionController : NetworkBehaviour
         }
 
         SelectableEntity valid = null;
-        if (nearbyIndexer >= Global.Instance.visibleEnemies.Count)
+
+        List<SelectableEntity> enemyList = entity.controllerOfThis.visibleEnemies;
+        if (enemyList.Count <= 0) return;
+
+        if (nearbyIndexer >= enemyList.Count)
         {
-            nearbyIndexer = Global.Instance.visibleEnemies.Count - 1;
+            nearbyIndexer = enemyList.Count - 1;
         }
         //guarantee a target within .5 seconds 
-        SelectableEntity check = Global.Instance.visibleEnemies[nearbyIndexer]; 
-        int indexesToRunPerFrame = Global.Instance.visibleEnemies.Count / Global.Instance.maxFramesToFindTarget;
+        int indexesToRunPerFrame = enemyList.Count / Global.Instance.maxFramesToFindTarget;
         for (int i = 0; i < indexesToRunPerFrame; i++)
         {
+            SelectableEntity check = enemyList[nearbyIndexer];
             if (IsEnemy(check) && check.alive && check.isTargetable.Value) //only check on enemies that are alive, targetable, visible, and in range
             {
                 if (canAttackStructures || check.IsMinion())
@@ -2110,7 +2118,7 @@ public class MinionController : NetworkBehaviour
                 }
             }
             nearbyIndexer++;
-            if (nearbyIndexer >= Global.Instance.visibleEnemies.Count) nearbyIndexer = 0;
+            if (nearbyIndexer >= enemyList.Count) nearbyIndexer = 0;
         } 
     } 
     private float sqrDistToAlternateTarget = 0;
@@ -2127,11 +2135,14 @@ public class MinionController : NetworkBehaviour
         }
 
         SelectableEntity valid = null;
-        if (nearbyIndexer >= Global.Instance.visibleEnemies.Count)
+
+        List<SelectableEntity> enemyList = entity.controllerOfThis.visibleEnemies;
+        if (enemyList.Count <= 0) return;
+        if (nearbyIndexer >= enemyList.Count)
         {
-            nearbyIndexer = Global.Instance.visibleEnemies.Count - 1;
+            nearbyIndexer = enemyList.Count - 1;
         }
-        SelectableEntity check = Global.Instance.visibleEnemies[nearbyIndexer];
+        SelectableEntity check = enemyList[nearbyIndexer];
         if (IsEnemy(check) && check.alive && check.isTargetable.Value && check.IsMinion()) //only check on enemies that are alive, targetable, visible, and in range
         {
             if (entity.aiControlled && InRangeOfEntity(check, entity.fogUnit.circleRadius)
@@ -2164,7 +2175,7 @@ public class MinionController : NetworkBehaviour
             }
         }
         nearbyIndexer++;
-        if (nearbyIndexer >= Global.Instance.visibleEnemies.Count) nearbyIndexer = 0;
+        if (nearbyIndexer >= enemyList.Count) nearbyIndexer = 0;
     }
     private bool IsEnemy(SelectableEntity target)
     {
@@ -2175,9 +2186,9 @@ public class MinionController : NetworkBehaviour
         if (attackType == AttackType.None) return null;
 
         SelectableEntity valid = null;
-        if (nearbyIndexer >= Global.Instance.allFactionEntities.Count)
+        if (nearbyIndexer >= Global.Instance.allEntities.Count)
         {
-            nearbyIndexer = Global.Instance.allFactionEntities.Count - 1;
+            nearbyIndexer = Global.Instance.allEntities.Count - 1;
         }
         //guarantee a target within .5 seconds
         int maxExpectedUnits = 200;
@@ -2185,7 +2196,7 @@ public class MinionController : NetworkBehaviour
         int indexesToRunPerFrame = maxExpectedUnits / maxFramesToFindTarget;
         for (int i = 0; i < indexesToRunPerFrame; i++)
         {
-            SelectableEntity check = Global.Instance.allFactionEntities[nearbyIndexer]; //fix this so we don't get out of range
+            SelectableEntity check = Global.Instance.allEntities[nearbyIndexer]; //fix this so we don't get out of range
             if (check.teamNumber.Value != entity.teamNumber.Value && check.alive && check.isTargetable.Value
                 && check.isVisibleInFog && InRangeOfEntity(check, range))
             //only check on enemies that are alive, targetable, visible, and in range
@@ -2193,7 +2204,7 @@ public class MinionController : NetworkBehaviour
                 valid = check;
             }
             nearbyIndexer++;
-            if (nearbyIndexer >= Global.Instance.allFactionEntities.Count) nearbyIndexer = 0;
+            if (nearbyIndexer >= Global.Instance.allEntities.Count) nearbyIndexer = 0;
             if (valid != null) return valid;
         }
         return valid;

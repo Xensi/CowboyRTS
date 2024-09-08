@@ -68,6 +68,10 @@ public class LobbyManager : MonoBehaviour
         playerNameField.text = playerName;
         await Authenticate(); //sign in
         playerNameField.onEndEdit.AddListener(delegate { SavePlayerName(playerNameField.text); });
+
+
+        //NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectedCallback;
+        //NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnectCallback;
     }
     void OnApplicationQuit()
     {
@@ -109,15 +113,16 @@ public class LobbyManager : MonoBehaviour
         LevelManager.Instance.LoadLevel(LevelManager.Instance.LEVEL1, StartSinglePlayerGameCallback); 
     }
     private void StartSinglePlayerGameCallback()
-    {
+    { 
         if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
         {
             NetworkManager.Singleton.NetworkConfig.NetworkTransport = singleplayerTransport;
             NetworkManager.Singleton.StartHost();
             ChangeGameUIStatus(true);
-            ChangeLobbyUIStatus(false);
-        } 
-    }
+            ChangeLobbyUIStatus(false); 
+        }
+        //Debug.Log("How many players?" + Global.Instance.allPlayers.Count);
+    } 
     public void JoinLocalHost()
     {
         if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)

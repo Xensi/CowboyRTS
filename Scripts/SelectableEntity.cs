@@ -4,11 +4,7 @@ using Unity.Netcode;
 using Pathfinding;
 using Pathfinding.RVO;
 using FoW;
-using static TargetedEffects;
-using System.Linq;
-using System;
-using static UnityEditor.PlayerSettings;
-using Unity.VisualScripting;
+using static TargetedEffects; 
 public class SelectableEntity : NetworkBehaviour
 {
     [HideInInspector] public bool fakeSpawn = false;
@@ -243,7 +239,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (factionEntity == null) return;
         //set faction entity information
-        displayName = factionEntity.name;
+        displayName = factionEntity.productionName;
         desc = factionEntity.description;
         maxHP = (short)factionEntity.maxHP;
 
@@ -440,9 +436,10 @@ public class SelectableEntity : NetworkBehaviour
                     }
                 }
             } 
-            //place effect dependent on "controller of this" being defined after this line
+            //place effect dependent on "controller of this" being defined after this line!
             if (controllerOfThis != null)
             {
+                StartGameAddToEnemyLists();
                 if (fogUnit != null) fogUnit.team = controllerOfThis.allegianceTeamID;
                 //Debug.Log("Setting fog unit to: " + controllerOfThis.allegianceTeamID + " with playerteamID: " + controllerOfThis.playerTeamID); 
             }
@@ -481,8 +478,9 @@ public class SelectableEntity : NetworkBehaviour
             hasRegisteredRallyMission = true;
             TryToRegisterRallyMission();
         }*/
+
         localTeamNumber = System.Convert.ToInt32(net.OwnerClientId);
-    }
+    } 
     private void Start() //call stuff here so that network variables are valid (isSpawned)
     {
         PlaySpawnSound();
@@ -531,15 +529,8 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
         if (rallyVisual != null) rallyVisual.enabled = false;
-        if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allFactionEntities.Add(this);
-        if (controllerOfThis != null && controllerOfThis.allegianceTeamID != Global.Instance.localPlayer.allegianceTeamID)
-        {
-            Global.Instance.enemyEntities.Add(this);
-            if (IsMinion())
-            {
-                Global.Instance.enemyMinions.Add(this);
-            }
-        }
+        if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allEntities.Add(this);
+
         healthBar.entity = this;
         healthBar.SetVisible(false);
 
@@ -1008,7 +999,7 @@ public class SelectableEntity : NetworkBehaviour
     private void UpdateHealthBarPosition()
     {
         if (mainCam == null) mainCam = Global.Instance.localPlayer.mainCam;
-        if (healthBar != null && healthBar.isActiveAndEnabled)
+        if (healthBar != null && healthBar.isActiveAndEnabled && mainCam != null)
         {
             healthBar.barParent.transform.position = transform.position + healthBarOffset;
             healthBar.barParent.transform.LookAt(transform.position + mainCam.transform.rotation * Vector3.forward,
@@ -1079,14 +1070,70 @@ public class SelectableEntity : NetworkBehaviour
         ChangePopulation(-consumePopulationAmount);
         ChangeMaxPopulation(-raisePopulationLimitBy);
     }
+    private List<Player> checkedPlayers = new();
+    public void StartGameAddToEnemyLists()
+    {
+        //Debug.Log("num players " + Global.Instance.allPlayers.Count);
+        foreach (Player player in Global.Instance.allPlayers)
+        {
+            if (controllerOfThis == null) break;
+            if (player == null) continue;
+            //Debug.Log(controllerOfThis.name + "name, id" + controllerOfThis.allegianceTeamID + "versus name id " + player.name + player.allegianceTeamID);
+
+            if (controllerOfThis.allegianceTeamID != player.allegianceTeamID)
+            {
+                if (!checkedPlayers.Contains(player))
+                { 
+                    checkedPlayers.Add(player);
+                    player.enemyEntities.Add(this);
+                    Debug.Log("Adding " + name + " to " + player.name + "enemy list");
+                }
+            }
+        }
+    }
+    public void MidGameUpdateEnemyListsAfterCapture()
+    { 
+        foreach (Player player in Global.Instance.allPlayers)
+        {
+            if (controllerOfThis == null) break;
+            if (player == null) continue;
+            if (controllerOfThis.allegianceTeamID != player.allegianceTeamID)
+            {
+                player.enemyEntities.Add(this);
+            }
+            else
+            { 
+                player.enemyEntities.Remove(this);
+                player.visibleEnemies.Remove(this);
+            }
+        }
+    }
+    private void RemoveFromEnemyLists()
+    {
+        foreach (Player player in Global.Instance.allPlayers)
+        {
+            if (controllerOfThis == null) break;
+            if (player == null) continue;
+            if (controllerOfThis.allegianceTeamID != player.allegianceTeamID)
+            {
+                player.enemyEntities.Remove(this);
+                player.visibleEnemies.Remove(this);
+                /*if (IsMinion())
+                {
+                    player.enemyMinions.Add(this);
+                }*/
+            }
+        }
+    }
     public void PrepareForEntityDestruction()
     {
+        RemoveFromEnemyLists();
         if (lootedOnDestructionGold > 0)
         {
             Global.Instance.localPlayer.AddGold(lootedOnDestructionGold);
         }
         healthBar.Delete();
-        Global.Instance.allFactionEntities.Remove(this);
+        Global.Instance.allEntities.Remove(this);
         if (IsOwner)
         {
             FixPopulationOnDeath();
@@ -1832,28 +1879,25 @@ public class SelectableEntity : NetworkBehaviour
         if (controllerOfThis != null) 
         {
             teamNumber.Value = (sbyte)controllerOfThis.playerTeamID;
+            
             if (fogUnit != null) fogUnit.team = controllerOfThis.allegianceTeamID;
         }
-        if (teamType == TeamBehavior.OwnerTeam)
-        {
-            ChangePopulation(consumePopulationAmount);
-            ChangeMaxPopulation(raisePopulationLimitBy);
-        }
-        if (teamType == TeamBehavior.OwnerTeam)
-        {
-            RTSPlayer playerController = Global.Instance.localPlayer;
-            playerController.ownedEntities.Add(this);
-            playerController.ownedMinions.Add(minionController);  
 
-            if (factionEntity.constructableBuildings.Length > 0)
-            {
-                playerController.ownedBuilders.Add(minionController);
-            } 
-            if (IsNotYetBuilt())
-            {
-                playerController.unbuiltStructures.Add(this);
-            } 
+        ChangePopulation(consumePopulationAmount);
+        ChangeMaxPopulation(raisePopulationLimitBy);
+        RTSPlayer playerController = Global.Instance.localPlayer;
+        playerController.ownedEntities.Add(this);
+        playerController.ownedMinions.Add(minionController);
+
+        if (factionEntity.constructableBuildings.Length > 0)
+        {
+            playerController.ownedBuilders.Add(minionController);
         }
+        if (IsNotYetBuilt())
+        {
+            playerController.unbuiltStructures.Add(this);
+        }
+        MidGameUpdateEnemyListsAfterCapture();
     }
     public void UpdateAttackIndicator()
     {

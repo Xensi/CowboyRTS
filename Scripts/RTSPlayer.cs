@@ -1,22 +1,12 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Netcode;
-using UnityEngine.UI;
+using Unity.Netcode; 
 using UnityEngine.EventSystems;// Required when using Event data.
 using TMPro;
 using System.Linq;
 using FoW;
 using UnityEngine.Rendering;
-using System;
-using UnityEngine.UIElements;
-using UnityEditor.PackageManager;
-using static UnityEditor.Progress;
-//using static UnityEditor.Progress;
-/*using UnityEditor.Playables;
-using UnityEditor.ShaderGraph.Internal;
-using Unity.Burst.CompilerServices;
-using static UnityEditor.Progress;*/
+using System; 
 
 public class RTSPlayer : Player
 {
@@ -131,10 +121,7 @@ public class RTSPlayer : Player
         {
             MoveCamToSpawn();
         } 
-    }
-    private void Awake()
-    {
-    }
+    } 
     private LevelInfo playerSpawns;
     private void RetrieveSpawnPositionsList()
     {
@@ -150,7 +137,7 @@ public class RTSPlayer : Player
         {
             inTheGame.Value = true;
             Global.Instance.localPlayer = this;
-            Vector3 spawnPosition;
+            /*Vector3 spawnPosition;
             if (playerTeamID < playerSpawns.spawnsList.Count)
             {
                 spawnPosition = playerSpawns.spawnsList[playerTeamID].position;
@@ -158,7 +145,7 @@ public class RTSPlayer : Player
             else
             {
                 spawnPosition = new Vector3(UnityEngine.Random.Range(-9, 9), 0, UnityEngine.Random.Range(-9, 9));
-            }
+            }*/
 
             //GenericSpawnMinion(spawnPosition, playerFaction.spawnableEntities[0], this); 
 
@@ -534,9 +521,10 @@ public class RTSPlayer : Player
             closestBuilder.CommandBuildTarget(currentBuilding);
         }
     }
-    void Update()
+    public override void Update()
     {
         if (!active) return;
+        base.Update();
         if (requiredAssignments > 0)
         {
             requiredAssignments--;

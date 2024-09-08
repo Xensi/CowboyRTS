@@ -71,17 +71,22 @@ MonoBehaviour:
   ownedEntities: []
   ownedMinions: []
   unbuiltStructures: []
+  ownedBuilders: []
   gold: 100
   population: 0
   maxPopulation: 10
   playerTeamID: 0
   allegianceTeamID: 0
+  fow: {fileID: 0}
+  enemyEntities: []
+  visibleEnemies: []
+  enable: 1
   inTheGame:
     m_InternalValue: 0
   keystoneUnits: []
   grid: {fileID: 2084301759269820934}
   selectedEntities: []
-  enemyEntities: []
+  selectedBuilders: []
   cursorWorldPosition: {x: 0, y: 0, z: 0}
   linkedState: 0
   mouseState: 0
@@ -105,7 +110,6 @@ MonoBehaviour:
     m_Bits: 0
   mainCam: {fileID: 0}
   militaryList: []
-  builderList: []
   productionList: []
   predictedWallPositions: []
   predictedWallPositionsShouldBePlaced: 
