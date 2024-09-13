@@ -155,6 +155,7 @@ GameObject:
   - component: {fileID: 4431963681803516662}
   - component: {fileID: 2723142034339036790}
   - component: {fileID: 8759861570742728164}
+  - component: {fileID: 3066640240260945393}
   m_Layer: 7
   m_Name: minionBase
   m_TagString: Untagged
@@ -193,7 +194,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2641155720
+  GlobalObjectIdHash: 56881033
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -345,6 +346,7 @@ MonoBehaviour:
     m_InternalValue: {x: 0, y: 0}
   destination: {x: 0, y: 0, z: 0}
   canReceiveNewCommands: 1
+  attackMoveDestination: {x: 0, y: 0, z: 0}
   manualControlPathfinding: 0
   nonOwnerRealLocationList: []
   lastOrder:
@@ -403,7 +405,7 @@ MonoBehaviour:
   absoluteOffset: 0
   offset: {x: 0, y: 0}
   boxSize: {x: 5, y: 5}
-  circleRadius: 6
+  circleRadius: 7
   innerRadius: 0.9
   angle: 180
   texture: {fileID: 0}
@@ -578,6 +580,21 @@ MonoBehaviour:
   wallAvoidFalloff: 1
   priority: 0.5
   debug: 0
+--- !u!114 &3066640240260945393
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5353858407141398554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64ffa084e9f3d48b59e691352d40eb68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 1073741824
+  radius: 0.1
+  detail: 10
 --- !u!1001 &4363772687689255031
 PrefabInstance:
   m_ObjectHideFlags: 0

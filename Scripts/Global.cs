@@ -179,7 +179,7 @@ public class Global : NetworkBehaviour
     }
     public void UpdateEnemyLists()
     {
-        Debug.Log("Updating Enemy Lists");
+        //Debug.Log("Updating Enemy Lists");
         foreach (SelectableEntity entity in allEntities)
         {
             entity.StartGameAddToEnemyLists();

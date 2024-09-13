@@ -224,7 +224,8 @@ public class RTSPlayer : Player
     }
     private bool SameTeam(SelectableEntity foreign)
     {
-        return foreign.teamNumber.Value == (sbyte)playerTeamID;//foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
+        return foreign.controllerOfThis == this;
+        //return foreign.teamNumber.Value == (sbyte)playerTeamID;//foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
     }
     private void QueueUnitOrders()
     {
@@ -448,7 +449,7 @@ public class RTSPlayer : Player
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            Debug.Log("Spacebar");
+            //Debug.Log("Spacebar");
             SelectAllAttackers();
         }
         if (Input.GetKeyDown(KeyCode.E))

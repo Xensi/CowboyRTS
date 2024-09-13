@@ -192,13 +192,19 @@ public class AIPlayer : Player
         bool hasPosition = false;
         if (knownEnemyUnits.Count > 0)
         {
-            pos = knownEnemyUnits[0].transform.position;
-            hasPosition = true;
+            if (knownEnemyUnits[0] != null)
+            { 
+                pos = knownEnemyUnits[0].transform.position;
+                hasPosition = true;
+            }
         }
         else if (knownEnemyStructures.Count > 0)
         {
-            pos = knownEnemyStructures[0].transform.position;
-            hasPosition = true;
+            if (knownEnemyStructures[0] != null)
+            { 
+                pos = knownEnemyStructures[0].transform.position;
+                hasPosition = true;
+            }
         }
 
         if (hasPosition)

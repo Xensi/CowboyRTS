@@ -1086,7 +1086,7 @@ public class SelectableEntity : NetworkBehaviour
                 { 
                     checkedPlayers.Add(player);
                     player.enemyEntities.Add(this);
-                    Debug.Log("Adding " + name + " to " + player.name + "enemy list");
+                    //Debug.Log("Adding " + name + " to " + player.name + "enemy list");
                 }
             }
         }

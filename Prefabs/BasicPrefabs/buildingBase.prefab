@@ -144,6 +144,7 @@ MonoBehaviour:
   clientIDToSpawnUnder: 0
   aiControlled: 0
   controllerOfThis: {fileID: 0}
+  lootedOnDestructionGold: 0
   fullyBuiltInScene: 0
   initialized: 0
   abilityToUse: {fileID: 0}
@@ -151,12 +152,14 @@ MonoBehaviour:
   appliedEffects: []
   fogUnit: {fileID: 0}
   toggleableObject: {fileID: 0}
-  visibleInFog: 0
+  isVisibleInFog: 0
   oldVisibleInFog: 0
   hideFogTeam: 0
   shouldHideInFog: 1
   attackEffects: []
   spawnerThatSpawnedThis: {fileID: 0}
+  whenTheseEntitiesKilledTriggerBehavior: []
+  triggerBehavior: 0
   deathEffect: {fileID: 1596140512904530975, guid: 67836dd37cc44c24eaf1ccca6de50459, type: 3}
 --- !u!54 &6443730291645010253
 Rigidbody:
@@ -224,7 +227,7 @@ MonoBehaviour:
   absoluteOffset: 0
   offset: {x: 0, y: 0}
   boxSize: {x: 5, y: 5}
-  circleRadius: 5
+  circleRadius: 2
   innerRadius: 0.5
   angle: 180
   texture: {fileID: 0}

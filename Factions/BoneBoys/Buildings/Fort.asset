@@ -16,7 +16,7 @@ MonoBehaviour:
   description: 
   prefabToSpawn: {fileID: 8795742978982568552, guid: c0363a0cf8391ed498d2b8f91cc1b324, type: 3}
   goldCost: 15
-  maxHP: 50
+  maxHP: 200
   isKeystone: 0
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0
@@ -34,7 +34,7 @@ MonoBehaviour:
   attackDuration: 1
   impactTime: 0.5
   areaOfEffectRadius: 1
-  shouldAutoSeekEnemies: 0
+  shouldAggressivelySeekEnemies: 0
   spawnableUnits: []
   spawnableAtOnce: 1
   isHarvester: 0
@@ -46,3 +46,4 @@ MonoBehaviour:
   needsConstructing: 1
   buildOffset: {x: 0, y: 0, z: 0}
   extendable: 0
+  rotatable: 0

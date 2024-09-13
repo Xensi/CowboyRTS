@@ -8,6 +8,7 @@ public class ConditionalMessage : MonoBehaviour
     [SerializeField] private List<GameObject> messages;
     [SerializeField] private GameObject bg;
     [SerializeField] private List<SelectableEntity> checkForDestruction;
+    [SerializeField] private List<SelectableEntity> winWhenTheseAreDead;
     [SerializeField] private AIPlayer ai;
     private void Start()
     {
@@ -19,6 +20,8 @@ public class ConditionalMessage : MonoBehaviour
     private bool movementMsgShown = false;
     private bool attackSpecificMsgShown = false;
     private bool middleClickMsgShown = false;
+    private bool goalMsgShown = false;
+    private bool victoryMsgShown = false;
     private void Update()
     {
         if (!trainUnitMsgShown && Global.Instance.localPlayer.selectedEntities.Count > 0)
@@ -47,8 +50,30 @@ public class ConditionalMessage : MonoBehaviour
             MakeAIAggressive();
             ShowMessage(5);
         }
-        
+        if (!goalMsgShown && Input.GetMouseButtonDown(2))
+        {
+            goalMsgShown = true;
+            ShowMessage(6);
+        }
+        if (goalMsgShown)
+        {
+            if (goalMsgShowTime > 0)
+            { 
+                goalMsgShowTime -= Time.deltaTime;
+            }
+            else if (goalMsgShowTime != -999)
+            {
+                goalMsgShowTime = -999;
+                HideMessage();
+            }
+        }
+        if (!victoryMsgShown && PlayerWonByDestroying())
+        {
+            victoryMsgShown = true;
+            ShowMessage(7);
+        }
     }
+    private float goalMsgShowTime = 4;
     private void MakeAIAggressive()
     {
         ai.behavior = AIPlayer.AIBehavior.Aggressive;
@@ -56,6 +81,17 @@ public class ConditionalMessage : MonoBehaviour
     private bool CheckForDestruction()
     {
         foreach (SelectableEntity item in checkForDestruction)
+        {
+            if (!item.alive)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    private bool PlayerWonByDestroying()
+    {
+        foreach (SelectableEntity item in winWhenTheseAreDead)
         {
             if (!item.alive)
             {
@@ -75,5 +111,9 @@ public class ConditionalMessage : MonoBehaviour
     private void HideMessage()
     {
         bg.SetActive(false);
+        for (int i = 0; i < messages.Count; i++)
+        {
+            messages[i].SetActive(false);
+        }
     }
 }
