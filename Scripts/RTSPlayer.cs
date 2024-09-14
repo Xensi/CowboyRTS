@@ -231,6 +231,7 @@ public class RTSPlayer : Player
     {
         Vector3 clickedPosition;
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
+        //Physics.RaycastNonAlloc()
         bool groundWasHit = Physics.Raycast(ray.origin, ray.direction, out RaycastHit groundHit, Mathf.Infinity, Global.Instance.groundLayer);
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
         {
@@ -295,7 +296,7 @@ public class RTSPlayer : Player
                 actionType = ActionType.Move;
             }
 
-            Debug.Log("queuing unit orders " + actionType);
+            //Debug.Log("queuing unit orders " + actionType);
             //finished determining action type
             UnitOrdersQueue.Clear();
             foreach (SelectableEntity selected in selectedEntities)
@@ -308,7 +309,7 @@ public class RTSPlayer : Player
                     order.action = actionType;
                     order.target = hitEntity;
                     UnitOrdersQueue.Add(order);
-                    Debug.Log("adding order to " + selected);
+                    //Debug.Log("adding order to " + selected);
                 }
             }
             totalNumUnitOrders = UnitOrdersQueue.Count;
@@ -646,7 +647,7 @@ public class RTSPlayer : Player
             }
             if (Input.GetMouseButtonDown(1)) //right click
             { //used to cancel most commands, or move
-                Debug.Log("right clicked");
+                //Debug.Log("right clicked");
                 switch (mouseState)
                 {
                     case MouseState.Waiting:

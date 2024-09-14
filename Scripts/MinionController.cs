@@ -763,14 +763,14 @@ public class MinionController : NetworkBehaviour
         {
             targetEnemy = FindEnemyMinionToAttack(attackRange, false);
         }
-        if (TargetIsValidEnemy(targetEnemy))
+        if (IsValidTarget(targetEnemy))
         {
             SwitchState(MinionStates.WalkToSpecificEnemy);
         }
     }
     private void GarrisonedSeekEnemies()
     {
-        if (TargetIsValidEnemy(targetEnemy))
+        if (IsValidTarget(targetEnemy))
         {
             SwitchState(MinionStates.Attacking);
         }
@@ -1019,7 +1019,7 @@ public class MinionController : NetworkBehaviour
                 }
                 
                 FindClosestEnemyToAttackMoveTowards(attackRange);
-                if (TargetIsValidEnemy(targetEnemy))
+                if (IsValidTarget(targetEnemy))
                 {
                     SetDestination(targetEnemy.transform.position);
                     //SetDestinationIfHighDiff(targetEnemy.transform.position); //walk to the enemy
@@ -1037,7 +1037,7 @@ public class MinionController : NetworkBehaviour
                 { 
                     SwitchState(MinionStates.AttackMoving);
                 }
-                if (TargetIsValidEnemy(targetEnemy))
+                if (IsValidTarget(targetEnemy))
                 {
                     //UpdateAttackIndicator();
                     if (!InRangeOfEntity(targetEnemy, attackRange))
@@ -1105,11 +1105,11 @@ public class MinionController : NetworkBehaviour
                         }
                     } 
                 }
-                if (!TargetIsValidEnemy(targetEnemy) && !attackReady && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
+                if (!IsValidTarget(targetEnemy) && !attackReady && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
                 {
                     SwitchState(MinionStates.AttackMoving);
                 }
-                else if (!TargetIsValidEnemy(targetEnemy) && attackReady && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
+                else if (!IsValidTarget(targetEnemy) && attackReady && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
                 {
                     SwitchState(MinionStates.AttackMoving);
                 }
@@ -1179,7 +1179,7 @@ public class MinionController : NetworkBehaviour
                     animator.SetFloat("AttackSpeed", 1);
                 }*/
                 animator.Play("Idle");
-                if (!TargetIsValidEnemy(targetEnemy))
+                if (!IsValidTarget(targetEnemy))
                 {
                     SwitchState(MinionStates.AttackMoving);
                 }
@@ -2017,6 +2017,12 @@ public class MinionController : NetworkBehaviour
         return closest;
     }
     #region FindClosest
+
+    private bool IsPlayerControlled()
+    {
+        return !entity.aiControlled;
+    }
+
     //could try cycling through entire list of enemy units .. .
     //SelectableEntity currentClosestEnemy = null;
     int nearbyIndexer = 0;
@@ -2026,10 +2032,12 @@ public class MinionController : NetworkBehaviour
     /// </summary>
     /// <param name="target"></param>
     /// <returns></returns>
-    private bool TargetIsValidEnemy(SelectableEntity target)
+    private bool IsValidTarget(SelectableEntity target)
     {
-        if (target == null || !target.alive || !target.isTargetable.Value || (!entity.aiControlled && !target.isVisibleInFog)
+        if (target == null || !target.alive || !target.isTargetable.Value || (IsPlayerControlled() && !target.isVisibleInFog)
             || (!canAttackStructures && target.IsStructure()))
+            //reject if target is null, or target is dead, or target is untargetable, or this unit is player controlled and target is hidden,
+            //or this unit can't attack structures and target is structure
         {
             return false;
         }
@@ -2038,9 +2046,8 @@ public class MinionController : NetworkBehaviour
             return true;
         }
     }
-    private readonly float defaultMeleeDetectionRange = 5;
-    private SelectableEntity FindEnemyMinionToAttack(float range, bool shouldExtendAttackRange = true) //this doesn't work because it's by global
-        //and not by player
+    private readonly float defaultMeleeDetectionRange = 3;
+    private SelectableEntity FindEnemyMinionToAttack(float range, bool shouldExtendAttackRange = true)
     {
         if (attackType == AttackType.None) return null;
 
@@ -2113,25 +2120,28 @@ public class MinionController : NetworkBehaviour
         for (int i = 0; i < indexesToRunPerFrame; i++)
         {
             SelectableEntity check = enemyList[nearbyIndexer];
-            if (IsEnemy(check) && check.alive && check.isTargetable.Value 
-                && Vector3.Distance(check.transform.position, attackMoveDestination) <= defaultAttackMoveDestinationViabilityRange)
-                //only check on enemies that are alive, targetable, visible, and in range of the attack move destination
-                //later add failsafe for if there's nobody in that range
+            if (IsEnemy(check) && check.alive && check.isTargetable.Value) //only check on enemies that are alive, targetable, visible
             {
-                if (canAttackStructures || check.IsMinion())
-                {
-                    if (entity.aiControlled && InRangeOfEntity(check, entity.fogUnit.circleRadius)
-                        && InRangeOfEntity(check, range)) //AI IGNORES ACTUAL FOG VISIBILITY BUT STILL OBEYS FOG RULES
+                if (entity.aiControlled 
+                    || Vector3.Distance(check.transform.position, attackMoveDestination) <= defaultAttackMoveDestinationViabilityRange)
+                //if AI controlled, continue; otherwise must be in range of the attack move destination
+                //later add failsafe for if there's nobody in that range
+                { 
+                    if (canAttackStructures || check.IsMinion())
                     {
-                        valid = check;
-                    }
-                    else if (check.isVisibleInFog && InRangeOfEntity(check, range)) //is enemy in range and visible?
-                    {
-                        valid = check;
+                        if (entity.aiControlled && InRangeOfEntity(check, entity.fogUnit.circleRadius)
+                            && InRangeOfEntity(check, range)) //AI IGNORES ACTUAL FOG VISIBILITY BUT STILL OBEYS FOG RULES
+                        {
+                            valid = check;
+                        }
+                        else if (check.isVisibleInFog && InRangeOfEntity(check, range)) //is enemy in range and visible?
+                        {
+                            valid = check;
+                        }
                     }
                 }
             }
-            if (TargetIsValidEnemy(targetEnemy))
+            if (IsValidTarget(targetEnemy))
             { //ensure dist is up to date
                 sqrDistToTargetEnemy = (targetEnemy.transform.position - transform.position).sqrMagnitude;
             }
@@ -2145,19 +2155,19 @@ public class MinionController : NetworkBehaviour
                 Vector3 offset = valid.transform.position - transform.position;
                 float validDist = offset.sqrMagnitude;
                 //get sqr magnitude between this and valid
-
                 //if our current target 
                 //if our current target is a structure, jump to minion regardless of distance.
                 //if our current target is a minion, only jump to other minions if lower distance
-                //if our current destination is unreachable and we're melee, jump to anything else
+                //if our current destination is unreachable and we're melee, jump to something closer
                 if (targetEnemy == null || //if we have no current target, this is our new target;
                     targetEnemy.IsStructure() && valid.IsMinion() ||
                     targetEnemy.IsStructure() && valid.IsStructure() && validDist < sqrDistToTargetEnemy ||
                     targetEnemy.IsMinion() && valid.IsMinion() && validDist < sqrDistToTargetEnemy
-                    || !pathReachesTarget && IsMelee() && validDist <= sqrDistToTargetEnemy) //
+                    || !pathReachesTarget && IsMelee() && validDist < sqrDistToTargetEnemy) //
                 {
                     sqrDistToTargetEnemy = validDist;
                     targetEnemy = valid;
+                    //Debug.Log("Square distance to: " + targetEnemy.name + " is " + sqrDistToTargetEnemy);
                 }
             }
             nearbyIndexer++;
@@ -2165,6 +2175,11 @@ public class MinionController : NetworkBehaviour
         } 
     } 
     private float sqrDistToAlternateTarget = 0;
+    /// <summary>
+    /// Use to find a minion to attack when this is attacking a structure
+    /// </summary>
+    /// <param name="range"></param>
+    /// <param name="shouldExtendAttackRange"></param>
     private void FindCloserAlternateAttackTarget(float range, bool shouldExtendAttackRange = true)
     {
         if (attackType == AttackType.None) return;
@@ -2198,7 +2213,7 @@ public class MinionController : NetworkBehaviour
                 valid = check;
             }
         }
-        if (TargetIsValidEnemy(alternateAttackTarget))
+        if (IsValidTarget(alternateAttackTarget))
         { //ensure dist is up to date
             sqrDistToAlternateTarget = (alternateAttackTarget.transform.position - transform.position).sqrMagnitude;
         }

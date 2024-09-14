@@ -12,9 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b888e0fe913eaf4095ed4e0fccd988e, type: 3}
   m_Name: Drunkard
   m_EditorClassIdentifier: 
-  productionName: Drunkard
-  description: Tough bar brawler. Drink to heal and speed up. Buy new drinks at the
-    saloon.
+  productionName: Bar Brawler
+  description: Tough fighter. Drink to heal and speed up. Buy new drinks at the saloon.
   prefabToSpawn: {fileID: 2545681379473208697, guid: 1207c82d488d9984dbc660e0682325ed, type: 3}
   goldCost: 20
   maxHP: 12
