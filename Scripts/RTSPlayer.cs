@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Netcode; 
+using Unity.Netcode;
 using UnityEngine.EventSystems;// Required when using Event data.
 using TMPro;
 using System.Linq;
 using FoW;
 using UnityEngine.Rendering;
-using System; 
+using System;
+using Unity.Burst.CompilerServices;
 
 public class RTSPlayer : Player
 {
@@ -15,7 +16,7 @@ public class RTSPlayer : Player
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
     public List<SelectableEntity> selectedEntities; //selected and we can control them 
-    public List<MinionController> selectedBuilders; 
+    public List<MinionController> selectedBuilders;
     private Vector3 _mousePosition;
     private Vector3 _offset;
     public Vector3 cursorWorldPosition;
@@ -120,8 +121,8 @@ public class RTSPlayer : Player
         if (IsOwner)
         {
             MoveCamToSpawn();
-        } 
-    } 
+        }
+    }
     private LevelInfo playerSpawns;
     private void RetrieveSpawnPositionsList()
     {
@@ -171,7 +172,7 @@ public class RTSPlayer : Player
         foreach (RaycastResult item in results)
         {
             if (item.gameObject.layer == LayerMask.NameToLayer("UI"))
-            { 
+            {
                 return true;
             }
         }
@@ -201,7 +202,7 @@ public class RTSPlayer : Player
             foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.minionController != null && item.minionController.IsValidAttacker()) //minion
-                { 
+                {
                     UnitOrder order = new();
                     order.unit = item.minionController;
                     order.targetPosition = clickedPosition;
@@ -229,21 +230,29 @@ public class RTSPlayer : Player
     }
     private void QueueUnitOrders()
     {
-        Vector3 clickedPosition;
+        Vector3 clickedPosition = Vector3.zero;
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
-        //Physics.RaycastNonAlloc()
-        bool groundWasHit = Physics.Raycast(ray.origin, ray.direction, out RaycastHit groundHit, Mathf.Infinity, Global.Instance.groundLayer);
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
+        RaycastHit[] raycastHits = new RaycastHit[5];
+        int hits = Physics.RaycastNonAlloc(ray.origin, ray.direction, raycastHits, Mathf.Infinity, Global.Instance.gameLayer);
+        
+        SelectableEntity hitEntity = null;
+        for (int i = 0; i < hits; i++)
         {
+            SelectableEntity checkEntity = Global.Instance.FindEntityFromObject(raycastHits[i].collider.gameObject);
+            if (hitEntity == null || checkEntity.controllerOfThis.allegianceTeamID != allegianceTeamID)
+            {
+                //enemy takes priority over allies 
+                hitEntity = checkEntity;
+            }
+
+            bool groundWasHit = raycastHits[i].collider.gameObject.layer == LayerMask.NameToLayer("Ground");
             if (groundWasHit)
             {
-                clickedPosition = groundHit.point;
+                clickedPosition = raycastHits[i].point;
             }
-            else
-            {
-                clickedPosition = hit.point;
-            }
-            SelectableEntity hitEntity = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
+        }
+        if (hits > 0) //Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer)
+        {
             //determine action type
             if (hitEntity != null && PositionExplored(clickedPosition)) //if exists and is explored at least
             {
@@ -280,7 +289,7 @@ public class RTSPlayer : Player
                     else //enemy
                     { //try to target this enemy specifically
                         actionType = ActionType.AttackTarget;
-                        Debug.Log("Trying to attack " + hitEntity.name);
+                        //Debug.Log("Trying to attack " + hitEntity.name);
                     }
                 }
                 else if (hitEntity.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral)
@@ -315,9 +324,7 @@ public class RTSPlayer : Player
             totalNumUnitOrders = UnitOrdersQueue.Count;
             ProcessOrdersInBatches(); //do one pass immediately
         }
-        //ProcessOrders();
-
-    } 
+    }
     private int totalNumUnitOrders = 0;
     private void ProcessOrdersInBatches()
     {
