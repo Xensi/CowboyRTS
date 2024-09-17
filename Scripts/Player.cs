@@ -23,11 +23,12 @@ public class Player : NetworkBehaviour
     public List<SelectableEntity> visibleEnemies = new();
     private int visibleIndexer = 0;
     public bool enable = true; //enabling in the middle of the game does not currently work
+    public Color playerColor = Color.white;
     public void Awake()
     {
         if (!enable) return;
         Global.Instance.allPlayers.Add(this);
-        allegianceTeamID = playerTeamID; //by default
+        //allegianceTeamID = playerTeamID; //by default
     }
     public virtual void Start()
     {
@@ -57,83 +58,60 @@ public class Player : NetworkBehaviour
         //CleanEntityLists();
     }
 
-    private void UpdateVisibilities()
+    private void UpdateVisibilities() //AI will need a different solution
     {
+        int framesForFullSweep = 30;
+        int numToUpdate = Mathf.Clamp(enemyEntities.Count / framesForFullSweep, 1, 999);
         if (enemyEntities.Count > 0)
         {
-            int framesForFullSweep = 30;
-            int numToUpdate = Mathf.Clamp(enemyEntities.Count / framesForFullSweep, 1, 999);
             for (int i = 0; i < numToUpdate; i++)
             {
                 if (visibleIndexer >= enemyEntities.Count) visibleIndexer = enemyEntities.Count - 1;
 
                 SelectableEntity enemy = enemyEntities[visibleIndexer];
                 if (enemy != null)
-                { 
-                    bool visible = enemy.isVisibleInFog;
-                    if (visible)
+                {
+                    if (this is AIPlayer)
                     {
-                        if (!visibleEnemies.Contains(enemy))
+                        //check visibility of unit manually
+                        if (fow == null) fow = FogOfWarTeam.GetTeam(playerTeamID);
+                        byte fogValue = fow.GetFogValue(enemy.transform.position); //get the value of the fog at this position
+                        bool isVisibleInFog = fogValue < Global.Instance.minFogStrength * 255;
+                        if (isVisibleInFog)
                         {
-                            visibleEnemies.Add(enemy);
+                            if (!visibleEnemies.Contains(enemy))
+                            {
+                                visibleEnemies.Add(enemy);
+                            }
+                        }
+                        else
+                        {
+                            visibleEnemies.Remove(enemy);
                         }
                     }
                     else
-                    {
-                        visibleEnemies.Remove(enemy);
-                    }
+                    { //use MP visibility check
+                        bool visible = enemy.isVisibleInFog;
+                        if (visible)
+                        {
+                            if (!visibleEnemies.Contains(enemy))
+                            {
+                                visibleEnemies.Add(enemy);
+                            }
+                        }
+                        else
+                        {
+                            visibleEnemies.Remove(enemy);
+                        }
+                    } 
                 }
 
                 visibleIndexer++;
                 if (visibleIndexer >= enemyEntities.Count) visibleIndexer = 0;
             }
+            
         }
-    } 
-    private void CleanEntityLists()
-    {
-        /*if (allFactionEntities.Count > 0)
-        {
-            if (indexer >= Instance.allFactionEntities.Count)
-            {
-                indexer = Instance.allFactionEntities.Count - 1;
-            }
-            SelectableEntity entity = allFactionEntities[indexer];
-            if (entity == null || !entity.alive)
-            {
-                allFactionEntities.RemoveAt(indexer);
-            }
-            indexer++;
-            if (indexer >= allFactionEntities.Count) indexer = 0;
-        }*/
-        /*if (enemyEntities.Count > 0)
-        {
-            if (enemyIndexer >= enemyEntities.Count)
-            {
-                enemyIndexer = enemyEntities.Count - 1;
-            }
-            SelectableEntity entity = enemyEntities[enemyIndexer];
-            if (entity == null || !entity.alive)
-            {
-                enemyEntities.RemoveAt(enemyIndexer);
-            }
-            enemyIndexer++;
-            if (enemyIndexer >= enemyEntities.Count) enemyIndexer = 0;
-        }*/
-        /*if (enemyMinions.Count > 0)
-        {
-            if (enemyMinionIndexer >= Instance.enemyMinions.Count)
-            {
-                enemyMinionIndexer = Instance.enemyMinions.Count - 1;
-            }
-            SelectableEntity entity = enemyMinions[enemyMinionIndexer];
-            if (entity == null || !entity.alive)
-            {
-                enemyMinions.RemoveAt(enemyMinionIndexer);
-            }
-            enemyMinionIndexer++;
-            if (enemyMinionIndexer >= enemyMinions.Count) enemyMinionIndexer = 0;
-        }*/
-    }
+    }  
     public bool PositionFullyVisible(Vector3 position)
     {
         return fow.GetFogValue(position) < Global.Instance.minFogStrength * 255;

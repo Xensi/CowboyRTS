@@ -380,7 +380,8 @@ public class SelectableEntity : NetworkBehaviour
                     if (teamType == TeamBehavior.OwnerTeam)
                     { 
                         controllerOfThis.ownedEntities.Add(this);
-                        controllerOfThis.ownedMinions.Add(minionController);
+
+                        if (IsMinion()) controllerOfThis.ownedMinions.Add(minionController);
                         if (IsNotYetBuilt())
                         {
                             controllerOfThis.unbuiltStructures.Add(this);
@@ -401,7 +402,7 @@ public class SelectableEntity : NetworkBehaviour
                             controllerOfThis = AIController;
                         }
                         controllerOfThis.ownedEntities.Add(this);
-                        controllerOfThis.ownedMinions.Add(minionController);
+                        if (IsMinion()) controllerOfThis.ownedMinions.Add(minionController);
                         if (IsNotYetBuilt())
                         {
                             controllerOfThis.unbuiltStructures.Add(this);
@@ -416,7 +417,7 @@ public class SelectableEntity : NetworkBehaviour
                     {
                         RTSPlayer playerController = Global.Instance.localPlayer;
                         playerController.ownedEntities.Add(this);
-                        playerController.ownedMinions.Add(minionController);
+                        if (IsMinion()) playerController.ownedMinions.Add(minionController);
                         playerController.lastSpawnedEntity = this;
                         controllerOfThis = playerController;
 
@@ -440,8 +441,7 @@ public class SelectableEntity : NetworkBehaviour
             if (controllerOfThis != null)
             {
                 StartGameAddToEnemyLists();
-                if (fogUnit != null) fogUnit.team = controllerOfThis.allegianceTeamID;
-                //Debug.Log("Setting fog unit to: " + controllerOfThis.allegianceTeamID + " with playerteamID: " + controllerOfThis.playerTeamID); 
+                if (fogUnit != null) fogUnit.team = controllerOfThis.playerTeamID;  
             }
 
             if (teamType == TeamBehavior.OwnerTeam)
@@ -564,32 +564,14 @@ public class SelectableEntity : NetworkBehaviour
     //private bool teamRenderersUpdated = false;
     private void UpdateTeamRenderers()
     {
-        //int id = Mathf.Abs(System.Convert.ToInt32(teamNumber.Value)); //net.OwnerClientId
-        //int id = Mathf.Abs(System.Convert.ToInt32(localTeamNumber));
-        int id = localTeamNumber;
-        if (teamNumber.Value < 0)
+        foreach (MeshRenderer item in teamRenderers)
         {
-            foreach (MeshRenderer item in teamRenderers)
+            if (item != null)
             {
-                if (item != null)
-                {
-                    ///item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
-                    item.material.color = Global.Instance.aiTeamColors[id];
-                }
+                ///item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
+                item.material.color = controllerOfThis.playerColor;
             }
         }
-        else
-        {
-            foreach (MeshRenderer item in teamRenderers)
-            {
-                if (item != null)
-                {
-                    ///item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
-                    item.material.color = Global.Instance.teamColors[id];
-                }
-            }
-        }
-        //teamRenderersUpdated = true;
     }
 
     private void PlaySpawnSound()
@@ -1431,9 +1413,9 @@ public class SelectableEntity : NetworkBehaviour
         if (interactorIndex >= workersInteracting.Count) interactorIndex = 0;
         if (othersInteractorIndex >= othersInteracting.Count) othersInteractorIndex = 0;
     }
-    [HideInInspector] public bool isVisibleInFog = false;
+    public bool isVisibleInFog = false;
     [HideInInspector] public bool oldVisibleInFog = false;
-    [HideInInspector] public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
+    public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
     [HideInInspector] public bool shouldHideInFog = true; // gold should not be hidden
     private bool oneTimeForceUpdateFog = false;
     //[SerializeField]
@@ -1442,9 +1424,11 @@ public class SelectableEntity : NetworkBehaviour
     private FogOfWarTeam fow;
     private void UpdateVisibilityFromFogOfWar() //hide in fog
     {
-        if (fow == null) fow = FogOfWarTeam.GetTeam(hideFogTeam);
-        fogValue = fow.GetFogValue(transform.position);
-        isVisibleInFog = fow.GetFogValue(transform.position) < Global.Instance.minFogStrength * 255;
+        if (fow == null) fow = FogOfWarTeam.GetTeam(hideFogTeam); 
+        /* because "hidefogteam" is the local player id, a player's units will always be
+        visible to themselves. */
+        fogValue = fow.GetFogValue(transform.position); //get the value of the fog at this position
+        isVisibleInFog = fogValue < Global.Instance.minFogStrength * 255;
         if (FogHideable())
         {
             //Debug.Log("running fog visibility for" + gameObject);
@@ -1874,20 +1858,21 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void CaptureForLocalPlayer()
     {
-        Debug.Log("capturing");
+        //Debug.Log("capturing");
         controllerOfThis = Global.Instance.localPlayer;
         if (controllerOfThis != null) 
         {
             teamNumber.Value = (sbyte)controllerOfThis.playerTeamID;
             
-            if (fogUnit != null) fogUnit.team = controllerOfThis.allegianceTeamID;
+            if (fogUnit != null) fogUnit.team = controllerOfThis.playerTeamID;
         }
+        UpdateTeamRenderers();
 
         ChangePopulation(consumePopulationAmount);
         ChangeMaxPopulation(raisePopulationLimitBy);
         RTSPlayer playerController = Global.Instance.localPlayer;
         playerController.ownedEntities.Add(this);
-        playerController.ownedMinions.Add(minionController);
+        if (IsMinion()) playerController.ownedMinions.Add(minionController);
 
         if (factionEntity.constructableBuildings.Length > 0)
         {
@@ -1898,6 +1883,14 @@ public class SelectableEntity : NetworkBehaviour
             playerController.unbuiltStructures.Add(this);
         }
         MidGameUpdateEnemyListsAfterCapture();
+        PlayCaptureEffect();
+    }
+    private void PlayCaptureEffect()
+    { 
+        if (Global.Instance.defaultCaptureEffect != null)
+        {
+            Instantiate(Global.Instance.defaultCaptureEffect, transform.position, Quaternion.identity);
+        }
     }
     public void UpdateAttackIndicator()
     {

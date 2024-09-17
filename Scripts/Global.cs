@@ -67,6 +67,7 @@ public class Global : NetworkBehaviour
     //
     //public List<SelectableEntity> enemyMinions = new();
     public Canvas gameCanvas;
+    public GameObject defaultCaptureEffect;
 
     //Minion sound profile mapping:
     // 0: spawn

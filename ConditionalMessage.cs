@@ -29,7 +29,7 @@ public class ConditionalMessage : MonoBehaviour
             trainUnitMsgShown = true;
             ShowMessage(1);
         }
-        if (!selectUnitMsgShown && Global.Instance.localPlayer.ownedEntities.Count > 1)
+        if (!selectUnitMsgShown && Global.Instance.localPlayer.ownedMinions.Count >= 1)
         {
             selectUnitMsgShown = true;
             ShowMessage(2);
@@ -90,14 +90,16 @@ public class ConditionalMessage : MonoBehaviour
         return false;
     }
     private bool PlayerWonByDestroying()
-    {
+    { 
+        int count = 0;
         foreach (SelectableEntity item in winWhenTheseAreDead)
         {
-            if (!item.alive)
+            if (item == null || !item.alive)
             {
-                return true;
+                count++;
             }
         }
+        if (count >= winWhenTheseAreDead.Count) return true;
         return false;
     }
     private void ShowMessage(int id = 0)

@@ -1538,6 +1538,70 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d91334d9cc4f89f4baeb7037cdfaf7b5, type: 3}
+--- !u!1 &358193543
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 358193544}
+  - component: {fileID: 358193545}
+  m_Layer: 0
+  m_Name: AI Fog of War.3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &358193544
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 358193543}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2113289424}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &358193545
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 358193543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6fec0d0c4161ac44b701192e743dde2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  team: -4
+  mapResolution: {x: 128, y: 128}
+  mapSize: 128
+  mapOffset: {x: 0, y: 0}
+  plane: 2
+  physics: 2
+  pointFiltering: 0
+  blurAmount: 1
+  blurIterations: 1
+  blurType: 0
+  updateUnits: 1
+  updateAutomatically: 1
+  outputToTexture: 1
+  partialFogAmount: 0.5
+  fadeInDuration: 0.1
+  fadeOutDuration: 0.1
+  renderType: 0
+  multithreaded: 1
+  threads: 2
+  maxMillisecondsPerFrame: 5
 --- !u!1 &365068446
 GameObject:
   m_ObjectHideFlags: 0
@@ -3327,6 +3391,70 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 663244354}
   m_CullTransparentMesh: 1
+--- !u!1 &670035458
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 670035459}
+  - component: {fileID: 670035460}
+  m_Layer: 0
+  m_Name: AI Fog of War.1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &670035459
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 670035458}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2113289424}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &670035460
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 670035458}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6fec0d0c4161ac44b701192e743dde2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  team: -2
+  mapResolution: {x: 128, y: 128}
+  mapSize: 128
+  mapOffset: {x: 0, y: 0}
+  plane: 2
+  physics: 2
+  pointFiltering: 0
+  blurAmount: 1
+  blurIterations: 1
+  blurType: 0
+  updateUnits: 1
+  updateAutomatically: 1
+  outputToTexture: 1
+  partialFogAmount: 0.5
+  fadeInDuration: 0.1
+  fadeOutDuration: 0.1
+  renderType: 0
+  multithreaded: 1
+  threads: 2
+  maxMillisecondsPerFrame: 5
 --- !u!1 &683932798
 GameObject:
   m_ObjectHideFlags: 0
@@ -4608,6 +4736,70 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 943497521}
   m_CullTransparentMesh: 1
+--- !u!1 &947387080
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 947387081}
+  - component: {fileID: 947387082}
+  m_Layer: 0
+  m_Name: AI Fog of War.5
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &947387081
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 947387080}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2113289424}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &947387082
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 947387080}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6fec0d0c4161ac44b701192e743dde2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  team: -6
+  mapResolution: {x: 128, y: 128}
+  mapSize: 128
+  mapOffset: {x: 0, y: 0}
+  plane: 2
+  physics: 2
+  pointFiltering: 0
+  blurAmount: 1
+  blurIterations: 1
+  blurType: 0
+  updateUnits: 1
+  updateAutomatically: 1
+  outputToTexture: 1
+  partialFogAmount: 0.5
+  fadeInDuration: 0.1
+  fadeOutDuration: 0.1
+  renderType: 0
+  multithreaded: 1
+  threads: 2
+  maxMillisecondsPerFrame: 5
 --- !u!1001 &955527303
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6709,6 +6901,70 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1220337157}
   m_CullTransparentMesh: 1
+--- !u!1 &1232624819
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1232624820}
+  - component: {fileID: 1232624821}
+  m_Layer: 0
+  m_Name: AI Fog of War.2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1232624820
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1232624819}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2113289424}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1232624821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1232624819}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6fec0d0c4161ac44b701192e743dde2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  team: -3
+  mapResolution: {x: 128, y: 128}
+  mapSize: 128
+  mapOffset: {x: 0, y: 0}
+  plane: 2
+  physics: 2
+  pointFiltering: 0
+  blurAmount: 1
+  blurIterations: 1
+  blurType: 0
+  updateUnits: 1
+  updateAutomatically: 1
+  outputToTexture: 1
+  partialFogAmount: 0.5
+  fadeInDuration: 0.1
+  fadeOutDuration: 0.1
+  renderType: 0
+  multithreaded: 1
+  threads: 2
+  maxMillisecondsPerFrame: 5
 --- !u!1001 &1238751935
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7860,8 +8116,8 @@ MonoBehaviour:
   plane: 2
   physics: 2
   pointFiltering: 0
-  blurAmount: 0
-  blurIterations: 0
+  blurAmount: 1
+  blurIterations: 1
   blurType: 0
   updateUnits: 1
   updateAutomatically: 1
@@ -7870,7 +8126,7 @@ MonoBehaviour:
   fadeInDuration: 0.1
   fadeOutDuration: 0.1
   renderType: 0
-  multithreaded: 0
+  multithreaded: 1
   threads: 2
   maxMillisecondsPerFrame: 5
 --- !u!4 &1539879793
@@ -8211,8 +8467,8 @@ MonoBehaviour:
   plane: 2
   physics: 2
   pointFiltering: 0
-  blurAmount: 0
-  blurIterations: 0
+  blurAmount: 1
+  blurIterations: 1
   blurType: 0
   updateUnits: 1
   updateAutomatically: 1
@@ -8221,7 +8477,7 @@ MonoBehaviour:
   fadeInDuration: 0.1
   fadeOutDuration: 0.1
   renderType: 0
-  multithreaded: 0
+  multithreaded: 1
   threads: 2
   maxMillisecondsPerFrame: 5
 --- !u!4 &1580978753
@@ -10216,8 +10472,8 @@ MonoBehaviour:
   plane: 2
   physics: 2
   pointFiltering: 0
-  blurAmount: 0
-  blurIterations: 0
+  blurAmount: 1
+  blurIterations: 1
   blurType: 0
   updateUnits: 1
   updateAutomatically: 1
@@ -10226,7 +10482,7 @@ MonoBehaviour:
   fadeInDuration: 0.1
   fadeOutDuration: 0.1
   renderType: 0
-  multithreaded: 0
+  multithreaded: 1
   threads: 2
   maxMillisecondsPerFrame: 5
 --- !u!4 &2059416507
@@ -10502,6 +10758,11 @@ Transform:
   - {fileID: 2059416507}
   - {fileID: 1539879793}
   - {fileID: 1580978753}
+  - {fileID: 670035459}
+  - {fileID: 1232624820}
+  - {fileID: 358193544}
+  - {fileID: 2120837476}
+  - {fileID: 947387081}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2114043655
@@ -10547,7 +10808,7 @@ MonoBehaviour:
   - {r: 0.20784312, g: 0.5234106, b: 0.7647059, a: 1}
   - {r: 0.9308176, g: 0.86704963, b: 0.33661625, a: 1}
   aiTeamColors:
-  - {r: 1, g: 1, b: 1, a: 1}
+  - {r: 1, g: 0, b: 0, a: 1}
   - {r: 0.8238993, g: 0.53098774, b: 0.23576978, a: 1}
   factions:
   - {fileID: 11400000, guid: 48d2654104c708448a90a4bfe3b2baa9, type: 2}
@@ -10631,11 +10892,9 @@ MonoBehaviour:
   aiTeamControllers: []
   allPlayers: []
   grid: {fileID: 1949437213}
-  allFactionEntities: []
-  enemyEntities: []
-  enemyMinions: []
-  visibleEnemies: []
+  allEntities: []
   gameCanvas: {fileID: 1357281861}
+  defaultCaptureEffect: {fileID: 5408459219581451750, guid: 79fdd10ce92332f48bdd4a70e0180172, type: 3}
   maxExpectedUnits: 1
   maxFramesToFindTarget: 5
   playerHasWon: 0
@@ -10689,6 +10948,70 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f73484938cf45754b962d3f7d721b96c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &2120837475
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2120837476}
+  - component: {fileID: 2120837477}
+  m_Layer: 0
+  m_Name: AI Fog of War.4
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2120837476
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2120837475}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2113289424}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2120837477
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2120837475}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6fec0d0c4161ac44b701192e743dde2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  team: -5
+  mapResolution: {x: 128, y: 128}
+  mapSize: 128
+  mapOffset: {x: 0, y: 0}
+  plane: 2
+  physics: 2
+  pointFiltering: 0
+  blurAmount: 1
+  blurIterations: 1
+  blurType: 0
+  updateUnits: 1
+  updateAutomatically: 1
+  outputToTexture: 1
+  partialFogAmount: 0.5
+  fadeInDuration: 0.1
+  fadeOutDuration: 0.1
+  renderType: 0
+  multithreaded: 1
+  threads: 2
+  maxMillisecondsPerFrame: 5
 --- !u!1 &2121472879
 GameObject:
   m_ObjectHideFlags: 0

@@ -194,7 +194,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 56881033
+  GlobalObjectIdHash: 2641155720
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -347,6 +347,7 @@ MonoBehaviour:
   destination: {x: 0, y: 0, z: 0}
   canReceiveNewCommands: 1
   attackMoveDestination: {x: 0, y: 0, z: 0}
+  attackTrails: []
   manualControlPathfinding: 0
   nonOwnerRealLocationList: []
   lastOrder:
@@ -354,6 +355,7 @@ MonoBehaviour:
     action: 0
     target: {fileID: 0}
     targetPosition: {x: 0, y: 0, z: 0}
+  attackTrailBeginTime: 0.4
   pathReachesTarget: 0
   shouldAggressivelySeekEnemies: 1
   canAttackStructures: 1
@@ -570,12 +572,12 @@ MonoBehaviour:
   heightBackingField: 2
   centerBackingField: 1
   locked: 0
-  lockWhenNotMoving: 1
+  lockWhenNotMoving: 0
   agentTimeHorizon: 0.5
   obstacleTimeHorizon: 0.5
   maxNeighbours: 30
   layer: 1
-  collidesWith: -1
+  collidesWith: 1
   wallAvoidForce: 1
   wallAvoidFalloff: 1
   priority: 0.5

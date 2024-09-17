@@ -13,7 +13,7 @@ public class AIPlayer : Player
 {
     //to give a unit to the AI, set its desired team to a negative number 
     private float actionTime = 3;
-    private float attackTime = 5;
+    [SerializeField] private float attackTime = 5;
     private float timer = 0;
     private float attackTimer = 0;
     public Transform spawnPosition;
