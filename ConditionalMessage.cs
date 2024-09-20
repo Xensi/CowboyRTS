@@ -47,7 +47,7 @@ public class ConditionalMessage : MonoBehaviour
         if (!middleClickMsgShown && CheckForDestruction())
         {
             middleClickMsgShown = true;
-            MakeAIAggressive();
+            //MakeAIAggressive();
             ShowMessage(5);
         }
         if (!goalMsgShown && Input.GetMouseButtonDown(2))

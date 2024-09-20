@@ -35,7 +35,7 @@ public class Global : NetworkBehaviour
     public TMP_Text hpText;
 
     public TrailController gunTrailGlobal;
-    public Projectile cannonBall;
+    public ExplosiveProjectile cannonBall;
     public AudioClip explosion;
     public GameObject singleUnitInfoParent;
     public TMP_Text popText;
@@ -69,6 +69,8 @@ public class Global : NetworkBehaviour
     public Canvas gameCanvas;
     public GameObject defaultCaptureEffect;
 
+    public GameObject setRallyPointButton;
+
     //Minion sound profile mapping:
     // 0: spawn
     // 1: damage
@@ -81,7 +83,10 @@ public class Global : NetworkBehaviour
     //1: selection
     //
     //
-
+    public void ChangeRallyPointButton(bool val)
+    {
+        if (setRallyPointButton != null) setRallyPointButton.SetActive(val);
+    }
     public void PlayStructureSelectSound(SelectableEntity entity)
     {
         if (entity.sounds.Length > 1) PlayClipAtPoint(entity.sounds[1], entity.transform.position, .75f);

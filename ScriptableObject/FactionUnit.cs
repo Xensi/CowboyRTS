@@ -7,6 +7,7 @@ public class FactionUnit : FactionEntity
     public int spawnTimeCost = 5; //time it takes to spawn the unit
     public bool isHeavy = false;
     public bool canAttackWhileMoving = false;
+    public float maxSpeed = 2f; 
 
     public enum UnitTypes
     {

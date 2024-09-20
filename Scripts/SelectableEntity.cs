@@ -4,7 +4,7 @@ using Unity.Netcode;
 using Pathfinding;
 using Pathfinding.RVO;
 using FoW;
-using static TargetedEffects; 
+using static TargetedEffects;
 public class SelectableEntity : NetworkBehaviour
 {
     [HideInInspector] public bool fakeSpawn = false;
@@ -86,7 +86,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public RallyMission rallyMission;
     [HideInInspector] public SelectableEntity rallyTarget;
     public Collider physicalCollider;
-    public Collider[] allPhysicalColliders; 
+    public Collider[] allPhysicalColliders;
     [Header("Behavior Settings")]
     [HideInInspector] public string displayName = "name";
     //[TextArea(2, 4)]
@@ -155,12 +155,13 @@ public class SelectableEntity : NetworkBehaviour
     public LineRenderer lineIndicator;
     [SerializeField] private MeshRenderer[] damageableMeshes;
     [SerializeField] private MeshRenderer[] resourceCollectingMeshes;
-    [SerializeField] private GameObject selectIndicator;
+    [SerializeField] private MeshRenderer selectIndicator;
     public GameObject targetIndicator;
     public List<MeshRenderer> teamRenderers;
     private DynamicGridObstacle obstacle;
     [HideInInspector] public RVOController RVO;
-    [HideInInspector] public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
+    [HideInInspector]
+    public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); //negative team numbers are AI controlled
 
     [HideInInspector] public int localTeamNumber = 0;
@@ -196,12 +197,12 @@ public class SelectableEntity : NetworkBehaviour
     public bool IsMinion()
     {
         return minionController != null;
-    } 
+    }
     private void UpdateResourceCollectableMeshes()
     {
         if (resourceCollectingMeshes.Length == 0) return;
         if (isVisibleInFog)
-        { 
+        {
             //compare max resources against max resourceCollectingMeshes
             float frac = (float)harvestedResourceAmount / harvestCapacity;
             int numToActivate = Mathf.FloorToInt(frac * resourceCollectingMeshes.Length);
@@ -281,7 +282,7 @@ public class SelectableEntity : NetworkBehaviour
             sounds = new AudioClip[0];
         }
         //Debug.Log("Trying to initialize");
-        if (minionController != null)
+        if (IsMinion())
         {
             //Debug.Log("Initializing attack type as " + factionEntity.attackType);
             minionController.attackType = factionEntity.attackType;
@@ -293,6 +294,7 @@ public class SelectableEntity : NetworkBehaviour
             minionController.impactTime = factionEntity.impactTime;
             minionController.areaOfEffectRadius = factionEntity.areaOfEffectRadius;
             minionController.shouldAggressivelySeekEnemies = factionEntity.shouldAggressivelySeekEnemies;
+            minionController.attackProjectile = factionEntity.attackProjectilePrefab;
         }
 
         if (factionEntity is FactionBuilding)
@@ -302,10 +304,10 @@ public class SelectableEntity : NetworkBehaviour
             if (fullyBuiltInScene)
             {
                 fullyBuilt = false;
-                startingHP = maxHP; 
+                startingHP = maxHP;
             }
             else
-            { 
+            {
                 fullyBuilt = !factionBuilding.needsConstructing;
                 if (factionBuilding.needsConstructing)
                 {
@@ -321,9 +323,18 @@ public class SelectableEntity : NetworkBehaviour
         {
             FactionUnit factionUnit = factionEntity as FactionUnit;
             isHeavy = factionUnit.isHeavy;
-            if (minionController != null) minionController.canMoveWhileAttacking = factionUnit.canAttackWhileMoving;
             startingHP = maxHP;
+
+            if (minionController != null)
+            {
+                minionController.canMoveWhileAttacking = factionUnit.canAttackWhileMoving;
+                if (minionController.ai != null)
+                { 
+                    minionController.ai.maxSpeed = factionUnit.maxSpeed;
+                }
+            }
         }
+        hideModelOnDeath = factionEntity.hideModelOnDeath;
     }
     public bool fullyBuiltInScene = false; //set to true to override needs constructing value
     public bool IsDamaged()
@@ -378,7 +389,7 @@ public class SelectableEntity : NetworkBehaviour
                 if (controllerOfThis is AIPlayer)
                 {
                     if (teamType == TeamBehavior.OwnerTeam)
-                    { 
+                    {
                         controllerOfThis.ownedEntities.Add(this);
 
                         if (IsMinion()) controllerOfThis.ownedMinions.Add(minionController);
@@ -386,11 +397,11 @@ public class SelectableEntity : NetworkBehaviour
                         {
                             controllerOfThis.unbuiltStructures.Add(this);
                         }
-                    } 
-                } 
+                    }
+                }
             }
             else
-            { 
+            {
                 if (desiredTeamNumber < 0) //AI controlled
                 {
                     teamNumber.Value = desiredTeamNumber;
@@ -436,12 +447,12 @@ public class SelectableEntity : NetworkBehaviour
                         }*/
                     }
                 }
-            } 
+            }
             //place effect dependent on "controller of this" being defined after this line!
             if (controllerOfThis != null)
             {
                 StartGameAddToEnemyLists();
-                if (fogUnit != null) fogUnit.team = controllerOfThis.playerTeamID;  
+                if (fogUnit != null) fogUnit.team = controllerOfThis.playerTeamID;
             }
 
             if (teamType == TeamBehavior.OwnerTeam)
@@ -469,7 +480,7 @@ public class SelectableEntity : NetworkBehaviour
         {
             targetIndicator.transform.parent = null;
         }
-        if (selectIndicator != null) selectIndicator.SetActive(selected);
+        ChangeSelectIndicatorStatus(selected);
 
 
         //allowedBuilders = allowedUnfinishedInteractors;
@@ -480,12 +491,27 @@ public class SelectableEntity : NetworkBehaviour
         }*/
 
         localTeamNumber = System.Convert.ToInt32(net.OwnerClientId);
-    } 
+    }
+    private void ChangeSelectIndicatorStatus(bool val)
+    {
+        if (selectIndicator != null)
+        {
+            selectIndicator.gameObject.SetActive(true);
+            selectIndicator.enabled = val;
+            Color selectColor = Color.green;
+            if (Global.Instance.localPlayer != controllerOfThis)
+            {
+                selectColor = Color.red;
+            }
+            selectIndicator.material.color = selectColor;
+        }
+    }
     private void Start() //call stuff here so that network variables are valid (isSpawned)
     {
+        Select(false);
         PlaySpawnSound();
         TryToRegisterRallyMission();
-        SetInitialVisuals(); 
+        SetInitialVisuals();
         aiControlled = desiredTeamNumber < 0 || controllerOfThis is AIPlayer;
         if (isKeystone && Global.Instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
         {
@@ -541,10 +567,10 @@ public class SelectableEntity : NetworkBehaviour
         //FixFogTeam();
         SetHideFogTeam();
         UpdateTeamRenderers();
-    } 
+    }
     /// <summary>
-      /// One time event to set fog hide team
-      /// </summary>
+    /// One time event to set fog hide team
+    /// </summary>
     private void SetHideFogTeam()
     {
         //if we don't own this, then set its' hide fog team equal to our team
@@ -589,22 +615,22 @@ public class SelectableEntity : NetworkBehaviour
             //assign mission to last
             switch (spawnerRallyMission)
             {
-                case RallyMission.None: 
+                case RallyMission.None:
                     minionController.SetDestination(transform.position);
                     minionController.givenMission = spawnerRallyMission;
                     break;
-                case RallyMission.Move:  
+                case RallyMission.Move:
                     minionController.SetDestination(rallyPoint);
                     minionController.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Harvest:
                     if (isHarvester)
-                    { 
+                    {
                         interactionTarget = rallyTarget;
                         minionController.givenMission = spawnerRallyMission;
                     }
                     else
-                    { 
+                    {
                         minionController.SetDestination(transform.position);
                     }
                     break;
@@ -664,7 +690,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 case TargetedEffects.Targets.Self:
                     if (!targetedEntities.Contains(this))
-                    { 
+                    {
                         targetedEntities.Add(this);
                     }
                     break;
@@ -735,8 +761,8 @@ public class SelectableEntity : NetworkBehaviour
                             target.minionController.animator.SetFloat("attackMultiplier", attackAnimMultiplier); //if we are halving, double animation speed
                         }
                         break;
-                    case StatusEffect.HP: 
-                        variableToChange = Mathf.Clamp(variableToChange, 0, maxHP); 
+                    case StatusEffect.HP:
+                        variableToChange = Mathf.Clamp(variableToChange, 0, maxHP);
                         currentHP.Value = (short)variableToChange;
                         Debug.Log("setting hitpoints to: " + variableToChange);
                         break;
@@ -780,7 +806,7 @@ public class SelectableEntity : NetworkBehaviour
                     }
                     if (!foundMatch)
                     {
-                        appliedEffects.Add(newEffect); 
+                        appliedEffects.Add(newEffect);
                     }
                 }
 
@@ -791,7 +817,7 @@ public class SelectableEntity : NetworkBehaviour
                         abilityName = ability.abilityName,
                         cooldownTime = ability.cooldownTime,
                         shouldCooldown = ability.shouldCooldown,
-                        visitBuildingToRefresh = ability.visitBuildingToRefresh, 
+                        visitBuildingToRefresh = ability.visitBuildingToRefresh,
                     };
                     usedAbilities.Add(newAbility);
                 }
@@ -816,7 +842,7 @@ public class SelectableEntity : NetworkBehaviour
         for (int i = usedAbilities.Count - 1; i >= 0; i--)
         {
             if (usedAbilities[i].shouldCooldown)
-            { 
+            {
                 usedAbilities[i].cooldownTime -= Time.deltaTime;
                 if (usedAbilities[i].cooldownTime <= 0)
                 {
@@ -861,7 +887,7 @@ public class SelectableEntity : NetworkBehaviour
         {
             case TargetedEffects.StatusEffect.MoveSpeed:
                 if (minionController != null && minionController.ai != null)
-                { 
+                {
                     minionController.ai.maxSpeed = minionController.defaultMoveSpeed;
                     minionController.animator.SetFloat("moveSpeedMultiplier", 1); //if we are halving, double animation speed
                 }
@@ -930,17 +956,17 @@ public class SelectableEntity : NetworkBehaviour
         if (IsOwner) isTargetable.Value = true;
 
         if (allPhysicalColliders.Length > 1)
-        { 
+        {
             for (int i = 0; i < allPhysicalColliders.Length; i++)
             {
                 allPhysicalColliders[i].isTrigger = false;
             }
         }
         else
-        { 
+        {
             physicalCollider.isTrigger = false;
         }
-         
+
         //rigid.isKinematic = false;
         for (int i = 0; i < unbuiltRenderers.Length; i++)
         {
@@ -988,7 +1014,7 @@ public class SelectableEntity : NetworkBehaviour
                 mainCam.transform.rotation * Vector3.up);
         }
     }
-    
+
     void LateUpdate() //Orient the camera after all movement is completed this frame to avoid jittering
     {
         UpdateHealthBarPosition();
@@ -1035,7 +1061,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public bool IsMelee()
     {
-        float maxMeleeRange = 2;
+        float maxMeleeRange = 1.5f;
         if (minionController != null && minionController.attackRange <= maxMeleeRange)
         {
             return true;
@@ -1065,7 +1091,7 @@ public class SelectableEntity : NetworkBehaviour
             if (controllerOfThis.allegianceTeamID != player.allegianceTeamID)
             {
                 if (!checkedPlayers.Contains(player))
-                { 
+                {
                     checkedPlayers.Add(player);
                     player.enemyEntities.Add(this);
                     //Debug.Log("Adding " + name + " to " + player.name + "enemy list");
@@ -1074,7 +1100,7 @@ public class SelectableEntity : NetworkBehaviour
         }
     }
     public void MidGameUpdateEnemyListsAfterCapture()
-    { 
+    {
         foreach (Player player in Global.Instance.allPlayers)
         {
             if (controllerOfThis == null) break;
@@ -1084,7 +1110,7 @@ public class SelectableEntity : NetworkBehaviour
                 player.enemyEntities.Add(this);
             }
             else
-            { 
+            {
                 player.enemyEntities.Remove(this);
                 player.visibleEnemies.Remove(this);
             }
@@ -1107,6 +1133,11 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
+    public bool IsFighter()
+    {
+        return CannotConstructHarvestProduce() && IsMinion();
+    }
+    private bool hideModelOnDeath = false;
     public void PrepareForEntityDestruction()
     {
         RemoveFromEnemyLists();
@@ -1158,7 +1189,7 @@ public class SelectableEntity : NetworkBehaviour
 
         foreach (MeshRenderer item in allMeshes)
         {
-            if (IsStructure())
+            if (IsStructure() || hideModelOnDeath)
             {
                 if (item != null)
                 {
@@ -1166,7 +1197,7 @@ public class SelectableEntity : NetworkBehaviour
                 }
             }
             else
-            { 
+            {
                 if (item != null && !teamRenderers.Contains(item))
                 {
                     item.material.color = Color.gray;
@@ -1181,14 +1212,14 @@ public class SelectableEntity : NetworkBehaviour
 
             Invoke(nameof(Die), deathDuration);
         }
-        else 
+        else
         {
             //StructureCosmeticDestruction();
             Invoke(nameof(Die), deathDuration); //structures cannot be deleted immediately because we need some time
             //for values to updated. better method is to destroy cosmetically
         }
         if (deathEffect != null)
-        {  
+        {
             Instantiate(deathEffect, transform.position, Quaternion.identity);
         }
         enabled = false;
@@ -1246,14 +1277,14 @@ public class SelectableEntity : NetworkBehaviour
                 }
             }
         }
-    } 
+    }
     public void UnloadPassenger(MinionController exiting)
     {
         foreach (GarrisonablePosition item in garrisonablePositions)
         {
             if (item.passenger == exiting)
             {
-                item.passenger = null; 
+                item.passenger = null;
                 exiting.entity.occupiedGarrison = null;
                 if (IsOwner)
                 {
@@ -1267,9 +1298,9 @@ public class SelectableEntity : NetworkBehaviour
                     else
                     {
                         exiting.entity.PlaceOnGroundServerRpc();
-                    } 
+                    }
                 }
-                exiting.col.isTrigger = false; 
+                exiting.col.isTrigger = false;
                 break;
             }
         }
@@ -1424,7 +1455,7 @@ public class SelectableEntity : NetworkBehaviour
     private FogOfWarTeam fow;
     private void UpdateVisibilityFromFogOfWar() //hide in fog
     {
-        if (fow == null) fow = FogOfWarTeam.GetTeam(hideFogTeam); 
+        if (fow == null) fow = FogOfWarTeam.GetTeam(hideFogTeam);
         /* because "hidefogteam" is the local player id, a player's units will always be
         visible to themselves. */
         fogValue = fow.GetFogValue(transform.position); //get the value of the fog at this position
@@ -1440,10 +1471,10 @@ public class SelectableEntity : NetworkBehaviour
             }
             for (int i = 0; i < attackEffects.Length; i++)
             {
-                if (attackEffects[i] != null) attackEffects[i].enabled = showAttackEffects && isVisibleInFog; 
+                if (attackEffects[i] != null) attackEffects[i].enabled = showAttackEffects && isVisibleInFog;
             }
-        } 
-    } 
+        }
+    }
     private void UpdateMeshVisibility(bool val)
     {
         if (minionController == null)
@@ -1535,7 +1566,7 @@ public class SelectableEntity : NetworkBehaviour
         }
 
         if (IsOwner)
-        { 
+        {
             controllerOfThis.unbuiltStructures.Remove(this);
         }
     }
@@ -1552,7 +1583,7 @@ public class SelectableEntity : NetworkBehaviour
         if (IsOwner && teamType == TeamBehavior.OwnerTeam)
         {
             //Global.Instance.localPlayer.population += change;
-            if (controllerOfThis != null) controllerOfThis.population += change; 
+            if (controllerOfThis != null) controllerOfThis.population += change;
         }
     }
     private readonly float deathDuration = 10;
@@ -1646,7 +1677,7 @@ public class SelectableEntity : NetworkBehaviour
                     }
                 }
             }
-        } 
+        }
     }
     public MeshRenderer[] attackEffects;
 
@@ -1723,19 +1754,19 @@ public class SelectableEntity : NetworkBehaviour
             {
                 fac.spawnTimeCost--;
             }
-            if (fac.spawnTimeCost <= 0 
+            if (fac.spawnTimeCost <= 0
                 && fac.consumePopulationAmount <= controllerOfThis.maxPopulation - controllerOfThis.population)
             { //spawn the unit 
                 //Debug.Log("Population check on spawn:" + fac.consumePopulationAmount + ", " + controllerOfThis.maxPopulation + ", " + controllerOfThis.population);
                 //first check if the position is blocked;
-                if (Physics.Raycast(positionToSpawnMinions.position + (new Vector3(0, 100, 0)), Vector3.down, 
+                if (Physics.Raycast(positionToSpawnMinions.position + (new Vector3(0, 100, 0)), Vector3.down,
                     out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
-                { 
+                {
                     SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
                     if (target != null) //something blocking
                     {
                         if (target.minionController != null && target.controllerOfThis == controllerOfThis)
-                        { 
+                        {
                             //tell blocker to get out of the way.
                             float randRadius = 1;
                             Vector2 randCircle = UnityEngine.Random.insideUnitCircle * randRadius;
@@ -1760,7 +1791,7 @@ public class SelectableEntity : NetworkBehaviour
         {
             RTSPlayer rts = controllerOfThis as RTSPlayer;
             rts.UpdateBuildQueueGUI();
-        } 
+        }
     }
     private void BuildQueueSpawn(FactionUnit unit)
     {
@@ -1786,7 +1817,7 @@ public class SelectableEntity : NetworkBehaviour
             rts.GenericSpawnMinion(pos, unit, this);
         }
         else if (controllerOfThis is AIPlayer)
-        { 
+        {
             AIPlayer ai = controllerOfThis as AIPlayer;
             ai.SpawnMinion(pos, unit);
         }
@@ -1840,9 +1871,9 @@ public class SelectableEntity : NetworkBehaviour
                 {
                     TriggerBehavior();
                 }
-            } 
+            }
         }
-    } 
+    }
     private void TriggerBehavior()
     {
         switch (triggerBehavior)
@@ -1860,10 +1891,10 @@ public class SelectableEntity : NetworkBehaviour
     {
         //Debug.Log("capturing");
         controllerOfThis = Global.Instance.localPlayer;
-        if (controllerOfThis != null) 
+        if (controllerOfThis != null)
         {
             teamNumber.Value = (sbyte)controllerOfThis.playerTeamID;
-            
+
             if (fogUnit != null) fogUnit.team = controllerOfThis.playerTeamID;
         }
         UpdateTeamRenderers();
@@ -1886,7 +1917,7 @@ public class SelectableEntity : NetworkBehaviour
         PlayCaptureEffect();
     }
     private void PlayCaptureEffect()
-    { 
+    {
         if (Global.Instance.defaultCaptureEffect != null)
         {
             Instantiate(Global.Instance.defaultCaptureEffect, transform.position, Quaternion.identity);
@@ -1971,16 +2002,20 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-    public void UpdateIndicator()
+    public void UpdateIndicator(bool val)
     {
-        if (selectIndicator != null) selectIndicator.SetActive(selected);
+        ChangeSelectIndicatorStatus(val);
+        UpdateRallyVisual(val);
         //UpdateTargetIndicator();
+    }
+    private void UpdateRallyVisual(bool val)
+    {
         if (rallyVisual != null)
-        { 
+        {
             if (CanProduceUnits())
-            { 
+            {
                 rallyVisual.transform.position = rallyPoint;
-                rallyVisual.enabled = selected;
+                rallyVisual.enabled = val;
             }
             else
             {
@@ -1998,7 +2033,11 @@ public class SelectableEntity : NetworkBehaviour
         {
             selected = false;
         }
-        UpdateIndicator();
+        UpdateIndicator(selected);
+    }
+    public void InfoSelect(bool val)
+    {
+        UpdateIndicator(val);
     }
     public bool CanProduceUnits()
     {

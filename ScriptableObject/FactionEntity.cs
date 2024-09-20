@@ -48,6 +48,8 @@ public class FactionEntity : ScriptableObject
     [SerializeField, HideInInspector] public bool expandGarrisonOptions = false;
     [SerializeField, HideInInspector] public bool passengersAreTargetable = false;
     [SerializeField, HideInInspector] public bool acceptsHeavy = false;
+    [SerializeField, HideInInspector] public Projectile attackProjectilePrefab;
+    public bool hideModelOnDeath = false;
 
     public bool IsHarvester()
     {

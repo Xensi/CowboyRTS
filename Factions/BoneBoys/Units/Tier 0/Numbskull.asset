@@ -43,6 +43,8 @@ MonoBehaviour:
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
+  attackProjectilePrefab: {fileID: 0}
+  hideModelOnDeath: 1
   spawnTimeCost: 5
   isHeavy: 0
   canAttackWhileMoving: 0

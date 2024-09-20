@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5040608eb03c21941b0df73233e2ec94, type: 3}
   m_Name: Grave
   m_EditorClassIdentifier: 
-  productionName: Grave
-  description: Adds 10 population.
+  productionName: Graveyard
+  description: Adds 10 population. Raise basic skeleton units.
   prefabToSpawn: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
   goldCost: 100
   maxHP: 50
@@ -37,6 +37,7 @@ MonoBehaviour:
   shouldAggressivelySeekEnemies: 0
   spawnableUnits:
   - {fileID: 11400000, guid: 5482cede677f6c94299d9143b7094d12, type: 2}
+  - {fileID: 11400000, guid: 6ac2c4201fde5c94b98a1034aa483861, type: 2}
   spawnableAtOnce: 1
   isHarvester: 0
   harvestCapacity: 5

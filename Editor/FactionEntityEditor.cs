@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 
 [CustomEditor(typeof(FactionEntity), true)]
@@ -26,6 +27,7 @@ public class FactionEntityEditor : Editor
     SerializedProperty expandGarrisonOptions;
     SerializedProperty passengersAreTargetable;
     SerializedProperty acceptsHeavy;
+    SerializedProperty attackProjectilePrefab;
 
     private void OnEnable()
     {
@@ -49,6 +51,7 @@ public class FactionEntityEditor : Editor
         expandGarrisonOptions = serializedObject.FindProperty("expandGarrisonOptions");
         passengersAreTargetable = serializedObject.FindProperty("passengersAreTargetable");
         acceptsHeavy = serializedObject.FindProperty("acceptsHeavy");
+        attackProjectilePrefab = serializedObject.FindProperty("attackProjectilePrefab");
     }
 
     public override void OnInspectorGUI()
@@ -59,7 +62,7 @@ public class FactionEntityEditor : Editor
 
         serializedObject.Update();
         EditorGUILayout.PropertyField(attackType);
-        if (attackType.intValue != 0)
+        if (attackType.intValue != 0) //not none
         {
             EditorGUILayout.PropertyField(damage);
             EditorGUILayout.PropertyField(directionalAttack);
@@ -71,6 +74,10 @@ public class FactionEntityEditor : Editor
         if (attackType.intValue == 2) //self destruct 
         { 
             EditorGUILayout.PropertyField(areaOfEffectRadius);
+        }
+        else if (attackType.intValue == 3) //projectile
+        { 
+            EditorGUILayout.PropertyField(attackProjectilePrefab);
         }
         EditorGUILayout.PropertyField(isHarvester);
         if (isHarvester.boolValue == true)

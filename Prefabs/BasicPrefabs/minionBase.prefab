@@ -194,7 +194,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2641155720
+  GlobalObjectIdHash: 56881033
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -275,7 +275,7 @@ MonoBehaviour:
   lineIndicator: {fileID: 555440906972586300}
   damageableMeshes: []
   resourceCollectingMeshes: []
-  selectIndicator: {fileID: 8821975901658637110}
+  selectIndicator: {fileID: 7020276359041958627}
   targetIndicator: {fileID: 3480814061053556006}
   teamRenderers: []
   RVO: {fileID: 0}
@@ -950,13 +950,13 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0e3bdc84c36d08045867157da426aea5, type: 3}
+--- !u!23 &7020276359041958627 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: 0e3bdc84c36d08045867157da426aea5, type: 3}
+  m_PrefabInstance: {fileID: 8551382993995193959}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &8153244839645493644 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 0e3bdc84c36d08045867157da426aea5, type: 3}
-  m_PrefabInstance: {fileID: 8551382993995193959}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &8821975901658637110 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 0e3bdc84c36d08045867157da426aea5, type: 3}
   m_PrefabInstance: {fileID: 8551382993995193959}
   m_PrefabAsset: {fileID: 0}

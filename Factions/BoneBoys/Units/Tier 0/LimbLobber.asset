@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b888e0fe913eaf4095ed4e0fccd988e, type: 3}
+  m_Name: LimbLobber
+  m_EditorClassIdentifier: 
+  productionName: Limb Lobber
+  description: "\rThrows bones to deal damage. Has a short attack range."
+  prefabToSpawn: {fileID: 2545681379473208697, guid: 80b19ccb1a8bb8848b26b039a624504a, type: 3}
+  goldCost: 15
+  maxHP: 6
+  isKeystone: 0
+  consumePopulationAmount: 1
+  raisePopulationLimitBy: 0
+  shouldHideInFog: 1
+  soundProfile: {fileID: 11400000, guid: e98d0a54573c90c45b60a981325e5ab6, type: 2}
+  teamType: 0
+  constructableBuildings: []
+  usableAbilities: []
+  depositType: 0
+  selfHarvestableType: 1
+  attackType: 3
+  damage: 1
+  directionalAttack: 0
+  attackRange: 2.5
+  attackDuration: 1
+  impactTime: 0.5
+  areaOfEffectRadius: 1
+  shouldAggressivelySeekEnemies: 1
+  spawnableUnits: []
+  spawnableAtOnce: 1
+  isHarvester: 0
+  harvestCapacity: 5
+  depositRange: 1
+  expandGarrisonOptions: 0
+  passengersAreTargetable: 0
+  acceptsHeavy: 0
+  attackProjectilePrefab: {fileID: 6908122070487208007, guid: ec432f14aed07f54e8d6b3978ca046ed, type: 3}
+  hideModelOnDeath: 1
+  spawnTimeCost: 5
+  isHeavy: 0
+  canAttackWhileMoving: 0

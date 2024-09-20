@@ -15,7 +15,7 @@ public class RTSPlayer : Player
     public List<SelectableEntity> keystoneUnits = new();
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
-    public List<SelectableEntity> selectedEntities; //selected and we can control them 
+    public List<SelectableEntity> selectedEntities; //selected and we can control them  
     public List<MinionController> selectedBuilders;
     private Vector3 _mousePosition;
     private Vector3 _offset;
@@ -438,6 +438,7 @@ public class RTSPlayer : Player
         else
         {
             infoSelectedEntity = entity;
+            entity.InfoSelect(true);
         }
         if (entity.IsStructure())
         {
@@ -558,8 +559,7 @@ public class RTSPlayer : Player
                 }
             }
             if (Input.GetMouseButtonDown(0)) //left click pressed
-            {
-                infoSelectedEntity = null;
+            { 
                 switch (mouseState)
                 {
                     case MouseState.Waiting:
@@ -718,7 +718,7 @@ public class RTSPlayer : Player
         Global.Instance.goldText.text = "Gold: " + gold;
         if (Global.Instance.popText != null)
         {
-            Global.Instance.popText.text = population + "/" + maxPopulation + " Population";
+            Global.Instance.popText.text = "Population: " + population + "/" + maxPopulation;
         }
         //TryReplaceFakeSpawn();
         UpdateGUIFromSelections();// this might be expensive ...
@@ -1566,6 +1566,7 @@ public class RTSPlayer : Player
     }
     private void TryToSelectOne()
     {
+        DeselectAll();
         if (!_doubleSelect)
         {
             _doubleSelect = true;
@@ -1654,6 +1655,7 @@ public class RTSPlayer : Player
         availableConstructionOptions.Clear();
         availableAbilities.Clear();
         availableUnitSpawns.Clear();
+        Global.Instance.ChangeRallyPointButton(false);
         if (selectedEntities.Count > 0) //at least one unit selected
         {
             //show gui elements based on unit type selected
@@ -1681,6 +1683,10 @@ public class RTSPlayer : Player
                 foreach (FactionBuilding buildingOption in entity.constructableBuildings)
                 {
                     if (!availableConstructionOptions.Contains(buildingOption)) availableConstructionOptions.Add(buildingOption);
+                }
+                if (entity.spawnableUnits.Length > 0)
+                {
+                    Global.Instance.ChangeRallyPointButton(true);
                 }
             }
         }
@@ -1843,7 +1849,8 @@ public class RTSPlayer : Player
             prefabToSpawn = unit.prefabToSpawn,
             goldCost = unit.goldCost, 
         };*/
-        FactionUnit newUnit = FactionUnit.CreateInstance(unit.prefabToSpawn.name, unit.spawnTimeCost, unit.prefabToSpawn, unit.goldCost);
+        //Debug.Log("Trying to spawn :" + unit.name);
+        FactionUnit newUnit = FactionUnit.CreateInstance(unit.productionName, unit.spawnTimeCost, unit.prefabToSpawn, unit.goldCost);
 
         int cost = newUnit.goldCost;
         //try to spawn from all selected buildings if possible 
@@ -1853,6 +1860,7 @@ public class RTSPlayer : Player
             //if requirements fulfilled
             gold -= cost;
             select.buildQueue.Add(newUnit);
+            //Debug.Log("Added" + newUnit.name + " to queue");
         }
         UpdateBuildQueueGUI();
     }
@@ -1860,7 +1868,7 @@ public class RTSPlayer : Player
     {
         for (int i = 0; i < target.spawnableUnits.Length; i++)
         {
-            if (target.spawnableUnits[i].productionName == entity.productionName) return true; //if ability is in the used abilities list, then we still need to wait  
+            if (target.spawnableUnits[i].productionName == entity.productionName) return true;
         }
         return false;
     }
@@ -1976,7 +1984,8 @@ public class RTSPlayer : Player
             {
                 if ((entity.CanConstruct() && potential.CanConstruct()) ||
                     (entity.CanHarvest() && potential.CanHarvest()) ||
-                    (entity.CannotConstructHarvestProduce() && potential.CannotConstructHarvestProduce() && entity.IsMinion() && potential.IsMinion()) ||
+                    (entity.IsFighter() && potential.IsFighter() && entity.IsMelee() && potential.IsMelee()) || 
+                    (entity.IsFighter() && potential.IsFighter() && !entity.IsMelee() && !potential.IsMelee()) ||
                     (entity.CannotConstructHarvestProduce() && potential.CannotConstructHarvestProduce() && !entity.IsMinion() && !potential.IsMinion()) ||
                     (entity.CanProduceUnits() && potential.CanProduceUnits()))
                 {
@@ -1999,6 +2008,8 @@ public class RTSPlayer : Player
         }
         selectedEntities.Clear();
         selectedBuilders.Clear();
+        if (infoSelectedEntity != null) infoSelectedEntity.InfoSelect(false);
+        infoSelectedEntity = null;
         UpdateGUIFromSelections();
     }
     #endregion
