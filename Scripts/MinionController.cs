@@ -72,7 +72,7 @@ public class MinionController : NetworkBehaviour
     //[HideInInspector] public bool followingMoveOrder = false;
     [HideInInspector] public Vector3 orderedDestination; //remembers where player told minion to go
     private float effectivelyIdleInstances = 0;
-    private readonly float idleThreshold = .5f;//3; //seconds of being stuck
+    private readonly float idleThreshold = 1.5f;//3; //seconds of being stuck
     public float attackReadyTimer = 0;
     private float change;
     public readonly float walkAnimThreshold = 0.0001f;
@@ -1159,7 +1159,7 @@ public class MinionController : NetworkBehaviour
                             bool reaches = DoesPathReachTarget(pathfindingTarget.transform.position);
                             if (reaches || !IsMelee())
                             {
-                                Debug.Log("Trying to attack alternate attack target!" + alternateAttackTarget);
+                                //Debug.Log("Trying to attack alternate attack target!" + alternateAttackTarget);
                                 targetEnemy = alternateAttackTarget;
                                 SwitchState(MinionStates.WalkToSpecificEnemy);
                             }
@@ -2314,7 +2314,7 @@ public class MinionController : NetworkBehaviour
                 {
                     sqrDistToAlternateTarget = validDist;
                     alternateAttackTarget = valid;
-                    Debug.Log("Found alternate attack target" + valid.name);
+                    //Debug.Log("Found alternate attack target" + valid.name);
                 }
             }
             nearbyIndexer++;
@@ -2669,6 +2669,7 @@ public class MinionController : NetworkBehaviour
             proj.groundTarget = destination;
             proj.entityToHomeOnto = targetEnemy;
             proj.isLocal = IsOwner;
+            proj.firingUnitAttackRange = attackRange;
         }
     }
     [ClientRpc]

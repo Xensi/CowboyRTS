@@ -46,11 +46,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d7491e1e051f644ba6d63cc9f74c865, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 4.5
+  speed: 5
   groundTarget: {x: 0, y: 0, z: 0}
   shouldHomeOnEntity: 0
   entityToHomeOnto: {fileID: 0}
-  arcHeight: 1
+  maxArcHeight: 1
+  actualArcHeight: 0
+  firingUnitAttackRange: 4
   isLocal: 1
   arrivedAtTarget: 0
   damage: 1

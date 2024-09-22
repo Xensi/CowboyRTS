@@ -5,7 +5,9 @@ public class Projectile : MonoBehaviour
     public Vector3 groundTarget;
     public bool shouldHomeOnEntity = false;
     public SelectableEntity entityToHomeOnto;
-    public float arcHeight = 10;
+    public float maxArcHeight = 10;
+    public float actualArcHeight;
+    public float firingUnitAttackRange = 4;
 
     Vector3 _startPosition;
     float _stepScale;
@@ -24,6 +26,8 @@ public class Projectile : MonoBehaviour
         _startPosition = transform.position;
 
         float distance = Vector3.Distance(_startPosition, groundTarget);
+        float ratio = distance/firingUnitAttackRange;
+        actualArcHeight = maxArcHeight * ratio - 0.1f/ratio; //linearizes the projectile if the ratio is very low
 
         // This is one divided by the total flight duration, to help convert it to 0-1 progress.
         _stepScale = speed / distance;
@@ -55,7 +59,7 @@ public class Projectile : MonoBehaviour
         Vector3 nextPos = Vector3.Lerp(_startPosition, groundTarget, _progress);
 
         // Then add a vertical arc in excess of this.
-        nextPos.y += parabola * arcHeight;
+        nextPos.y += parabola * actualArcHeight;
 
         // Continue as before.
         if (spinContinously)

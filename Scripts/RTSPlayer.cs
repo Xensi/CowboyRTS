@@ -1454,7 +1454,7 @@ public class RTSPlayer : Player
         //FactionUnit fac = _faction.entities[minionID]; //get information about minion based on ID
         if (unit != null && unit.prefabToSpawn != null)
         {
-            Debug.Log("SERVER: spawning " + unit.productionName);
+            //Debug.Log("SERVER: spawning " + unit.productionName);
             GameObject minion = Instantiate(unit.prefabToSpawn.gameObject, spawnPosition, Quaternion.identity); //spawn the minion
             SelectableEntity select = null;
             if (minion != null)
@@ -1471,7 +1471,7 @@ public class RTSPlayer : Player
                 if (NetworkManager.ConnectedClients.ContainsKey(clientID))
                 {
                     select.clientIDToSpawnUnder = clientID;
-                    Debug.Log("Granting ownership of " + select.name + " to client " + clientID);
+                    //Debug.Log("Granting ownership of " + select.name + " to client " + clientID);
                     //select.net.ChangeOwnership(clientID);
                     //select.net.Spawn(); 
                     if (select.net == null) select.net = select.GetComponent<NetworkObject>();
