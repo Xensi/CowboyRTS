@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Gold Storage
   m_EditorClassIdentifier: 
   productionName: Gold Storage
-  description: Break open to gain 25 gold.
+  description: Break open to gain 30 gold.
   prefabToSpawn: {fileID: 3798861697192735719, guid: a5e323badc7cabd48aecd127e9799eb0, type: 3}
   goldCost: 0
   maxHP: 1
@@ -44,6 +44,8 @@ MonoBehaviour:
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
+  attackProjectilePrefab: {fileID: 0}
+  hideModelOnDeath: 0
   needsConstructing: 0
   buildOffset: {x: 0.25, y: 0, z: 0.25}
   extendable: 0

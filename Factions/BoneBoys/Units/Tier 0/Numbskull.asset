@@ -48,3 +48,4 @@ MonoBehaviour:
   spawnTimeCost: 5
   isHeavy: 0
   canAttackWhileMoving: 0
+  maxSpeed: 2

@@ -15,7 +15,7 @@ MonoBehaviour:
   productionName: Limb Lobber
   description: "\rThrows bones to deal damage. Has a short attack range."
   prefabToSpawn: {fileID: 2545681379473208697, guid: 80b19ccb1a8bb8848b26b039a624504a, type: 3}
-  goldCost: 15
+  goldCost: 20
   maxHP: 6
   isKeystone: 0
   consumePopulationAmount: 1
@@ -48,3 +48,4 @@ MonoBehaviour:
   spawnTimeCost: 5
   isHeavy: 0
   canAttackWhileMoving: 0
+  maxSpeed: 2
