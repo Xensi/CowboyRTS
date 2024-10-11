@@ -174,8 +174,10 @@ public class MinionController : NetworkBehaviour
         }
         maxDetectable = Mathf.RoundToInt(20 * attackRange);
     }
+    public SelectableEntity[] attackMoveDestinationEnemyArray = new SelectableEntity[0];
     private void Start()
     {
+        attackMoveDestinationEnemyArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
         ChangeAttackTrailState(false);
     }
     private Vector2Int QuantizePosition(Vector3 vec) //(5.55)
@@ -213,7 +215,7 @@ public class MinionController : NetworkBehaviour
         else
         {
             rigid.isKinematic = true; //don't get knocked around
-            gameObject.layer = LayerMask.NameToLayer("OtherEntities"); //can pass through each other 
+            //gameObject.layer = LayerMask.NameToLayer("OtherEntities"); //can pass through each other 
             nonOwnerRealLocationList.Add(transform.position);
             entity.RVO.enabled = false;
             /*  ;
@@ -836,7 +838,7 @@ public class MinionController : NetworkBehaviour
         }
     }
 
-    private async void EnterState(MinionStates state)
+    private void EnterState(MinionStates state)
     {
         //Debug.Log("Entering state" + state + "Currently in state " + minionState);
         switch (state)
@@ -1010,11 +1012,30 @@ public class MinionController : NetworkBehaviour
     }
     private SelectableEntity alternateAttackTarget;
     /// <summary>
-    /// Attack move, but not targeted by player
+    /// Attack move, but not targeted by player. Allows finding new targets when current one is invalid. Later needs to be fixed so that it only
+    /// happens when not attack moving ?
     /// </summary>
-    private void AutomaticAttackMove()
+    private async void AutomaticAttackMove()
     {
         attackMoveDestination = transform.position;
+         
+        Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
+        attackMoveDestinationEnemyCount = Physics.OverlapSphereNonAlloc(attackMoveDestination, 4, enemyArray, Global.Instance.enemyLayer); //use fixed distance for now
+         
+        for (int i = 0; i < attackMoveDestinationEnemyCount; i++)
+        { 
+            if (enemyArray[i] == null) continue;
+            SelectableEntity select = enemyArray[i].GetComponent<SelectableEntity>();
+            if (select == null) continue;
+            if (!select.alive || !select.isTargetable.Value)
+            {
+                continue;
+            }
+            attackMoveDestinationEnemyArray[i] = select;
+            await Task.Yield();
+        }
+
+
         SwitchState(MinionStates.AttackMoving);
     }
     private void CheckIfAttackTrailIsActiveErroneously()
@@ -1027,7 +1048,7 @@ public class MinionController : NetworkBehaviour
             }
         }
     }
-    bool hasCalledEnemySearchAsyncTask = false;
+    public bool hasCalledEnemySearchAsyncTask = false;
     private async void OwnerUpdateState()
     {
         CheckIfAttackTrailIsActiveErroneously();
@@ -1250,7 +1271,7 @@ public class MinionController : NetworkBehaviour
                         if (!hasCalledEnemySearchAsyncTask)
                         {
                             hasCalledEnemySearchAsyncTask = true;
-                            await FindAlternateLowerHealthMinionAttackTarget(attackRange);
+                            await AsyncFindAlternateLowerHealthMinionAttackTarget(attackRange);
                             if (alternateAttackTarget == null) hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
                         } 
                         if (alternateAttackTarget != null)
@@ -2228,6 +2249,7 @@ public class MinionController : NetworkBehaviour
             return true;
         }
     }
+    public int attackMoveDestinationEnemyCount = 0;
     private readonly float defaultMeleeDetectionRange = 4;
     private async Task<SelectableEntity> FindEnemyMinionToAttack(float range)
     {
@@ -2271,7 +2293,7 @@ public class MinionController : NetworkBehaviour
     /// <returns></returns>
     private async Task AsyncFindClosestEnemyToAttackMoveTowards(float range) //called only once
     {
-        Debug.Log("Running find closest attack target search");
+        //Debug.Log("Running find closest attack target search");
         if (entity.IsMelee())
         {
             range = defaultMeleeDetectionRange;
@@ -2282,10 +2304,10 @@ public class MinionController : NetworkBehaviour
         }
 
         SelectableEntity valid = null;
-        List<SelectableEntity> enemyList = entity.controllerOfThis.visibleEnemies;
-        for (int i = 0; i < enemyList.Count; i++)
+        //List<SelectableEntity> enemyList = entity.controllerOfThis.visibleEnemies;
+        for (int i = 0; i < attackMoveDestinationEnemyCount; i++)
         {
-            SelectableEntity check = enemyList[i];
+            SelectableEntity check = attackMoveDestinationEnemyArray[i];
             if (IsEnemy(check) && check.alive && check.isTargetable.Value) //only check on enemies that are alive, targetable, visible
             {
                 //viability range is 4 unless attack range is higher
@@ -2344,8 +2366,6 @@ public class MinionController : NetworkBehaviour
         }
         //if (targetEnemy != null) Debug.Log("found target to attack move towards: " + targetEnemy.name); 
     }
-
-    // int indexesToRunPerFrame = Mathf.Clamp(enemyList.Count / Global.Instance.maxFramesToFindTarget, 1, 999);
     private async Task AsyncFindAlternateMinionAttackTarget(float range)
     { 
         //Debug.Log("Running alternate minion attack target search");
@@ -2358,12 +2378,10 @@ public class MinionController : NetworkBehaviour
             range += rangedUnitRangeExtension;
         }
 
-        SelectableEntity valid = null;
-
-        List<SelectableEntity> enemyList = entity.controllerOfThis.visibleEnemies;  
-        for (int i = 0; i < enemyList.Count; i++)
+        SelectableEntity valid = null; 
+        for (int i = 0; i < attackMoveDestinationEnemyCount; i++)
         {
-            SelectableEntity check = enemyList[nearbyIndexer];
+            SelectableEntity check = attackMoveDestinationEnemyArray[i];
             if (IsEnemy(check) && check.alive && check.isTargetable.Value && check.IsMinion()) 
                 //only check on enemies that are alive, targetable, visible, and in range, and are minions
             {
@@ -2403,14 +2421,12 @@ public class MinionController : NetworkBehaviour
     /// <param name="shouldExtendAttackRange"></param>
     
 
-    private async Task FindAlternateLowerHealthMinionAttackTarget(float range)
+    private async Task AsyncFindAlternateLowerHealthMinionAttackTarget(float range)
     { 
-        SelectableEntity valid = null;
-
-        List<SelectableEntity> enemyList = entity.controllerOfThis.visibleEnemies;  
-        for (int i = 0; i < enemyList.Count; i++)
+        SelectableEntity valid = null; 
+        for (int i = 0; i < attackMoveDestinationEnemyCount; i++)
         {
-            SelectableEntity check = enemyList[nearbyIndexer];
+            SelectableEntity check = attackMoveDestinationEnemyArray[i];
             if (IsEnemy(check) && check.alive && check.isTargetable.Value && check.IsMinion()) //only check on enemies that are alive, targetable, visible, and in range
             {
                 if (InRangeOfEntity(check, range))
@@ -2430,7 +2446,11 @@ public class MinionController : NetworkBehaviour
     }
     private bool IsEnemy(SelectableEntity target)
     {
-        return target.controllerOfThis.allegianceTeamID != entity.controllerOfThis.allegianceTeamID;
+        if (target != null)
+        { 
+            return target.controllerOfThis.allegianceTeamID != entity.controllerOfThis.allegianceTeamID;
+        }
+        return false;
         //return target.teamNumber.Value != entity.teamNumber.Value;
     }
     private SelectableEntity FindEnemyToAttack(float range) //bottleneck for unit spawning

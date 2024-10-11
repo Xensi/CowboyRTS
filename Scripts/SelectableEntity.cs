@@ -561,6 +561,11 @@ public class SelectableEntity : NetworkBehaviour
         healthBar.SetVisible(false);
 
         if (whenTheseEntitiesKilledTriggerBehavior.Count > 0) shouldCheckTrigger = true;
+
+        if (controllerOfThis.allegianceTeamID != Global.Instance.localPlayer.allegianceTeamID)
+        {   //this should be counted as an enemy 
+            gameObject.layer = LayerMask.NameToLayer("EnemyEntity");
+        }
     }
     private void SetInitialVisuals()
     {
@@ -1887,7 +1892,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         shouldCheckTrigger = false;
     }
-    private void CaptureForLocalPlayer()
+    private void CaptureForLocalPlayer() //switch team of entity
     {
         //Debug.Log("capturing");
         controllerOfThis = Global.Instance.localPlayer;

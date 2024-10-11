@@ -190,8 +190,7 @@ public class RTSPlayer : Player
         {
             cams[i].orthographicSize = Mathf.Clamp(cams[i].orthographicSize - Input.mouseScrollDelta.y * camScroll, 1, 10); ;
         }
-    }
-
+    } 
     private void SelectedAttackMove()
     {
         Vector3 clickedPosition;
@@ -199,11 +198,31 @@ public class RTSPlayer : Player
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
         {
             clickedPosition = hit.point;
+            //create a list of viable targets to attack   
+            Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize]; 
+            int resultsNum = Physics.OverlapSphereNonAlloc(clickedPosition, 4, enemyArray, Global.Instance.enemyLayer); //use fixed distance for now
+            //Debug.Log("Results num" + resultsNum);
+            SelectableEntity[] enemyEntityArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize]; 
+            for (int i = 0; i < resultsNum; i++)
+            { 
+                if (enemyArray[i] == null) continue;
+                SelectableEntity select = enemyArray[i].GetComponent<SelectableEntity>();
+                if (select == null) continue; 
+                if (!select.alive || !select.isTargetable.Value)
+                {
+                    continue;
+                }
+                enemyEntityArray[i] = select;
+            }
+
             UnitOrdersQueue.Clear();
             foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.minionController != null && item.minionController.IsValidAttacker()) //minion
                 {
+                    enemyEntityArray.CopyTo(item.minionController.attackMoveDestinationEnemyArray, 0);
+                    item.minionController.attackMoveDestinationEnemyCount = resultsNum;
+                    item.minionController.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search?
                     UnitOrder order = new();
                     order.unit = item.minionController;
                     order.targetPosition = clickedPosition;
@@ -211,8 +230,7 @@ public class RTSPlayer : Player
                     UnitOrdersQueue.Add(order);
                 }
             }
-            totalNumUnitOrders = UnitOrdersQueue.Count;
-            //ProcessOrdersInBatches(); //do one pass immediately 
+            totalNumUnitOrders = UnitOrdersQueue.Count; 
         }
     }
     public List<UnitOrder> UnitOrdersQueue = new();
@@ -224,10 +242,12 @@ public class RTSPlayer : Player
         public SelectableEntity target;
         public Vector3 targetPosition;
     }
-    private bool SameTeam(SelectableEntity foreign)
-    {
-        return foreign.controllerOfThis == this;
-        //return foreign.teamNumber.Value == (sbyte)playerTeamID;//foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
+    private bool SameAllegiance(SelectableEntity foreign)
+    {   //later update this so it works with allegiances
+        //return foreign.controllerOfThis == this;
+        return foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
+        //return foreign.teamNumber.Value == (sbyte)playerTeamID;
+        //foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
     }
     private void QueueUnitOrders()
     {
@@ -259,7 +279,7 @@ public class RTSPlayer : Player
             {
                 if (hitEntity.teamType == SelectableEntity.TeamBehavior.OwnerTeam)
                 {
-                    if (SameTeam(hitEntity)) //same team
+                    if (SameAllegiance(hitEntity)) //same team
                     {
                         if ((hitEntity.depositType == SelectableEntity.DepositType.Gold || hitEntity.depositType == SelectableEntity.DepositType.All)
                             && hitEntity.fullyBuilt) //if deposit point
@@ -2004,6 +2024,9 @@ public class RTSPlayer : Player
         UpdateGUIFromSelections();
     }
     #endregion
+
+     
+
 
     /// <summary>
     /// Damages all in radius at point.

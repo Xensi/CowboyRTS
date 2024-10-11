@@ -57,6 +57,7 @@ public class Global : NetworkBehaviour
     public LayerMask blockingLayer;
     public LayerMask gameLayer;
     public LayerMask entityLayer;
+    public LayerMask enemyLayer;
     public List<RTSPlayer> uninitializedPlayers = new();
     public List<RTSPlayer> initializedPlayers = new();
     public List<AIPlayer> aiTeamControllers = new();
@@ -105,7 +106,9 @@ public class Global : NetworkBehaviour
         groundLayer = LayerMask.GetMask("Ground");
         blockingLayer = LayerMask.GetMask("Entity", "Obstacle");
         gameLayer = LayerMask.GetMask("Entity", "Obstacle", "Ground");
-        entityLayer = LayerMask.GetMask("Entity", "OtherEntities");
+        entityLayer = LayerMask.GetMask("Entity", "OtherEntities", "EnemyEntity");
+        enemyLayer = LayerMask.GetMask("EnemyEntity");
+
         // If there is an instance, and it's not me, delete myself.
 
         if (Instance != null && Instance != this)
@@ -183,6 +186,7 @@ public class Global : NetworkBehaviour
             }
         }
     }
+    public int attackMoveDestinationEnemyArrayBufferSize = 50;
     public void UpdateEnemyLists()
     {
         //Debug.Log("Updating Enemy Lists");
