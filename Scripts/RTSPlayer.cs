@@ -7,7 +7,8 @@ using System.Linq;
 using FoW;
 using UnityEngine.Rendering;
 using System;
-using Unity.Burst.CompilerServices;
+//using Unity.Burst.CompilerServices;
+using System.Threading.Tasks;
 
 public class RTSPlayer : Player
 {
@@ -211,7 +212,7 @@ public class RTSPlayer : Player
                 }
             }
             totalNumUnitOrders = UnitOrdersQueue.Count;
-            ProcessOrdersInBatches(); //do one pass immediately 
+            //ProcessOrdersInBatches(); //do one pass immediately 
         }
     }
     public List<UnitOrder> UnitOrdersQueue = new();
@@ -322,37 +323,27 @@ public class RTSPlayer : Player
                 }
             }
             totalNumUnitOrders = UnitOrdersQueue.Count;
-            ProcessOrdersInBatches(); //do one pass immediately
+            //ProcessOrdersInBatches(); //do one pass immediately
         }
     }
     private int totalNumUnitOrders = 0;
-    private void ProcessOrdersInBatches()
-    {
-        //determine how many need to be done this frame based on number of unit orders
-        int framesToProcessAllOrders = 5; //60 frames is 1 second
-        int numToProcess = Mathf.Clamp(totalNumUnitOrders / framesToProcessAllOrders, 1, 100);
-
-        for (int i = 0; i < numToProcess; i++)
+    private async void ProcessOrdersInBatches()
+    { 
+        while (UnitOrdersQueue.Count > 0)
         {
-            if (UnitOrdersQueue.Count > 0)
+            UnitOrder order = UnitOrdersQueue[0]; //fetch first order
+            if (order != null)
             {
-                UnitOrder order = UnitOrdersQueue[0]; //fetch first order
-                if (order != null)
+                MinionController orderedUnit = order.unit;
+                if (orderedUnit != null && orderedUnit.canReceiveNewCommands)
                 {
-                    MinionController orderedUnit = order.unit;
-                    if (orderedUnit != null && orderedUnit.canReceiveNewCommands)
-                    {
-                        //Debug.Log("Batch processing orders" + orderedUnit);
-                        orderedUnit.ProcessOrder(order);
-                        UnitOrdersQueue.RemoveAt(0);
-                    }
+                    //Debug.Log("Batch processing orders" + orderedUnit);
+                    orderedUnit.ProcessOrder(order);
+                    UnitOrdersQueue.RemoveAt(0);
                 }
             }
-            else
-            {
-                break;
-            }
-        }
+            await Task.Yield();
+        }  
     }
     public void ReadySetRallyPoint()
     {
