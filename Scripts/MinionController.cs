@@ -227,7 +227,7 @@ public class MinionController : NetworkBehaviour
         //enabled = IsOwner;
         oldPosition = transform.position;
         orderedDestination = transform.position;
-        if (IsOwner)
+        /*if (IsOwner)
         {
             if (Global.Instance.graphUpdateScenePrefab != null)
                 graphUpdateScene = Instantiate(Global.Instance.graphUpdateScenePrefab, transform.position, Quaternion.identity, Global.Instance.transform);
@@ -236,7 +236,7 @@ public class MinionController : NetworkBehaviour
                 graphUpdateSceneCollider = graphUpdateScene.GetComponent<SphereCollider>();
                 //graphUpdateSceneCollider.radius = ai.radius;
             }
-        }
+        }*/
     }
     private int maxDetectable;
     public bool IsCurrentlyBuilding()
@@ -1159,7 +1159,8 @@ public class MinionController : NetworkBehaviour
                     }
 
                     //SetDestinationIfHighDiff(targetEnemy.transform.position); //walk to the enemy
-                    if (InRangeOfEntity(targetEnemy, attackRange))
+                    //temporarily disabled because attack range is not working
+                    if (InRangeOfEntity(targetEnemy, attackRange))//
                     {
                         SwitchState(MinionStates.Attacking);
                         break;
@@ -1227,7 +1228,7 @@ public class MinionController : NetworkBehaviour
                     animator.SetFloat("AttackSpeed", 1);
                 }*/
                 //can only invalidate targets if we are not attacking
-
+                //fix range check; enemy must be in range to be attacked
                 if (lastOrderType == ActionType.AttackMove && targetEnemy != null)
                 {
                     if (targetEnemy.IsStructure())
@@ -1279,8 +1280,7 @@ public class MinionController : NetworkBehaviour
                             targetEnemy = alternateAttackTarget;
                         }
                     }
-                }
-                    
+                } 
                 if (!IsValidTarget(targetEnemy) && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
                 {
                     AutomaticAttackMove();
@@ -1326,7 +1326,21 @@ public class MinionController : NetworkBehaviour
                                         SelfDestruct(areaOfEffectRadius);
                                         break;
                                     case AttackType.Projectile:
-                                        ShootProjectileAtPosition(targetEnemy.transform.position + new Vector3(0, 0.5f, 0));
+                                        Vector3 positionToShoot = targetEnemy.transform.position + new Vector3(0, 0.5f, 0);
+                                        if (targetEnemy.physicalCollider != null) //get closest point on collider; //this has an issue
+                                        {
+                                            Vector3 centerToMax = targetEnemy.physicalCollider.bounds.center - targetEnemy.physicalCollider.bounds.max;
+                                            float boundsFakeRadius = centerToMax.magnitude;
+                                            float discrepancyThreshold = boundsFakeRadius + .5f;
+                                            Vector3 closest = targetEnemy.physicalCollider.ClosestPoint(transform.position);
+                                            float rawDist = Vector3.Distance(transform.position, targetEnemy.transform.position);
+                                            float closestDist = Vector3.Distance(transform.position, closest);
+                                            if (Mathf.Abs(rawDist - closestDist) <= discrepancyThreshold)
+                                            {
+                                                positionToShoot = closest + new Vector3(0, 0.5f, 0);
+                                            } 
+                                        } 
+                                        ShootProjectileAtPosition(positionToShoot);
                                         break;
                                     /*case AttackType.Gatling:
                                         DamageSpecifiedEnemy(targetEnemy, damage);
@@ -2065,13 +2079,25 @@ public class MinionController : NetworkBehaviour
     private bool InRangeOfEntity(SelectableEntity target, float range)
     {
         if (target == null) return false;
-        if (target.physicalCollider != null) //get closest point on collider
+        if (target.physicalCollider != null) //get closest point on collider; //this has an issue
         {
+            Vector3 centerToMax = target.physicalCollider.bounds.center - target.physicalCollider.bounds.max;
+            float boundsFakeRadius = centerToMax.magnitude;
+            float discrepancyThreshold = boundsFakeRadius + .5f;
             Vector3 closest = target.physicalCollider.ClosestPoint(transform.position);
-            return Vector3.Distance(transform.position, closest) <= range;
+            float rawDist = Vector3.Distance(transform.position, target.transform.position);
+            float closestDist = Vector3.Distance(transform.position, closest);
+            if (Mathf.Abs(rawDist - closestDist) > discrepancyThreshold)
+            {
+                return rawDist <= range;
+            }
+            else
+            {
+                return closestDist <= range;
+            }
         }
         else //check dist to center
-        {
+        { 
             return Vector3.Distance(transform.position, target.transform.position) <= range;
         }
     }

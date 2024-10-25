@@ -945,6 +945,18 @@ PrefabInstance:
       propertyPath: uniqueID
       value: 5791465508626956411
       objectReference: {fileID: 0}
+    - target: {fileID: 9088405780570812672, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: center.z
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 9088405780570812672, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: rectangleSize.x
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 9088405780570812672, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      propertyPath: rectangleSize.y
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
