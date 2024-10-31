@@ -9,6 +9,8 @@ using UnityEngine.Rendering;
 using System;
 //using Unity.Burst.CompilerServices;
 using System.Threading.Tasks;
+using static UnityEditor.PlayerSettings;
+using static UnityEditor.Progress;
 
 public class RTSPlayer : Player
 {
@@ -198,6 +200,14 @@ public class RTSPlayer : Player
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
         {
             clickedPosition = hit.point;
+            //create an entity searcher at the clicked position
+
+            GameObject obj = new GameObject();
+            obj.name = "EntitySearcher";
+            EntitySearcher searcher = obj.AddComponent<EntitySearcher>();
+
+            obj.transform.position = clickedPosition;
+
             //create a list of viable targets to attack   
             Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize]; 
             int resultsNum = Physics.OverlapSphereNonAlloc(clickedPosition, 4, enemyArray, Global.Instance.enemyLayer); //use fixed distance for now
@@ -216,10 +226,24 @@ public class RTSPlayer : Player
             }
 
             UnitOrdersQueue.Clear();
+             
             foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.minionController != null && item.minionController.IsValidAttacker()) //minion
                 {
+                    //if this unit is already assigned to an entity searcher, unassign it
+                    if (item.minionController.assignedEntitySearcher != null)
+                    {
+                        item.minionController.assignedEntitySearcher.UnassignUnit(item.minionController); 
+                    }
+
+                    //assign the entity searcher to selected units
+                    item.minionController.assignedEntitySearcher = searcher;
+
+                    //update the entity searcher's assigned units list
+                    item.minionController.assignedEntitySearcher.AssignUnit(item.minionController); 
+
+
                     enemyEntityArray.CopyTo(item.minionController.attackMoveDestinationEnemyArray, 0);
                     item.minionController.attackMoveDestinationEnemyCount = resultsNum;
                     item.minionController.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search?
@@ -229,7 +253,7 @@ public class RTSPlayer : Player
                     order.action = ActionType.AttackMove;
                     UnitOrdersQueue.Add(order);
                 }
-            }
+            } 
             totalNumUnitOrders = UnitOrdersQueue.Count; 
         }
     }
@@ -324,26 +348,29 @@ public class RTSPlayer : Player
             else
             {
                 actionType = ActionType.Move;
-            }
-
-            //Debug.Log("queuing unit orders " + actionType);
-            //finished determining action type
+            } 
+            //finished determining action type 
             UnitOrdersQueue.Clear();
             foreach (SelectableEntity selected in selectedEntities)
             {
                 if (selected.minionController != null)
                 {
+                    //if we are assigned an entity
+                    if (selected.minionController.assignedEntitySearcher != null)
+                    { 
+                        selected.minionController.assignedEntitySearcher.UnassignUnit(selected.minionController);
+                        selected.minionController.assignedEntitySearcher = null;
+                    }
+
                     UnitOrder order = new();
                     order.unit = selected.minionController;
                     order.targetPosition = clickedPosition;
                     order.action = actionType;
                     order.target = hitEntity;
-                    UnitOrdersQueue.Add(order);
-                    //Debug.Log("adding order to " + selected);
+                    UnitOrdersQueue.Add(order); 
                 }
-            }
+            } 
             totalNumUnitOrders = UnitOrdersQueue.Count;
-            //ProcessOrdersInBatches(); //do one pass immediately
         }
     }
     private int totalNumUnitOrders = 0;

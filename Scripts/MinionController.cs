@@ -677,9 +677,28 @@ public class MinionController : NetworkBehaviour
         { 
             if (item != null) Gizmos.DrawWireSphere(item.transform.position, .1f);
         }*/
+        if (minionState == MinionStates.AttackMoving)
+        {
+            if (targetEnemy != null)
+            {
+                Gizmos.color = Color.green;
+                Gizmos.DrawLine(transform.position, targetEnemy.transform.position);
+            }
+            else
+            {
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawLine(transform.position, pathfindingTarget.transform.position);
+            }
+        }
+        else
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(transform.position, pathfindingTarget.transform.position);
+        }
     }
     private void OnDrawGizmos()
     {
+        
         /*Gizmos.color = Color.yellow;
         Gizmos.DrawLine(transform.position, destination);
         if (targetEnemy != null)
@@ -933,6 +952,8 @@ public class MinionController : NetworkBehaviour
             SetDestination(target);
         }
     }
+
+    public EntitySearcher assignedEntitySearcher;
     public void ClearGivenMission()
     {
         //givenMission = SelectableEntity.RallyMission.None;
@@ -1049,6 +1070,7 @@ public class MinionController : NetworkBehaviour
         }
     }
     public bool hasCalledEnemySearchAsyncTask = false;
+    private List<SelectableEntity> preservedAsyncSearchResults = new();
     private async void OwnerUpdateState()
     {
         CheckIfAttackTrailIsActiveErroneously();
@@ -1127,7 +1149,8 @@ public class MinionController : NetworkBehaviour
             case MinionStates.WalkToRally:
                 IdleOrWalkContextuallyAnimationOnly();
                 break;
-            case MinionStates.AttackMoving: //walk forwards while searching for enemies to attack   
+            case MinionStates.AttackMoving: //walk forwards while searching for enemies to attack
+                //on entering this state, hasCalledEnemySearchAsyncTask = false;
                 #region Aesthetics
                 if (!animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") //if not playing attack move anim
                     && !animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
@@ -1140,43 +1163,42 @@ public class MinionController : NetworkBehaviour
                     animator.Play("AttackWalkStart");
                 }
                 #endregion
-                #region Mechanics
-                #endregion
+                #region Mechanics 
                 //target enemy is provided by enterstate finding an enemy asynchronously
                 if (IsValidTarget(targetEnemy))
                 {
-                    hasCalledEnemySearchAsyncTask = false;
-                    //if target is a structure, move the destination closer to us until it no longer hits obstacle
-                    if (targetEnemy.IsStructure())
-                    {
-                        //AdjustTargetEnemyStructureDestination(targetEnemy);
-                        SetDestination(adjustedTargetEnemyStructurePosition);
-                        //SetDestination(targetEnemy.transform.position);
+                    hasCalledEnemySearchAsyncTask = false; //allows new async search; reminder that h
+                    
+                    if (targetEnemy.IsStructure()) //if target is a structure, move the destination closer to us until it no longer hits obstacle
+                    { 
+                        SetDestination(adjustedTargetEnemyStructurePosition); 
                     }
                     else
                     {
                         SetDestination(targetEnemy.transform.position);
                     }
 
-                    //SetDestinationIfHighDiff(targetEnemy.transform.position); //walk to the enemy
-                    //temporarily disabled because attack range is not working
-                    if (InRangeOfEntity(targetEnemy, attackRange))//
+                    if (InRangeOfEntity(targetEnemy, attackRange))
                     {
                         SwitchState(MinionStates.Attacking);
                         break;
                     }
                 }
                 else
-                { 
+                {
                     if (!hasCalledEnemySearchAsyncTask)
                     {
                         hasCalledEnemySearchAsyncTask = true;
+                        //searcher could sort results into minions and structures
+                        //if there is at least 1 minion we can just search through the minions and ignore structures
+                        //otherwise search structures
                         await AsyncFindClosestEnemyToAttackMoveTowards(attackRange); //sets target enemy
-                        await Task.Delay(500);
+                        await Task.Delay(100); //right now this limits the ability of units to acquire new targets
                         if (targetEnemy == null) hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
                     }
                 }
                 //currrently, this will prioritize minions. however, if a wall is in the way, then the unit will just walk into the wall
+                #endregion
                 break;
             case MinionStates.WalkToSpecificEnemy: //seek enemy without switching targets automatically
                 if (!pathReachesTarget && IsEffectivelyIdle(.1f) && IsMelee())
@@ -2319,6 +2341,7 @@ public class MinionController : NetworkBehaviour
     /// <returns></returns>
     private async Task AsyncFindClosestEnemyToAttackMoveTowards(float range) //called only once
     {
+        if (assignedEntitySearcher == null) return;
         //Debug.Log("Running find closest attack target search");
         if (entity.IsMelee())
         {
@@ -2330,10 +2353,24 @@ public class MinionController : NetworkBehaviour
         }
 
         SelectableEntity valid = null;
-        //List<SelectableEntity> enemyList = entity.controllerOfThis.visibleEnemies;
-        for (int i = 0; i < attackMoveDestinationEnemyCount; i++)
+
+
+        SelectableEntity[] searchArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
+        int searchCount = 0;
+        if (assignedEntitySearcher.minionCount > 0)
         {
-            SelectableEntity check = attackMoveDestinationEnemyArray[i];
+            searchArray = assignedEntitySearcher.searchedMinions;
+            searchCount = assignedEntitySearcher.minionCount;
+        }
+        else
+        {
+            searchArray = assignedEntitySearcher.searchedStructures;
+            searchCount = assignedEntitySearcher.structureCount;
+        }
+
+        for (int i = 0; i < searchCount; i++)
+        {
+            SelectableEntity check = searchArray[i];
             if (IsEnemy(check) && check.alive && check.isTargetable.Value) //only check on enemies that are alive, targetable, visible
             {
                 //viability range is 4 unless attack range is higher

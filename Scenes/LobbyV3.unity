@@ -10578,7 +10578,7 @@ MonoBehaviour:
   maxExpectedUnits: 1
   maxFramesToFindTarget: 5
   playerHasWon: 0
-  attackMoveDestinationEnemyArrayBufferSize: 15
+  attackMoveDestinationEnemyArrayBufferSize: 10
 --- !u!114 &2114043657
 MonoBehaviour:
   m_ObjectHideFlags: 0
