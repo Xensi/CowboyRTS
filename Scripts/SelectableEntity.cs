@@ -55,7 +55,8 @@ public class SelectableEntity : NetworkBehaviour
     #region Hidden
 
     public ProgressBar healthBar;
-    public FactionEntity factionEntity;
+    public FactionEntity factionEntity; 
+
     [HideInInspector] public MinionController minionController;
     [HideInInspector] public bool selected = false;
     [HideInInspector] public NetworkObject net;
@@ -158,7 +159,7 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private MeshRenderer selectIndicator;
     public GameObject targetIndicator;
     public List<MeshRenderer> teamRenderers;
-    private DynamicGridObstacle obstacle;
+    private NavmeshCut obstacle;
     [HideInInspector] public RVOController RVO;
     [HideInInspector]
     public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
@@ -231,7 +232,7 @@ public class SelectableEntity : NetworkBehaviour
         if (fogUnit == null) fogUnit = GetComponent<FogOfWarUnit>();
         allMeshes = GetComponentsInChildren<MeshRenderer>();
         if (net == null) net = GetComponent<NetworkObject>();
-        if (obstacle == null) obstacle = GetComponentInChildren<DynamicGridObstacle>();
+        if (obstacle == null) obstacle = GetComponentInChildren<NavmeshCut>();
         if (RVO == null) RVO = GetComponent<RVOController>();
         if (physicalCollider == null) physicalCollider = GetComponent<Collider>();
         if (rigid == null) rigid = GetComponent<Rigidbody>();
@@ -981,9 +982,12 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
         if (obstacle != null) //update pathfinding
-        {
-            obstacle.DoUpdateGraphs();
+        { 
+            AstarPath.active.navmeshUpdates.ForceUpdate();
+            // Block until the updates have finished
             AstarPath.active.FlushGraphUpdates();
+            //obstacle.DoUpdateGraphs();
+            //AstarPath.active.FlushGraphUpdates();
         }
     }
     private void Update()
@@ -1145,6 +1149,7 @@ public class SelectableEntity : NetworkBehaviour
     private bool hideModelOnDeath = false;
     public void PrepareForEntityDestruction()
     {
+        if (obstacle != null) obstacle.enabled = false; 
         RemoveFromEnemyLists();
         if (lootedOnDestructionGold > 0)
         {
