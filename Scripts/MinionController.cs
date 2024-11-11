@@ -1183,7 +1183,7 @@ public class MinionController : NetworkBehaviour
                         //AdjustTargetEnemyStructureDestination(targetEnemy);
                         //SetDestination(adjustedTargetEnemyStructurePosition); 
                         SetDestination(targetEnemy.transform.position);
-                        Debug.Log("In Attack Move; Setting destination to structure " + targetEnemy.name);
+                        //Debug.Log("In Attack Move; Setting destination to structure " + targetEnemy.name);
                     }
                     else
                     {
@@ -1198,12 +1198,14 @@ public class MinionController : NetworkBehaviour
                         {
                             //check if any enemies in our list are in attack range
                             if (targetEnemy.IsMinion())
-                            { 
-                                enemy = FindEnemyInSearchListInRange(attackRange, RequiredEnemyType.Minion);
+                            {
+                                enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Minion);
+                                //enemy = FindEnemyInSearchListInRange(attackRange, RequiredEnemyType.Minion);
                             }
                             else
-                            { 
-                                enemy = FindEnemyInSearchListInRange(attackRange, RequiredEnemyType.Structure);
+                            {
+                                enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure);
+                                //enemy = FindEnemyInSearchListInRange(attackRange, RequiredEnemyType.Structure);
                             }
                         }
                         else if (PathBlocked()) //no path to enemy, attack structures in our way
