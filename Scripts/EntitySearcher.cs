@@ -40,7 +40,7 @@ public class EntitySearcher : MonoBehaviour
     private void Search()
     {
         //create a list of viable targets to attack   
-        Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
+        Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize*5];
         searchedCount = Physics.OverlapSphereNonAlloc(transform.position, searchRadius, enemyArray, Global.Instance.enemyLayer); //use fixed distance for now
         minionCount = 0;
         structureCount = 0;
@@ -57,16 +57,25 @@ public class EntitySearcher : MonoBehaviour
 
             if (select.IsMinion())
             {
-                searchedMinions[minionCount] = select;
-                minionCount++; 
+                if (minionCount < searchedMinions.Length)
+                { 
+                    searchedMinions[minionCount] = select;
+                    minionCount++;
+                }
             }
             else
             {
-                searchedStructures[structureCount] = select;
-                structureCount++; 
+                if (structureCount < searchedStructures.Length)
+                { 
+                    searchedStructures[structureCount] = select;
+                    structureCount++;
+                }
             }
-            searchedAll[allCount] = select;
-            allCount++;
+            if (allCount < searchedAll.Length)
+            { 
+                searchedAll[allCount] = select;
+                allCount++;
+            }
         }
     }
     public void AssignUnit(MinionController unit)
