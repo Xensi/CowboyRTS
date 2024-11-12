@@ -256,8 +256,9 @@ public class MinionController : NetworkBehaviour
         //print("setting destination");
         destination = position; //tell server where we're going
         //Debug.Log("Setting destination to " + destination);
-        UpdateSetterTargetPosition(); //move pathfinding target 
-        pathRecalculated = false;
+        UpdateSetterTargetPosition(); //move pathfinding target
+        pathStatusValid = false;
+        ai.SearchPath();
     }
     /// <summary>
     /// Update pathfinding target to match actual destination
@@ -644,11 +645,11 @@ public class MinionController : NetworkBehaviour
 
     private bool PathBlocked()
     {
-        return pathRecalculated && pathReachesDestination == PathStatus.Blocked;
+        return pathStatusValid && pathReachesDestination == PathStatus.Blocked;
     }
     private bool PathReaches()
     {
-        return pathRecalculated && pathReachesDestination == PathStatus.Reaches;
+        return pathStatusValid && pathReachesDestination == PathStatus.Reaches;
     }
     public Vector3 LerpPosition(Vector3 current, Vector3 target)
     {
@@ -885,11 +886,12 @@ public class MinionController : NetworkBehaviour
             case MinionStates.Attacking:
             case MinionStates.AttackMoving:
                 hasCalledEnemySearchAsyncTask = false;
+                alternateAttackTarget = null;
                 //pathRecalculated = false;
                 break;
         }
     }
-    public bool pathRecalculated = false; //when this is true, the current path result is valid
+    public bool pathStatusValid = false; //when this is true, the current path result is valid
 
     public void SwitchState(MinionStates stateToSwitchTo)
     {
@@ -968,8 +970,10 @@ public class MinionController : NetworkBehaviour
     private void SetDestinationIfHighDiff(Vector3 target)
     {
         Vector3 offset = target - destination;
-        if (Vector3.SqrMagnitude(offset) > Mathf.Pow(0.1f, 2))
+        float threshold = 0.1f;
+        if (Vector3.SqrMagnitude(offset) > threshold * threshold)
         {
+            Debug.Log("Setting destination bc diff");
             SetDestination(target);
         }
     }
@@ -1052,7 +1056,7 @@ public class MinionController : NetworkBehaviour
     {
         return animator.IsInTransition(0);
     }
-    private SelectableEntity alternateAttackTarget;
+    public SelectableEntity alternateAttackTarget;
     /// <summary>
     /// Attack move, but not targeted by player. Allows finding new targets when current one is invalid. Later needs to be fixed so that it only
     /// happens when not attack moving ?
@@ -1188,32 +1192,26 @@ public class MinionController : NetworkBehaviour
                     animator.Play("AttackWalkStart");
                 }
                 #endregion
-                #region Mechanics 
-                 
-                if (PathReaches())
-                {
-                    Debug.Log("Reaches");
-                }
-                else if (PathBlocked())
-                {
-                    Debug.Log("Blocked");
-                }
-                else
-                {
-                    Debug.Log("Pending");
-                }
+                #region Mechanics
                 if (hasCalledEnemySearchAsyncTask)
                 {
                     await Task.Delay(100);
                     hasCalledEnemySearchAsyncTask = false;
+                } 
+                if (!pathStatusValid) //path status becomes invalid if the destination changes, since we need to recalculate and ensure the
+                { //blocked status is correct
+                    await Task.Delay(500);
+                    pathStatusValid = true;
                 }
                 //target enemy is provided by enterstate finding an enemy asynchronously
                 //reminder: assigned entity searcher updates enemy lists; which are then searched by asnycFindClosestEnemyToAttackMoveTowards
                 if (IsValidTarget(targetEnemy))
-                {
+                { 
                     hasCalledEnemySearchAsyncTask = false; //allows new async search
-                    
-                    if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
+
+                    SetDestinationIfHighDiff(targetEnemy.transform.position);
+                    //SetDestination(targetEnemy.transform.position); //needs to be called once
+                    /*if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
                     {
                         //AdjustTargetEnemyStructureDestination(targetEnemy);
                         //SetDestination(adjustedTargetEnemyStructurePosition); 
@@ -1223,39 +1221,26 @@ public class MinionController : NetworkBehaviour
                     else
                     {
                         SetDestination(targetEnemy.transform.position);
-                    } 
+                    } */
 
                     if (IsMelee())
                     {
                         SelectableEntity enemy = null;
                         //check if we have path to enemy
-                        if (PathReaches())
-                        {
-                            //check if any enemies in our list are in attack range
-                            /*if (targetEnemy.IsMinion())
-                            {
-                                //enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Minion);
-                                enemy = FindEnemyInSearchListInRange(attackRange, RequiredEnemyType.Minion); //TODO this should take in a target
-                                if (enemy != null) Debug.Log("enemy found thru list search when path not blocked and valid minion target");
-                            }
-                            else
-                            {
-                                //enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure);
-                                enemy = FindEnemyInSearchListInRange(attackRange, RequiredEnemyType.Structure);
-                                if (enemy != null) Debug.Log("enemy found thru list search when path not blocked and valid structure target");
-                            }*/
-                        } 
-                        /*else if (PathBlocked()) //no path to enemy, attack structures in our way
-                        { //TODO: erroneously path blocked ...
+
+                        //this should be done regardless of if we have a valid path since it won't matter
+                        if (targetEnemy) enemy = FindSpecificEnemyInSearchListInRange(attackRange, targetEnemy);
+
+                        if (PathBlocked()) //no path to enemy, attack structures in our way
+                        {  
                             //periodically perform mini physics searches around us and if we get anything attack it 
-                            enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure);
-                            if (enemy != null) Debug.Log("enemy found through phys search when path blocked and valid target");
-                        }*/
-                        /*if (enemy != null)
+                            enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure);  
+                        }
+                        if (enemy != null)
                         {
                             targetEnemy = enemy;
                             SwitchState(MinionStates.Attacking);
-                        } */
+                        }
                     }
                     else//is ranged
                     {
@@ -1268,19 +1253,17 @@ public class MinionController : NetworkBehaviour
                     } 
                 }
                 else //enemy is not valid target
-                { 
-                    /*if (PathBlocked() && IsMelee()) //if we cannot reach the target destination, we should attack structures on our way
-                    {
+                {
+                    if (PathBlocked() && IsMelee()) //if we cannot reach the target destination, we should attack structures on our way
+                    {  
                         SelectableEntity enemy = null;
-                        enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure);
-                        if (enemy != null) Debug.Log("enemy found through phys search when path blocked and no valid target");
+                        enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure); 
                         if (enemy != null)
                         {
                             targetEnemy = enemy;
-                            SwitchState(MinionStates.Attacking);
-                            //Debug.Log(targetEnemy.name + " is the enemy we are attacking");
+                            SwitchState(MinionStates.Attacking); 
                         }
-                    }*/
+                    }
 
 
                     if (!hasCalledEnemySearchAsyncTask)
@@ -1291,6 +1274,10 @@ public class MinionController : NetworkBehaviour
                         //otherwise search structures
                         //Debug.Log("Entity searching");
                         await AsyncSetTargetEnemyToClosestInSearchList(attackRange); //sets target enemy
+
+                        if (targetEnemy != null) SetDestinationIfHighDiff(targetEnemy.transform.position); //immediately update the position
+                        //which will make the pathstatus invalid so that we don't get false positives
+
                         await Task.Delay(100); //right now this limits the ability of units to acquire new targets
                         if (targetEnemy == null) hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
                     }
@@ -1343,37 +1330,37 @@ public class MinionController : NetworkBehaviour
                     AutomaticAttackMove();
                 }*/
                 break;
-            case MinionStates.Attacking:
-                /*if (attackType == AttackType.Gatling)
+            case MinionStates.Attacking: 
+                //If attack moving a structure, check if there's a path to an enemy. If there is, attack move again
+                if (lastOrderType == ActionType.AttackMove && targetEnemy != null && targetEnemy.IsStructure())
                 {
-                    animator.SetFloat("AttackSpeed", 1);
-                }*/
-                //can only invalidate targets if we are not attacking
-                //fix range check; enemy must be in range to be attacked 
-                //TODO: There's some problems with this
-                /*if (lastOrderType == ActionType.AttackMove && targetEnemy != null && targetEnemy.IsStructure())
-                {  
-                    //var buffer = new List<Vector3>();
-                    //ai.GetRemainingPath(buffer, out bool stale);
-                    //Debug.DrawLine(transform.position, buffer.Last(), Color.red);
-                    //Debug.DrawLine(transform.position, attackMoveDestination, Color.green);
-                    if (pathRecalculated)
+                    if (hasCalledEnemySearchAsyncTask)
                     {
-                        if (EndOfPathReachesPosition(attackMoveDestination)) //start fresh attack move
-                        {
-                            targetEnemy = null;
-                            SetDestination(attackMoveDestination);
-                            SwitchState(MinionStates.Walk);
-                            //SwitchState(MinionStates.AttackMoving);
-                            Debug.Log(gameObject.name + "Detected that there is a gap in the wall");
-                            break;
-                        }
-                        else //try again
-                        {
-                            pathRecalculated = false; 
-                        }
+                        await Task.Delay(100);
+                        hasCalledEnemySearchAsyncTask = false;
                     }
-                }*/
+                    if (!pathStatusValid)
+                    { 
+                        await Task.Delay(100);
+                        pathStatusValid = true;
+                    }
+                    if (!hasCalledEnemySearchAsyncTask)
+                    {
+                        hasCalledEnemySearchAsyncTask = true; 
+                        await AsyncFindAlternateMinionInSearchArray(attackRange); //sets target enemy 
+                        if (alternateAttackTarget != null)
+                        {
+                            SetDestinationIfHighDiff(alternateAttackTarget.transform.position);
+                            if (PathReaches())
+                            {
+                                targetEnemy = alternateAttackTarget;
+                                SwitchState(MinionStates.AttackMoving);
+                            }
+                        }
+                        await Task.Delay(100); //right now this limits the ability of units to acquire new targets
+                        if (alternateAttackTarget == null) hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
+                    }
+                }
 
                 /*if (lastOrderType == ActionType.AttackMove && targetEnemy != null)
                 {
@@ -1431,11 +1418,11 @@ public class MinionController : NetworkBehaviour
                 }*/
 
 
-                if (!IsValidTarget(targetEnemy) && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
+                /*if (!IsValidTarget(targetEnemy) && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
                 {
                     AutomaticAttackMove();
-                }
-                else if (InRangeOfEntity(targetEnemy, attackRange))
+                }*/
+                if (InRangeOfEntity(targetEnemy, attackRange))
                 {
                     //UpdateAttackIndicator(); 
                     //if (IsOwner) SetDestination(transform.position);//destination.Value = transform.position; //stop in place
@@ -1528,7 +1515,8 @@ public class MinionController : NetworkBehaviour
                 animator.Play("Idle");
                 if (!IsValidTarget(targetEnemy))
                 {
-                    AutomaticAttackMove();
+                    //AutomaticAttackMove();
+                    SwitchState(MinionStates.AttackMoving);
                 }
                 else //if target enemy is alive
                 {
@@ -1921,12 +1909,9 @@ public class MinionController : NetworkBehaviour
             case MinionStates.WalkToInteractable:
             case MinionStates.WalkToRally:
             case MinionStates.WalkToTarget:
-            case MinionStates.Attacking:
 
-                /*var buffer = new List<Vector3>();
-                ai.GetRemainingPath(buffer, out bool stale);
-                UpdatePathReachesTarget(buffer.Last());
-
+                var buffer = new List<Vector3>();
+                ai.GetRemainingPath(buffer, out bool stale);  
                 if (entity.selected)
                 {
                     if (entity.lineIndicator != null) entity.lineIndicator.enabled = true;
@@ -1935,8 +1920,7 @@ public class MinionController : NetworkBehaviour
                 else
                 {
                     if (entity.lineIndicator != null) entity.lineIndicator.enabled = false;
-                }*/
-
+                } 
                 break;
         }
 
@@ -1946,18 +1930,15 @@ public class MinionController : NetworkBehaviour
         bool pathReached = EndOfPathReachesPosition(pathfindingTarget.transform.position);
         if (ai.pathPending)
         {
-            pathReachesDestination = PathStatus.Pending;
-            pathRecalculated = false;
+            pathReachesDestination = PathStatus.Pending; 
         }
         else if (pathReached)
         {
-            pathReachesDestination = PathStatus.Reaches;
-            pathRecalculated = true;
+            pathReachesDestination = PathStatus.Reaches; 
         }
         else
         {
             pathReachesDestination = PathStatus.Blocked;
-            pathRecalculated = true;
         }
     }
     public enum PathStatus { Pending, Reaches, Blocked }
@@ -1975,6 +1956,15 @@ public class MinionController : NetworkBehaviour
         var buffer = new List<Vector3>();
         ai.GetRemainingPath(buffer, out bool stale); 
         float dist = (position - buffer.Last()).sqrMagnitude;
+
+        Vector3 prePos = buffer[0];
+        for (int i = 1; i < buffer.Count; i++)
+        {
+            Debug.DrawLine(prePos, buffer[i], Color.blue, 1);
+            prePos = buffer[i];
+        }
+        //Debug.DrawRay(position, Vector3.up, Color.yellow, 4);
+        //Debug.DrawRay(buffer.Last(), Vector3.up, Color.blue, 4);
         return dist < pathThreshold * pathThreshold;
     }
     private readonly float pathReachesThreshold = 0.25f;
@@ -2612,15 +2602,57 @@ public class MinionController : NetworkBehaviour
             {
                 Vector3 offset = check.transform.position - transform.position;
                 if (offset.sqrMagnitude < range * range) //return first enemy that's in range
+                { 
+                    return check;
+                } 
+            }  
+        }
+        return null;
+    }
+    private SelectableEntity FindSpecificEnemyInSearchListInRange(float range, SelectableEntity enemy)
+    {
+        if (assignedEntitySearcher == null) return null;
+        SelectableEntity[] searchArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
+        int searchCount = 0;
+        RequiredEnemyType enemyType = RequiredEnemyType.Any;
+
+        if (enemy.IsMinion())
+        {
+            enemyType = RequiredEnemyType.Minion;
+        }
+        else
+        {
+            enemyType = RequiredEnemyType.Structure;
+        }
+
+        switch (enemyType)
+        {
+            case RequiredEnemyType.Any:
+                searchArray = assignedEntitySearcher.searchedAll;
+                searchCount = assignedEntitySearcher.allCount;
+                break;
+            case RequiredEnemyType.Minion:
+                searchArray = assignedEntitySearcher.searchedMinions;
+                searchCount = assignedEntitySearcher.minionCount;
+                break;
+            case RequiredEnemyType.Structure:
+                searchArray = assignedEntitySearcher.searchedStructures;
+                searchCount = assignedEntitySearcher.structureCount;
+                break;
+            default:
+                break;
+        }
+        for (int i = 0; i < searchCount; i++)
+        {
+            SelectableEntity check = searchArray[i];
+            if (IsEnemy(check) && check.alive && check.isTargetable.Value && check == enemy) //only check on enemies that are alive, targetable, visible
+            {
+                Vector3 offset = check.transform.position - transform.position;
+                if (offset.sqrMagnitude < range * range) //return first enemy that's in range
                 {
-                    //Debug.DrawLine(transform.position, check.transform.position, Color.green, 0.1f);
                     return check;
                 }
-                else
-                { 
-                    //Debug.DrawLine(transform.position, check.transform.position, Color.red, 0.1f);
-                }
-            }  
+            }
         }
         return null;
     }
@@ -2652,12 +2684,12 @@ public class MinionController : NetworkBehaviour
         SelectableEntity[] searchArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
         int searchCount = 0;
         if (assignedEntitySearcher.minionCount > 0) //if there are minions, only search those
-        {
+        { 
             searchArray = assignedEntitySearcher.searchedMinions;
             searchCount = assignedEntitySearcher.minionCount;
         }
         else //allow searching structures
-        {
+        { 
             searchArray = assignedEntitySearcher.searchedStructures;
             searchCount = assignedEntitySearcher.structureCount;
         }
@@ -2731,7 +2763,8 @@ public class MinionController : NetworkBehaviour
         //if (targetEnemy != null) Debug.Log("found target to attack move towards: " + targetEnemy.name); 
     }
     private async Task AsyncFindAlternateMinionInSearchArray(float range)
-    { 
+    {
+        if (assignedEntitySearcher == null) return;
         //Debug.Log("Running alternate minion attack target search");
         if (entity.IsMelee())
         {
@@ -2740,8 +2773,7 @@ public class MinionController : NetworkBehaviour
         else
         {
             range += rangedUnitRangeExtension;
-        }
-
+        } 
 
         SelectableEntity[] searchArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
         int searchCount = 0;
@@ -2749,7 +2781,7 @@ public class MinionController : NetworkBehaviour
         {
             searchArray = assignedEntitySearcher.searchedMinions;
             searchCount = assignedEntitySearcher.minionCount;
-        } 
+        }   
 
         SelectableEntity valid = null; 
         for (int i = 0; i < searchCount; i++)
