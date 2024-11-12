@@ -345,11 +345,11 @@ public class MinionController : NetworkBehaviour
         ai.autoRepath.maximumPeriod = defaultPathRate;
         ai.autoRepath.mode = AutoRepathPolicy.Mode.Dynamic;
 
-        if (minionState == MinionStates.AttackMoving)
+        if (lastOrderType == ActionType.AttackMove)
         {
             ai.autoRepath.maximumPeriod = attackMovePathRate;
         }
-        else if (minionState == MinionStates.Idle || minionState == MinionStates.Attacking || minionState == MinionStates.Harvesting
+        else if (minionState == MinionStates.Idle || minionState == MinionStates.Harvesting
             || minionState == MinionStates.Building)
         {
             ai.autoRepath.mode = AutoRepathPolicy.Mode.Never;
@@ -1200,7 +1200,7 @@ public class MinionController : NetworkBehaviour
                 } 
                 if (!pathStatusValid) //path status becomes invalid if the destination changes, since we need to recalculate and ensure the
                 { //blocked status is correct
-                    await Task.Delay(500);
+                    await Task.Delay(100);
                     pathStatusValid = true;
                 }
                 //target enemy is provided by enterstate finding an enemy asynchronously
@@ -1229,7 +1229,14 @@ public class MinionController : NetworkBehaviour
                         //check if we have path to enemy
 
                         //this should be done regardless of if we have a valid path since it won't matter
-                        if (targetEnemy) enemy = FindSpecificEnemyInSearchListInRange(attackRange, targetEnemy);
+                        if (targetEnemy.IsMinion())
+                        {
+                            enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Minion);
+                        }
+                        else
+                        {
+                            enemy = FindSpecificEnemyInSearchListInRange(attackRange, targetEnemy);
+                        } 
 
                         if (PathBlocked()) //no path to enemy, attack structures in our way
                         {  
@@ -1325,10 +1332,11 @@ public class MinionController : NetworkBehaviour
                         break;
                     }
                 }
-                /*else
+                else
                 {
-                    AutomaticAttackMove();
-                }*/
+                    //AutomaticAttackMove();
+                    SwitchState(MinionStates.AttackMoving);
+                }
                 break;
             case MinionStates.Attacking: 
                 //If attack moving a structure, check if there's a path to an enemy. If there is, attack move again
