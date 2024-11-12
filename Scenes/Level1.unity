@@ -6115,7 +6115,7 @@ GameObject:
   m_Component:
   - component: {fileID: 281578904}
   m_Layer: 0
-  m_Name: Minor Settlement 3
+  m_Name: Minor Settlement 3 (Posse 4)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -27548,7 +27548,7 @@ MonoBehaviour:
   spawnPosition: {fileID: 0}
   knownEnemyStructures: []
   knownEnemyUnits: []
-  behavior: 2
+  behavior: 1
   desiredPopAdders: 0
   desiredHarvesters: 5
   desiredUnitSpawner: 2

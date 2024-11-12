@@ -21,7 +21,7 @@ public class EntitySearcher : MonoBehaviour
     { 
         searchedStructures = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
         searchedMinions = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
-        searchedAll = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
+        searchedAll = new SelectableEntity[Global.Instance.fullEnemyArraySize];
         Search();
     }
     void Update()
@@ -40,7 +40,7 @@ public class EntitySearcher : MonoBehaviour
     private void Search()
     {
         //create a list of viable targets to attack   
-        Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize*5];
+        Collider[] enemyArray = new Collider[Global.Instance.fullEnemyArraySize];
         searchedCount = Physics.OverlapSphereNonAlloc(transform.position, searchRadius, enemyArray, Global.Instance.enemyLayer); //use fixed distance for now
         minionCount = 0;
         structureCount = 0;

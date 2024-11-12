@@ -209,7 +209,7 @@ public class RTSPlayer : Player
             obj.transform.position = clickedPosition;
 
             //create a list of viable targets to attack   
-            Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize]; 
+            /*Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize]; 
             int resultsNum = Physics.OverlapSphereNonAlloc(clickedPosition, 4, enemyArray, Global.Instance.enemyLayer); //use fixed distance for now
             //Debug.Log("Results num" + resultsNum);
             SelectableEntity[] enemyEntityArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize]; 
@@ -223,7 +223,7 @@ public class RTSPlayer : Player
                     continue;
                 }
                 enemyEntityArray[i] = select;
-            }
+            }*/
 
             UnitOrdersQueue.Clear();
              
@@ -244,8 +244,8 @@ public class RTSPlayer : Player
                     item.minionController.assignedEntitySearcher.AssignUnit(item.minionController); 
 
 
-                    enemyEntityArray.CopyTo(item.minionController.attackMoveDestinationEnemyArray, 0);
-                    item.minionController.attackMoveDestinationEnemyCount = resultsNum;
+                    //enemyEntityArray.CopyTo(item.minionController.attackMoveDestinationEnemyArray, 0);
+                    //item.minionController.attackMoveDestinationEnemyCount = resultsNum;
                     item.minionController.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search?
                     item.minionController.pathRecalculated = false;
                     UnitOrder order = new();
