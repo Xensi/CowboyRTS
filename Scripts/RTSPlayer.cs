@@ -247,7 +247,7 @@ public class RTSPlayer : Player
                     //enemyEntityArray.CopyTo(item.minionController.attackMoveDestinationEnemyArray, 0);
                     //item.minionController.attackMoveDestinationEnemyCount = resultsNum;
                     item.minionController.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search?
-                    item.minionController.pathRecalculated = false;
+                    //item.minionController.pathRecalculated = false;
                     UnitOrder order = new();
                     order.unit = item.minionController;
                     order.targetPosition = clickedPosition;

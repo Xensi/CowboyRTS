@@ -256,15 +256,15 @@ public class MinionController : NetworkBehaviour
         //print("setting destination");
         destination = position; //tell server where we're going
         //Debug.Log("Setting destination to " + destination);
-        UpdateSetterTargetPosition(); //move pathfinding target
+        UpdateSetterTargetPosition(); //move pathfinding target 
+        pathRecalculated = false;
     }
-    public bool manualControlPathfinding = false;
     /// <summary>
     /// Update pathfinding target to match actual destination
     /// </summary>
     private void UpdateSetterTargetPosition()
     {
-        if (!manualControlPathfinding) pathfindingTarget.position = destination;
+        pathfindingTarget.position = destination;
     }
     private void NonOwnerPathfindToOldestRealLocation()
     {
@@ -644,11 +644,11 @@ public class MinionController : NetworkBehaviour
 
     private bool PathBlocked()
     {
-        return !pathReachesTarget && pathRecalculated;
+        return pathRecalculated && pathReachesDestination == PathStatus.Blocked;
     }
-    private bool PathNotBlocked()
+    private bool PathReaches()
     {
-        return pathReachesTarget && pathRecalculated;
+        return pathRecalculated && pathReachesDestination == PathStatus.Reaches;
     }
     public Vector3 LerpPosition(Vector3 current, Vector3 target)
     {
@@ -885,11 +885,11 @@ public class MinionController : NetworkBehaviour
             case MinionStates.Attacking:
             case MinionStates.AttackMoving:
                 hasCalledEnemySearchAsyncTask = false;
-                pathRecalculated = false;
+                //pathRecalculated = false;
                 break;
         }
     }
-    public bool pathRecalculated = false;
+    public bool pathRecalculated = false; //when this is true, the current path result is valid
 
     public void SwitchState(MinionStates stateToSwitchTo)
     {
@@ -1189,11 +1189,18 @@ public class MinionController : NetworkBehaviour
                 }
                 #endregion
                 #region Mechanics 
-
-                if (!pathRecalculated)
+                 
+                if (PathReaches())
                 {
-                    await Task.Delay(100);
-                    pathRecalculated = true;
+                    Debug.Log("Reaches");
+                }
+                else if (PathBlocked())
+                {
+                    Debug.Log("Blocked");
+                }
+                else
+                {
+                    Debug.Log("Pending");
                 }
                 if (hasCalledEnemySearchAsyncTask)
                 {
@@ -1222,10 +1229,10 @@ public class MinionController : NetworkBehaviour
                     {
                         SelectableEntity enemy = null;
                         //check if we have path to enemy
-                        if (PathNotBlocked())
+                        if (PathReaches())
                         {
                             //check if any enemies in our list are in attack range
-                            if (targetEnemy.IsMinion())
+                            /*if (targetEnemy.IsMinion())
                             {
                                 //enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Minion);
                                 enemy = FindEnemyInSearchListInRange(attackRange, RequiredEnemyType.Minion); //TODO this should take in a target
@@ -1236,14 +1243,14 @@ public class MinionController : NetworkBehaviour
                                 //enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure);
                                 enemy = FindEnemyInSearchListInRange(attackRange, RequiredEnemyType.Structure);
                                 if (enemy != null) Debug.Log("enemy found thru list search when path not blocked and valid structure target");
-                            }
-                        }
-                        else if (PathBlocked()) //no path to enemy, attack structures in our way
+                            }*/
+                        } 
+                        /*else if (PathBlocked()) //no path to enemy, attack structures in our way
                         { //TODO: erroneously path blocked ...
                             //periodically perform mini physics searches around us and if we get anything attack it 
                             enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure);
                             if (enemy != null) Debug.Log("enemy found through phys search when path blocked and valid target");
-                        }
+                        }*/
                         /*if (enemy != null)
                         {
                             targetEnemy = enemy;
@@ -1262,7 +1269,7 @@ public class MinionController : NetworkBehaviour
                 }
                 else //enemy is not valid target
                 { 
-                    if (PathBlocked() && IsMelee()) //if we cannot reach the target destination, we should attack structures on our way
+                    /*if (PathBlocked() && IsMelee()) //if we cannot reach the target destination, we should attack structures on our way
                     {
                         SelectableEntity enemy = null;
                         enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure);
@@ -1273,7 +1280,7 @@ public class MinionController : NetworkBehaviour
                             SwitchState(MinionStates.Attacking);
                             //Debug.Log(targetEnemy.name + " is the enemy we are attacking");
                         }
-                    }
+                    }*/
 
 
                     if (!hasCalledEnemySearchAsyncTask)
@@ -1292,11 +1299,11 @@ public class MinionController : NetworkBehaviour
                 #endregion
                 break;
             case MinionStates.WalkToSpecificEnemy: //seek enemy without switching targets automatically
-                if (!pathReachesTarget && IsEffectivelyIdle(.1f) && IsMelee())
+                /*if (IsEffectivelyIdle(.1f) && IsMelee()) //!pathReachesDestination && 
                 //if we can't reach our specific target, find a new one
                 {
                     AutomaticAttackMove();
-                }
+                }*/
                 if (IsValidTarget(targetEnemy))
                 {
                     //UpdateAttackIndicator();
@@ -1331,10 +1338,10 @@ public class MinionController : NetworkBehaviour
                         break;
                     }
                 }
-                else
+                /*else
                 {
                     AutomaticAttackMove();
-                }
+                }*/
                 break;
             case MinionStates.Attacking:
                 /*if (attackType == AttackType.Gatling)
@@ -1344,14 +1351,8 @@ public class MinionController : NetworkBehaviour
                 //can only invalidate targets if we are not attacking
                 //fix range check; enemy must be in range to be attacked 
                 //TODO: There's some problems with this
-                if (lastOrderType == ActionType.AttackMove && targetEnemy != null && targetEnemy.IsStructure())
-                { 
-                    if (!pathRecalculated) //only recalculate path if we have an alternate attack target
-                    {
-                        SetDestination(attackMoveDestination);
-                        await Task.Delay(100);
-                        pathRecalculated = true;
-                    }
+                /*if (lastOrderType == ActionType.AttackMove && targetEnemy != null && targetEnemy.IsStructure())
+                {  
                     //var buffer = new List<Vector3>();
                     //ai.GetRemainingPath(buffer, out bool stale);
                     //Debug.DrawLine(transform.position, buffer.Last(), Color.red);
@@ -1372,7 +1373,7 @@ public class MinionController : NetworkBehaviour
                             pathRecalculated = false; 
                         }
                     }
-                }
+                }*/
 
                 /*if (lastOrderType == ActionType.AttackMove && targetEnemy != null)
                 {
@@ -1836,6 +1837,7 @@ public class MinionController : NetworkBehaviour
                 #endregion
         }
         DrawPath();
+        UpdatePathStatus();
         //UpdateColliderStatus();
         /*if (attackType == AttackType.Gatling)
         {
@@ -1921,7 +1923,7 @@ public class MinionController : NetworkBehaviour
             case MinionStates.WalkToTarget:
             case MinionStates.Attacking:
 
-                var buffer = new List<Vector3>();
+                /*var buffer = new List<Vector3>();
                 ai.GetRemainingPath(buffer, out bool stale);
                 UpdatePathReachesTarget(buffer.Last());
 
@@ -1933,14 +1935,37 @@ public class MinionController : NetworkBehaviour
                 else
                 {
                     if (entity.lineIndicator != null) entity.lineIndicator.enabled = false;
-                }
+                }*/
+
                 break;
         }
+
     }
-    public bool pathReachesTarget = false;
+    private void UpdatePathStatus()
+    { 
+        bool pathReached = EndOfPathReachesPosition(pathfindingTarget.transform.position);
+        if (ai.pathPending)
+        {
+            pathReachesDestination = PathStatus.Pending;
+            pathRecalculated = false;
+        }
+        else if (pathReached)
+        {
+            pathReachesDestination = PathStatus.Reaches;
+            pathRecalculated = true;
+        }
+        else
+        {
+            pathReachesDestination = PathStatus.Blocked;
+            pathRecalculated = true;
+        }
+    }
+    public enum PathStatus { Pending, Reaches, Blocked }
+    public PathStatus pathReachesDestination = PathStatus.Pending;
     public float pathDistFromTarget = 0;
     /// <summary>
-    /// Use to check if path reaches a position. Do not use to check if path reaches a structure.
+    /// Use to check if path reaches a position. Do not use to check if path reaches a structure. Assumes that the path has been searched already,
+    /// so may fail if it has not been searched manually or automatically before calling this
     /// </summary>
     /// <param name="position"></param>
     /// <returns></returns>
@@ -1948,13 +1973,13 @@ public class MinionController : NetworkBehaviour
     {
         float pathThreshold = 0.1f;
         var buffer = new List<Vector3>();
-        ai.GetRemainingPath(buffer, out bool stale);
+        ai.GetRemainingPath(buffer, out bool stale); 
         float dist = (position - buffer.Last()).sqrMagnitude;
         return dist < pathThreshold * pathThreshold;
     }
     private readonly float pathReachesThreshold = 0.25f;
     public Vector3 lastPathPosition;
-    private void UpdatePathReachesTarget(Vector3 lastPathPos)
+    /*private void UpdatePathReachesTarget(Vector3 lastPathPos)
     {   
         lastPathPosition = lastPathPos;
         if (targetEnemy != null && targetEnemy.IsStructure()) //structures need to be evaluated based on closest point
@@ -1988,8 +2013,8 @@ public class MinionController : NetworkBehaviour
         {
             pathDistFromTarget = (pathfindingTarget.transform.position - lastPathPos).sqrMagnitude;
         }
-        pathReachesTarget = pathDistFromTarget < pathReachesThreshold;
-    }
+        pathReachesDestination = pathDistFromTarget < pathReachesThreshold;
+    }*/
     #endregion
     #region UpdaterFunctions
     private void UpdateColliderStatus()

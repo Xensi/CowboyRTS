@@ -348,16 +348,26 @@ MonoBehaviour:
   canReceiveNewCommands: 1
   attackMoveDestination: {x: 0, y: 0, z: 0}
   attackTrails: []
+  attackMoveDestinationEnemyArray: []
   manualControlPathfinding: 0
   nonOwnerRealLocationList: []
+  pathRecalculated: 0
+  assignedEntitySearcher: {fileID: 0}
   lastOrder:
     unit: {fileID: 0}
     action: 0
     target: {fileID: 0}
     targetPosition: {x: 0, y: 0, z: 0}
+  lastOrderType: 0
   attackTrailBeginTime: 0.4
+  hasCalledEnemySearchAsyncTask: 0
+  adjustedTargetEnemyStructurePosition: {x: 0, y: 0, z: 0}
   pathReachesTarget: 0
+  pathDistFromTarget: 0
+  lastPathPosition: {x: 0, y: 0, z: 0}
+  targetEnemyClosestPoint: {x: 0, y: 0, z: 0}
   shouldAggressivelySeekEnemies: 1
+  attackMoveDestinationEnemyCount: 0
   canAttackStructures: 1
   attackProjectile: {fileID: 0}
   lastCommand:
@@ -482,18 +492,16 @@ MonoBehaviour:
     returnAfterBeingPushedAway: 1
     progressAverage: 0
     lastJobDensityResult: 0
-  centerOffsetCompatibility: NaN
   repathRateCompatibility: NaN
   canSearchCompability: 0
   orientation: 0
   enableRotation: 1
   autoRepath:
-    mode: 2
+    mode: 0
     period: 0.5
     sensitivity: 10
     maximumPeriod: 2
     visualizeSensitivity: 0
-  targetCompatibility: {fileID: 0}
   maxAcceleration: 999
   rotationSpeed: 360
   slowdownDistance: 0.2
