@@ -2062,7 +2062,7 @@ public class RTSPlayer : Player
     public void CreateExplosionAtPoint(Vector3 center, float explodeRadius, sbyte damage = 10)
     {
         Collider[] hitColliders = new Collider[40];
-        int numColliders = Physics.OverlapSphereNonAlloc(center, explodeRadius, hitColliders, Global.Instance.entityLayer);
+        int numColliders = Physics.OverlapSphereNonAlloc(center, explodeRadius, hitColliders, Global.Instance.allEntityLayer);
         for (int i = 0; i < numColliders; i++)
         {
             if (hitColliders[i] == null) continue;

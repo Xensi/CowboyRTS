@@ -56,8 +56,9 @@ public class Global : NetworkBehaviour
     public LayerMask groundLayer;
     public LayerMask blockingLayer;
     public LayerMask gameLayer;
-    public LayerMask entityLayer;
+    public LayerMask allEntityLayer;
     public LayerMask enemyLayer;
+    public LayerMask friendlyEntityLayer;
     public List<RTSPlayer> uninitializedPlayers = new();
     public List<RTSPlayer> initializedPlayers = new();
     public List<AIPlayer> aiTeamControllers = new();
@@ -105,9 +106,10 @@ public class Global : NetworkBehaviour
     {
         groundLayer = LayerMask.GetMask("Ground");
         blockingLayer = LayerMask.GetMask("Entity", "Obstacle");
-        gameLayer = LayerMask.GetMask("Entity", "Obstacle", "Ground");
-        entityLayer = LayerMask.GetMask("Entity", "OtherEntities", "EnemyEntity");
+        gameLayer = LayerMask.GetMask("Entity", "Obstacle", "Ground", "OtherEntities", "EnemyEntity");
+        allEntityLayer = LayerMask.GetMask("Entity", "OtherEntities", "EnemyEntity");
         enemyLayer = LayerMask.GetMask("EnemyEntity");
+        friendlyEntityLayer = LayerMask.GetMask("Entity");
 
         // If there is an instance, and it's not me, delete myself.
 

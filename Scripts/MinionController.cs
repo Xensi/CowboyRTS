@@ -258,7 +258,7 @@ public class MinionController : NetworkBehaviour
         //Debug.Log("Setting destination to " + destination);
         UpdateSetterTargetPosition(); //move pathfinding target
         pathStatusValid = false;
-        ai.SearchPath();
+        //ai.SearchPath();
     }
     /// <summary>
     /// Update pathfinding target to match actual destination
@@ -973,7 +973,7 @@ public class MinionController : NetworkBehaviour
         float threshold = 0.1f;
         if (Vector3.SqrMagnitude(offset) > threshold * threshold)
         {
-            Debug.Log("Setting destination bc diff");
+            //Debug.Log("Setting destination bc diff");
             SetDestination(target);
         }
     }
@@ -2968,7 +2968,7 @@ public class MinionController : NetworkBehaviour
         {
             if (IsServer)
             {
-                target.BuildThis(buildDelta);
+                target.RaiseHP(buildDelta);
             }
             else //client tell server to change the network variable
             {
@@ -2982,7 +2982,7 @@ public class MinionController : NetworkBehaviour
         //server must handle damage! 
         if (target.TryGet(out SelectableEntity select))
         {
-            select.BuildThis(buildDelta);
+            select.RaiseHP(buildDelta);
         }
     }
     [ServerRpc]
@@ -3050,8 +3050,7 @@ public class MinionController : NetworkBehaviour
     public void DamageSpecifiedEnemy(SelectableEntity enemy, sbyte damage) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         if (enemy != null)
-        {
-            //fire locally
+        { //fire locally
             entity.SimplePlaySound(1);
             if (entity.attackEffects.Length > 0) //show muzzle flash
             {

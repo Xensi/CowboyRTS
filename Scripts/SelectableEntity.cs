@@ -1366,14 +1366,6 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-    public void TakeDamage(sbyte damage) //always managed by SERVER
-    {
-        currentHP.Value -= damage;
-    }
-    public void Harvest(sbyte amount) //always managed by SERVER
-    {
-        currentHP.Value -= amount;
-    }
     private sbyte damagedThreshold;
     private void CheckIfDamaged()
     {
@@ -1389,10 +1381,19 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-    public void BuildThis(sbyte delta)
+    public void RaiseHP(sbyte delta)
     {
-        //hitPoints.Value += delta;
         currentHP.Value = (sbyte)Mathf.Clamp(currentHP.Value + delta, 0, maxHP);
+    }
+    public void TakeDamage(sbyte damage) //always managed by SERVER
+    {
+        //currentHP.Value -= damage;
+        currentHP.Value = (sbyte)Mathf.Clamp(currentHP.Value - damage, 0, maxHP);
+    }
+    public void Harvest(sbyte amount) //always managed by SERVER
+    {
+        //currentHP.Value -= amount;
+        currentHP.Value = (sbyte)Mathf.Clamp(currentHP.Value - amount, 0, maxHP);
     }
     /*public void OnTriggerEnter(Collider other)
     {
