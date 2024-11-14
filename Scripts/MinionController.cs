@@ -982,10 +982,9 @@ public class MinionController : NetworkBehaviour
     /// Only set destination if there's a significant difference
     /// </summary>
     /// <param name="target"></param>
-    private void SetDestinationIfHighDiff(Vector3 target)
+    private void SetDestinationIfHighDiff(Vector3 target, float threshold = 0.1f)
     {
-        Vector3 offset = target - destination;
-        float threshold = 0.1f;
+        Vector3 offset = target - destination; 
         if (Vector3.SqrMagnitude(offset) > threshold * threshold)
         {
             //Debug.Log("Setting destination bc diff");
@@ -1352,9 +1351,18 @@ public class MinionController : NetworkBehaviour
                         //Debug.Log("Entity searching");
                         await AsyncSetTargetEnemyToClosestInSearchList(attackRange); //sets target enemy 
                         if (minionState != MinionStates.AttackMoving) return;
-                        if (targetEnemy != null) SetDestinationIfHighDiff(targetEnemy.transform.position); //immediately update the position
-                        //which will make the pathstatus invalid so that we don't get false positives
-
+                        if (targetEnemy != null)
+                        {
+                            if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
+                            {
+                                Debug.Log("Setting to nudged" + nudgedTargetEnemyStructurePosition);
+                                SetDestinationIfHighDiff(nudgedTargetEnemyStructurePosition);
+                            }
+                            else
+                            {
+                                SetDestinationIfHighDiff(targetEnemy.transform.position);
+                            }
+                        } 
                         //await Task.Delay(100); //right now this limits the ability of units to acquire new targets
                         if (targetEnemy == null)
                         {
@@ -1872,7 +1880,7 @@ public class MinionController : NetworkBehaviour
     private void NudgeTargetEnemyStructureDestination(SelectableEntity entity)
     {
         nudgedTargetEnemyStructurePosition = entity.transform.position;
-        float step = 1 * Time.deltaTime;
+        float step = 10 * Time.deltaTime;
         Vector3 newPosition = Vector3.MoveTowards(nudgedTargetEnemyStructurePosition, transform.position, step);
         nudgedTargetEnemyStructurePosition = newPosition;
         //Debug.DrawRay(entity.transform.position, Vector3.up, Color.red, 5);
