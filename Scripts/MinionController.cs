@@ -1228,22 +1228,32 @@ public class MinionController : NetworkBehaviour
                         //this should be done regardless of if we have a valid path since it won't matter
                         if (targetEnemy.IsMinion())
                         {
-                            enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Minion, true);
+                            enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Minion, true); 
+                            if (enemy != null)
+                            {
+                                targetEnemy = enemy;
+                                SwitchState(MinionStates.Attacking);
+                            }
                         }
                         else
                         {
-                            enemy = FindSpecificEnemyInSearchListInRange(attackRange, targetEnemy); 
+                            enemy = FindSpecificEnemyInSearchListInRange(attackRange, targetEnemy);
+                            if (enemy != null)
+                            {
+                                targetEnemy = enemy;
+                                SwitchState(MinionStates.Attacking);
+                            }
                         } 
 
                         if (PathBlocked()) //no path to enemy, attack structures in our way
                         {  
                             //periodically perform mini physics searches around us and if we get anything attack it 
-                            enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure, true); 
-                        }
-                        if (enemy != null)
-                        {
-                            targetEnemy = enemy;
-                            SwitchState(MinionStates.Attacking);
+                            enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure, true);
+                            if (enemy != null)
+                            {
+                                targetEnemy = enemy;
+                                SwitchState(MinionStates.Attacking);
+                            }
                         }
                     }
                     else//is ranged
