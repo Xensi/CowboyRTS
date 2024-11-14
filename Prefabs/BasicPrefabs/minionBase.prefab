@@ -180,6 +180,7 @@ Transform:
   - {fileID: 4252952065601990556}
   - {fileID: 5979901183641035642}
   - {fileID: 1938173634127800720}
+  - {fileID: 1717375361535722742}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4126868118260038068
@@ -278,6 +279,7 @@ MonoBehaviour:
   selectIndicator: {fileID: 7020276359041958627}
   targetIndicator: {fileID: 3480814061053556006}
   teamRenderers: []
+  obstacle: {fileID: 0}
   RVO: {fileID: 0}
   teamNumber:
     m_InternalValue: 0
@@ -349,9 +351,8 @@ MonoBehaviour:
   attackMoveDestination: {x: 0, y: 0, z: 0}
   attackTrails: []
   attackMoveDestinationEnemyArray: []
-  manualControlPathfinding: 0
   nonOwnerRealLocationList: []
-  pathRecalculated: 0
+  pathStatusValid: 0
   assignedEntitySearcher: {fileID: 0}
   lastOrder:
     unit: {fileID: 0}
@@ -360,9 +361,10 @@ MonoBehaviour:
     targetPosition: {x: 0, y: 0, z: 0}
   lastOrderType: 0
   attackTrailBeginTime: 0.4
+  alternateAttackTarget: {fileID: 0}
   hasCalledEnemySearchAsyncTask: 0
-  adjustedTargetEnemyStructurePosition: {x: 0, y: 0, z: 0}
-  pathReachesTarget: 0
+  nudgedTargetEnemyStructurePosition: {x: 0, y: 0, z: 0}
+  pathReachesDestination: 0
   pathDistFromTarget: 0
   lastPathPosition: {x: 0, y: 0, z: 0}
   targetEnemyClosestPoint: {x: 0, y: 0, z: 0}
@@ -462,7 +464,7 @@ MonoBehaviour:
   traversableTags: -3
   tagPenalties: 00000000e7030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
   graphMask:
-    value: -1
+    value: 1
 --- !u!114 &801487402834003379
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -606,6 +608,67 @@ MonoBehaviour:
   version: 1073741824
   radius: 0.1
   detail: 10
+--- !u!1 &6176451757024125140
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1717375361535722742}
+  - component: {fileID: 8706858183713001063}
+  m_Layer: 7
+  m_Name: Obstacle
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1717375361535722742
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6176451757024125140}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6541845058422189605}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8706858183713001063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6176451757024125140}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6bee0a6fa1f5d4f4db481219040523c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 1073741824
+  graphMask:
+    value: 1
+  type: 1
+  mesh: {fileID: 0}
+  rectangleSize: {x: 0, y: 0}
+  circleRadius: 0.1
+  circleResolution: 6
+  height: 1
+  meshScale: 1
+  center: {x: 0, y: 0, z: 0}
+  updateDistance: 0.2
+  isDual: 0
+  radiusExpansionMode: 1
+  cutsAddedGeom: 1
+  updateRotationDistance: 10
+  useRotationAndScale: 0
 --- !u!1001 &4363772687689255031
 PrefabInstance:
   m_ObjectHideFlags: 0

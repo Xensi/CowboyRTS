@@ -159,7 +159,7 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private MeshRenderer selectIndicator;
     public GameObject targetIndicator;
     public List<MeshRenderer> teamRenderers;
-    private NavmeshCut obstacle;
+    public NavmeshCut obstacle;
     [HideInInspector] public RVOController RVO;
     [HideInInspector]
     public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
@@ -1147,9 +1147,18 @@ public class SelectableEntity : NetworkBehaviour
         return CannotConstructHarvestProduce() && IsMinion();
     }
     private bool hideModelOnDeath = false;
+    
+    public void MakeObstacle()
+    {
+        if (obstacle != null) obstacle.enabled = true;
+    }
+    public void ClearObstacle()
+    {
+        if (obstacle != null) obstacle.enabled = false;
+    }
     public void PrepareForEntityDestruction()
     {
-        if (obstacle != null) obstacle.enabled = false; 
+        ClearObstacle();
         RemoveFromEnemyLists();
         if (lootedOnDestructionGold > 0)
         {
@@ -1194,8 +1203,7 @@ public class SelectableEntity : NetworkBehaviour
         if (physicalCollider != null)
         {
             physicalCollider.enabled = false; //allows dynamic grid obstacle to update pathfinding nodes one last time
-        }
-        if (minionController != null) minionController.DestroyObstacle();
+        } 
 
         foreach (MeshRenderer item in allMeshes)
         {

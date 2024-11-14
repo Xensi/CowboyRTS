@@ -217,7 +217,7 @@ public class RTSPlayer : Player
             foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.minionController != null && item.minionController.IsValidAttacker()) //minion
-                {
+                { 
                     //if this unit is already assigned to an entity searcher, unassign it
                     if (item.minionController.assignedEntitySearcher != null)
                     {
@@ -340,7 +340,7 @@ public class RTSPlayer : Player
             foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.minionController != null)
-                {
+                {  
                     if (actionType == ActionType.AttackTarget) //if attacking a specific target, we need an entity searcher
                     { //for when it's dead
                         if (item.minionController.IsValidAttacker()) //minion

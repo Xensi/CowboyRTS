@@ -221,7 +221,7 @@ public class MinionController : NetworkBehaviour
             //gameObject.layer = LayerMask.NameToLayer("OtherEntities"); //can pass through each other 
             nonOwnerRealLocationList.Add(transform.position);
             entity.RVO.enabled = false;
-            /*  ;
+            /*
               ai.enabled = false;
               rayMod.enabled = false;
               seeker.enabled = false;*/
@@ -229,17 +229,7 @@ public class MinionController : NetworkBehaviour
         realLocation.OnValueChanged += OnRealLocationChanged;
         //enabled = IsOwner;
         oldPosition = transform.position;
-        orderedDestination = transform.position;
-        /*if (IsOwner)
-        {
-            if (Global.Instance.graphUpdateScenePrefab != null)
-                graphUpdateScene = Instantiate(Global.Instance.graphUpdateScenePrefab, transform.position, Quaternion.identity, Global.Instance.transform);
-            if (graphUpdateScene != null && ai != null)
-            {
-                graphUpdateSceneCollider = graphUpdateScene.GetComponent<SphereCollider>();
-                //graphUpdateSceneCollider.radius = ai.radius;
-            }
-        }*/
+        orderedDestination = transform.position; 
     }
     private int maxDetectable;
     public bool IsCurrentlyBuilding()
@@ -437,8 +427,8 @@ public class MinionController : NetworkBehaviour
 
     }*/
     private void FixGarrisonObstacle()
-    {
-        if (graphUpdateScene != null && graphUpdateScene.setWalkability == false && IsGarrisoned())
+    { 
+        if (IsGarrisoned())
         {
             ClearObstacle();
         }
@@ -694,11 +684,7 @@ public class MinionController : NetworkBehaviour
         var lerpPercentage = m_CurrentLerpTime / m_LerpTime;
 
         return Vector3.Lerp(m_LerpStart, target, lerpPercentage);
-    }
-    private void OnDestinationChanged(Vector3 previous, Vector3 current)
-    {
-        ai.canMove = true; //generally, if we have received a new destination then we can move there
-    }
+    } 
     private new void OnDestroy()
     {
         CancelAllAsyncTasks();
@@ -906,9 +892,25 @@ public class MinionController : NetworkBehaviour
                 break;
         }
     }
+    private void ChangeBlockedByMinionObstacleStatus(bool blocked)
+    {
+        GraphMask includingObstacles = GraphMask.FromGraphName("GraphIncludingMinionNavmeshCuts");
+        GraphMask excludingObstacles = GraphMask.FromGraphName("GraphExcludingMinionNavmeshCuts");
+        if (seeker != null)
+        {
+            if (blocked)
+            {
+                seeker.graphMask = includingObstacles;
+            }
+            else
+            {
+                seeker.graphMask = excludingObstacles;
+            }
+        }
+    }
     public bool pathStatusValid = false; //when this is true, the current path result is valid
 
-    public void SwitchState(MinionStates stateToSwitchTo)
+    public async void SwitchState(MinionStates stateToSwitchTo)
     {
         //Debug.Log("Switching state" + stateToSwitchTo);
         switch (stateToSwitchTo)
@@ -956,7 +958,7 @@ public class MinionController : NetworkBehaviour
             case MinionStates.Depositing:
             case MinionStates.WalkToTarget:
                 ai.endReachedDistance = defaultEndReachedDistance;
-                ClearObstacle();
+                //ClearObstacle();
                 FreezeRigid(false, false);
                 canReceiveNewCommands = true;
                 break;
@@ -968,6 +970,17 @@ public class MinionController : NetworkBehaviour
         }
         minionState = stateToSwitchTo;
         //Debug.Log("Switching state to " + minionState);
+
+        if (minionState == MinionStates.Attacking)
+        {
+            ChangeBlockedByMinionObstacleStatus(false);
+        } 
+        else //at first pathfind freely, and then become blocked by obstacles. by then our own obstacle should not be a worry
+        {
+            ChangeBlockedByMinionObstacleStatus(false);
+            await Task.Delay(Global.Instance.changeBlockedDelayMs);
+            ChangeBlockedByMinionObstacleStatus(true);
+        }
     }
     private bool skipFirstFrame = true;
     private bool attackTrailActive = false;
@@ -1197,19 +1210,15 @@ public class MinionController : NetworkBehaviour
                 { 
                     hasCalledEnemySearchAsyncTask = false; //allows new async search
 
-                    SetDestinationIfHighDiff(targetEnemy.transform.position);
                     //SetDestination(targetEnemy.transform.position); //needs to be called once
-                    /*if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
+                    if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
                     {
-                        //AdjustTargetEnemyStructureDestination(targetEnemy);
-                        //SetDestination(adjustedTargetEnemyStructurePosition); 
-                        //Debug.Log("In Attack Move; Setting destination to structure " + targetEnemy.name);
-                        SetDestination(targetEnemy.transform.position);
+                        SetDestinationIfHighDiff(nudgedTargetEnemyStructurePosition);
                     }
                     else
                     {
-                        SetDestination(targetEnemy.transform.position);
-                    } */
+                        SetDestinationIfHighDiff(targetEnemy.transform.position);
+                    }
 
                     if (IsMelee())
                     {
@@ -1219,17 +1228,17 @@ public class MinionController : NetworkBehaviour
                         //this should be done regardless of if we have a valid path since it won't matter
                         if (targetEnemy.IsMinion())
                         {
-                            enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Minion);
+                            enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Minion, true);
                         }
                         else
                         {
-                            enemy = FindSpecificEnemyInSearchListInRange(attackRange, targetEnemy);
+                            enemy = FindSpecificEnemyInSearchListInRange(attackRange, targetEnemy); 
                         } 
 
                         if (PathBlocked()) //no path to enemy, attack structures in our way
                         {  
                             //periodically perform mini physics searches around us and if we get anything attack it 
-                            enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure);  
+                            enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure, true); 
                         }
                         if (enemy != null)
                         {
@@ -1252,7 +1261,7 @@ public class MinionController : NetworkBehaviour
                     if (PathBlocked() && IsMelee()) //if we cannot reach the target destination, we should attack structures on our way
                     {  
                         SelectableEntity enemy = null;
-                        enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure); 
+                        enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Structure, false); 
                         if (enemy != null)
                         {
                             targetEnemy = enemy;
@@ -1274,7 +1283,12 @@ public class MinionController : NetworkBehaviour
                         //which will make the pathstatus invalid so that we don't get false positives
 
                         await Task.Delay(100); //right now this limits the ability of units to acquire new targets
-                        if (targetEnemy == null) hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
+                        if (targetEnemy == null)
+                        {
+                            hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
+
+                            SetDestinationIfHighDiff(attackMoveDestination);
+                        }
                     }
                 }
                 //currrently, this will prioritize minions. however, if a wall is in the way, then the unit will just walk into the wall
@@ -1780,19 +1794,19 @@ public class MinionController : NetworkBehaviour
             animator.SetFloat("AttackSpeed", 0);
         }*/
     }
-    public Vector3 adjustedTargetEnemyStructurePosition;
+    public Vector3 nudgedTargetEnemyStructurePosition;
     /// <summary>
     /// Slight nudge
     /// </summary>
     /// <param name="entity"></param>
     private void NudgeTargetEnemyStructureDestination(SelectableEntity entity)
     {
-        adjustedTargetEnemyStructurePosition = entity.transform.position;
+        nudgedTargetEnemyStructurePosition = entity.transform.position;
         float step = 1 * Time.deltaTime;
-        Vector3 newPosition = Vector3.MoveTowards(adjustedTargetEnemyStructurePosition, transform.position, step);
-        adjustedTargetEnemyStructurePosition = newPosition;
-        Debug.DrawRay(entity.transform.position, Vector3.up, Color.red, 5);
-        Debug.DrawRay(adjustedTargetEnemyStructurePosition, Vector3.up, Color.green, 5);
+        Vector3 newPosition = Vector3.MoveTowards(nudgedTargetEnemyStructurePosition, transform.position, step);
+        nudgedTargetEnemyStructurePosition = newPosition;
+        //Debug.DrawRay(entity.transform.position, Vector3.up, Color.red, 5);
+        Debug.DrawRay(nudgedTargetEnemyStructurePosition, Vector3.up, Color.green, 5);
     }
     /// <summary>
     /// Adjust position to not be blocked
@@ -1802,14 +1816,14 @@ public class MinionController : NetworkBehaviour
     {
         //failsafe
         float maxDistance = 1;
-        Vector3 closest = structure.physicalCollider.ClosestPoint(adjustedTargetEnemyStructurePosition);
-        if (Vector3.Distance(adjustedTargetEnemyStructurePosition, closest) > maxDistance)
+        Vector3 closest = structure.physicalCollider.ClosestPoint(nudgedTargetEnemyStructurePosition);
+        if (Vector3.Distance(nudgedTargetEnemyStructurePosition, closest) > maxDistance)
         {
             Debug.Log("Failsafe triggered. Resetting position");
-            adjustedTargetEnemyStructurePosition = structure.transform.position;
+            nudgedTargetEnemyStructurePosition = structure.transform.position;
         }
 
-        bool obstructedByEntity = Physics.Raycast(adjustedTargetEnemyStructurePosition + (new Vector3(0, 100, 0)),
+        bool obstructedByEntity = Physics.Raycast(nudgedTargetEnemyStructurePosition + (new Vector3(0, 100, 0)),
             Vector3.down, out RaycastHit entityHit, Mathf.Infinity, Global.Instance.localPlayer.entityLayer);
         if (obstructedByEntity)
         {
@@ -1819,15 +1833,15 @@ public class MinionController : NetworkBehaviour
                 //check if we hit ground or another entity
 
                 //get ground position 
-                bool hitGround = Physics.Raycast(adjustedTargetEnemyStructurePosition + (new Vector3(0, 100, 0)),
+                bool hitGround = Physics.Raycast(nudgedTargetEnemyStructurePosition + (new Vector3(0, 100, 0)),
                     Vector3.down, out RaycastHit groundHit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer);
                 if (hitGround)
                 {
                     float step = 4 * Time.deltaTime;
-                    Vector3 newPosition = Vector3.MoveTowards(adjustedTargetEnemyStructurePosition, transform.position, step);
-                    adjustedTargetEnemyStructurePosition = newPosition;
+                    Vector3 newPosition = Vector3.MoveTowards(nudgedTargetEnemyStructurePosition, transform.position, step);
+                    nudgedTargetEnemyStructurePosition = newPosition;
                     //Debug.Log("adjusted to: " + adjustedTargetEnemyStructurePosition); 
-                    Debug.DrawRay(adjustedTargetEnemyStructurePosition, Vector3.up, Color.green, 5);
+                    Debug.DrawRay(nudgedTargetEnemyStructurePosition, Vector3.up, Color.green, 5);
                 }
             }
         }
@@ -2146,20 +2160,19 @@ public class MinionController : NetworkBehaviour
     /// <param name="freezePosition"></param>
     /// <param name="freezeRotation"></param>
     public void FreezeRigid(bool freezePosition = true, bool freezeRotation = true)
-    {
-        //ai.canMove = true;
-        ai.canMove = !freezePosition;
-
-        highPrecisionMovement = freezePosition;
-        if (freezePosition)
+    { 
+        if (!freezePosition) //unfreeze
+        {
+            ClearObstacle();
+            ai.canMove = true;
+        }
+        else //freeze
         {
             ForceUpdateRealLocation();
             BecomeObstacle();
+            ai.canMove = false;
         }
-        else
-        {
-            //ClearObstacle();
-        }
+        highPrecisionMovement = freezePosition;
 
         RigidbodyConstraints posCon;
         RigidbodyConstraints rotCon;
@@ -2183,59 +2196,25 @@ public class MinionController : NetworkBehaviour
         {
             rotCon = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         }
-        if (rigid != null) rigid.constraints = posCon | rotCon;
-
-    }
-    private GraphUpdateScene graphUpdateScene;
-    private SphereCollider graphUpdateSceneCollider;
-
+        if (rigid != null) rigid.constraints = posCon | rotCon; 
+    } 
     private float graphUpdateTime = 0.02f; //derived through trial and error
     //public bool allowBecomingObstacles = false;
     private void BecomeObstacle()
-    {
-        if (graphUpdateScene != null && !IsGarrisoned())
+    { 
+        if (!entity.alive)
         {
-            //Debug.Log("Becoming obstacle");
-            graphUpdateScene.transform.position = transform.position;
-            graphUpdateScene.setWalkability = false;
-            Invoke(nameof(UpdateGraph), graphUpdateTime); //this delay is necessary or it will not work
+            entity.ClearObstacle();
         }
-        /*if (IsGarrisoned())
-        { 
-            ClearObstacle();
-        }
-        else
+        else if (!IsGarrisoned())
         {
-            //tell graph update scene to start blocking
-            
-        }*/
-    }
-    private void UpdateGraph()
-    {
-        if (graphUpdateScene != null) graphUpdateScene.Apply();
-        //AstarPath.active.FlushGraphUpdates(); 
-    }
-    //private Vector3 previousObstaclePositionToClear;
+            entity.MakeObstacle();
+        }
+    } 
     public void ClearObstacle()
-    {
-        //tell graph update scene to stop blocking
-        if (graphUpdateScene != null)
-        {
-            //Debug.Log("Clearing obstacle");
-            graphUpdateScene.transform.position = transform.position;
-            graphUpdateScene.setWalkability = true;
-            graphUpdateScene.Apply();
-            AstarPath.active.FlushGraphUpdates();
-        }
-    }
-    public void DestroyObstacle()
-    {
-        ClearObstacle();
-        if (graphUpdateScene != null)
-        {
-            Destroy(graphUpdateScene.gameObject);
-        }
-    }
+    { 
+        entity.ClearObstacle();
+    } 
     private void ForceUpdateRealLocation()
     {
         if (IsOwner)
@@ -2492,34 +2471,74 @@ public class MinionController : NetworkBehaviour
 
 
     enum RequiredEnemyType { Any, Minion, Structure }  
-    private SelectableEntity FindEnemyThroughPhysSearch(float range, RequiredEnemyType requiredEnemyType)
+    /// <summary>
+    /// Grab first enemy through physics search.
+    /// </summary>
+    /// <param name="range"></param>
+    /// <param name="requiredEnemyType"></param>
+    /// <param name="mustBeInSearchList"></param>
+    /// <returns></returns>
+    private SelectableEntity FindEnemyThroughPhysSearch(float range, RequiredEnemyType requiredEnemyType, bool mustBeInSearchList)
     { 
         Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize]; 
-        int searchedCount = Physics.OverlapSphereNonAlloc(transform.position, range, enemyArray, Global.Instance.enemyLayer); 
+        int searchedCount = Physics.OverlapSphereNonAlloc(transform.position, range, enemyArray, Global.Instance.enemyLayer);
+        SelectableEntity select = null;
         for (int i = 0; i < searchedCount; i++) //place valid entities into array
         {
             if (enemyArray[i] == null) continue; //if invalid do not increment slotToWriteTo 
-            SelectableEntity select = enemyArray[i].GetComponent<SelectableEntity>();
+            select = enemyArray[i].GetComponent<SelectableEntity>();
             if (select == null) continue;
             if (!select.alive || !select.isTargetable.Value) //overwrite these slots
             {
                 continue;
             }
+            bool matchesRequiredType = false;
             switch (requiredEnemyType)
             {
                 case RequiredEnemyType.Any:
                     return select; 
                 case RequiredEnemyType.Minion:
-                    if (select.IsMinion()) return select;
+                    matchesRequiredType = select.IsMinion();
                     break;
                 case RequiredEnemyType.Structure:
-                    if (select.IsStructure()) return select;
+                    matchesRequiredType = select.IsStructure();
                     break;
                 default:
                     break;
             }
+            if (matchesRequiredType)
+            {
+                if (mustBeInSearchList)
+                {
+                    if (assignedEntitySearcher != null)
+                    {
+                        bool inList = false; 
+                        if (select.IsMinion())
+                        {
+                            inList = assignedEntitySearcher.searchedMinions.Contains(select);
+                        }
+                        else
+                        {
+                            inList = assignedEntitySearcher.searchedStructures.Contains(select);
+                        }
+                        if (inList)
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+            select = null; //reaching the end of the loop without breaking resets select
         }
-        return null;
+        return select;
     }
     private SelectableEntity FindEnemyInSearchListInRange(float range, RequiredEnemyType enemyType)
     {
@@ -2660,7 +2679,7 @@ public class MinionController : NetworkBehaviour
                         if (InRangeOfEntity(check, range)) //is enemy in range and visible?
                         {
                             valid = check;
-                            Debug.DrawRay(valid.transform.position, Vector3.up, Color.red, 1);
+                            //Debug.DrawRay(valid.transform.position, Vector3.up, Color.red, 1);
                         }
                     }
                 }
@@ -3226,7 +3245,7 @@ public class MinionController : NetworkBehaviour
         lastCommand.Value = CommandTypes.Attack;
         targetEnemy = select;
         ClearIdleness();
-        if (targetEnemy.IsStructure()) adjustedTargetEnemyStructurePosition = targetEnemy.transform.position;
+        if (targetEnemy.IsStructure()) nudgedTargetEnemyStructurePosition = targetEnemy.transform.position;
 
         SwitchState(MinionStates.WalkToSpecificEnemy);
     }

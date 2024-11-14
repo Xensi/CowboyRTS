@@ -10560,10 +10560,13 @@ MonoBehaviour:
   gameLayer:
     serializedVersion: 2
     m_Bits: 0
-  entityLayer:
+  allEntityLayer:
     serializedVersion: 2
     m_Bits: 0
   enemyLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  friendlyEntityLayer:
     serializedVersion: 2
     m_Bits: 0
   uninitializedPlayers: []
@@ -10575,10 +10578,10 @@ MonoBehaviour:
   gameCanvas: {fileID: 1357281861}
   defaultCaptureEffect: {fileID: 5408459219581451750, guid: 79fdd10ce92332f48bdd4a70e0180172, type: 3}
   setRallyPointButton: {fileID: 1319956301}
+  changeBlockedDelayMs: 250
   maxExpectedUnits: 1
   maxFramesToFindTarget: 5
   playerHasWon: 0
-  attackMoveDestinationEnemyArrayBufferSize: 10
 --- !u!114 &2114043657
 MonoBehaviour:
   m_ObjectHideFlags: 0

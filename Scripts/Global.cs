@@ -102,6 +102,7 @@ public class Global : NetworkBehaviour
         if (entity.sounds.Length > 3) PlayClipAtPoint(entity.sounds[3], entity.transform.position, .5f, 1, true);
     }
 
+    public int changeBlockedDelayMs = 50;
     private void Awake()
     {
         groundLayer = LayerMask.GetMask("Ground");
