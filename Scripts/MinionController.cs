@@ -1125,7 +1125,50 @@ public class MinionController : NetworkBehaviour
         CancelAsyncSearch();
         CancelTimers();
     }
-
+    private async void MakeAsyncSearchAvailableAgain()
+    {
+        if (hasCalledEnemySearchAsyncTask)
+        {
+            hasCalledEnemySearchAsyncTaskTimerCancellationToken = new CancellationTokenSource();
+            try
+            {
+                await Task.Delay(100, hasCalledEnemySearchAsyncTaskTimerCancellationToken.Token);
+            }
+            catch
+            {
+                Debug.Log("Timer1 was cancelled!");
+                return;
+            }
+            finally
+            {
+                hasCalledEnemySearchAsyncTaskTimerCancellationToken?.Dispose();
+                hasCalledEnemySearchAsyncTaskTimerCancellationToken = null;
+            }
+            hasCalledEnemySearchAsyncTask = false;
+        }
+    }
+    private async void ValidatePathStatus()
+    { 
+        if (!pathStatusValid) //path status becomes invalid if the destination changes, since we need to recalculate and ensure the
+        { //blocked status is correct 
+            pathStatusTimerCancellationToken = new CancellationTokenSource();
+            try
+            {
+                await Task.Delay(100, pathStatusTimerCancellationToken.Token);
+            }
+            catch
+            {
+                Debug.Log("Timer1 was cancelled!");
+                return;
+            }
+            finally
+            {
+                pathStatusTimerCancellationToken?.Dispose();
+                pathStatusTimerCancellationToken = null;
+            }
+            pathStatusValid = true;
+        }
+    }
     private async void OwnerUpdateState()
     {
         CheckIfAttackTrailIsActiveErroneously();
@@ -1219,18 +1262,8 @@ public class MinionController : NetworkBehaviour
                 }
                 #endregion
                 #region Timers
-                if (hasCalledEnemySearchAsyncTask)
-                {
-                    hasCalledEnemySearchAsyncTaskTimerCancellationToken = new CancellationTokenSource();
-                    await Task.Delay(100, hasCalledEnemySearchAsyncTaskTimerCancellationToken.Token);
-                    hasCalledEnemySearchAsyncTask = false;
-                }
-                if (!pathStatusValid) //path status becomes invalid if the destination changes, since we need to recalculate and ensure the
-                { //blocked status is correct 
-                    pathStatusTimerCancellationToken = new CancellationTokenSource();
-                    await Task.Delay(100, pathStatusTimerCancellationToken.Token);
-                    pathStatusValid = true;
-                }
+                MakeAsyncSearchAvailableAgain(); 
+                ValidatePathStatus();
                 if (minionState != MinionStates.AttackMoving) return;
                 #endregion 
                 #region Mechanics
@@ -1258,7 +1291,7 @@ public class MinionController : NetworkBehaviour
                         //this should be done regardless of if we have a valid path since it won't matter
                         if (targetEnemy.IsMinion())
                         {
-                            enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Minion, true); 
+                            enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Minion, false); 
                             if (enemy != null)
                             {
                                 targetEnemy = enemy;
@@ -1391,18 +1424,8 @@ public class MinionController : NetworkBehaviour
                 //If attack moving a structure, check if there's a path to an enemy. If there is, attack move again
                 if (lastOrderType == ActionType.AttackMove && targetEnemy != null && targetEnemy.IsStructure())
                 {
-                    if (hasCalledEnemySearchAsyncTask)
-                    {
-                        hasCalledEnemySearchAsyncTaskTimerCancellationToken = new CancellationTokenSource();
-                        await Task.Delay(100, hasCalledEnemySearchAsyncTaskTimerCancellationToken.Token);
-                        hasCalledEnemySearchAsyncTask = false;
-                    }
-                    if (!pathStatusValid)
-                    {
-                        pathStatusTimerCancellationToken = new CancellationTokenSource();
-                        await Task.Delay(100, pathStatusTimerCancellationToken.Token);
-                        pathStatusValid = true;
-                    }
+                    MakeAsyncSearchAvailableAgain();
+                    ValidatePathStatus();
                     if (!hasCalledEnemySearchAsyncTask)
                     {
                         hasCalledEnemySearchAsyncTask = true; 
@@ -2757,7 +2780,7 @@ public class MinionController : NetworkBehaviour
             }
             catch
             {
-                return;
+                Debug.Log("Async alt search was cancelled!");
             }
             finally
             {
@@ -2769,6 +2792,7 @@ public class MinionController : NetworkBehaviour
     }
     private async Task AsyncFindAlternateMinionInSearchArray(float range)
     {
+        asyncSearchCancellationToken = new CancellationTokenSource();
         if (assignedEntitySearcher == null) return;
         //Debug.Log("Running alternate minion attack target search");
         if (entity.IsMelee())
@@ -2820,7 +2844,19 @@ public class MinionController : NetworkBehaviour
                     //Debug.Log("Found alternate attack target" + valid.name);
                 }
             }
-            await Task.Yield();
+            try
+            {
+                await Task.Yield();
+            }
+            catch
+            { 
+                Debug.Log("Async alt search was cancelled!");
+            }
+            finally
+            {
+                asyncSearchCancellationToken?.Dispose();
+                asyncSearchCancellationToken = null;
+            }
         } 
     }
     private float sqrDistToAlternateTarget = 0;

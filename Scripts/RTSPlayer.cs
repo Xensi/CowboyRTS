@@ -9,8 +9,8 @@ using UnityEngine.Rendering;
 using System;
 //using Unity.Burst.CompilerServices;
 using System.Threading.Tasks;
-using static UnityEditor.PlayerSettings;
-using static UnityEditor.Progress;
+//using static UnityEditor.PlayerSettings;
+//using static UnityEditor.Progress;
 
 public class RTSPlayer : Player
 {
@@ -509,11 +509,6 @@ public class RTSPlayer : Player
         {
             SelectAllIdleBuilders();
         }
-#if UNITY_EDITOR //DEBUG COMMANDS
-        if (Input.GetKeyDown(KeyCode.RightShift))
-        {
-            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[1], this);
-        }
         if (Input.GetKeyDown(KeyCode.Period))
         {
             GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[2], this);
@@ -522,6 +517,12 @@ public class RTSPlayer : Player
         {
             GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[3], this);
         }
+#if UNITY_EDITOR //DEBUG COMMANDS
+        if (Input.GetKeyDown(KeyCode.RightShift))
+        {
+            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[1], this);
+        }
+        
         if (Input.GetKeyDown(KeyCode.RightAlt))
         {
             GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[4], this);

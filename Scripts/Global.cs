@@ -189,7 +189,7 @@ public class Global : NetworkBehaviour
             }
         }
     }
-    public readonly int attackMoveDestinationEnemyArrayBufferSize = 25;
+    public readonly int attackMoveDestinationEnemyArrayBufferSize = 50;
     public readonly int fullEnemyArraySize = 50;
     public void UpdateEnemyLists()
     {
