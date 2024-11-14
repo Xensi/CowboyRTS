@@ -362,8 +362,7 @@ public class RTSPlayer : Player
                             item.minionController.assignedEntitySearcher.UnassignUnit(item.minionController);
                             item.minionController.assignedEntitySearcher = null;
                         }
-                    }
-
+                    } 
 
                     UnitOrder order = new();
                     order.unit = item.minionController;

@@ -9,7 +9,7 @@ using static RTSPlayer;
 using System.Threading.Tasks;
 using System.Data.Common;
 using System;
-using System.Threading;
+using System.Threading; 
 /*using static UnityEngine.GraphicsBuffer;
 using Unity.Burst.CompilerServices;
 using System.Data.Common;
@@ -77,7 +77,7 @@ public class MinionController : NetworkBehaviour
     //[HideInInspector] public bool followingMoveOrder = false;
     [HideInInspector] public Vector3 orderedDestination; //remembers where player told minion to go
     private float effectivelyIdleInstances = 0;
-    private readonly float idleThreshold = 1.5f;//3; //seconds of being stuck
+    private readonly float idleThreshold = 3f;//3; //seconds of being stuck
     public float attackReadyTimer = 0;
     private float change;
     public readonly float walkAnimThreshold = 0.0001f;
@@ -237,26 +237,6 @@ public class MinionController : NetworkBehaviour
         return minionState == MinionStates.Building || minionState == MinionStates.WalkToInteractable && lastState == MinionStates.Building;
     }
 
-    /// <summary>
-    /// Tells server this minion's destination so it can pathfind there on other clients
-    /// </summary>
-    /// <param name="position"></param>
-    public void SetDestination(Vector3 position)
-    {
-        //print("setting destination");
-        destination = position; //tell server where we're going
-        //Debug.Log("Setting destination to " + destination);
-        UpdateSetterTargetPosition(); //move pathfinding target
-        pathStatusValid = false;
-        //ai.SearchPath();
-    }
-    /// <summary>
-    /// Update pathfinding target to match actual destination
-    /// </summary>
-    private void UpdateSetterTargetPosition()
-    {
-        pathfindingTarget.position = destination;
-    }
     private void NonOwnerPathfindToOldestRealLocation()
     {
         if (nonOwnerRealLocationList.Count > 0)
@@ -375,7 +355,7 @@ public class MinionController : NetworkBehaviour
                 UpdateInteractors();
                 OwnerUpdateState();
                 UpdateRepathRate();
-                UpdateSetterTargetPosition();
+                //UpdateSetterTargetPosition();
                 FixGarrisonObstacle();
                 UpdateTargetEnemyLastPosition();
             }
@@ -872,9 +852,12 @@ public class MinionController : NetworkBehaviour
         {
             case MinionStates.Attacking:
                 ChangeAttackTrailState(false);
+                CancelAsyncSearch();
+                CancelTimers();
                 break;
             case MinionStates.AttackMoving:
                 CancelAsyncSearch();
+                CancelTimers();
                 break;
         }
     }
@@ -912,7 +895,7 @@ public class MinionController : NetworkBehaviour
 
     public async void SwitchState(MinionStates stateToSwitchTo)
     {
-        //Debug.Log("Switching state" + stateToSwitchTo);
+        Debug.Log("Switching state" + stateToSwitchTo);
         switch (stateToSwitchTo)
         {
             case MinionStates.Attacking:
@@ -995,6 +978,10 @@ public class MinionController : NetworkBehaviour
     {
         return effectivelyIdleInstances > forXSeconds;
     }
+    /// <summary>
+    /// Only set destination if there's a significant difference
+    /// </summary>
+    /// <param name="target"></param>
     private void SetDestinationIfHighDiff(Vector3 target)
     {
         Vector3 offset = target - destination;
@@ -1004,6 +991,26 @@ public class MinionController : NetworkBehaviour
             //Debug.Log("Setting destination bc diff");
             SetDestination(target);
         }
+    }
+    /// <summary>
+    /// Tells server this minion's destination so it can pathfind there on other clients
+    /// </summary>
+    /// <param name="position"></param>
+    public void SetDestination(Vector3 position)
+    {
+        //print("setting destination");
+        destination = position; //tell server where we're going
+        //Debug.Log("Setting destination to " + destination);
+        UpdateSetterTargetPosition(); //move pathfinding target
+        pathStatusValid = false;
+        //ai.SearchPath();
+    }
+    /// <summary>
+    /// Update pathfinding target to match actual destination
+    /// </summary>
+    private void UpdateSetterTargetPosition()
+    {
+        pathfindingTarget.position = destination;
     }
 
     public EntitySearcher assignedEntitySearcher;
@@ -1099,7 +1106,25 @@ public class MinionController : NetworkBehaviour
     private List<SelectableEntity> preservedAsyncSearchResults = new();
 
     CancellationTokenSource asyncSearchCancellationToken;
-     
+
+    CancellationTokenSource pathStatusTimerCancellationToken;
+
+    CancellationTokenSource hasCalledEnemySearchAsyncTaskTimerCancellationToken;
+
+    private void CancelAsyncSearch()
+    {
+        asyncSearchCancellationToken?.Cancel();
+    }
+    private void CancelTimers()
+    {
+        hasCalledEnemySearchAsyncTaskTimerCancellationToken?.Cancel();
+        pathStatusTimerCancellationToken?.Cancel();
+    }
+    private void CancelAllAsyncTasks()
+    {
+        CancelAsyncSearch();
+        CancelTimers();
+    }
 
     private async void OwnerUpdateState()
     {
@@ -1117,7 +1142,7 @@ public class MinionController : NetworkBehaviour
                 if (entity.occupiedGarrison == null) //if not in garrison
                 {
                     FollowGivenMission(); //if we have a rally mission, attempt to do it
-                    AutoSeekEnemies();
+                    //AutoSeekEnemies();
                 }
                 else
                 {
@@ -1193,17 +1218,22 @@ public class MinionController : NetworkBehaviour
                     animator.Play("AttackWalkStart");
                 }
                 #endregion
-                #region Mechanics
+                #region Timers
                 if (hasCalledEnemySearchAsyncTask)
                 {
-                    await Task.Delay(100);
+                    hasCalledEnemySearchAsyncTaskTimerCancellationToken = new CancellationTokenSource();
+                    await Task.Delay(100, hasCalledEnemySearchAsyncTaskTimerCancellationToken.Token);
                     hasCalledEnemySearchAsyncTask = false;
-                } 
+                }
                 if (!pathStatusValid) //path status becomes invalid if the destination changes, since we need to recalculate and ensure the
-                { //blocked status is correct
-                    await Task.Delay(100);
+                { //blocked status is correct 
+                    pathStatusTimerCancellationToken = new CancellationTokenSource();
+                    await Task.Delay(100, pathStatusTimerCancellationToken.Token);
                     pathStatusValid = true;
                 }
+                if (minionState != MinionStates.AttackMoving) return;
+                #endregion 
+                #region Mechanics
                 //target enemy is provided by enterstate finding an enemy asynchronously
                 //reminder: assigned entity searcher updates enemy lists; which are then searched by asnycFindClosestEnemyToAttackMoveTowards
                 if (IsValidTarget(targetEnemy))
@@ -1287,16 +1317,15 @@ public class MinionController : NetworkBehaviour
                         //if there is at least 1 minion we can just search through the minions and ignore structures
                         //otherwise search structures
                         //Debug.Log("Entity searching");
-                        await AsyncSetTargetEnemyToClosestInSearchList(attackRange); //sets target enemy
-
+                        await AsyncSetTargetEnemyToClosestInSearchList(attackRange); //sets target enemy 
+                        if (minionState != MinionStates.AttackMoving) return;
                         if (targetEnemy != null) SetDestinationIfHighDiff(targetEnemy.transform.position); //immediately update the position
                         //which will make the pathstatus invalid so that we don't get false positives
 
-                        await Task.Delay(100); //right now this limits the ability of units to acquire new targets
+                        //await Task.Delay(100); //right now this limits the ability of units to acquire new targets
                         if (targetEnemy == null)
                         {
-                            hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
-
+                            hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again 
                             SetDestinationIfHighDiff(attackMoveDestination);
                         }
                     }
@@ -1354,6 +1383,7 @@ public class MinionController : NetworkBehaviour
                     //we should be able to get all the other entities attacking that position and lump them into an entity searcher
                     SwitchState(MinionStates.AttackMoving);
 
+                    Debug.Log(4);
                     //AutomaticAttackMove();
                 }
                 break;
@@ -1363,18 +1393,21 @@ public class MinionController : NetworkBehaviour
                 {
                     if (hasCalledEnemySearchAsyncTask)
                     {
-                        await Task.Delay(100);
+                        hasCalledEnemySearchAsyncTaskTimerCancellationToken = new CancellationTokenSource();
+                        await Task.Delay(100, hasCalledEnemySearchAsyncTaskTimerCancellationToken.Token);
                         hasCalledEnemySearchAsyncTask = false;
                     }
                     if (!pathStatusValid)
-                    { 
-                        await Task.Delay(100);
+                    {
+                        pathStatusTimerCancellationToken = new CancellationTokenSource();
+                        await Task.Delay(100, pathStatusTimerCancellationToken.Token);
                         pathStatusValid = true;
                     }
                     if (!hasCalledEnemySearchAsyncTask)
                     {
                         hasCalledEnemySearchAsyncTask = true; 
                         await AsyncFindAlternateMinionInSearchArray(attackRange); //sets target enemy 
+                        if (minionState != MinionStates.Attacking) return;
                         if (alternateAttackTarget != null)
                         {
                             SetDestinationIfHighDiff(alternateAttackTarget.transform.position);
@@ -1382,14 +1415,16 @@ public class MinionController : NetworkBehaviour
                             {
                                 targetEnemy = alternateAttackTarget;
                                 SwitchState(MinionStates.AttackMoving);
+                                Debug.Log(1);
                             }
                         }
-                        await Task.Delay(100); //right now this limits the ability of units to acquire new targets
+                        //await Task.Delay(100); //right now this limits the ability of units to acquire new targets
                         if (alternateAttackTarget == null) hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
                     }
                 }
+                //it is very possible for the state to not be equal to attacking by this point because of our task.delay usage
 
-
+                if (minionState != MinionStates.Attacking) return;
                 /*if (!IsValidTarget(targetEnemy) && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
                 {
                     AutomaticAttackMove();
@@ -1475,6 +1510,7 @@ public class MinionController : NetworkBehaviour
                 }
                 else //walk to enemy if out of range
                 {
+                    Debug.Log("Switching to walk to specific enemy state from state" + minionState);
                     SwitchState(MinionStates.WalkToSpecificEnemy);
                 }
                 break;
@@ -1489,6 +1525,7 @@ public class MinionController : NetworkBehaviour
                 {
                     //AutomaticAttackMove();
                     SwitchState(MinionStates.AttackMoving);
+                    Debug.Log(2);
                 }
                 else //if target enemy is alive
                 {
@@ -2037,14 +2074,6 @@ public class MinionController : NetworkBehaviour
     #endregion
     #region SetterFunctions
 
-    private void CancelAsyncSearch()
-    {
-        asyncSearchCancellationToken?.Cancel();
-    }
-    private void CancelAllAsyncTasks()
-    {
-        CancelAsyncSearch();
-    }
     public void PrepareForDeath()
     {
         CancelAllAsyncTasks();
@@ -2641,9 +2670,8 @@ public class MinionController : NetworkBehaviour
     /// <returns></returns>
     private async Task AsyncSetTargetEnemyToClosestInSearchList(float range) //called only once
     {
-        if (assignedEntitySearcher == null) return;
-
         asyncSearchCancellationToken = new CancellationTokenSource();
+        if (assignedEntitySearcher == null) return; 
 
         //Debug.Log("Running find closest attack target search");
         if (entity.IsMelee())
@@ -3160,6 +3188,7 @@ public class MinionController : NetworkBehaviour
         ClearTargets();
         ClearIdleness();
         SwitchState(MinionStates.AttackMoving);
+        Debug.Log(3);
         playedAttackMoveSound = false;
         SetDestination(target);
         orderedDestination = destination;
@@ -3189,6 +3218,7 @@ public class MinionController : NetworkBehaviour
     private readonly float walkStartTimerSet = .6f;
     private void BasicWalkTo(Vector3 target)
     {
+        Debug.Log("Trying to walk");
         //selectableEntity.tryingToTeleport = false;
         ClearTargets();
         ClearIdleness();
