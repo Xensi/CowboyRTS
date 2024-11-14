@@ -193,6 +193,15 @@ public class RTSPlayer : Player
             cams[i].orthographicSize = Mathf.Clamp(cams[i].orthographicSize - Input.mouseScrollDelta.y * camScroll, 1, 10); ;
         }
     } 
+    private EntitySearcher CreateEntitySearcherAtPosition(Vector3 position)
+    {
+        GameObject obj = new GameObject();
+        obj.name = "EntitySearcher";
+        EntitySearcher searcher = obj.AddComponent<EntitySearcher>();
+
+        obj.transform.position = position;
+        return searcher;
+    }
     private void SelectedAttackMove()
     {
         Vector3 clickedPosition;
@@ -201,29 +210,7 @@ public class RTSPlayer : Player
         {
             clickedPosition = hit.point;
             //create an entity searcher at the clicked position
-
-            GameObject obj = new GameObject();
-            obj.name = "EntitySearcher";
-            EntitySearcher searcher = obj.AddComponent<EntitySearcher>();
-
-            obj.transform.position = clickedPosition;
-
-            //create a list of viable targets to attack   
-            /*Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize]; 
-            int resultsNum = Physics.OverlapSphereNonAlloc(clickedPosition, 4, enemyArray, Global.Instance.enemyLayer); //use fixed distance for now
-            //Debug.Log("Results num" + resultsNum);
-            SelectableEntity[] enemyEntityArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize]; 
-            for (int i = 0; i < resultsNum; i++)
-            { 
-                if (enemyArray[i] == null) continue;
-                SelectableEntity select = enemyArray[i].GetComponent<SelectableEntity>();
-                if (select == null) continue; 
-                if (!select.alive || !select.isTargetable.Value)
-                {
-                    continue;
-                }
-                enemyEntityArray[i] = select;
-            }*/
+            EntitySearcher searcher = CreateEntitySearcherAtPosition(clickedPosition);
 
             UnitOrdersQueue.Clear();
              
@@ -236,25 +223,18 @@ public class RTSPlayer : Player
                     {
                         item.minionController.assignedEntitySearcher.UnassignUnit(item.minionController); 
                     }
-
                     //assign the entity searcher to selected units
                     item.minionController.assignedEntitySearcher = searcher;
-
                     //update the entity searcher's assigned units list
-                    item.minionController.assignedEntitySearcher.AssignUnit(item.minionController); 
-
-
-                    //enemyEntityArray.CopyTo(item.minionController.attackMoveDestinationEnemyArray, 0);
-                    //item.minionController.attackMoveDestinationEnemyCount = resultsNum;
-                    item.minionController.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search?
-                    //item.minionController.pathRecalculated = false;
+                    item.minionController.assignedEntitySearcher.AssignUnit(item.minionController);  
+                    item.minionController.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search
                     UnitOrder order = new();
                     order.unit = item.minionController;
                     order.targetPosition = clickedPosition;
                     order.action = ActionType.AttackMove;
                     UnitOrdersQueue.Add(order);
                 }
-            } 
+            }
             totalNumUnitOrders = UnitOrdersQueue.Count; 
         }
     }
@@ -274,6 +254,9 @@ public class RTSPlayer : Player
         //return foreign.teamNumber.Value == (sbyte)playerTeamID;
         //foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
     }
+    /// <summary>
+    /// Behavior depends on what is right clicked and the type of unit responding
+    /// </summary>
     private void QueueUnitOrders()
     {
         Vector3 clickedPosition = Vector3.zero;
@@ -297,6 +280,8 @@ public class RTSPlayer : Player
                 clickedPosition = raycastHits[i].point;
             }
         }
+        EntitySearcher searcher = CreateEntitySearcherAtPosition(clickedPosition);
+
         if (hits > 0) //Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer)
         {
             //determine action type
@@ -335,7 +320,7 @@ public class RTSPlayer : Player
                     else //enemy
                     { //try to target this enemy specifically
                         actionType = ActionType.AttackTarget;
-                        //Debug.Log("Trying to attack " + hitEntity.name);
+                        Debug.Log("Trying to attack " + hitEntity.name);
                     }
                 }
                 else if (hitEntity.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral)
@@ -352,25 +337,42 @@ public class RTSPlayer : Player
             } 
             //finished determining action type 
             UnitOrdersQueue.Clear();
-            foreach (SelectableEntity selected in selectedEntities)
+            foreach (SelectableEntity item in selectedEntities)
             {
-                if (selected.minionController != null)
+                if (item.minionController != null)
                 {
-                    //if we are assigned an entity
-                    if (selected.minionController.assignedEntitySearcher != null)
+                    if (actionType == ActionType.AttackTarget) //if attacking a specific target, we need an entity searcher
+                    { //for when it's dead
+                        if (item.minionController.IsValidAttacker()) //minion
+                        {
+                            //if this unit is already assigned to an entity searcher, unassign it
+                            if (item.minionController.assignedEntitySearcher != null)
+                            {
+                                item.minionController.assignedEntitySearcher.UnassignUnit(item.minionController);
+                            }
+                            item.minionController.assignedEntitySearcher = searcher;
+                            item.minionController.assignedEntitySearcher.AssignUnit(item.minionController);
+                        }
+                    }
+                    else //default to unassigning from any assigned entity searcher
                     { 
-                        selected.minionController.assignedEntitySearcher.UnassignUnit(selected.minionController);
-                        selected.minionController.assignedEntitySearcher = null;
+                        //if we are assigned an entity
+                        if (item.minionController.assignedEntitySearcher != null)
+                        {
+                            item.minionController.assignedEntitySearcher.UnassignUnit(item.minionController);
+                            item.minionController.assignedEntitySearcher = null;
+                        }
                     }
 
+
                     UnitOrder order = new();
-                    order.unit = selected.minionController;
+                    order.unit = item.minionController;
                     order.targetPosition = clickedPosition;
                     order.action = actionType;
                     order.target = hitEntity;
                     UnitOrdersQueue.Add(order); 
                 }
-            } 
+            }
             totalNumUnitOrders = UnitOrdersQueue.Count;
         }
     }

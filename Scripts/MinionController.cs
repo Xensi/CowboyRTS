@@ -355,6 +355,20 @@ public class MinionController : NetworkBehaviour
             ai.autoRepath.mode = AutoRepathPolicy.Mode.Never;
         } 
     }
+
+    Vector3 targetEnemyLastPosition;
+
+    private void UpdateTargetEnemyLastPosition()
+    {
+        if (targetEnemy != null)
+        {
+            targetEnemyLastPosition = targetEnemy.transform.position;
+        }
+        else
+        {
+            targetEnemyLastPosition = transform.position;
+        }
+    }
     private void Update()
     {
         //update real location, or catch up
@@ -373,6 +387,7 @@ public class MinionController : NetworkBehaviour
                 UpdateRepathRate();
                 UpdateSetterTargetPosition();
                 FixGarrisonObstacle();
+                UpdateTargetEnemyLastPosition();
             }
             else // if (finishedInitializingRealLocation) //not owned by us
             {
@@ -1056,34 +1071,7 @@ public class MinionController : NetworkBehaviour
     {
         return animator.IsInTransition(0);
     }
-    public SelectableEntity alternateAttackTarget;
-    /// <summary>
-    /// Attack move, but not targeted by player. Allows finding new targets when current one is invalid. Later needs to be fixed so that it only
-    /// happens when not attack moving ?
-    /// </summary>
-    private async void AutomaticAttackMove()
-    {
-        attackMoveDestination = transform.position;
-         
-        Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
-        attackMoveDestinationEnemyCount = Physics.OverlapSphereNonAlloc(attackMoveDestination, 4, enemyArray, Global.Instance.enemyLayer); //use fixed distance for now
-         
-        for (int i = 0; i < attackMoveDestinationEnemyCount; i++)
-        { 
-            if (enemyArray[i] == null) continue;
-            SelectableEntity select = enemyArray[i].GetComponent<SelectableEntity>();
-            if (select == null) continue;
-            if (!select.alive || !select.isTargetable.Value)
-            {
-                continue;
-            }
-            attackMoveDestinationEnemyArray[i] = select;
-            await Task.Yield();
-        }
-
-
-        SwitchState(MinionStates.AttackMoving);
-    }
+    public SelectableEntity alternateAttackTarget; 
     private void CheckIfAttackTrailIsActiveErroneously()
     {
         if (minionState != MinionStates.Attacking)
@@ -1334,8 +1322,15 @@ public class MinionController : NetworkBehaviour
                 }
                 else
                 {
-                    //AutomaticAttackMove();
+                    if (lastOrderType == ActionType.AttackTarget) //if we were last attacking a specific target, start a new attack move on that
+                    { //target's last position
+                        GenericAttackMovePrep(targetEnemyLastPosition);
+                    }
+                    //also we need to create new entity searcher at that position
+                    //we should be able to get all the other entities attacking that position and lump them into an entity searcher
                     SwitchState(MinionStates.AttackMoving);
+
+                    //AutomaticAttackMove();
                 }
                 break;
             case MinionStates.Attacking: 
@@ -1369,61 +1364,6 @@ public class MinionController : NetworkBehaviour
                         if (alternateAttackTarget == null) hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
                     }
                 }
-
-                /*if (lastOrderType == ActionType.AttackMove && targetEnemy != null)
-                {
-                    if (targetEnemy.IsStructure())
-                    {
-                        //TODO: switch to new target ONLY if pathfinding says we have a path to it
-                        //if we are attacking a structure, check to see if there are minions we could attack.
-                        if (alternateAttackTarget == null)
-                        { 
-                            if (!hasCalledEnemySearchAsyncTask)
-                            {
-                                hasCalledEnemySearchAsyncTask = true;
-                                await AsyncFindAlternateMinionInSearchArray(attackRange);
-                                if (alternateAttackTarget == null) hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
-                            }
-                            if (alternateAttackTarget != null) //just found it
-                            {
-                                pathRecalculated = false;
-                                SetDestination(alternateAttackTarget.transform.position);
-                            }
-                        }
-                        else //we have an alternate attack target
-                        { 
-                            if (!pathRecalculated) //only recalculate path if we have an alternate attack target
-                            {
-                                await Task.Delay(100);
-                                pathRecalculated = true;
-                            } 
-
-                            if (PathNotBlocked() || IsRanged())
-                            {  
-                                targetEnemy = alternateAttackTarget;
-                                SwitchState(MinionStates.WalkToSpecificEnemy);
-                            }  
-                            else if (PathBlocked())
-                            {
-                                alternateAttackTarget = null;
-                                hasCalledEnemySearchAsyncTask = false;
-                            }
-                        }
-                    }
-                    *//*else //attacking minion
-                    {
-                        if (!hasCalledEnemySearchAsyncTask)
-                        {
-                            hasCalledEnemySearchAsyncTask = true;
-                            await AsyncFindAlternateLowerHealthMinionAttackTarget(attackRange);
-                            if (alternateAttackTarget == null) hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
-                        }
-                        if (alternateAttackTarget != null)
-                        {
-                            targetEnemy = alternateAttackTarget;
-                        }
-                    }*//*
-                }*/
 
 
                 /*if (!IsValidTarget(targetEnemy) && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
@@ -3282,7 +3222,7 @@ public class MinionController : NetworkBehaviour
     }
     public void AttackTarget(SelectableEntity select)
     {
-        //Debug.Log("Received order to attack " + select.name);
+        Debug.Log("Received order to attack " + select.name);
         lastCommand.Value = CommandTypes.Attack;
         targetEnemy = select;
         ClearIdleness();
