@@ -1355,7 +1355,7 @@ public class MinionController : NetworkBehaviour
                         {
                             if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
                             {
-                                Debug.Log("Setting to nudged" + nudgedTargetEnemyStructurePosition);
+                                //Debug.Log("Setting to nudged" + nudgedTargetEnemyStructurePosition);
                                 SetDestinationIfHighDiff(nudgedTargetEnemyStructurePosition);
                             }
                             else
@@ -1422,9 +1422,7 @@ public class MinionController : NetworkBehaviour
                     }
                     //also we need to create new entity searcher at that position
                     //we should be able to get all the other entities attacking that position and lump them into an entity searcher
-                    SwitchState(MinionStates.AttackMoving);
-
-                    Debug.Log(4);
+                    SwitchState(MinionStates.AttackMoving); 
                     //AutomaticAttackMove();
                 }
                 break;
@@ -1445,8 +1443,7 @@ public class MinionController : NetworkBehaviour
                             if (PathReaches())
                             {
                                 targetEnemy = alternateAttackTarget;
-                                SwitchState(MinionStates.AttackMoving);
-                                Debug.Log(1);
+                                SwitchState(MinionStates.AttackMoving); 
                             }
                         }
                         //await Task.Delay(100); //right now this limits the ability of units to acquire new targets
@@ -1540,8 +1537,7 @@ public class MinionController : NetworkBehaviour
                     }
                 }
                 else //walk to enemy if out of range
-                {
-                    Debug.Log("Switching to walk to specific enemy state from state" + minionState);
+                { 
                     SwitchState(MinionStates.WalkToSpecificEnemy);
                 }
                 break;
@@ -1555,8 +1551,7 @@ public class MinionController : NetworkBehaviour
                 if (!IsValidTarget(targetEnemy))
                 {
                     //AutomaticAttackMove();
-                    SwitchState(MinionStates.AttackMoving);
-                    Debug.Log(2);
+                    SwitchState(MinionStates.AttackMoving); 
                 }
                 else //if target enemy is alive
                 {
