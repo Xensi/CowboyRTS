@@ -6,6 +6,7 @@ using Pathfinding;
 using FoW;
 using System.Linq;
 using static RTSPlayer;
+using static Player;
 using System.Threading.Tasks;
 using System.Data.Common;
 using System;
@@ -843,6 +844,13 @@ public class MinionController : NetworkBehaviour
         }
     }
     private bool attackOver = false;
+    private void RemoveFromEntitySearcher()
+    {
+        if (assignedEntitySearcher != null)
+        {
+            assignedEntitySearcher.UnassignUnit(this);
+        }
+    }
     private void ExitState(MinionStates exitingState)
     {
         //Debug.Log("Exiting state" + exitingState + "Currently in state " + minionState);
@@ -850,6 +858,9 @@ public class MinionController : NetworkBehaviour
         lastState = exitingState;
         switch (exitingState)
         {
+            case MinionStates.Idle:
+                RemoveFromEntitySearcher();
+                break;
             case MinionStates.Attacking:
                 ChangeAttackTrailState(false);
                 CancelAsyncSearch();
@@ -867,6 +878,9 @@ public class MinionController : NetworkBehaviour
         //Debug.Log("Entering state" + state + "Currently in state " + minionState);
         switch (state)
         {
+            case MinionStates.Idle: //if we become idle, then create entity searcher on our position
+                entity.controllerOfThis.CreateEntitySearcherAndAssign(transform.position, this);
+                break;
             case MinionStates.Attacking:
             case MinionStates.AttackMoving:
                 hasCalledEnemySearchAsyncTask = false;
@@ -1030,7 +1044,7 @@ public class MinionController : NetworkBehaviour
         }
     }
     public ActionType lastOrderType;
-    public void ProcessOrder(UnitOrder order)
+    public void ProcessOrder(Player.UnitOrder order)
     {
         Vector3 targetPosition = order.targetPosition;
         SelectableEntity target = order.target;

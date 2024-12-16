@@ -1,9 +1,14 @@
 using FoW;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static RTSPlayer;
+using System.Threading.Tasks;
+using static UnityEditor.Progress;
+using UnityEditor.Searcher;
 
 [RequireComponent(typeof(NetworkObject))]
 public class Player : NetworkBehaviour
@@ -24,6 +29,22 @@ public class Player : NetworkBehaviour
     private int visibleIndexer = 0;
     public bool enable = true; //enabling in the middle of the game does not currently work
     public Color playerColor = Color.white;
+
+    public enum ActionType
+    {
+        Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget, AttackMove, MoveToTarget
+    }
+    public ActionType actionType = ActionType.Move;
+
+    public List<UnitOrder> UnitOrdersQueue = new();
+    [Serializable]
+    public class UnitOrder
+    {
+        public MinionController unit;
+        public ActionType action;
+        public SelectableEntity target;
+        public Vector3 targetPosition;
+    }
     public void Awake()
     {
         if (!enable) return;
@@ -58,6 +79,51 @@ public class Player : NetworkBehaviour
         //CleanEntityLists();
     }
 
+    public async void ProcessOrdersInBatches()
+    {
+        while (UnitOrdersQueue.Count > 0)
+        {
+            UnitOrder order = UnitOrdersQueue[0]; //fetch first order
+            if (order != null)
+            {
+                MinionController orderedUnit = order.unit;
+                if (orderedUnit != null && orderedUnit.canReceiveNewCommands)
+                {
+                    //Debug.Log("Batch processing orders" + orderedUnit);
+                    orderedUnit.ProcessOrder(order);
+                    UnitOrdersQueue.RemoveAt(0);
+                }
+            }
+            await Task.Yield();
+        }
+    }
+    public EntitySearcher CreateEntitySearcherAtPosition(Vector3 position, int allegiance = 0)
+    {
+        GameObject obj = new GameObject();
+        obj.name = "EntitySearcher";
+        EntitySearcher searcher = obj.AddComponent<EntitySearcher>();
+        searcher.creatorAllegianceID = allegiance;
+
+        obj.transform.position = position;
+        return searcher;
+    }
+
+    public void CreateEntitySearcherAndAssign(Vector3 position, MinionController minion)
+    {
+        if (minion == null) return;
+        EntitySearcher searcher = CreateEntitySearcherAtPosition(position, minion.entity.controllerOfThis.allegianceTeamID);
+        if (searcher == null) return;
+        //if this unit is already assigned to an entity searcher, unassign it
+        if (minion.assignedEntitySearcher != null)
+        {
+            minion.assignedEntitySearcher.UnassignUnit(minion);
+        }
+        //assign the entity searcher to selected units
+        minion.assignedEntitySearcher = searcher;
+        //update the entity searcher's assigned units list
+        minion.assignedEntitySearcher.AssignUnit(minion);
+        minion.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search 
+    }
     private void UpdateVisibilities() //AI will need a different solution
     {
         int framesForFullSweep = 30;

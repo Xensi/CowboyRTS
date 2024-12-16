@@ -65,11 +65,6 @@ public class RTSPlayer : Player
     public Camera mainCam;
     private Camera[] cams;
     private bool active = true;
-    public enum ActionType
-    {
-        Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget, AttackMove, MoveToTarget
-    }
-    private ActionType actionType = ActionType.Move;
     private FactionBuilding buildingToPlace = null;
     public List<SelectableEntity> militaryList = new();
     private List<SelectableEntity> builderListSelection = new();
@@ -192,16 +187,7 @@ public class RTSPlayer : Player
         {
             cams[i].orthographicSize = Mathf.Clamp(cams[i].orthographicSize - Input.mouseScrollDelta.y * camScroll, 1, 10); ;
         }
-    } 
-    private EntitySearcher CreateEntitySearcherAtPosition(Vector3 position)
-    {
-        GameObject obj = new GameObject();
-        obj.name = "EntitySearcher";
-        EntitySearcher searcher = obj.AddComponent<EntitySearcher>();
-
-        obj.transform.position = position;
-        return searcher;
-    }
+    }  
     private void SelectedAttackMove()
     {
         Vector3 clickedPosition;
@@ -210,10 +196,10 @@ public class RTSPlayer : Player
         {
             clickedPosition = hit.point;
             //create an entity searcher at the clicked position
-            EntitySearcher searcher = CreateEntitySearcherAtPosition(clickedPosition);
+            EntitySearcher searcher = CreateEntitySearcherAtPosition(clickedPosition, 0);
 
             UnitOrdersQueue.Clear();
-             
+            
             foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.minionController != null && item.minionController.IsValidAttacker()) //minion
@@ -235,17 +221,8 @@ public class RTSPlayer : Player
                     UnitOrdersQueue.Add(order);
                 }
             }
-            totalNumUnitOrders = UnitOrdersQueue.Count; 
+            //totalNumUnitOrders = UnitOrdersQueue.Count; 
         }
-    }
-    public List<UnitOrder> UnitOrdersQueue = new();
-    [Serializable]
-    public class UnitOrder
-    {
-        public MinionController unit;
-        public ActionType action;
-        public SelectableEntity target;
-        public Vector3 targetPosition;
     }
     private bool SameAllegiance(SelectableEntity foreign)
     {   //later update this so it works with allegiances
@@ -372,28 +349,10 @@ public class RTSPlayer : Player
                     UnitOrdersQueue.Add(order); 
                 }
             }
-            totalNumUnitOrders = UnitOrdersQueue.Count;
+            //totalNumUnitOrders = UnitOrdersQueue.Count;
         }
     }
-    private int totalNumUnitOrders = 0;
-    private async void ProcessOrdersInBatches()
-    { 
-        while (UnitOrdersQueue.Count > 0)
-        {
-            UnitOrder order = UnitOrdersQueue[0]; //fetch first order
-            if (order != null)
-            {
-                MinionController orderedUnit = order.unit;
-                if (orderedUnit != null && orderedUnit.canReceiveNewCommands)
-                {
-                    //Debug.Log("Batch processing orders" + orderedUnit);
-                    orderedUnit.ProcessOrder(order);
-                    UnitOrdersQueue.RemoveAt(0);
-                }
-            }
-            await Task.Yield();
-        }  
-    }
+    //private int totalNumUnitOrders = 0;
     public void ReadySetRallyPoint()
     {
         mouseState = MouseState.ReadyToSetRallyPoint;

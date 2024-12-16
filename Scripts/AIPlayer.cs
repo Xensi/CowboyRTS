@@ -6,6 +6,7 @@ using System.Linq;
 //using static UnityEditor.Progress;
 using Pathfinding.Drawing;
 using Unity.VisualScripting;
+using static Player;
 /// <summary>
 /// AI that is governed by the server
 /// </summary>
@@ -43,7 +44,8 @@ public class AIPlayer : Player
     public override void Update()
     {
         if (!enable) return;
-        base.Update();
+        base.Update(); 
+        ProcessOrdersInBatches();
         if (IsOwner)
         { 
             timer += Time.deltaTime;
@@ -224,15 +226,46 @@ public class AIPlayer : Player
                     }
                 }
             }
-            foreach (MinionController item in fighters)
+            AIAttackersAttackMove(fighters, pos);
+            /*foreach (MinionController item in fighters)
             {
                 item.AIAttackMove(pos);
-            }
+            }*/
         }
         /*else
         {
             SendScoutingParty();
         }*/
+    }
+    private void AIAttackersAttackMove(List<MinionController> fighters, Vector3 target)
+    {
+        Debug.Log("AI is attack moving");
+        //create an entity searcher at the clicked position
+        EntitySearcher searcher = CreateEntitySearcherAtPosition(target, 1);
+
+        UnitOrdersQueue.Clear();
+
+        foreach (MinionController fighter in fighters)
+        {
+            if (fighter != null && fighter.IsValidAttacker()) //minion
+            {
+                //if this unit is already assigned to an entity searcher, unassign it
+                if (fighter.assignedEntitySearcher != null)
+                {
+                    fighter.assignedEntitySearcher.UnassignUnit(fighter);
+                }
+                //assign the entity searcher to selected units
+                fighter.assignedEntitySearcher = searcher;
+                //update the entity searcher's assigned units list
+                fighter.assignedEntitySearcher.AssignUnit(fighter);
+                fighter.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search
+                UnitOrder order = new();
+                order.unit = fighter;
+                order.targetPosition = target;
+                order.action = ActionType.AttackMove;
+                UnitOrdersQueue.Add(order);
+            }
+        } 
     }
     private void SendScoutingParty()
     {

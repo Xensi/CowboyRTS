@@ -15,6 +15,7 @@ public class EntitySearcher : MonoBehaviour
     public SelectableEntity[] searchedAll = new SelectableEntity[0];
     public int allCount = 0;
     public int minionCount = 0;
+    public int creatorAllegianceID = 0; //by default 0 is player, 1 is AI
 
     private void Start()
     { 
@@ -40,7 +41,16 @@ public class EntitySearcher : MonoBehaviour
     {
         //create a list of viable targets to attack   
         Collider[] enemyArray = new Collider[Global.Instance.fullEnemyArraySize];
-        searchedCount = Physics.OverlapSphereNonAlloc(transform.position, searchRadius, enemyArray, Global.Instance.enemyLayer); //use fixed distance for now
+        LayerMask searchMask;
+        if (creatorAllegianceID == 0)
+        {
+            searchMask = Global.Instance.enemyLayer;
+        }
+        else
+        {
+            searchMask = Global.Instance.friendlyEntityLayer;
+        }
+        searchedCount = Physics.OverlapSphereNonAlloc(transform.position, searchRadius, enemyArray, searchMask); //use fixed distance for now
         minionCount = 0;
         structureCount = 0;
         allCount = 0;
