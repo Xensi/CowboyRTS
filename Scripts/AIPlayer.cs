@@ -51,7 +51,7 @@ public class AIPlayer : Player
     /// </summary>
     private void UpdateDecisionTimeBasedOnUnitCount()
     {
-        decisionTime = Mathf.Clamp(Mathf.Pow(ownedMinions.Count, 2) * 1/100, minimumDecisionTime, maximumDecisionTime);
+        decisionTime = Mathf.Clamp(Mathf.Pow(ownedMinions.Count, 2) * 1/50, minimumDecisionTime, maximumDecisionTime);
     }
     public override void Update()
     {
@@ -104,13 +104,9 @@ public class AIPlayer : Player
         {
             attackTimer = 0; 
         }*/
-    }
-    private void AggressiveAction()
-    {
-        SendFightersToKnownPositions();
-    }
+    } 
 
-    private async void AttackMoveClosestKnownMinions()
+    private void AttackMoveClosestKnownMinions()
     {
         //compare distance between one of our units and enemies
         MinionController compareUnit = ownedMinions[0];
@@ -122,8 +118,7 @@ public class AIPlayer : Player
             if (Vector3.Distance(compareUnit.transform.position, enemy.transform.position) < closestDist)
             {
                 closestEnemy = enemy;
-            }
-            await Task.Yield();
+            } 
         }
         if (closestEnemy == null) return; 
 
@@ -140,8 +135,7 @@ public class AIPlayer : Player
                         fighters.Add(item);
                     }
                 }
-            }
-            await Task.Yield();
+            } 
         }
         AIAttackersAttackMove(fighters, closestEnemy.transform.position);
     }
@@ -256,59 +250,8 @@ public class AIPlayer : Player
             await Task.Yield();
         }*/
     }
-    private void SendFightersToKnownPositions()
-    {
-        //pick a known position
-        Vector3 pos = Vector3.zero;
-        bool hasPosition = false;
-        if (knownEnemyUnits.Count > 0)
-        {
-            if (knownEnemyUnits[0] != null)
-            { 
-                pos = knownEnemyUnits[0].transform.position;
-                hasPosition = true;
-            }
-        }
-        else if (knownEnemyStructures.Count > 0)
-        {
-            if (knownEnemyStructures[0] != null)
-            { 
-                pos = knownEnemyStructures[0].transform.position;
-                hasPosition = true;
-            }
-        }
-
-        if (hasPosition)
-        { 
-            List<MinionController> fighters = new();
-            foreach (MinionController item in ownedMinions)
-            {
-                if (item != null && item.entity != null && item.entity.factionEntity != null)
-                { 
-                    if (item.entity.factionEntity is FactionUnit)
-                    { 
-                        FactionUnit facUnit = item.entity.factionEntity as FactionUnit;
-                        if (facUnit != null && facUnit.IsFighter())
-                        {
-                            fighters.Add(item);
-                        }
-                    }
-                }
-            }
-            AIAttackersAttackMove(fighters, pos);
-            /*foreach (MinionController item in fighters)
-            {
-                item.AIAttackMove(pos);
-            }*/
-        }
-        /*else
-        {
-            SendScoutingParty();
-        }*/
-    }
     private void AIAttackersAttackMove(List<MinionController> fighters, Vector3 target)
-    {
-        Debug.Log("AI is attack moving");
+    { 
         //create an entity searcher at the clicked position
         EntitySearcher searcher = CreateEntitySearcherAtPosition(target, 1);
 

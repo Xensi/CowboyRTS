@@ -274,6 +274,9 @@ public class SelectableEntity : NetworkBehaviour
         teamType = factionEntity.teamType;
         selfHarvestableType = factionEntity.selfHarvestableType;
         shouldHideInFog = factionEntity.shouldHideInFog;
+
+        fogUnit.circleRadius = factionEntity.visionRange;
+
         if (factionEntity.soundProfile != null)
         {
             sounds = factionEntity.soundProfile.sounds;

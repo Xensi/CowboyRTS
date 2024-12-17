@@ -136,6 +136,9 @@ public class MinionController : NetworkBehaviour
     public Vector3 attackMoveDestination;
     [SerializeField] private List<TrailRenderer> attackTrails = new();
     #endregion
+
+    private float maximumChaseRange = 5;
+
     #region Core 
     void OnEnable()
     {

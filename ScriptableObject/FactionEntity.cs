@@ -14,6 +14,7 @@ public class FactionEntity : ScriptableObject
     public int consumePopulationAmount = 1;
     public int raisePopulationLimitBy = 0;
     public bool shouldHideInFog = true;
+    public float visionRange = 7;
     //public AudioClip[] sounds;
     public UnitSoundsProfile soundProfile;
     public SelectableEntity.TeamBehavior teamType = SelectableEntity.TeamBehavior.OwnerTeam;
