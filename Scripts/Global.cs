@@ -10,6 +10,10 @@ using Pathfinding;
 public class Global : NetworkBehaviour
 {
     public static Global Instance { get; private set; }
+
+    public readonly string FRIENDLY_ENTITY = "Entity";
+    public readonly string ENEMY_ENTITY = "EnemyEntity";
+
     public RectTransform selectionRect;
     public List<Material> colors;
     public List<Color> teamColors;

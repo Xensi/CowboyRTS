@@ -1941,6 +1941,8 @@ public class SelectableEntity : NetworkBehaviour
         {
             playerController.unbuiltStructures.Add(this);
         }
+        //update layer
+        gameObject.layer = LayerMask.NameToLayer(Global.Instance.FRIENDLY_ENTITY);
         MidGameUpdateEnemyListsAfterCapture();
         PlayCaptureEffect();
     }

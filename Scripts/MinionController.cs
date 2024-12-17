@@ -1433,11 +1433,11 @@ public class MinionController : NetworkBehaviour
                 }*/
                 if (IsValidTarget(targetEnemy))
                 {
-                    /*if (longTermGoal == Goal.AttackFromIdle && Vector3.Distance(lastIdlePosition, targetEnemy.transform.position) > maximumChaseRange)
-                    { 
+                    if (longTermGoal == Goal.AttackFromIdle && Vector3.Distance(lastIdlePosition, targetEnemy.transform.position) > maximumChaseRange)
+                    {
                         HandleLackOfValidTargetEnemy();
                         break;
-                    }*/
+                    }
                     //UpdateAttackIndicator();
                     if (!InRangeOfEntity(targetEnemy, attackRange))
                     {
