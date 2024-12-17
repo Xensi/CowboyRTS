@@ -76,7 +76,7 @@ public class ConditionalMessage : MonoBehaviour
     private float goalMsgShowTime = 4;
     private void MakeAIAggressive()
     {
-        ai.behavior = AIPlayer.AIBehavior.Aggressive;
+        ai.behavior = AIPlayer.AIBehavior.HuntDownMinions;
     }
     private bool CheckForDestruction()
     {

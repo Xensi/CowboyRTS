@@ -1166,6 +1166,12 @@ public class SelectableEntity : NetworkBehaviour
         }
         healthBar.Delete();
         Global.Instance.allEntities.Remove(this);
+        controllerOfThis.ownedEntities.Remove(this);
+        if (IsMinion())
+        {
+            controllerOfThis.ownedMinions.Remove(minionController);
+            controllerOfThis.ownedBuilders.Remove(minionController);
+        }
         if (IsOwner)
         {
             FixPopulationOnDeath();

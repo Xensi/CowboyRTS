@@ -909,7 +909,7 @@ public class MinionController : NetworkBehaviour
 
     public async void SwitchState(MinionStates stateToSwitchTo)
     {
-        Debug.Log(name + " is switching state to: " + stateToSwitchTo);
+        //Debug.Log(name + " is switching state to: " + stateToSwitchTo);
         switch (stateToSwitchTo)
         {
             case MinionStates.Attacking:
@@ -3306,8 +3306,7 @@ public class MinionController : NetworkBehaviour
         lastCommand.Value = CommandTypes.Attack;
         ClearTargets();
         ClearIdleness();
-        SwitchState(MinionStates.AttackMoving);
-        Debug.Log(3);
+        SwitchState(MinionStates.AttackMoving); 
         playedAttackMoveSound = false;
         SetDestination(target);
         orderedDestination = destination;

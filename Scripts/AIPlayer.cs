@@ -7,12 +7,16 @@ using System.Linq;
 using Pathfinding.Drawing;
 using Unity.VisualScripting;
 using static Player;
+using System.Threading.Tasks;
 /// <summary>
 /// AI that is governed by the server
 /// </summary>
 public class AIPlayer : Player
 {
     //to give a unit to the AI, set its desired team to a negative number 
+    private readonly float minimumDecisionTime = 2;
+    private float decisionTime = 1; 
+    private readonly float maximumDecisionTime = 30;
     private float actionTime = 3;
     [SerializeField] private float attackTime = 5;
     private float timer = 0;
@@ -24,7 +28,7 @@ public class AIPlayer : Player
     {
         Default, 
         Passive, //literally do nothing
-        Aggressive //send attacks towards visible enemies, no scouting
+        HuntDownMinions //send attacks towards visible enemies, no scouting
     }
     public AIBehavior behavior = AIBehavior.Default;
     public override void OnNetworkSpawn()
@@ -41,54 +45,107 @@ public class AIPlayer : Player
         base.Start();
         Global.Instance.aiTeamControllers.Add(this);
     }
+
+    /// <summary>
+    /// Time it takes the AI to make a decision is based on the number of units it is controlling.
+    /// </summary>
+    private void UpdateDecisionTimeBasedOnUnitCount()
+    {
+        decisionTime = Mathf.Clamp(Mathf.Pow(ownedMinions.Count, 2) * 1/100, minimumDecisionTime, maximumDecisionTime);
+    }
     public override void Update()
     {
         if (!enable) return;
-        base.Update(); 
+        base.Update();
         ProcessOrdersInBatches();
         if (IsOwner)
-        { 
+        {
+            UpdateDecisionTimeBasedOnUnitCount();
+            UpdateKnownEnemyUnits();
+            CleanLists();
             timer += Time.deltaTime;
-            if (timer >= actionTime)
+            if (timer >= decisionTime)
             {
                 timer = 0;
-                switch (behavior)
-                {
-                    case AIBehavior.Default:
-                        EconAction();
-                        break;
-                    case AIBehavior.Passive:
-                        break;
-                    default:
-                        break;
-                }
-            }
-            attackTimer += Time.deltaTime;
-            if (attackTimer >= attackTime)
-            {
-                attackTimer = 0;
-
-                switch (behavior)
-                {
-                    case AIBehavior.Default:
-                        AggressiveAction();
-                        break;
-                    case AIBehavior.Passive:
-                        break;
-                    case AIBehavior.Aggressive: 
-                        AggressiveAction();
-                        break;
-                    default:
-                        break;
-                }
-            }
+                MakeDecision();
+            } 
         }
     }
+    private void MakeDecision()
+    {
+        switch (behavior)
+        {
+            case AIBehavior.Default: 
+                break;
+            case AIBehavior.Passive: //do nothing
+                break;
+            case AIBehavior.HuntDownMinions:
+                AttackMoveClosestKnownMinions();
+                break;
+            default:
+                break;
+        }
+        /*if (timer >= actionTime)
+        {
+            timer = 0;
+            switch (behavior)
+            {
+                case AIBehavior.Default:
+                    EconAction();
+                    break;
+                case AIBehavior.Passive:
+                    break;
+                default:
+                    break;
+            }
+        }
+        attackTimer += Time.deltaTime;
+        if (attackTimer >= attackTime)
+        {
+            attackTimer = 0; 
+        }*/
+    }
     private void AggressiveAction()
-    { 
-        CheckIfCanSeeEnemy();
+    {
         SendFightersToKnownPositions();
     }
+
+    private async void AttackMoveClosestKnownMinions()
+    {
+        //compare distance between one of our units and enemies
+        MinionController compareUnit = ownedMinions[0];
+        if (compareUnit == null) return;
+        SelectableEntity closestEnemy = null;
+        float closestDist = Mathf.Infinity;
+        foreach (SelectableEntity enemy in knownEnemyUnits)
+        {
+            if (Vector3.Distance(compareUnit.transform.position, enemy.transform.position) < closestDist)
+            {
+                closestEnemy = enemy;
+            }
+            await Task.Yield();
+        }
+        if (closestEnemy == null) return; 
+
+        List<MinionController> fighters = new();
+        foreach (MinionController item in ownedMinions)
+        {
+            if (item != null && item.entity != null && item.entity.factionEntity != null)
+            {
+                if (item.entity.factionEntity is FactionUnit)
+                {
+                    FactionUnit facUnit = item.entity.factionEntity as FactionUnit;
+                    if (facUnit != null && facUnit.IsFighter())
+                    {
+                        fighters.Add(item);
+                    }
+                }
+            }
+            await Task.Yield();
+        }
+        AIAttackersAttackMove(fighters, closestEnemy.transform.position);
+    }
+
     public int desiredPopAdders = 0;
     public int desiredHarvesters = 5;
     public int desiredUnitSpawner = 2;
@@ -127,7 +184,10 @@ public class AIPlayer : Player
         numberOfFighters = fighters;
         numberOfPopAdders = popadders;
     }
-    private void CheckIfCanSeeEnemy()
+    /// <summary>
+    /// Go through each enemy player and update which of their entities we can see.
+    /// </summary>
+    private async void UpdateKnownEnemyUnits()
     {
         FogOfWarTeam fow = FogOfWarTeam.GetTeam(playerTeamID);
         //run through initialized players and AI team controllers (check their allegiance)
@@ -135,57 +195,69 @@ public class AIPlayer : Player
         {
             if (player != null && player != this && player.allegianceTeamID != allegianceTeamID) //player exists and is enemy
             {
-                foreach (SelectableEntity entity in player.ownedEntities)
+                for (int i = 0; i < player.ownedEntities.Count; i++)
                 {
+                    SelectableEntity entity = player.ownedEntities[i];
                     if (entity != null)
-                    { 
-                        bool visible = fow.GetFogValue(entity.transform.position) < Global.Instance.minFogStrength * 255;
+                    {
+                        bool visible = fow.GetFogValue(entity.transform.position) < Global.Instance.minFogStrength * Global.Instance.maxFogValue;
                         if (visible)
                         {
-                            if (entity.IsUnit() && !knownEnemyUnits.Contains(entity))
+                            if (entity.IsMinion() && !knownEnemyUnits.Contains(entity))
                             {
                                 knownEnemyUnits.Add(entity);
                             }
-                            else if (!entity.IsUnit() && !knownEnemyStructures.Contains(entity))
+                            else if (!entity.IsMinion() && !knownEnemyStructures.Contains(entity))
                             {
                                 knownEnemyStructures.Add(entity);
                             }
                         }
                         else
                         {
-                            if (entity.IsUnit() && knownEnemyUnits.Contains(entity))
+                            if (entity.IsMinion() && knownEnemyUnits.Contains(entity))
                             {
                                 knownEnemyUnits.Remove(entity);
-                            }
-                            //we don't remove structures that have slipped into fog
+                            } //we don't remove structures that have slipped into fog
                         }
                     }
-                }
+                    await Task.Yield();
+                } 
             }
         }
     }
-    private void CleanLists()
+    private async void CleanLists()
     {
-        for (int i = knownEnemyUnits.Count - 1; i >= 0; i--)
-        {
-            SelectableEntity current = knownEnemyUnits[i];
-            if (current == null || !current.alive) knownEnemyUnits.RemoveAt(i);
-        } 
-        for (int i = knownEnemyStructures.Count - 1; i >= 0; i--)
-        {
-            SelectableEntity current = knownEnemyStructures[i];
-            if (current == null || !current.alive) knownEnemyStructures.RemoveAt(i);
+        if (knownEnemyUnits.Count > 0)
+        { 
+            for (int i = knownEnemyUnits.Count - 1; i >= 0; i--)
+            {
+
+                SelectableEntity current = knownEnemyUnits[i];
+                if (current == null || !current.alive) knownEnemyUnits.RemoveAt(i);
+                await Task.Yield();
+            }
         }
-        for (int i = ownedEntities.Count - 1; i >= 0; i--)
+        if (knownEnemyStructures.Count > 0)
+        { 
+            for (int i = knownEnemyStructures.Count - 1; i >= 0; i--)
+            {
+                SelectableEntity current = knownEnemyStructures[i];
+                if (current == null || !current.alive) knownEnemyStructures.RemoveAt(i);
+                await Task.Yield();
+            }
+        }
+        /*for (int i = ownedEntities.Count - 1; i >= 0; i--)
         {
             SelectableEntity current = ownedEntities[i];
             if (current == null || !current.alive) ownedEntities.RemoveAt(i);
+            await Task.Yield();
         }
         for (int i = ownedMinions.Count - 1; i >= 0; i--)
         {
             MinionController current = ownedMinions[i];
             if (current == null || !current.entity.alive) ownedMinions.RemoveAt(i);
-        }
+            await Task.Yield();
+        }*/
     }
     private void SendFightersToKnownPositions()
     {
@@ -365,7 +437,6 @@ public class AIPlayer : Player
             {
                 AttackMoveWithCombatUnits();
             }*/
-        CleanLists();
 
     }
     private void ExpandDesires()
