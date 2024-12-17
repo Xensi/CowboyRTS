@@ -10,7 +10,7 @@ using static Player;
 using System.Threading.Tasks;
 using System.Data.Common;
 using System;
-using System.Threading; 
+using System.Threading;
 /*using static UnityEngine.GraphicsBuffer;
 using Unity.Burst.CompilerServices;
 using System.Data.Common;
@@ -858,10 +858,7 @@ public class MinionController : NetworkBehaviour
         lastState = exitingState;
         switch (exitingState)
         {
-            case MinionStates.Idle:
-                RemoveFromEntitySearcher();
-                CancelAsyncSearch();
-                CancelTimers();
+            case MinionStates.Idle: 
                 break;
             case MinionStates.Attacking:
                 ChangeAttackTrailState(false);
@@ -880,19 +877,14 @@ public class MinionController : NetworkBehaviour
         //Debug.Log("Entering state" + state + "Currently in state " + minionState);
         switch (state)
         {
-            case MinionStates.Idle: //if we become idle, then create entity searcher on our position 
-                entity.controllerOfThis.CreateEntitySearcherAndAssign(transform.position, this); 
-                asyncSearchTimerActive = false;
-                pathfindingValidationTimerActive = false;
-                hasCalledEnemySearchAsyncTask = false;
+            case MinionStates.Idle: //if we become idle, then create entity searcher on our position  
                 break;
             case MinionStates.Attacking:
             case MinionStates.AttackMoving:
                 asyncSearchTimerActive = false;
                 pathfindingValidationTimerActive = false;
                 hasCalledEnemySearchAsyncTask = false;
-                alternateAttackTarget = null;
-                //pathRecalculated = false;
+                alternateAttackTarget = null; 
                 break;
         }
     }
@@ -1235,7 +1227,20 @@ public class MinionController : NetworkBehaviour
                 else
                 {
                     GarrisonedSeekEnemies();
-                } 
+                }
+                if (IsRanged()) //ranged idle units can attack anything that enters their field
+                {
+                    SelectableEntity enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Minion, false);
+                    if (enemy != null)
+                    {
+                        targetEnemy = enemy;
+                        SwitchState(MinionStates.Attacking);
+                    }
+                }
+                else //melee idle units need to actually move towards enemies. but only if they're within chase range
+                {
+
+                }
                 break;
             case MinionStates.UsingAbility:
                 if (skipFirstFrame) //neccesary to give animator a chance to catch up
@@ -2555,7 +2560,7 @@ public class MinionController : NetworkBehaviour
 
     enum RequiredEnemyType { Any, Minion, Structure }  
     /// <summary>
-    /// Grab first enemy through physics search.
+    /// Grab first enemy nearby through physics search.
     /// </summary>
     /// <param name="range"></param>
     /// <param name="requiredEnemyType"></param>
@@ -2563,8 +2568,16 @@ public class MinionController : NetworkBehaviour
     /// <returns></returns>
     private SelectableEntity FindEnemyThroughPhysSearch(float range, RequiredEnemyType requiredEnemyType, bool mustBeInSearchList)
     { 
-        Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize]; 
-        int searchedCount = Physics.OverlapSphereNonAlloc(transform.position, range, enemyArray, Global.Instance.enemyLayer);
+        Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
+        int searchedCount = 0;
+        if (entity.controllerOfThis.allegianceTeamID == 0) //our units should search enemy layer
+        { 
+            searchedCount = Physics.OverlapSphereNonAlloc(transform.position, range, enemyArray, Global.Instance.enemyLayer);
+        }
+        else //enemy units should search friendly layer
+        { 
+            searchedCount = Physics.OverlapSphereNonAlloc(transform.position, range, enemyArray, Global.Instance.friendlyEntityLayer);
+        }
         SelectableEntity select = null;
         for (int i = 0; i < searchedCount; i++) //place valid entities into array
         {

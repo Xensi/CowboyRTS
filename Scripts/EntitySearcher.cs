@@ -103,4 +103,8 @@ public class EntitySearcher : MonoBehaviour
             Destroy(gameObject);
         }
     }
+    private void OnDrawGizmos()
+    {
+        Gizmos.DrawWireSphere(transform.position, searchRadius);
+    }
 }
