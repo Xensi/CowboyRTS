@@ -27,8 +27,8 @@ public class AIPlayer : Player
     public enum AIBehavior
     {
         Default, 
-        Passive, //literally do nothing
-        HuntDownMinions //send attacks towards visible enemies, no scouting
+        Passive, //do nothing; minions will attack enemies that enter their range
+        HuntDownMinions, //send attacks towards visible enemies, no scouting
     }
     public AIBehavior behavior = AIBehavior.Default;
     public override void OnNetworkSpawn()
@@ -187,7 +187,7 @@ public class AIPlayer : Player
     /// <summary>
     /// Go through each enemy player and update which of their entities we can see.
     /// </summary>
-    private async void UpdateKnownEnemyUnits()
+    private void UpdateKnownEnemyUnits()
     {
         FogOfWarTeam fow = FogOfWarTeam.GetTeam(playerTeamID);
         //run through initialized players and AI team controllers (check their allegiance)
@@ -219,13 +219,12 @@ public class AIPlayer : Player
                                 knownEnemyUnits.Remove(entity);
                             } //we don't remove structures that have slipped into fog
                         }
-                    }
-                    await Task.Yield();
+                    } 
                 } 
             }
         }
     }
-    private async void CleanLists()
+    private void CleanLists()
     {
         if (knownEnemyUnits.Count > 0)
         { 
@@ -233,8 +232,7 @@ public class AIPlayer : Player
             {
 
                 SelectableEntity current = knownEnemyUnits[i];
-                if (current == null || !current.alive) knownEnemyUnits.RemoveAt(i);
-                await Task.Yield();
+                if (current == null || !current.alive) knownEnemyUnits.RemoveAt(i); 
             }
         }
         if (knownEnemyStructures.Count > 0)
@@ -242,8 +240,7 @@ public class AIPlayer : Player
             for (int i = knownEnemyStructures.Count - 1; i >= 0; i--)
             {
                 SelectableEntity current = knownEnemyStructures[i];
-                if (current == null || !current.alive) knownEnemyStructures.RemoveAt(i);
-                await Task.Yield();
+                if (current == null || !current.alive) knownEnemyStructures.RemoveAt(i); 
             }
         }
         /*for (int i = ownedEntities.Count - 1; i >= 0; i--)
