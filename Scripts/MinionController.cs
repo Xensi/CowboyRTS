@@ -185,6 +185,14 @@ public class MinionController : NetworkBehaviour
     public SelectableEntity[] attackMoveDestinationEnemyArray = new SelectableEntity[0];
     private void Start()
     {
+        if (IsMelee())
+        {
+            maximumChaseRange = Global.Instance.defaultMeleeSearchRange;
+        }
+        else
+        {
+            maximumChaseRange = attackRange * 2f;
+        }
         attackMoveDestinationEnemyArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
         ChangeAttackTrailState(false);
     }
@@ -1247,20 +1255,19 @@ public class MinionController : NetworkBehaviour
                 {
                     GarrisonedSeekEnemies();
                 }
-                if (IsRanged()) //ranged idle units can attack anything that enters their field
+                float physSearchRange = attackRange;
+                if (IsMelee())
                 {
-                    SelectableEntity enemy = FindEnemyThroughPhysSearch(attackRange, RequiredEnemyType.Minion, false);
-                    if (enemy != null)
-                    {
-                        targetEnemy = enemy;
-                        longTermGoal = Goal.AttackFromIdle;
-                        lastIdlePosition = transform.position;
-                        SwitchState(MinionStates.Attacking);
-                    }
+                    physSearchRange = Global.Instance.defaultMeleeSearchRange;
                 }
-                else //melee idle units need to actually move towards enemies. but only if they're within chase range
+                SelectableEntity eligibleIdleEnemy = FindEnemyThroughPhysSearch(physSearchRange, RequiredEnemyType.Minion, false);
+                if (eligibleIdleEnemy != null)
                 {
-
+                    targetEnemy = eligibleIdleEnemy;
+                    longTermGoal = Goal.AttackFromIdle;
+                    lastIdlePosition = transform.position;
+                    SwitchState(MinionStates.WalkToSpecificEnemy);
+                    if (IsMelee()) Debug.Log("trying to target enemy idle");
                 }
                 break;
             case MinionStates.UsingAbility:
@@ -1426,6 +1433,11 @@ public class MinionController : NetworkBehaviour
                 }*/
                 if (IsValidTarget(targetEnemy))
                 {
+                    /*if (longTermGoal == Goal.AttackFromIdle && Vector3.Distance(lastIdlePosition, targetEnemy.transform.position) > maximumChaseRange)
+                    { 
+                        HandleLackOfValidTargetEnemy();
+                        break;
+                    }*/
                     //UpdateAttackIndicator();
                     if (!InRangeOfEntity(targetEnemy, attackRange))
                     {
@@ -1437,20 +1449,7 @@ public class MinionController : NetworkBehaviour
                         animator.Play("AttackWalk");
 
                         //if target is a structure, move the destination closer to us until it no longer hits obstacle
-                        if (targetEnemy.IsStructure())
-                        {
-                            //adjust destination; //adjustedTargetEnemyStructurePosition
-                            //AdjustTargetEnemyStructureDestination(targetEnemy);
-                            //SetDestination(adjustedTargetEnemyStructurePosition); 
-                            //SetDestination(adjustedTargetEnemyStructurePosition);
-                            SetDestination(targetEnemy.transform.position);
-                            //Debug.Log("In walk to specific enemy; Setting destination to structure " + targetEnemy.name);
-                        }
-                        else
-                        {
-                            SetDestination(targetEnemy.transform.position);
-                            //SetDestinationIfHighDiff(targetEnemy.transform.position);
-                        }
+                        SetTargetEnemyAsDestination(); 
                     }
                     else
                     {
@@ -2917,8 +2916,7 @@ public class MinionController : NetworkBehaviour
     private float sqrDistToAlternateTarget = 0;
 
     private void HandleLackOfValidTargetEnemy()
-    {
-        Debug.Log("We have no target enemy");
+    { 
         switch (longTermGoal)
         {
             case Goal.None:

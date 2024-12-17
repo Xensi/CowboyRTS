@@ -44,6 +44,7 @@ public class Global : NetworkBehaviour
     public int maxMapSize = 25; //radius
     public float allowedNonOwnerError = 1.5f; //should be greater than real loc threshold
     public float updateRealLocThreshold = .75f; //1
+    public readonly float defaultMeleeSearchRange = 4f;
 
     public int maximumQueuedRealLocations = 5;
     public float closeEnoughDist = .3f;
