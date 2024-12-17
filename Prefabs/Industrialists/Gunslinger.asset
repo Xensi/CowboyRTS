@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   productionName: Gunslinger
   description: 
-  prefabToSpawn: {fileID: 6726110510975844004, guid: 7cc0ff531c3cd7c4d8b9702bfa2a767c, type: 3}
+  prefabToSpawn: {fileID: 6726110510975844004, guid: 1c97fa97d1117814cbf2debcd600bf24, type: 3}
   goldCost: 30
   maxHP: 6
   isKeystone: 0

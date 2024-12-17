@@ -203,7 +203,7 @@ public class RTSPlayer : Player
             foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.minionController != null && item.minionController.IsValidAttacker()) //minion
-                { 
+                {
                     //if this unit is already assigned to an entity searcher, unassign it
                     if (item.minionController.assignedEntitySearcher != null)
                     {
@@ -234,7 +234,7 @@ public class RTSPlayer : Player
     /// <summary>
     /// Behavior depends on what is right clicked and the type of unit responding
     /// </summary>
-    private void QueueUnitOrders()
+    private void ContextualQueueUnitOrders()
     {
         Vector3 clickedPosition = Vector3.zero;
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
@@ -658,7 +658,7 @@ public class RTSPlayer : Player
                 switch (mouseState)
                 {
                     case MouseState.Waiting:
-                        QueueUnitOrders();
+                        ContextualQueueUnitOrders();
                         SetBuildingRallies();
                         break;
                     case MouseState.ReadyToPlace:

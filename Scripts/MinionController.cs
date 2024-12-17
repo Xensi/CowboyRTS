@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Data.Common;
 using System;
 using System.Threading;
+using TMPro;
 /*using static UnityEngine.GraphicsBuffer;
 using Unity.Burst.CompilerServices;
 using System.Data.Common;
@@ -908,7 +909,7 @@ public class MinionController : NetworkBehaviour
 
     public async void SwitchState(MinionStates stateToSwitchTo)
     {
-        Debug.Log("Switching state" + stateToSwitchTo);
+        Debug.Log(name + " is switching state to: " + stateToSwitchTo);
         switch (stateToSwitchTo)
         {
             case MinionStates.Attacking:
@@ -982,10 +983,17 @@ public class MinionController : NetworkBehaviour
     private bool attackTrailActive = false;
     private void DetectIfShouldReturnToIdle()
     {
-        if (IsEffectivelyIdle(idleThreshold) || (walkStartTimer <= 0 && ai.reachedDestination))
+        if (IsEffectivelyIdle(idleThreshold))
         {
+            //Debug.Log("Effectively Idle");
             SwitchState(MinionStates.Idle);
         }
+        else if (walkStartTimer <= 0 && ai.reachedDestination)
+        {
+            //Debug.Log("AI reached");
+            SwitchState(MinionStates.Idle);
+        }
+        
     }
     private bool IsEffectivelyIdle(float forXSeconds)
     {
@@ -1025,11 +1033,14 @@ public class MinionController : NetworkBehaviour
         pathfindingTarget.position = destination;
     }
 
-    public EntitySearcher assignedEntitySearcher;
-    public void ClearGivenMission()
+    public EntitySearcher assignedEntitySearcher; 
+
+    private void ResetGoal() //tell the unit to stop attacking from idle; other use cases: stop attack moving
     {
-        //givenMission = SelectableEntity.RallyMission.None;
+        longTermGoal = Goal.None;
+        lastIdlePosition = transform.position;
     }
+
     public UnitOrder lastOrder = null;
     private bool OrderValid(UnitOrder order)
     {
@@ -1045,6 +1056,7 @@ public class MinionController : NetworkBehaviour
     public ActionType lastOrderType;
     public void ProcessOrder(Player.UnitOrder order)
     {
+        ResetGoal();
         Vector3 targetPosition = order.targetPosition;
         SelectableEntity target = order.target;
         lastOrderType = order.action;
@@ -1054,6 +1066,7 @@ public class MinionController : NetworkBehaviour
                 MoveToTarget(target);
                 break;
             case ActionType.AttackMove:
+                longTermGoal = Goal.OrderedToAttackMove;
                 AttackMoveToPosition(targetPosition);
                 break;
             case ActionType.Move:
@@ -1206,6 +1219,9 @@ public class MinionController : NetworkBehaviour
             }
         }
     }
+    private enum Goal { None, AttackFromIdle, OrderedToAttackMove }
+    private Goal longTermGoal = Goal.None; 
+    private Vector3 lastIdlePosition;
     private async void OwnerUpdateState()
     {
         CheckIfAttackTrailIsActiveErroneously();
@@ -1234,6 +1250,8 @@ public class MinionController : NetworkBehaviour
                     if (enemy != null)
                     {
                         targetEnemy = enemy;
+                        longTermGoal = Goal.AttackFromIdle;
+                        lastIdlePosition = transform.position;
                         SwitchState(MinionStates.Attacking);
                     }
                 }
@@ -1439,14 +1457,15 @@ public class MinionController : NetworkBehaviour
                 }
                 else
                 {
-                    if (lastOrderType == ActionType.AttackTarget) //if we were last attacking a specific target, start a new attack move on that
+                    HandleLackOfValidTargetEnemy();
+                    /*if (lastOrderType == ActionType.AttackTarget) //if we were last attacking a specific target, start a new attack move on that
                     { //target's last position
                         GenericAttackMovePrep(targetEnemyLastPosition);
                     }
                     //also we need to create new entity searcher at that position
                     //we should be able to get all the other entities attacking that position and lump them into an entity searcher
                     SwitchState(MinionStates.AttackMoving); 
-                    //AutomaticAttackMove();
+                    //AutomaticAttackMove();*/
                 }
                 break;
             case MinionStates.Attacking: 
@@ -1571,10 +1590,9 @@ public class MinionController : NetworkBehaviour
                     animator.SetFloat("AttackSpeed", 1);
                 }*/
                 animator.Play("Idle");
-                if (!IsValidTarget(targetEnemy))
+                if (!IsValidTarget(targetEnemy)) //target enemy is not valid because it is dead or missing
                 {
-                    //AutomaticAttackMove();
-                    SwitchState(MinionStates.AttackMoving); 
+                    HandleLackOfValidTargetEnemy();
                 }
                 else //if target enemy is alive
                 {
@@ -2894,12 +2912,31 @@ public class MinionController : NetworkBehaviour
         } 
     }
     private float sqrDistToAlternateTarget = 0;
+
+    private void HandleLackOfValidTargetEnemy()
+    {
+        Debug.Log("We have no target enemy");
+        switch (longTermGoal)
+        {
+            case Goal.None:
+                break;
+            case Goal.AttackFromIdle:
+                MoveTo(lastIdlePosition);
+                ResetGoal();
+                break;
+            case Goal.OrderedToAttackMove:
+                SwitchState(MinionStates.AttackMoving);
+                break;
+            default:
+                break;
+        }
+    }
+
     /// <summary>
     /// Use to find a minion to attack when this is attacking a structure
     /// </summary>
     /// <param name="range"></param>
-    /// <param name="shouldExtendAttackRange"></param>
-    
+    /// <param name="shouldExtendAttackRange"></param> 
 
     private async Task AsyncFindAlternateLowerHealthMinionAttackTarget(float range)
     { 
@@ -3297,11 +3334,9 @@ public class MinionController : NetworkBehaviour
         lastState = MinionStates.Building;
     }
     private float walkStartTimer = 0;
-    private readonly float walkStartTimerSet = .6f;
+    private readonly float walkStartTimerSet = 1.5f;
     private void BasicWalkTo(Vector3 target)
     {
-        Debug.Log("Trying to walk");
-        //selectableEntity.tryingToTeleport = false;
         ClearTargets();
         ClearIdleness();
         SwitchState(MinionStates.Walk);
@@ -3353,6 +3388,10 @@ public class MinionController : NetworkBehaviour
             }
         }
     }
+    /// <summary>
+    /// Use to send unit to the specified location.
+    /// </summary>
+    /// <param name="target"></param>
     public void MoveTo(Vector3 target)
     {
         lastCommand.Value = CommandTypes.Move;
