@@ -37,7 +37,7 @@ public class EntitySearcher : MonoBehaviour
         }
         DeleteIfNoAssignedUnits();
     }
-    private void Search()
+    private async void Search()
     {
         //create a list of viable targets to attack   
         Collider[] enemyArray = new Collider[Global.Instance.fullEnemyArraySize];
@@ -85,6 +85,7 @@ public class EntitySearcher : MonoBehaviour
                 searchedAll[allCount] = select;
                 allCount++;
             }
+            await Task.Yield();
         }
     }
     public void AssignUnit(MinionController unit)

@@ -860,6 +860,8 @@ public class MinionController : NetworkBehaviour
         {
             case MinionStates.Idle:
                 RemoveFromEntitySearcher();
+                CancelAsyncSearch();
+                CancelTimers();
                 break;
             case MinionStates.Attacking:
                 ChangeAttackTrailState(false);
@@ -878,11 +880,16 @@ public class MinionController : NetworkBehaviour
         //Debug.Log("Entering state" + state + "Currently in state " + minionState);
         switch (state)
         {
-            case MinionStates.Idle: //if we become idle, then create entity searcher on our position
-                entity.controllerOfThis.CreateEntitySearcherAndAssign(transform.position, this);
+            case MinionStates.Idle: //if we become idle, then create entity searcher on our position 
+                entity.controllerOfThis.CreateEntitySearcherAndAssign(transform.position, this); 
+                asyncSearchTimerActive = false;
+                pathfindingValidationTimerActive = false;
+                hasCalledEnemySearchAsyncTask = false;
                 break;
             case MinionStates.Attacking:
             case MinionStates.AttackMoving:
+                asyncSearchTimerActive = false;
+                pathfindingValidationTimerActive = false;
                 hasCalledEnemySearchAsyncTask = false;
                 alternateAttackTarget = null;
                 //pathRecalculated = false;
@@ -1124,10 +1131,16 @@ public class MinionController : NetworkBehaviour
 
     CancellationTokenSource hasCalledEnemySearchAsyncTaskTimerCancellationToken;
 
+    /// <summary>
+    /// Cancel an in-progress async search (searching through list of enemies for a target enemy).
+    /// </summary>
     private void CancelAsyncSearch()
     {
         asyncSearchCancellationToken?.Cancel();
     }
+    /// <summary>
+    /// Cancel async timers.
+    /// </summary>
     private void CancelTimers()
     {
         hasCalledEnemySearchAsyncTaskTimerCancellationToken?.Cancel();
@@ -1138,36 +1151,54 @@ public class MinionController : NetworkBehaviour
         CancelAsyncSearch();
         CancelTimers();
     }
-    private async void MakeAsyncSearchAvailableAgain()
+    private bool asyncSearchTimerActive = false;
+    private bool pathfindingValidationTimerActive = false;
+    private float searchTimerDuration = 0.1f;
+    private float pathfindingValidationTimerDuration = 0.5f;
+    /// <summary>
+    /// When this timer elapses, a new async search through the enemy list will become available.
+    /// hasCalledEnemySearchAsyncTask == true means that we have started running a search through the enemy list already
+    /// </summary>
+    private async void MakeAsyncSearchAvailableAgain() //problem: the task is called over and over. the task needs to be called once.
     {
-        if (hasCalledEnemySearchAsyncTask)
+        if (hasCalledEnemySearchAsyncTask && asyncSearchTimerActive == false)
         {
+            asyncSearchTimerActive = true;
             hasCalledEnemySearchAsyncTaskTimerCancellationToken = new CancellationTokenSource();
-            try
-            {
-                await Task.Delay(100, hasCalledEnemySearchAsyncTaskTimerCancellationToken.Token);
+            try //exception may happen here
+            { 
+                //100 ms originally
+                await Task.Delay(TimeSpan.FromSeconds(searchTimerDuration), hasCalledEnemySearchAsyncTaskTimerCancellationToken.Token);
             }
-            catch
+            catch //caught exception
             {
                 Debug.Log("Timer1 was cancelled!");
                 return;
             }
-            finally
+            finally //always runs when control leaves "try"
             {
                 hasCalledEnemySearchAsyncTaskTimerCancellationToken?.Dispose();
-                hasCalledEnemySearchAsyncTaskTimerCancellationToken = null;
+                hasCalledEnemySearchAsyncTaskTimerCancellationToken = null; 
+                hasCalledEnemySearchAsyncTask = false;
+                asyncSearchTimerActive = false;
             }
-            hasCalledEnemySearchAsyncTask = false;
         }
     }
+    /// <summary>
+    /// This is a timer that runs for 100 ms if the path status is invalid. The path status can become invalid by the destination
+    /// changing. After the timer elapses, the path status will become valid, meaning that the game has had enough time to do path
+    /// calculations. This timer is set up in a way so that it can be safely cancelled. It will be cancelled if the attack moving
+    /// state is exited.
+    /// </summary>
     private async void ValidatePathStatus()
     { 
-        if (!pathStatusValid) //path status becomes invalid if the destination changes, since we need to recalculate and ensure the
+        if (!pathStatusValid && !pathfindingValidationTimerActive) //path status becomes invalid if the destination changes, since we need to recalculate and ensure the
         { //blocked status is correct 
             pathStatusTimerCancellationToken = new CancellationTokenSource();
+            pathfindingValidationTimerActive = true;
             try
             {
-                await Task.Delay(100, pathStatusTimerCancellationToken.Token);
+                await Task.Delay(TimeSpan.FromSeconds(pathfindingValidationTimerDuration), pathStatusTimerCancellationToken.Token);
             }
             catch
             {
@@ -1177,9 +1208,10 @@ public class MinionController : NetworkBehaviour
             finally
             {
                 pathStatusTimerCancellationToken?.Dispose();
-                pathStatusTimerCancellationToken = null;
+                pathStatusTimerCancellationToken = null; 
+                pathStatusValid = true;
+                pathfindingValidationTimerActive = false;
             }
-            pathStatusValid = true;
         }
     }
     private async void OwnerUpdateState()
@@ -1203,7 +1235,7 @@ public class MinionController : NetworkBehaviour
                 else
                 {
                     GarrisonedSeekEnemies();
-                }
+                } 
                 break;
             case MinionStates.UsingAbility:
                 if (skipFirstFrame) //neccesary to give animator a chance to catch up
@@ -1275,8 +1307,8 @@ public class MinionController : NetworkBehaviour
                 }
                 #endregion
                 #region Timers
-                MakeAsyncSearchAvailableAgain(); 
-                ValidatePathStatus();
+                MakeAsyncSearchAvailableAgain();
+                ValidatePathStatus(); 
                 if (minionState != MinionStates.AttackMoving) return;
                 #endregion 
                 #region Mechanics
@@ -1284,23 +1316,14 @@ public class MinionController : NetworkBehaviour
                 //reminder: assigned entity searcher updates enemy lists; which are then searched by asnycFindClosestEnemyToAttackMoveTowards
                 if (IsValidTarget(targetEnemy))
                 { 
-                    hasCalledEnemySearchAsyncTask = false; //allows new async search
-
-                    //SetDestination(targetEnemy.transform.position); //needs to be called once
-                    if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
-                    {
-                        SetDestinationIfHighDiff(nudgedTargetEnemyStructurePosition);
-                    }
-                    else
-                    {
-                        SetDestinationIfHighDiff(targetEnemy.transform.position);
-                    }
+                    hasCalledEnemySearchAsyncTask = false; //allows new async search 
+                    SetTargetEnemyAsDestination();
+                    //setting destination needs to be called once (or at least not constantly to the same position)
 
                     if (IsMelee())
                     {
                         SelectableEntity enemy = null;
-                        //check if we have path to enemy
-
+                        //check if we have path to enemy 
                         //this should be done regardless of if we have a valid path since it won't matter
                         if (targetEnemy.IsMinion())
                         {
@@ -1319,8 +1342,7 @@ public class MinionController : NetworkBehaviour
                                 targetEnemy = enemy;
                                 SwitchState(MinionStates.Attacking);
                             }
-                        } 
-
+                        }  
                         if (PathBlocked()) //no path to enemy, attack structures in our way
                         {  
                             //periodically perform mini physics searches around us and if we get anything attack it 
@@ -1334,8 +1356,7 @@ public class MinionController : NetworkBehaviour
                     }
                     else//is ranged
                     {
-                        //set our destination to be the target enemy
-                        
+                        //set our destination to be the target enemy 
                         if (InRangeOfEntity(targetEnemy, attackRange)) //if enemy is in our attack range, attack them
                         {
                             SwitchState(MinionStates.Attacking); 
@@ -1353,31 +1374,14 @@ public class MinionController : NetworkBehaviour
                             targetEnemy = enemy;
                             SwitchState(MinionStates.Attacking); 
                         }
-                    }
-
-
-                    if (!hasCalledEnemySearchAsyncTask)
-                    {
+                    } 
+                    if (!hasCalledEnemySearchAsyncTask) //searcher could sort results into minions and structures 
+                    {  //if there is at least 1 minion we can just search through the minions and ignore structures 
                         hasCalledEnemySearchAsyncTask = true;
-                        //searcher could sort results into minions and structures
-                        //if there is at least 1 minion we can just search through the minions and ignore structures
-                        //otherwise search structures
                         //Debug.Log("Entity searching");
                         await AsyncSetTargetEnemyToClosestInSearchList(attackRange); //sets target enemy 
                         if (minionState != MinionStates.AttackMoving) return;
-                        if (targetEnemy != null)
-                        {
-                            if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
-                            {
-                                //Debug.Log("Setting to nudged" + nudgedTargetEnemyStructurePosition);
-                                SetDestinationIfHighDiff(nudgedTargetEnemyStructurePosition);
-                            }
-                            else
-                            {
-                                SetDestinationIfHighDiff(targetEnemy.transform.position);
-                            }
-                        } 
-                        //await Task.Delay(100); //right now this limits the ability of units to acquire new targets
+                        SetTargetEnemyAsDestination();
                         if (targetEnemy == null)
                         {
                             hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again 
@@ -2972,6 +2976,18 @@ public class MinionController : NetworkBehaviour
             }
         }
         return closest;
+    }
+    private void SetTargetEnemyAsDestination()
+    {
+        if (targetEnemy == null) return;
+        if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
+        {
+            SetDestinationIfHighDiff(nudgedTargetEnemyStructurePosition);
+        }
+        else
+        {
+            SetDestinationIfHighDiff(targetEnemy.transform.position);
+        }
     }
     private SelectableEntity FindClosestDeposit() //right now resource agnostic
     {
