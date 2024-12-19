@@ -404,18 +404,15 @@ public class SelectableEntity : NetworkBehaviour
                     }
                 }
             }
-            else
+            else //has no controller already
             {
                 if (desiredTeamNumber < 0) //AI controlled
                 {
                     teamNumber.Value = desiredTeamNumber;
                     if (teamType == TeamBehavior.OwnerTeam)
                     {
-                        if (controllerOfThis == null)
-                        {
-                            AIPlayer AIController = Global.Instance.aiTeamControllers[Mathf.Abs(desiredTeamNumber) - 1];
-                            controllerOfThis = AIController;
-                        }
+                        AIPlayer AIController = Global.Instance.aiPlayers[Mathf.Abs(desiredTeamNumber) - 1];
+                        controllerOfThis = AIController;
                         controllerOfThis.ownedEntities.Add(this);
                         if (IsMinion()) controllerOfThis.ownedMinions.Add(minionController);
                         if (IsNotYetBuilt())
@@ -445,10 +442,10 @@ public class SelectableEntity : NetworkBehaviour
                         {
                             playerController.unbuiltStructures.Add(this);
                         }
-                        /*if (!fullyBuilt)
+                        if (!fullyBuilt)
                         {
                             RequestBuilders();
-                        }*/
+                        }
                     }
                 }
             }
@@ -566,7 +563,7 @@ public class SelectableEntity : NetworkBehaviour
 
         if (whenTheseEntitiesKilledTriggerBehavior.Count > 0) shouldCheckTrigger = true;
 
-        if (controllerOfThis.allegianceTeamID != Global.Instance.localPlayer.allegianceTeamID)
+        if (controllerOfThis != null && controllerOfThis.allegianceTeamID != Global.Instance.localPlayer.allegianceTeamID)
         {   //this should be counted as an enemy 
             gameObject.layer = LayerMask.NameToLayer("EnemyEntity");
         }
@@ -1595,7 +1592,7 @@ public class SelectableEntity : NetworkBehaviour
 
         if (IsOwner)
         {
-            controllerOfThis.unbuiltStructures.Remove(this);
+            if (controllerOfThis != null) controllerOfThis.unbuiltStructures.Remove(this);
         }
     }
     private void ChangeMaxPopulation(int change)
@@ -1620,7 +1617,7 @@ public class SelectableEntity : NetworkBehaviour
 
         if (IsOwner) //only the owner does this
         {
-            if (minionController.pathfindingTarget != null) Destroy(minionController.pathfindingTarget.gameObject);
+            if (minionController != null && minionController.pathfindingTarget != null) Destroy(minionController.pathfindingTarget.gameObject);
             Global.Instance.localPlayer.ownedEntities.Remove(this);
             Global.Instance.localPlayer.selectedEntities.Remove(this);
             if (IsServer) //only the server may destroy networkobjects

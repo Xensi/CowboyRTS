@@ -67,7 +67,8 @@ public class Global : NetworkBehaviour
     public LayerMask friendlyEntityLayer;
     public List<RTSPlayer> uninitializedPlayers = new();
     public List<RTSPlayer> initializedPlayers = new();
-    public List<AIPlayer> aiTeamControllers = new();
+    public AIPlayer[] aiPlayers;
+    private readonly int maxAIPlayers = 10;
     public List<Player> allPlayers = new();
     public Grid grid;
 
@@ -119,7 +120,6 @@ public class Global : NetworkBehaviour
         friendlyEntityLayer = LayerMask.GetMask("Entity");
 
         // If there is an instance, and it's not me, delete myself.
-
         if (Instance != null && Instance != this)
         {
             Destroy(this);
@@ -128,6 +128,8 @@ public class Global : NetworkBehaviour
         {
             Instance = this;
         }
+
+        aiPlayers = new AIPlayer[maxAIPlayers];
 
         foreach (Button item in productionButtons)
         {

@@ -19,7 +19,7 @@ public class AIPlayer : Player
     private readonly float maximumDecisionTime = 30;
     private float actionTime = 3;
     [SerializeField] private float attackTime = 5;
-    private float timer = 0;
+    public float timer = 0;
     private float attackTimer = 0;
     public Transform spawnPosition;
     public List<SelectableEntity> knownEnemyStructures = new();
@@ -43,7 +43,7 @@ public class AIPlayer : Player
     {
         if (!enable) return;
         base.Start();
-        Global.Instance.aiTeamControllers.Add(this);
+        Global.Instance.aiPlayers[Mathf.Abs(playerTeamID) - 1] = this;
     }
 
     /// <summary>
@@ -109,7 +109,8 @@ public class AIPlayer : Player
     private void AttackMoveClosestKnownMinions()
     {
         //compare distance between one of our units and enemies
-        MinionController compareUnit = ownedMinions[0];
+        MinionController compareUnit = null;
+        if (ownedMinions.Count > 0) compareUnit = ownedMinions[0];
         if (compareUnit == null) return;
         SelectableEntity closestEnemy = null;
         float closestDist = Mathf.Infinity;

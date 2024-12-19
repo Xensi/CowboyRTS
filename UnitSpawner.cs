@@ -1,10 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Unity.Netcode;
+using Unity.Services.Lobbies.Models;
 using UnityEngine; 
 
 public class UnitSpawner : NetworkBehaviour
 {
+    [SerializeField] private bool shouldSetAIDecisionTimerOnSpawn = false;
+    [SerializeField] private float setTimerOnSpawnValue = 1;
+
     [SerializeField] private bool shouldSpawn = false;
 
     [SerializeField] private int spawnWaves = 1;
@@ -46,9 +51,13 @@ public class UnitSpawner : NetworkBehaviour
             {
                 SpawnUnitUnderPlayerControl(playerToGrantControlOverSpawnedUnits);
             }
-            else
-            { 
-                Global.Instance.localPlayer.GenericSpawnMinion(transform.position, unitToSpawn, this);
+        }
+        if (shouldSetAIDecisionTimerOnSpawn)
+        {
+            if (playerToGrantControlOverSpawnedUnits is AIPlayer)
+            {
+                AIPlayer ai = playerToGrantControlOverSpawnedUnits as AIPlayer;
+                ai.timer = setTimerOnSpawnValue;
             }
         }
         spawnWaves--;
@@ -69,6 +78,7 @@ public class UnitSpawner : NetworkBehaviour
     private void TickTimer()
     {
         if (!shouldSpawn) return;
+        if (spawnWaves <= 0) return;
         if (spawnTimer > 0)
         {
             spawnTimer -= Time.deltaTime;
@@ -79,9 +89,10 @@ public class UnitSpawner : NetworkBehaviour
             SpawnWaves();
         }
     }
-    private void CheckStartSpawningCondition()
+    private async void CheckStartSpawningCondition()
     {
         if (shouldSpawn) return;
+        await Task.Yield();
         switch (spawnCondition)
         {
             case StartSpawningCondition.None:
@@ -89,11 +100,14 @@ public class UnitSpawner : NetworkBehaviour
             case StartSpawningCondition.WatchEntitiesDamaged: 
                 foreach (SelectableEntity item in watchEntities)
                 {
-                    if (item.currentHP.Value < item.maxHP)
+                    if (item != null)
                     {
-                        shouldSpawn = true;
-                        break;
-                    }
+                        if (item.currentHP.Value < item.maxHP)
+                        {
+                            shouldSpawn = true;
+                            break;
+                        }
+                    } 
                 }
                 break;
             default:
