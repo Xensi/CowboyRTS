@@ -112,7 +112,7 @@ public class MinionController : NetworkBehaviour
     [HideInInspector] public float defaultMoveSpeed = 0;
     [HideInInspector] public float defaultAttackDuration = 0;
     [HideInInspector] public float defaultImpactTime = 0;
-    private Transform pathfindingTarget;
+    [HideInInspector] public Transform pathfindingTarget;
     public readonly float garrisonRange = 1.1f;
     //50 fps fixed update
     //private readonly int delay = 0;
@@ -163,6 +163,7 @@ public class MinionController : NetworkBehaviour
         if (setter != null && setter.target == null)
         {
             GameObject obj = new GameObject("target");
+            obj.transform.parent = Global.Instance.transform;
             pathfindingTarget = obj.transform;
             pathfindingTarget.position = transform.position; //set to be on us
             setter.target = pathfindingTarget;

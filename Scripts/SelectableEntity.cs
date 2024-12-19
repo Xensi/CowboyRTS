@@ -482,7 +482,7 @@ public class SelectableEntity : NetworkBehaviour
 
         if (targetIndicator != null)
         {
-            targetIndicator.transform.parent = null;
+            targetIndicator.transform.parent = Global.Instance.transform;
         }
         ChangeSelectIndicatorStatus(selected);
 
@@ -1620,6 +1620,7 @@ public class SelectableEntity : NetworkBehaviour
 
         if (IsOwner) //only the owner does this
         {
+            if (minionController.pathfindingTarget != null) Destroy(minionController.pathfindingTarget.gameObject);
             Global.Instance.localPlayer.ownedEntities.Remove(this);
             Global.Instance.localPlayer.selectedEntities.Remove(this);
             if (IsServer) //only the server may destroy networkobjects
