@@ -187,7 +187,7 @@ public class RTSPlayer : Player
         {
             cams[i].orthographicSize = Mathf.Clamp(cams[i].orthographicSize - Input.mouseScrollDelta.y * camScroll, 1, 10); ;
         }
-    }  
+    }
     private void SelectedAttackMove()
     {
         Vector3 clickedPosition;
@@ -199,7 +199,7 @@ public class RTSPlayer : Player
             EntitySearcher searcher = CreateEntitySearcherAtPosition(clickedPosition, 0);
 
             UnitOrdersQueue.Clear();
-            
+
             foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.minionController != null && item.minionController.IsValidAttacker()) //minion
@@ -207,12 +207,12 @@ public class RTSPlayer : Player
                     //if this unit is already assigned to an entity searcher, unassign it
                     if (item.minionController.assignedEntitySearcher != null)
                     {
-                        item.minionController.assignedEntitySearcher.UnassignUnit(item.minionController); 
+                        item.minionController.assignedEntitySearcher.UnassignUnit(item.minionController);
                     }
                     //assign the entity searcher to selected units
                     item.minionController.assignedEntitySearcher = searcher;
                     //update the entity searcher's assigned units list
-                    item.minionController.assignedEntitySearcher.AssignUnit(item.minionController);  
+                    item.minionController.assignedEntitySearcher.AssignUnit(item.minionController);
                     item.minionController.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search
                     UnitOrder order = new();
                     order.unit = item.minionController;
@@ -240,7 +240,7 @@ public class RTSPlayer : Player
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         RaycastHit[] raycastHits = new RaycastHit[5];
         int hits = Physics.RaycastNonAlloc(ray.origin, ray.direction, raycastHits, Mathf.Infinity, Global.Instance.gameLayer);
-        
+
         SelectableEntity hitEntity = null;
         for (int i = 0; i < hits; i++)
         {
@@ -311,13 +311,13 @@ public class RTSPlayer : Player
             else
             {
                 actionType = ActionType.Move;
-            } 
+            }
             //finished determining action type 
             UnitOrdersQueue.Clear();
             foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.minionController != null)
-                {  
+                {
                     if (actionType == ActionType.AttackTarget) //if attacking a specific target, we need an entity searcher
                     { //for when it's dead
                         if (item.minionController.IsValidAttacker()) //minion
@@ -332,21 +332,21 @@ public class RTSPlayer : Player
                         }
                     }
                     else //default to unassigning from any assigned entity searcher
-                    { 
+                    {
                         //if we are assigned an entity
                         if (item.minionController.assignedEntitySearcher != null)
                         {
                             item.minionController.assignedEntitySearcher.UnassignUnit(item.minionController);
                             item.minionController.assignedEntitySearcher = null;
                         }
-                    } 
+                    }
 
                     UnitOrder order = new();
                     order.unit = item.minionController;
                     order.targetPosition = clickedPosition;
                     order.action = actionType;
                     order.target = hitEntity;
-                    UnitOrdersQueue.Add(order); 
+                    UnitOrdersQueue.Add(order);
                 }
             }
             //totalNumUnitOrders = UnitOrdersQueue.Count;
@@ -481,7 +481,7 @@ public class RTSPlayer : Player
         {
             GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[1], this);
         }
-        
+
         if (Input.GetKeyDown(KeyCode.RightAlt))
         {
             GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[4], this);
@@ -559,7 +559,7 @@ public class RTSPlayer : Player
                 }
             }
             if (Input.GetMouseButtonDown(0)) //left click pressed
-            { 
+            {
                 switch (mouseState)
                 {
                     case MouseState.Waiting:
@@ -574,7 +574,7 @@ public class RTSPlayer : Player
                             }
                             else
                             {
-                                Debug.Log("Attempting to place building");
+                                //Debug.Log("Attempting to place building");
                                 PlaceBuilding(buildingToPlace, cursorWorldPosition);
                                 if (buildingToPlace.extendable && buildingGhost != null)
                                 {
@@ -1797,21 +1797,36 @@ public class RTSPlayer : Player
         Global.Instance.queueParent.gameObject.SetActive(false);
         if (selectedEntities.Count != 1) return; //only works with a single unit for now
 
-        SelectableEntity select = selectedEntities[0];
+        SelectableEntity selectedProductionEntity = selectedEntities[0];
         //only works if is production structure, fully built, and spawned
-        if (!select.CanProduceUnits() || !select.fullyBuilt || !select.net.IsSpawned) return;
+        if (!selectedProductionEntity.CanProduceUnits() || !selectedProductionEntity.fullyBuilt || !selectedProductionEntity.net.IsSpawned) return;
 
         Global.Instance.queueParent.gameObject.SetActive(true);
-        int num = Mathf.Clamp(select.buildQueue.Count, 0, Global.Instance.queueButtons.Count);
-        //enable a button for each indices
+        int num = Mathf.Clamp(selectedProductionEntity.buildQueue.Count, 0, Global.Instance.queueButtons.Count);
 
+        //enable a button for each indices
         for (int i = 0; i < Global.Instance.queueButtons.Count; i++)
         {
             Global.Instance.queueButtons[i].gameObject.SetActive(false);
             if (i < num)
             {
-                UpdateButton(select, i);
+                UpdateButton(selectedProductionEntity, i);
             }
+        }
+        //get the progress of the first unit;
+        FactionUnit beingProduced = null;
+        if (selectedProductionEntity.buildQueue.Count > 0)
+        {
+            beingProduced = selectedProductionEntity.buildQueue[0];
+        }
+        if (beingProduced != null && Global.Instance.structureProgressBar != null)
+        {
+            Global.Instance.structureProgressBar.SetRatio(beingProduced.spawnTimer, beingProduced.maxSpawnTimeCost-1);
+            Debug.Log(beingProduced.spawnTimer + " / " + beingProduced.maxSpawnTimeCost);
+        }
+        else
+        {
+            Global.Instance.structureProgressBar.SetRatio(0, 1);
         }
     }
     private void UpdateButton(SelectableEntity select, int i = 0)
@@ -1820,7 +1835,7 @@ public class RTSPlayer : Player
         button.gameObject.SetActive(true);
         TMP_Text text = button.GetComponentInChildren<TMP_Text>();
         FactionUnit fac = select.buildQueue[i];
-        text.text = fac.productionName + ": " + fac.spawnTimeCost + "s";
+        text.text = fac.productionName;
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(delegate { DequeueProductionOrder(i); });
     }
@@ -1850,13 +1865,14 @@ public class RTSPlayer : Player
             goldCost = unit.goldCost, 
         };*/
         //Debug.Log("Trying to spawn :" + unit.name);
-        FactionUnit newUnit = FactionUnit.CreateInstance(unit.productionName, unit.spawnTimeCost, unit.prefabToSpawn, unit.goldCost);
+        FactionUnit newUnit = FactionUnit.CreateInstance(unit.productionName, unit.maxSpawnTimeCost, unit.prefabToSpawn, unit.goldCost);
 
         int cost = newUnit.goldCost;
         //try to spawn from all selected buildings if possible 
         foreach (SelectableEntity select in selectedEntities)
         {
-            if (gold < cost || !select.net.IsSpawned || !select.fullyBuilt || !TargetCanSpawnThisEntity(select, newUnit)) break;
+            if (gold < cost || !select.net.IsSpawned || !select.fullyBuilt || !TargetCanSpawnThisEntity(select, newUnit)
+                || select.buildQueue.Count >= Global.Instance.maxUnitsInProductionQueue) break;
             //if requirements fulfilled
             gold -= cost;
             select.buildQueue.Add(newUnit);
@@ -1984,7 +2000,7 @@ public class RTSPlayer : Player
             {
                 if ((entity.CanConstruct() && potential.CanConstruct()) ||
                     (entity.CanHarvest() && potential.CanHarvest()) ||
-                    (entity.IsFighter() && potential.IsFighter() && entity.IsMelee() && potential.IsMelee()) || 
+                    (entity.IsFighter() && potential.IsFighter() && entity.IsMelee() && potential.IsMelee()) ||
                     (entity.IsFighter() && potential.IsFighter() && !entity.IsMelee() && !potential.IsMelee()) ||
                     (entity.CannotConstructHarvestProduce() && potential.CannotConstructHarvestProduce() && !entity.IsMinion() && !potential.IsMinion()) ||
                     (entity.CanProduceUnits() && potential.CanProduceUnits()))
@@ -2014,7 +2030,7 @@ public class RTSPlayer : Player
     }
     #endregion
 
-     
+
 
 
     /// <summary>

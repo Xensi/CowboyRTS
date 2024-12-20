@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b888e0fe913eaf4095ed4e0fccd988e, type: 3}
-  m_Name: LimbLobber
+  m_Name: Skullsheller
   m_EditorClassIdentifier: 
-  productionName: Limb Lobber
-  description: "\rThrows bones to deal damage. Has a short attack range."
-  prefabToSpawn: {fileID: 2545681379473208697, guid: 80b19ccb1a8bb8848b26b039a624504a, type: 3}
+  productionName: Skull Sheller
+  description: Artillery unit.
+  prefabToSpawn: {fileID: 2545681379473208697, guid: 9ba3afa977bcc9940870d6c4c37f4617, type: 3}
   goldCost: 20
   maxHP: 6
   isKeystone: 0
@@ -31,8 +31,8 @@ MonoBehaviour:
   attackType: 3
   damage: 1
   directionalAttack: 0
-  attackRange: 2.5
-  attackDuration: 1
+  attackRange: 5
+  attackDuration: 3
   impactTime: 0.5
   areaOfEffectRadius: 1
   shouldAggressivelySeekEnemies: 1
@@ -44,8 +44,9 @@ MonoBehaviour:
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  attackProjectilePrefab: {fileID: 6908122070487208007, guid: ec432f14aed07f54e8d6b3978ca046ed, type: 3}
+  attackProjectilePrefab: {fileID: -6100004779979172987, guid: 9af785719860fec449f23c718e16b7af, type: 3}
   hideModelOnDeath: 1
   spawnTimeCost: 5
   isHeavy: 0
+  canAttackWhileMoving: 0
   maxSpeed: 2

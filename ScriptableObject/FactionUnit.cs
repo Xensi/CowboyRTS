@@ -4,9 +4,10 @@ using UnityEngine;
 public class FactionUnit : FactionEntity
 {
     [Header("Unit Properties")]
-    public int spawnTimeCost = 5; //time it takes to spawn the unit
+    public int maxSpawnTimeCost = 5; //time it takes to spawn the unit + 1 second to finish the job
+    [HideInInspector] public int spawnTimer = 0;
     public bool isHeavy = false;
-    public bool canAttackWhileMoving = false;
+    //public bool canAttackWhileMoving = false;
     public float maxSpeed = 2f;
 
     public enum UnitTypes
@@ -16,8 +17,8 @@ public class FactionUnit : FactionEntity
 
     public void Init(string name, int spawnTime, GameObject prefab, int goldCost)
     {
-        productionName = name;
-        spawnTimeCost = spawnTime;
+        productionName = name; 
+        spawnTimer = 0;
         prefabToSpawn = prefab;
         this.goldCost = goldCost; 
     }

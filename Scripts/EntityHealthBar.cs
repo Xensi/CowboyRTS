@@ -3,22 +3,22 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI; 
 
-public class ProgressBar : MonoBehaviour
+public class EntityHealthBar : MonoBehaviour
 {
     public Image bar;
     [SerializeField] private Gradient gradient;
     public Transform barParent;
-    public SelectableEntity entity;
+    [HideInInspector] public SelectableEntity entity;
 
     private void Start()
     {
-        barParent.SetParent(Global.Instance.gameCanvas.transform);
-        bar.color = gradient.Evaluate(1);
+        if (barParent != null) barParent.SetParent(Global.Instance.gameCanvas.transform);
+        if (bar != null) bar.color = gradient.Evaluate(1);
     }
     public void Delete()
     { 
         SetVisible(false);
-        Destroy(barParent.gameObject);
+        if (barParent != null) Destroy(barParent.gameObject);
         Destroy(gameObject);
     }
     public void SetVisible(bool val)

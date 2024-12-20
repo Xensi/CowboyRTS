@@ -186,7 +186,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Gravedigger: 10'
+  m_text: UnitName
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8fbd64ea931d9b743af21b3d0ef6634b, type: 2}
   m_sharedMaterial: {fileID: 8338795512331719356, guid: 8fbd64ea931d9b743af21b3d0ef6634b, type: 2}

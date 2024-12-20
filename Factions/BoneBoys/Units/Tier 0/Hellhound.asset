@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b888e0fe913eaf4095ed4e0fccd988e, type: 3}
-  m_Name: LimbLobber
+  m_Name: Hellhound
   m_EditorClassIdentifier: 
-  productionName: Limb Lobber
-  description: "\rThrows bones to deal damage. Has a short attack range."
-  prefabToSpawn: {fileID: 2545681379473208697, guid: 80b19ccb1a8bb8848b26b039a624504a, type: 3}
-  goldCost: 20
+  productionName: Hellhound
+  description: Melee attacker. Has faster movement and attack speed.
+  prefabToSpawn: {fileID: 2545681379473208697, guid: f67cad5217e4e0d49a877e77637785ee, type: 3}
+  goldCost: 10
   maxHP: 6
   isKeystone: 0
   consumePopulationAmount: 1
@@ -28,11 +28,11 @@ MonoBehaviour:
   usableAbilities: []
   depositType: 0
   selfHarvestableType: 1
-  attackType: 3
+  attackType: 1
   damage: 1
   directionalAttack: 0
-  attackRange: 2.5
-  attackDuration: 1
+  attackRange: 0.75
+  attackDuration: 0.75
   impactTime: 0.5
   areaOfEffectRadius: 1
   shouldAggressivelySeekEnemies: 1
@@ -44,8 +44,9 @@ MonoBehaviour:
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  attackProjectilePrefab: {fileID: 6908122070487208007, guid: ec432f14aed07f54e8d6b3978ca046ed, type: 3}
+  attackProjectilePrefab: {fileID: 0}
   hideModelOnDeath: 1
   spawnTimeCost: 5
   isHeavy: 0
-  maxSpeed: 2
+  canAttackWhileMoving: 0
+  maxSpeed: 3

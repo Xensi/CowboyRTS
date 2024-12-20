@@ -534,7 +534,7 @@ public class AIPlayer : Player
                 if (options.Count > 0) unit = options[rand];
                 if (chosenEntity != null && unit != null)
                 {
-                    FactionUnit newUnit = FactionUnit.CreateInstance(unit.prefabToSpawn.name, unit.spawnTimeCost, unit.prefabToSpawn, unit.goldCost);
+                    FactionUnit newUnit = FactionUnit.CreateInstance(unit.prefabToSpawn.name, unit.maxSpawnTimeCost, unit.prefabToSpawn, unit.goldCost);
                     int cost = newUnit.goldCost;
                     gold -= cost;
                     chosenEntity.buildQueue.Add(newUnit);

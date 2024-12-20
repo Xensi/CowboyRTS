@@ -2,18 +2,18 @@ using UnityEngine;
 public class Projectile : MonoBehaviour
 {
     public float speed = 1;
-    public Vector3 groundTarget;
+    [HideInInspector] public Vector3 groundTarget;
     public bool shouldHomeOnEntity = false;
-    public SelectableEntity entityToHomeOnto;
+    [HideInInspector] public SelectableEntity entityToHomeOnto;
     public float maxArcHeight = 10;
-    public float actualArcHeight;
-    public float firingUnitAttackRange = 4;
+    [HideInInspector] public float actualArcHeight;
+    [HideInInspector] public float firingUnitAttackRange = 4;
 
     Vector3 _startPosition;
     float _stepScale;
     float _progress; 
     public bool isLocal = true;
-    public bool arrivedAtTarget = false;
+    [HideInInspector] public bool arrivedAtTarget = false;
     //private Vector3 actualTarget;
     public int damage = 1;
     public bool spinContinously = false;

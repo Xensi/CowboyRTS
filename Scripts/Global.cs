@@ -79,6 +79,8 @@ public class Global : NetworkBehaviour
     public GameObject defaultCaptureEffect;
 
     public GameObject setRallyPointButton;
+    public GenericProgressBar structureProgressBar;
+    public readonly int maxUnitsInProductionQueue = 10;
 
     //Minion sound profile mapping:
     // 0: spawn

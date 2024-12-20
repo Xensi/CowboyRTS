@@ -54,7 +54,7 @@ public class SelectableEntity : NetworkBehaviour
     #endregion
     #region Hidden
 
-    public ProgressBar healthBar;
+    public EntityHealthBar healthBar;
     public FactionEntity factionEntity; 
 
     [HideInInspector] public MinionController minionController;
@@ -239,7 +239,11 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void InitializeEntityInfo()
     {
-        if (factionEntity == null) return;
+        if (factionEntity == null)
+        {
+            Debug.Log("Return");
+            return;
+        }
         //set faction entity information
         displayName = factionEntity.productionName;
         desc = factionEntity.description;
@@ -329,14 +333,10 @@ public class SelectableEntity : NetworkBehaviour
             isHeavy = factionUnit.isHeavy;
             startingHP = maxHP;
 
-            if (minionController != null)
+            /*if (minionController != null)
             {
-                minionController.canMoveWhileAttacking = factionUnit.canAttackWhileMoving;
-                if (minionController.ai != null)
-                { 
-                    minionController.ai.maxSpeed = factionUnit.maxSpeed;
-                }
-            }
+                minionController.canMoveWhileAttacking = factionUnit.canAttackWhileMoving; 
+            }*/
         }
         hideModelOnDeath = factionEntity.hideModelOnDeath;
     }
@@ -347,12 +347,12 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void Awake() //awake, networkspawn, start; verified through testing
     {
-        //Debug.Log("Awake");
+        Debug.Log("Awake");
         Initialize();
         InitializeEntityInfo();
         RetainHealthBarPosition();
-        initialized = true;
-    }
+        initialized = true; 
+    } 
     private Vector3 healthBarOffset;
     private void RetainHealthBarPosition()
     {
@@ -1776,11 +1776,8 @@ public class SelectableEntity : NetworkBehaviour
         {
             // todo add ability to build multiple from one structure
             FactionUnit fac = buildQueue[0];
-            if (fac.spawnTimeCost > 0)
-            {
-                fac.spawnTimeCost--;
-            }
-            if (fac.spawnTimeCost <= 0
+            fac.spawnTimer++; 
+            if (fac.spawnTimer > fac.maxSpawnTimeCost - 1
                 && fac.consumePopulationAmount <= controllerOfThis.maxPopulation - controllerOfThis.population)
             { //spawn the unit 
                 //Debug.Log("Population check on spawn:" + fac.consumePopulationAmount + ", " + controllerOfThis.maxPopulation + ", " + controllerOfThis.population);
