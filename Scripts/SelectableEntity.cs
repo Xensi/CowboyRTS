@@ -55,6 +55,7 @@ public class SelectableEntity : NetworkBehaviour
     #region Hidden
 
     public EntityHealthBar healthBar;
+    public EntityHealthBar productionProgressBar;
     public FactionEntity factionEntity; 
 
     [HideInInspector] public MinionController minionController;
@@ -573,8 +574,16 @@ public class SelectableEntity : NetworkBehaviour
         if (rallyVisual != null) rallyVisual.enabled = false;
         if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allEntities.Add(this);
 
-        healthBar.entity = this;
-        healthBar.SetVisible(false);
+        if (healthBar != null)
+        { 
+            healthBar.entity = this;
+            healthBar.SetVisibleHPConditional(false);
+        }
+        if (productionProgressBar != null)
+        {
+            productionProgressBar.entity = this;
+            productionProgressBar.SetVisible(false);
+        }
 
         if (whenTheseEntitiesKilledTriggerBehavior.Count > 0) shouldCheckTrigger = true;
 
@@ -1034,11 +1043,14 @@ public class SelectableEntity : NetworkBehaviour
     private void UpdateHealthBarPosition()
     {
         if (mainCam == null) mainCam = Global.Instance.localPlayer.mainCam;
-        if (healthBar != null && healthBar.isActiveAndEnabled && mainCam != null)
+        if (mainCam != null)
         {
-            healthBar.barParent.transform.position = transform.position + healthBarOffset;
-            healthBar.barParent.transform.LookAt(transform.position + mainCam.transform.rotation * Vector3.forward,
-                mainCam.transform.rotation * Vector3.up);
+            if (healthBar != null && healthBar.isActiveAndEnabled || productionProgressBar != null && productionProgressBar.isActiveAndEnabled)
+            {
+                healthBar.barParent.transform.position = transform.position + healthBarOffset;
+                healthBar.barParent.transform.LookAt(transform.position + mainCam.transform.rotation * Vector3.forward,
+                    mainCam.transform.rotation * Vector3.up);
+            } 
         }
     }
 
@@ -1180,6 +1192,7 @@ public class SelectableEntity : NetworkBehaviour
         ClearObstacle();
         RemoveFromEnemyLists(); 
         if (healthBar != null) healthBar.Delete();
+        if (productionProgressBar != null) productionProgressBar.Delete();
         Global.Instance.allEntities.Remove(this);
         controllerOfThis.ownedEntities.Remove(this);
         if (IsMinion())
@@ -1516,7 +1529,7 @@ public class SelectableEntity : NetworkBehaviour
                 {
                     if (finishedRenderers[i] != null) finishedRenderers[i].enabled = val;
                 }
-                healthBar.SetVisible(val);
+                if (healthBar != null) healthBar.SetVisibleHPConditional(val);
             }
             else
             {
@@ -1524,7 +1537,7 @@ public class SelectableEntity : NetworkBehaviour
                 {
                     if (unbuiltRenderers[i] != null) unbuiltRenderers[i].enabled = val;
                 }
-                healthBar.SetVisible(val);
+                if (healthBar != null) healthBar.SetVisibleHPConditional(val);
             }
         }
         else
@@ -1533,7 +1546,7 @@ public class SelectableEntity : NetworkBehaviour
             {
                 if (allMeshes[i] != null) allMeshes[i].enabled = val;
             }
-            healthBar.SetVisible(val);
+            if (healthBar != null) healthBar.SetVisibleHPConditional(val);
         }
     }
     private bool FogHideable()
@@ -1777,7 +1790,7 @@ public class SelectableEntity : NetworkBehaviour
         return minionController == null;
     }
     private void OwnerUpdateBuildQueue()
-    { 
+    {
         if (buildQueue.Count > 0)
         {
             // todo add ability to build multiple from one structure
@@ -1825,6 +1838,23 @@ public class SelectableEntity : NetworkBehaviour
             RTSPlayer rts = controllerOfThis as RTSPlayer;
             rts.UpdateBuildQueueGUI();
         }
+
+        if (productionProgressBar != null)
+        {
+            if (buildQueue.Count > 0)
+            {
+                productionProgressBar.SetVisible(true);
+                FactionUnit fac = buildQueue[0];
+                if (fac != null)
+                {
+                    productionProgressBar.SetRatioBasedOnProduction(fac.spawnTimer, fac.maxSpawnTimeCost);
+                }
+            }
+            else
+            {
+                productionProgressBar.SetVisible(false);
+            }
+        }
     }
     private void BuildQueueSpawn(FactionUnit unit)
     {
@@ -1871,7 +1901,7 @@ public class SelectableEntity : NetworkBehaviour
             lineIndicator.enabled = false;
         }
     }
-    public List<SelectableEntity> whenTheseEntitiesKilledTriggerBehavior;
+    [HideInInspector] public List<SelectableEntity> whenTheseEntitiesKilledTriggerBehavior;
     public enum TriggerableBehaviors
     {
         CaptureThis,

@@ -8,7 +8,7 @@ public class EntityHealthBar : MonoBehaviour
     public Image bar;
     [SerializeField] private Gradient gradient;
     public Transform barParent;
-    [HideInInspector] public SelectableEntity entity;
+    [HideInInspector] public SelectableEntity entity; 
 
     private void Start()
     {
@@ -21,16 +21,20 @@ public class EntityHealthBar : MonoBehaviour
         if (barParent != null) Destroy(barParent.gameObject);
         if (gameObject != null) Destroy(gameObject);
     }
-    public void SetVisible(bool val)
+    public void SetVisibleHPConditional(bool val)
     {
         if (entity.currentHP.Value < entity.maxHP)
         { 
-            if (barParent != null) barParent.gameObject.SetActive(val);
+            gameObject.SetActive(val);
         }
         else
         {
-            if (barParent != null) barParent.gameObject.SetActive(false);
+            gameObject.SetActive(false);
         }
+    }
+    public void SetVisible(bool val)
+    {
+        gameObject.SetActive(val);
     }
     public void SetRatioBasedOnHP(int current, float max)
     {
@@ -38,9 +42,14 @@ public class EntityHealthBar : MonoBehaviour
         float ratio = current / max;
         bar.fillAmount = ratio; 
         bar.color = gradient.Evaluate(ratio);
-        if (entity.currentHP.Value < entity.maxHP)
-        {
-            SetVisible(true); 
-        }
+
+        SetVisibleHPConditional(true); 
+    }
+    public void SetRatioBasedOnProduction(int current, float max)
+    { 
+        if (bar == null) return;
+        float ratio = current / (max-1);
+        bar.fillAmount = ratio;
+        bar.color = gradient.Evaluate(ratio); 
     }
 }

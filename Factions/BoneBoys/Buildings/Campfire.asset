@@ -16,7 +16,7 @@ MonoBehaviour:
   description: Heals nearby units.
   prefabToSpawn: {fileID: 3798861697192735719, guid: fe52e9fafcd15854a8167cd40c466246, type: 3}
   goldCost: 2
-  maxHP: 10
+  maxHP: 20
   isKeystone: 0
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0
