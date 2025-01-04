@@ -19,17 +19,17 @@ public class EntityHealthBar : MonoBehaviour
     { 
         SetVisible(false);
         if (barParent != null) Destroy(barParent.gameObject);
-        Destroy(gameObject);
+        if (gameObject != null) Destroy(gameObject);
     }
     public void SetVisible(bool val)
     {
         if (entity.currentHP.Value < entity.maxHP)
         { 
-            barParent.gameObject.SetActive(val);
+            if (barParent != null) barParent.gameObject.SetActive(val);
         }
         else
         {
-            barParent.gameObject.SetActive(false);
+            if (barParent != null) barParent.gameObject.SetActive(false);
         }
     }
     public void SetRatioBasedOnHP(int current, float max)

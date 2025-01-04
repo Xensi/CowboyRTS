@@ -39,6 +39,7 @@ public class LobbyManager : MonoBehaviour
     public Button leaveLobbyButton;
     public Button createLobbyButton;
     public Button startGameButton;
+    public Button startSPGameButton;
 
     public TMP_Text playersInLobby;
     private const string PLAYERNAME = "PlayerName";
@@ -110,7 +111,8 @@ public class LobbyManager : MonoBehaviour
     public UnityTransport singleplayerTransport;
     public void StartSinglePlayerGame()
     {
-        LevelManager.Instance.LoadLevel(LevelManager.Instance.LEVEL1, StartSinglePlayerGameCallback); 
+        LevelManager.Instance.LoadLevel(LevelManager.Instance.LEVEL1, StartSinglePlayerGameCallback);
+        if (startSPGameButton != null) startSPGameButton.gameObject.SetActive(false);
     }
     private void StartSinglePlayerGameCallback()
     { 
@@ -119,8 +121,9 @@ public class LobbyManager : MonoBehaviour
             NetworkManager.Singleton.NetworkConfig.NetworkTransport = singleplayerTransport;
             NetworkManager.Singleton.StartHost();
             ChangeGameUIStatus(true);
-            ChangeLobbyUIStatus(false); 
+            ChangeLobbyUIStatus(false);
         }
+        Global.Instance.UpdateLevelObjective();
         //Debug.Log("How many players?" + Global.Instance.allPlayers.Count);
     } 
     public void JoinLocalHost()

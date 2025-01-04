@@ -209,6 +209,17 @@ public class MinionController : NetworkBehaviour
         attackMoveDestinationEnemyArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
         ChangeAttackTrailState(false);
     }
+    public bool IsAlive()
+    {
+        if (entity != null)
+        { 
+            return entity.alive;
+        }
+        else
+        {
+            return false;
+        }
+    }
     private Vector2Int QuantizePosition(Vector3 vec) //(5.55)
     {
         int x = Mathf.RoundToInt(vec.x * 10); //56
@@ -1201,7 +1212,7 @@ public class MinionController : NetworkBehaviour
             }
             catch //caught exception
             {
-                Debug.Log("Timer1 was cancelled!");
+                //Debug.Log("Timer1 was cancelled!");
                 return;
             }
             finally //always runs when control leaves "try"
@@ -1231,7 +1242,7 @@ public class MinionController : NetworkBehaviour
             }
             catch
             {
-                Debug.Log("Timer1 was cancelled!");
+                //Debug.Log("Timer1 was cancelled!");
                 return;
             }
             finally
@@ -2538,9 +2549,10 @@ public class MinionController : NetworkBehaviour
     /// </summary>
     /// <param name="target"></param>
     /// <returns></returns>
-    private bool IsValidTarget(SelectableEntity target)
+    public bool IsValidTarget(SelectableEntity target)
     {
-        if (target == null || !target.alive || !target.isTargetable.Value || (IsPlayerControlled() && !target.isVisibleInFog)
+        if (target == null || !target.isAttackable || !target.alive || !target.isTargetable.Value 
+            || (IsPlayerControlled() && !target.isVisibleInFog)
             || (!canAttackStructures && target.IsStructure()))
         //reject if target is null, or target is dead, or target is untargetable, or this unit is player controlled and target is hidden,
         //or this unit can't attack structures and target is structure

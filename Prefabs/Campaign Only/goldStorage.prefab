@@ -398,8 +398,29 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5541063728032177516, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2481136073742582663}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2870261118279373742, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9025185373535804380}
   m_SourcePrefab: {fileID: 100100000, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+--- !u!1 &3798861697192735719 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2870261118279373742, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+  m_PrefabInstance: {fileID: 1399902402876465225}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &9025185373535804380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3798861697192735719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 049586c28bb94074e94c60577a2a0bd8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  goldToLootOnDestruction: 30
 --- !u!4 &6883932126207687973 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5541063728032177516, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}

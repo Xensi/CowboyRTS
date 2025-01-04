@@ -21,10 +21,12 @@ MonoBehaviour:
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
   shouldHideInFog: 1
+  visionRange: 7
   soundProfile: {fileID: 11400000, guid: ff7bffcb71726924386899d0f67a42ee, type: 2}
   teamType: 0
   constructableBuildings: []
   usableAbilities: []
+  deathEffect: {fileID: 1596140512904530975, guid: 69aadaea41d3f1a4ca6fc402ec2fb2ac, type: 3}
   depositType: 0
   selfHarvestableType: 1
   attackType: 1
@@ -34,7 +36,7 @@ MonoBehaviour:
   attackDuration: 1.8
   impactTime: 0.811
   areaOfEffectRadius: 1
-  shouldAutoSeekEnemies: 0
+  shouldAggressivelySeekEnemies: 0
   spawnableUnits: []
   spawnableAtOnce: 1
   isHarvester: 0
@@ -43,6 +45,9 @@ MonoBehaviour:
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  spawnTimeCost: 15
+  attackProjectilePrefab: {fileID: 0}
+  hideModelOnDeath: 0
+  maxSpawnTimeCost: 5
+  spawnTimer: 0
   isHeavy: 1
-  canAttackWhileMoving: 0
+  maxSpeed: 2

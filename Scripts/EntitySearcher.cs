@@ -58,8 +58,10 @@ public class EntitySearcher : MonoBehaviour
         {
             if (enemyArray[i] == null) continue; //if invalid do not increment slotToWriteTo
             SelectableEntity select = enemyArray[i].GetComponent<SelectableEntity>();
+            
+            
             if (select == null) continue;
-            if (!select.alive || !select.isTargetable.Value) //overwrite these slots
+            if (!select.alive || !select.isTargetable.Value || !select.isAttackable) //overwrite these slots
             {
                 continue;
             } 

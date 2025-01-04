@@ -1471,9 +1471,7 @@ public class RTSPlayer : Player
                 if (NetworkManager.ConnectedClients.ContainsKey(clientID))
                 {
                     select.clientIDToSpawnUnder = clientID;
-                    //Debug.Log("Granting ownership of " + select.name + " to client " + clientID);
-                    //select.net.ChangeOwnership(clientID);
-                    //select.net.Spawn(); 
+                    //Debug.Log("Granting ownership of " + select.name + " to client " + clientID); 
                     if (select.net == null) select.net = select.GetComponent<NetworkObject>();
 
                     select.net.SpawnWithOwnership(clientID);
@@ -1490,9 +1488,7 @@ public class RTSPlayer : Player
                         {
                             TargetClientIds = new ulong[] { clientID }
                         }
-                    };
-
-
+                    }; 
                     //SendReferenceToSpawnedMinionClientRpc((ushort)select.NetworkObjectId, spawner, clientRpcParams);
                 }
             }
@@ -1822,11 +1818,19 @@ public class RTSPlayer : Player
         if (beingProduced != null && Global.Instance.structureProgressBar != null)
         {
             Global.Instance.structureProgressBar.SetRatio(beingProduced.spawnTimer, beingProduced.maxSpawnTimeCost-1);
-            Debug.Log(beingProduced.spawnTimer + " / " + beingProduced.maxSpawnTimeCost);
+            //Debug.Log(beingProduced.spawnTimer + " / " + beingProduced.maxSpawnTimeCost);
         }
         else
         {
             Global.Instance.structureProgressBar.SetRatio(0, 1);
+        }
+        if (selectedProductionEntity.productionBlocked)
+        {
+            Global.Instance.structureProgressBar.SetColor(Color.red);
+        }
+        else
+        {
+            Global.Instance.structureProgressBar.SetColor(Color.white);
         }
     }
     private void UpdateButton(SelectableEntity select, int i = 0)

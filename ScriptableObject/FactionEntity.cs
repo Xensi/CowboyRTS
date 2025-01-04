@@ -23,6 +23,8 @@ public class FactionEntity : ScriptableObject
     public FactionBuilding[] constructableBuildings;
     public FactionAbility[] usableAbilities;
 
+    public GameObject deathEffect;
+
     [Header("Depot Behavior")]
     public SelectableEntity.DepositType depositType = SelectableEntity.DepositType.None; //resources depot accepts
     [Header("Resource Behavior")]

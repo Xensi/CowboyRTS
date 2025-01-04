@@ -10,22 +10,23 @@ public class UnitSpawner : NetworkBehaviour
     [SerializeField] private bool shouldSetAIDecisionTimerOnSpawn = false;
     [SerializeField] private float setTimerOnSpawnValue = 1;
 
-    [SerializeField] private bool shouldSpawn = false;
+    public bool shouldSpawn = false;
 
-    [SerializeField] private int spawnWaves = 1;
+    public int spawnWaves = 1;
 
     [SerializeField] private int unitsToSpawnPerWave = 1;
 
     [SerializeField] private float timeDelayBetweenWaves = 2;
     [SerializeField] private float timeDelayBeforeFirstWave = 1;
 
-    [SerializeField] private float spawnTimer = 0;
+    public float spawnTimer = 0;
 
     [SerializeField] private FactionEntity unitToSpawn;
 
     [SerializeField] private List<SelectableEntity> watchEntities = new();
 
     [SerializeField] private Player playerToGrantControlOverSpawnedUnits;
+    [SerializeField] private VictoryManager victoryManagerToGrantUnitsTo;
     private enum StartSpawningCondition
     {
         None,
@@ -105,6 +106,7 @@ public class UnitSpawner : NetworkBehaviour
                         if (item.currentHP.Value < item.maxHP)
                         {
                             shouldSpawn = true;
+                            Global.Instance.unitSpawnerToTrackReinforcements = this;
                             break;
                         }
                     } 

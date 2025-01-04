@@ -151,7 +151,7 @@ public class SelectableEntity : NetworkBehaviour
 
     [Header("Aesthetic Settings")]
     [SerializeField] private MeshRenderer rallyVisual;
-    [SerializeField] private Material damagedState;
+    private Material damagedState;
     [HideInInspector] public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
     public LineRenderer lineIndicator;
     [SerializeField] private MeshRenderer[] damageableMeshes;
@@ -159,7 +159,7 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private MeshRenderer selectIndicator;
     public GameObject targetIndicator;
     public List<MeshRenderer> teamRenderers;
-    public NavmeshCut obstacle;
+    [HideInInspector] public NavmeshCut obstacle;
     [HideInInspector] public RVOController RVO;
     [HideInInspector]
     public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
@@ -177,7 +177,19 @@ public class SelectableEntity : NetworkBehaviour
     private List<Material> savedMaterials = new();
     public Player controllerOfThis;
 
-    [SerializeField] private int lootedOnDestructionGold = 0; //gold to give to localplayer
+    [HideInInspector] public bool isVisibleInFog = false;
+    [HideInInspector] public bool oldVisibleInFog = false;
+    [HideInInspector] public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
+    [HideInInspector] public bool shouldHideInFog = true; // gold should not be hidden
+    private bool oneTimeForceUpdateFog = false;
+    //[SerializeField]
+    private float fogValue;
+    //[SerializeField]
+    private FogOfWarTeam fow;
+    [HideInInspector] public bool productionBlocked = false;
+    public bool isAttackable = true;
+
+
     private void OnDrawGizmos()
     {
         if (fakeSpawn)
@@ -236,7 +248,9 @@ public class SelectableEntity : NetworkBehaviour
         if (RVO == null) RVO = GetComponent<RVOController>();
         if (physicalCollider == null) physicalCollider = GetComponent<Collider>();
         if (rigid == null) rigid = GetComponent<Rigidbody>();
+        if (lootOnDestructionComp == null) lootOnDestructionComp = GetComponent<LootOnDestruction>();
     }
+    private LootOnDestruction lootOnDestructionComp;
     private void InitializeEntityInfo()
     {
         if (factionEntity == null)
@@ -245,6 +259,7 @@ public class SelectableEntity : NetworkBehaviour
             return;
         }
         //set faction entity information
+        deathEffect = factionEntity.deathEffect;
         displayName = factionEntity.productionName;
         desc = factionEntity.description;
         maxHP = (short)factionEntity.maxHP;
@@ -347,7 +362,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void Awake() //awake, networkspawn, start; verified through testing
     {
-        Debug.Log("Awake");
+        //Debug.Log("Awake");
         Initialize();
         InitializeEntityInfo();
         RetainHealthBarPosition();
@@ -601,7 +616,7 @@ public class SelectableEntity : NetworkBehaviour
             if (item != null)
             {
                 ///item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
-                item.material.color = controllerOfThis.playerColor;
+                if (item.material != null && controllerOfThis != null) item.material.color = controllerOfThis.playerColor;
             }
         }
     }
@@ -783,6 +798,9 @@ public class SelectableEntity : NetworkBehaviour
                         {
                             Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost);
                         }
+                        target.DestroyThis();
+                        break;
+                    case StatusEffect.DestroyThis:
                         target.DestroyThis();
                         break;
                     case StatusEffect.ToggleGate:
@@ -1158,13 +1176,10 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void PrepareForEntityDestruction()
     {
+        if (lootOnDestructionComp != null) lootOnDestructionComp.LootForLocalPlayer();
         ClearObstacle();
-        RemoveFromEnemyLists();
-        if (lootedOnDestructionGold > 0)
-        {
-            Global.Instance.localPlayer.AddGold(lootedOnDestructionGold);
-        }
-        healthBar.Delete();
+        RemoveFromEnemyLists(); 
+        if (healthBar != null) healthBar.Delete();
         Global.Instance.allEntities.Remove(this);
         controllerOfThis.ownedEntities.Remove(this);
         if (IsMinion())
@@ -1432,7 +1447,7 @@ public class SelectableEntity : NetworkBehaviour
         return interactionTarget != null;
     }
     private bool gateOpenStatus = true;
-    [SerializeField] private GameObject toggleableObject;
+    private GameObject toggleableObject;
     private void ToggleGate()
     {
         gateOpenStatus = !gateOpenStatus;
@@ -1469,15 +1484,6 @@ public class SelectableEntity : NetworkBehaviour
         if (interactorIndex >= workersInteracting.Count) interactorIndex = 0;
         if (othersInteractorIndex >= othersInteracting.Count) othersInteractorIndex = 0;
     }
-    public bool isVisibleInFog = false;
-    [HideInInspector] public bool oldVisibleInFog = false;
-    public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
-    [HideInInspector] public bool shouldHideInFog = true; // gold should not be hidden
-    private bool oneTimeForceUpdateFog = false;
-    //[SerializeField]
-    private float fogValue;
-    //[SerializeField]
-    private FogOfWarTeam fow;
     private void UpdateVisibilityFromFogOfWar() //hide in fog
     {
         if (fow == null) fow = FogOfWarTeam.GetTeam(hideFogTeam);
@@ -1771,43 +1777,47 @@ public class SelectableEntity : NetworkBehaviour
         return minionController == null;
     }
     private void OwnerUpdateBuildQueue()
-    {
+    { 
         if (buildQueue.Count > 0)
         {
             // todo add ability to build multiple from one structure
             FactionUnit fac = buildQueue[0];
             fac.spawnTimer++; 
-            if (fac.spawnTimer > fac.maxSpawnTimeCost - 1
-                && fac.consumePopulationAmount <= controllerOfThis.maxPopulation - controllerOfThis.population)
-            { //spawn the unit 
-                //Debug.Log("Population check on spawn:" + fac.consumePopulationAmount + ", " + controllerOfThis.maxPopulation + ", " + controllerOfThis.population);
-                //first check if the position is blocked;
-                if (Physics.Raycast(positionToSpawnMinions.position + (new Vector3(0, 100, 0)), Vector3.down,
-                    out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
-                {
-                    SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
-                    if (target != null) //something blocking
+            if (fac.spawnTimer > fac.maxSpawnTimeCost - 1) //ready to spawn
+            {   
+                if (fac.consumePopulationAmount <= controllerOfThis.maxPopulation - controllerOfThis.population) //allowed to spawn
+                { 
+                    //spawn the unit 
+                    //Debug.Log("Population check on spawn:" + fac.consumePopulationAmount + ", " + controllerOfThis.maxPopulation + ", " + controllerOfThis.population);
+                    //first check if the position is blocked;
+                    if (Physics.Raycast(positionToSpawnMinions.position + (new Vector3(0, 100, 0)), Vector3.down,
+                        out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
                     {
-                        if (target.minionController != null && target.controllerOfThis == controllerOfThis)
+                        SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
+                        if (target != null) //something blocking
                         {
-                            //tell blocker to get out of the way.
-                            float randRadius = 1;
-                            Vector2 randCircle = UnityEngine.Random.insideUnitCircle * randRadius;
-                            Vector3 rand = target.transform.position + new Vector3(randCircle.x, 0, randCircle.y);
-                            target.minionController.MoveTo(rand);
-                            //Debug.Log("trying to move blocking unit to: " + rand);
+                            if (target.minionController != null && target.controllerOfThis == controllerOfThis)
+                            {
+                                //tell blocker to get out of the way.
+                                float randRadius = 1;
+                                Vector2 randCircle = UnityEngine.Random.insideUnitCircle * randRadius;
+                                Vector3 rand = target.transform.position + new Vector3(randCircle.x, 0, randCircle.y);
+                                target.minionController.MoveTo(rand);
+                                //Debug.Log("trying to move blocking unit to: " + rand);
+                                productionBlocked = true;
+                            }
                         }
                         else
                         {
-                            Debug.Log("Spawning of " + name + " blocked");
+                            BuildQueueSpawn(fac);
+                            productionBlocked = false;
                         }
-                    }
-                    else
-                    {
-                        BuildQueueSpawn(fac);
-                    }
+                    } 
                 }
-
+                else
+                {
+                    productionBlocked = true;
+                }
             }
         }
         if (controllerOfThis is RTSPlayer)
@@ -1910,7 +1920,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         shouldCheckTrigger = false;
     }
-    private void CaptureForLocalPlayer() //switch team of entity
+    public void CaptureForLocalPlayer() //switch team of entity
     {
         //Debug.Log("capturing");
         controllerOfThis = Global.Instance.localPlayer;
@@ -1968,7 +1978,7 @@ public class SelectableEntity : NetworkBehaviour
             }
         }*/
     }
-    public GameObject deathEffect = null;
+    private GameObject deathEffect = null;
     public void UpdatePathIndicator(Vector3[] list)
     {
         lineIndicator.positionCount = list.Length;

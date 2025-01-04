@@ -82,6 +82,11 @@ public class Global : NetworkBehaviour
     public GenericProgressBar structureProgressBar;
     public readonly int maxUnitsInProductionQueue = 10;
 
+    public GameObject popFullWarning;
+
+    public TMP_Text reinforcementText;
+    public UnitSpawner unitSpawnerToTrackReinforcements;
+    public TMP_Text levelObjective;
     //Minion sound profile mapping:
     // 0: spawn
     // 1: damage
@@ -94,6 +99,12 @@ public class Global : NetworkBehaviour
     //1: selection
     //
     //
+    public void UpdatePopFullWarning()
+    {
+        if (localPlayer == null) return;
+        bool full = localPlayer.population >= localPlayer.maxPopulation;
+        if (popFullWarning != null) popFullWarning.SetActive(full);
+    }
     public void ChangeRallyPointButton(bool val)
     {
         if (setRallyPointButton != null) setRallyPointButton.SetActive(val);
@@ -151,6 +162,10 @@ public class Global : NetworkBehaviour
         selectedParent.SetActive(false);
         resourcesParent.SetActive(false);
     }
+    public void UpdateLevelObjective()
+    {
+        if (levelObjective != null) levelObjective.text = VictoryManager.Instance.levelGoal;
+    }
     public SelectableEntity FindEntityFromObject(GameObject obj)
     {
         SelectableEntity entity = obj.GetComponent<SelectableEntity>();
@@ -168,6 +183,30 @@ public class Global : NetworkBehaviour
     {
         InitializePlayers();
         if (!playerHasWon) CheckIfAPlayerHasWon();
+        UpdatePopFullWarning();
+        UpdateReinforcementText();
+    }
+    private void UpdateReinforcementText()
+    {
+        if (reinforcementText != null)
+        {
+            if (unitSpawnerToTrackReinforcements != null)
+            { 
+                if (unitSpawnerToTrackReinforcements.shouldSpawn && unitSpawnerToTrackReinforcements.spawnWaves > 0)
+                {
+                    reinforcementText.transform.parent.gameObject.SetActive(true);
+                    reinforcementText.text = "Reinforcements arrive in: " + Mathf.RoundToInt(unitSpawnerToTrackReinforcements.spawnTimer) + "s";
+                }
+                else
+                {
+                    reinforcementText.transform.parent.gameObject.SetActive(false);
+                }
+            }
+            else
+            { 
+                reinforcementText.transform.parent.gameObject.SetActive(false);
+            }
+        } 
     }
 
     public int maxExpectedUnits = 100;
@@ -255,4 +294,5 @@ public class Global : NetworkBehaviour
     {
         localPlayer.ReadySetRallyPoint();
     }
+
 }

@@ -30,7 +30,7 @@ public class LevelManager : MonoBehaviour
     { 
         SceneManager.sceneLoaded += OnSceneLoaded;
     } 
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode) //runs when scene is loaded
     {
         //Debug.Log("OnSceneLoaded: " + scene.name);
         //Debug.Log(mode);

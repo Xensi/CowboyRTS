@@ -26,6 +26,7 @@ MonoBehaviour:
   teamType: 0
   constructableBuildings: []
   usableAbilities: []
+  deathEffect: {fileID: 1596140512904530975, guid: 69aadaea41d3f1a4ca6fc402ec2fb2ac, type: 3}
   depositType: 0
   selfHarvestableType: 1
   attackType: 3
@@ -46,6 +47,7 @@ MonoBehaviour:
   acceptsHeavy: 0
   attackProjectilePrefab: {fileID: 6908122070487208007, guid: ec432f14aed07f54e8d6b3978ca046ed, type: 3}
   hideModelOnDeath: 1
-  spawnTimeCost: 5
+  maxSpawnTimeCost: 5
+  spawnTimer: 0
   isHeavy: 0
   maxSpeed: 2

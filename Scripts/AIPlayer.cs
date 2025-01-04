@@ -24,11 +24,13 @@ public class AIPlayer : Player
     public Transform spawnPosition;
     public List<SelectableEntity> knownEnemyStructures = new();
     public List<SelectableEntity> knownEnemyUnits = new();
+    public List<SelectableEntity> watchedEntities = new();
     public enum AIBehavior
     {
         Default, 
         Passive, //do nothing; minions will attack enemies that enter their range
         HuntDownMinions, //send attacks towards visible enemies, no scouting
+        SwitchToHDMWhenWatchedEntityDestroyed, //passive until a watched entity is destroyed
     }
     public AIBehavior behavior = AIBehavior.Default;
     public override void OnNetworkSpawn()
@@ -60,6 +62,7 @@ public class AIPlayer : Player
         ProcessOrdersInBatches();
         if (IsOwner)
         {
+            CheckIfShouldSwitchAIBehavior();
             UpdateDecisionTimeBasedOnUnitCount();
             UpdateKnownEnemyUnits();
             CleanLists();
@@ -70,6 +73,31 @@ public class AIPlayer : Player
                 MakeDecision();
             } 
         }
+    }
+    private void CheckIfShouldSwitchAIBehavior()
+    {
+        switch (behavior)
+        {
+            case AIBehavior.Default:
+                break;
+            case AIBehavior.Passive:
+                break;
+            case AIBehavior.HuntDownMinions:
+                break;
+            case AIBehavior.SwitchToHDMWhenWatchedEntityDestroyed:
+                foreach (SelectableEntity item in watchedEntities)
+                {
+                    if (item != null && item.alive == false)
+                    {
+                        behavior = AIBehavior.HuntDownMinions;
+                        break;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+        
     }
     private void MakeDecision()
     {

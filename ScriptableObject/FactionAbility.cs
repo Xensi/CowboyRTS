@@ -38,7 +38,7 @@ public class TargetedEffects //name, target, status effect
     }
     public enum StatusEffect
     {
-        MoveSpeed, AttackDuration, HP, CancelInProgress, ToggleGate
+        MoveSpeed, AttackDuration, HP, CancelInProgress, ToggleGate, DestroyThis
     }
     public enum Operation //how to apply status number
     {

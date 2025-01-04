@@ -12,4 +12,9 @@ public class GenericProgressBar : MonoBehaviour
         float ratio = current / max;
         bar.fillAmount = ratio;  
     }
+    public void SetColor(Color color)
+    {
+        if (bar == null) return;
+        bar.color = color;
+    }
 }
