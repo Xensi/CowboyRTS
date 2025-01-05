@@ -4,7 +4,7 @@ using UnityEngine;
 public class AreaEffector : MonoBehaviour
 {
     private readonly float lrWidth = 0.05f;
-    private readonly int subDivs = 64; //how detailed the circle should be
+    [SerializeField] private int subDivs = 64; //how detailed the circle should be
     public float radius = 1;
     public int effectNumber = 1;
 

@@ -16,7 +16,7 @@ public class Portal : MonoBehaviour
     }
     private void OnTriggerEnter(Collider other)
     {
-        if (hasLinkedPortal == true)
+        /*if (hasLinkedPortal == true)
         {
             if (entity.isBuildIndicator == false)
             {
@@ -33,6 +33,6 @@ public class Portal : MonoBehaviour
                     }
                 }
             }
-        }
+        }*/
     }
 }

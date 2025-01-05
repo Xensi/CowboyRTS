@@ -1947,45 +1947,7 @@ public class MinionController : NetworkBehaviour
         nudgedTargetEnemyStructurePosition = newPosition;
         //Debug.DrawRay(entity.transform.position, Vector3.up, Color.red, 5);
         Debug.DrawRay(nudgedTargetEnemyStructurePosition, Vector3.up, Color.green, 5);
-    }
-    /// <summary>
-    /// Adjust position to not be blocked
-    /// </summary>
-    /// <param name="structure"></param>
-    private void AdjustTargetEnemyStructureDestination(SelectableEntity structure)
-    {
-        //failsafe
-        float maxDistance = 1;
-        Vector3 closest = structure.physicalCollider.ClosestPoint(nudgedTargetEnemyStructurePosition);
-        if (Vector3.Distance(nudgedTargetEnemyStructurePosition, closest) > maxDistance)
-        {
-            Debug.Log("Failsafe triggered. Resetting position");
-            nudgedTargetEnemyStructurePosition = structure.transform.position;
-        }
-
-        bool obstructedByEntity = Physics.Raycast(nudgedTargetEnemyStructurePosition + (new Vector3(0, 100, 0)),
-            Vector3.down, out RaycastHit entityHit, Mathf.Infinity, Global.Instance.localPlayer.entityLayer);
-        if (obstructedByEntity)
-        {
-            SelectableEntity hitEntity = Global.Instance.FindEntityFromObject(entityHit.collider.gameObject);
-            if (hitEntity == structure)
-            {
-                //check if we hit ground or another entity
-
-                //get ground position 
-                bool hitGround = Physics.Raycast(nudgedTargetEnemyStructurePosition + (new Vector3(0, 100, 0)),
-                    Vector3.down, out RaycastHit groundHit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer);
-                if (hitGround)
-                {
-                    float step = 4 * Time.deltaTime;
-                    Vector3 newPosition = Vector3.MoveTowards(nudgedTargetEnemyStructurePosition, transform.position, step);
-                    nudgedTargetEnemyStructurePosition = newPosition;
-                    //Debug.Log("adjusted to: " + adjustedTargetEnemyStructurePosition); 
-                    Debug.DrawRay(nudgedTargetEnemyStructurePosition, Vector3.up, Color.green, 5);
-                }
-            }
-        }
-    }
+    } 
     private bool IsRanged()
     {
         return !IsMelee();

@@ -126,11 +126,11 @@ public class Global : NetworkBehaviour
     private void Awake()
     {
         groundLayer = LayerMask.GetMask("Ground");
-        blockingLayer = LayerMask.GetMask("Entity", "Obstacle");
-        gameLayer = LayerMask.GetMask("Entity", "Obstacle", "Ground", "OtherEntities", "EnemyEntity");
-        allEntityLayer = LayerMask.GetMask("Entity", "OtherEntities", "EnemyEntity");
-        enemyLayer = LayerMask.GetMask("EnemyEntity");
-        friendlyEntityLayer = LayerMask.GetMask("Entity");
+        blockingLayer = LayerMask.GetMask(FRIENDLY_ENTITY, "Obstacle");
+        gameLayer = LayerMask.GetMask(FRIENDLY_ENTITY, "Obstacle", "Ground", "OtherEntities", ENEMY_ENTITY);
+        allEntityLayer = LayerMask.GetMask(FRIENDLY_ENTITY, "OtherEntities", ENEMY_ENTITY);
+        enemyLayer = LayerMask.GetMask(ENEMY_ENTITY);
+        friendlyEntityLayer = LayerMask.GetMask(FRIENDLY_ENTITY);
 
         // If there is an instance, and it's not me, delete myself.
         if (Instance != null && Instance != this)

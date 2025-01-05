@@ -44,7 +44,7 @@ public class RTSPlayer : Player
     public LinkedState linkedState = LinkedState.Waiting;
     public MouseState mouseState = MouseState.Waiting;
     public LayerMask groundLayer;
-    public LayerMask entityLayer;
+    //public LayerMask entityLayer;
     private LayerMask blockingLayer;
     public SelectableEntity lastSpawnedEntity;
     public bool placementBlocked = false;
@@ -105,8 +105,7 @@ public class RTSPlayer : Player
     {
         base.Start();
         groundLayer = LayerMask.GetMask("Ground");
-        blockingLayer = LayerMask.GetMask("Entity", "Obstacle");
-        entityLayer = LayerMask.GetMask("Entity");
+        blockingLayer = LayerMask.GetMask("Entity", "Obstacle"); 
         gameLayer = LayerMask.GetMask("Entity", "Obstacle", "Ground");
         placementGhost = LayerMask.GetMask("PlacementGhost");
         //_offset = new Vector3(0.5f, 0, .5f);
@@ -1945,7 +1944,7 @@ public class RTSPlayer : Player
         {
             DeselectAll();
         }
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, entityLayer))
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.allEntityLayer))
         {
             //SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
 
@@ -1963,7 +1962,7 @@ public class RTSPlayer : Player
         {
             DeselectAll();
         }
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, entityLayer))
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.allEntityLayer))
         {
             //SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
 

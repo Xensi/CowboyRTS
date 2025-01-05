@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Gunslinger
   m_EditorClassIdentifier: 
   productionName: Gunslinger
-  description: 
+  description: "Basic ranged unit. Attack isn\u2019t blocked by walls."
   prefabToSpawn: {fileID: 6726110510975844004, guid: 1c97fa97d1117814cbf2debcd600bf24, type: 3}
   goldCost: 30
   maxHP: 6
@@ -21,10 +21,12 @@ MonoBehaviour:
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
   shouldHideInFog: 1
+  visionRange: 7
   soundProfile: {fileID: 11400000, guid: 29f47e755f09c694b84170e4c7c354cb, type: 2}
   teamType: 0
   constructableBuildings: []
   usableAbilities: []
+  deathEffect: {fileID: 0}
   depositType: 0
   selfHarvestableType: 1
   attackType: 1
@@ -45,7 +47,7 @@ MonoBehaviour:
   acceptsHeavy: 0
   attackProjectilePrefab: {fileID: 0}
   hideModelOnDeath: 0
-  spawnTimeCost: 10
+  maxSpawnTimeCost: 5
+  spawnTimer: 0
   isHeavy: 0
-  canAttackWhileMoving: 0
   maxSpeed: 2

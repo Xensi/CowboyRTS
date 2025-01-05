@@ -154,13 +154,13 @@ public class SelectableEntity : NetworkBehaviour
     public Transform positionToSpawnMinions; //used for buildings
 
     [Header("Aesthetic Settings")]
-    [SerializeField] private MeshRenderer rallyVisual;
+    [SerializeField] private GameObject rallyVisual;
     private Material damagedState;
     [HideInInspector] public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
     public LineRenderer lineIndicator;
     [SerializeField] private MeshRenderer[] damageableMeshes;
     [SerializeField] private MeshRenderer[] resourceCollectingMeshes;
-    [SerializeField] private MeshRenderer selectIndicator;
+    private SelectionCircle selectIndicator;
     public GameObject targetIndicator;
     public List<MeshRenderer> teamRenderers;
     [HideInInspector] public NavmeshCut obstacle;
@@ -255,6 +255,7 @@ public class SelectableEntity : NetworkBehaviour
         if (lootOnDestructionComp == null) lootOnDestructionComp = GetComponent<LootOnDestruction>();
         if (finishedRendererParent != null) finishedMeshRenderers = finishedRendererParent.GetComponentsInChildren<MeshRenderer>();
         areaEffectors = GetComponentsInChildren<AreaEffector>();
+        selectIndicator = GetComponentInChildren<SelectionCircle>();
     }
     private LootOnDestruction lootOnDestructionComp;
     private void InitializeEntityInfo()
@@ -518,14 +519,14 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (selectIndicator != null)
         {
-            selectIndicator.gameObject.SetActive(true);
-            selectIndicator.enabled = val;
-            Color selectColor = Color.green;
+            //selectIndicator.gameObject.SetActive(true);
+            selectIndicator.UpdateVisibility(val);
+            UnityEngine.Color selectColor = Color.green;
             if (Global.Instance.localPlayer != controllerOfThis)
             {
-                selectColor = Color.red;
+                selectColor = UnityEngine.Color.red;
             }
-            selectIndicator.material.color = selectColor;
+            selectIndicator.SetColor(selectColor); 
         }
     }
     private void SetFinishedRenderersVisibility(bool val)
@@ -546,6 +547,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void Start() //call stuff here so that network variables are valid (isSpawned)
     {
+        SetStartingSelectionRadius();
         Select(false);
         PlaySpawnSound();
         TryToRegisterRallyMission();
@@ -585,7 +587,7 @@ public class SelectableEntity : NetworkBehaviour
                 }
             }
         }
-        if (rallyVisual != null) rallyVisual.enabled = false;
+        if (rallyVisual != null) rallyVisual.SetActive(false);
         if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allEntities.Add(this);
 
         if (healthBar != null)
@@ -604,6 +606,34 @@ public class SelectableEntity : NetworkBehaviour
         if (controllerOfThis != null && controllerOfThis.allegianceTeamID != Global.Instance.localPlayer.allegianceTeamID)
         {   //this should be counted as an enemy 
             gameObject.layer = LayerMask.NameToLayer("EnemyEntity");
+        }
+    }
+    private void SetStartingSelectionRadius()
+    {
+        if (IsMinion())
+        {
+            selectIndicator.UpdateRadius(minionController.ai.radius);
+        }
+        else
+        {
+            float offset = 0.1f;
+            if (obstacle.type == NavmeshCut.MeshType.Circle)
+            {
+                selectIndicator.UpdateRadius(obstacle.circleRadius+offset);
+            }
+            else
+            {
+                float size = 1;
+                if (obstacle.rectangleSize.x < obstacle.rectangleSize.y)
+                {
+                    size = obstacle.rectangleSize.x;
+                }
+                else
+                {
+                    size = obstacle.rectangleSize.y;
+                }
+                selectIndicator.UpdateRadius(size + offset);
+            }
         }
     }
     private void SetInitialVisuals()
@@ -1041,6 +1071,7 @@ public class SelectableEntity : NetworkBehaviour
             DetectIfShouldUnghost();
             DetectIfBuilt();
             UpdateInteractors();
+            UpdateSelectionCirclePosition();
             if (fullyBuilt)
             {
                 UpdateRallyVariables();
@@ -1052,6 +1083,17 @@ public class SelectableEntity : NetworkBehaviour
                 CheckIfShouldBeCaptured();
             }
         }
+    }
+    private void UpdateSelectionCirclePosition()
+    {
+        if (VisuallySelected())
+        {
+            if (selectIndicator != null) selectIndicator.UpdateSelectionCirclePosition();
+        }
+    }
+    private bool VisuallySelected()
+    {
+        return selected || infoSelected;
     }
     private Camera mainCam;
     private void UpdateHealthBarPosition()
@@ -1700,6 +1742,13 @@ public class SelectableEntity : NetworkBehaviour
             if (rallyVisual != null)
             {
                 rallyVisual.transform.position = rallyPoint;
+
+            } 
+            if (lineIndicator != null)
+            {
+                Vector3 offset = new Vector3(0, 0.01f, 0);
+                lineIndicator.SetPosition(0, transform.position + offset);
+                lineIndicator.SetPosition(1, rallyPoint + offset);
             }
             SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
             //SelectableEntity target = hit.collider.GetComponent<SelectableEntity>();
@@ -2065,8 +2114,7 @@ public class SelectableEntity : NetworkBehaviour
                         array[1] = minionController.targetEnemy.transform.position;
                         lineIndicator.SetPositions(array);
                     }
-                }
-
+                } 
                 else
                 {
                     targetIndicator.SetActive(false);
@@ -2093,12 +2141,16 @@ public class SelectableEntity : NetworkBehaviour
             if (CanProduceUnits())
             {
                 rallyVisual.transform.position = rallyPoint;
-                rallyVisual.enabled = val;
+                rallyVisual.SetActive(val);
             }
             else
             {
-                rallyVisual.enabled = false;
+                rallyVisual.SetActive(false);
             }
+        }
+        if (lineIndicator != null)
+        {
+            lineIndicator.enabled = val;
         }
     }
     public void Select(bool val)
@@ -2113,8 +2165,10 @@ public class SelectableEntity : NetworkBehaviour
         }
         UpdateIndicator(selected);
     }
+    [HideInInspector] public bool infoSelected = false;
     public void InfoSelect(bool val)
     {
+        infoSelected = val;
         UpdateIndicator(val);
     }
     public bool CanProduceUnits()

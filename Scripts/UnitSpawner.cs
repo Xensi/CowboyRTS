@@ -48,9 +48,32 @@ public class UnitSpawner : NetworkBehaviour
         if (spawnWaves <= 0) return;
         for (int i = 0; i < unitsToSpawnPerWave; i++)
         { //this needs to pick a position nearby to spawn them in if the position is blocked
-            if (playerToGrantControlOverSpawnedUnits != null)
+            bool foundPosition = false;
+            Vector3 positionToSpawn = transform.position;
+            Vector2 dir = Random.insideUnitCircle.normalized;
+            float step = 0.1f;
+            while (!foundPosition)
             {
-                SpawnUnitUnderPlayerControl(playerToGrantControlOverSpawnedUnits);
+                if (Physics.Raycast(positionToSpawn + (new Vector3(0, 100, 0)), Vector3.down,
+                            out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
+                {
+                    SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
+                    if (target != null) //blocked
+                    {
+                        positionToSpawn = positionToSpawn + new Vector3(step * dir.x, 0, step * dir.y);
+                    }
+                    else
+                    {
+                        foundPosition = true;
+                    }
+                }
+            }
+            if (foundPosition)
+            {
+                if (playerToGrantControlOverSpawnedUnits != null)
+                {
+                    SpawnUnitUnderPlayerControl(playerToGrantControlOverSpawnedUnits, positionToSpawn);
+                }
             }
         }
         if (shouldSetAIDecisionTimerOnSpawn)
@@ -63,17 +86,27 @@ public class UnitSpawner : NetworkBehaviour
         }
         spawnWaves--;
     }
-    private void SpawnUnitUnderPlayerControl(Player player)
-    {
-        if (player is RTSPlayer)
+    
+    private void SpawnUnitUnderPlayerControl(Player player, Vector3 position)
+    { 
+        if (player == null)
         {
-            RTSPlayer rts = player as RTSPlayer;
-            rts.GenericSpawnMinion(transform.position, unitToSpawn, this);
+            Debug.Log("Spawning under local player");
+            RTSPlayer rts = Global.Instance.localPlayer;
+            rts.GenericSpawnMinion(position, unitToSpawn, this);
+        }
+        else if (player is RTSPlayer)
+        {
+            if (player != null)
+            { 
+                RTSPlayer rts = player as RTSPlayer;
+                rts.GenericSpawnMinion(position, unitToSpawn, this);
+            }
         }
         else if (player is AIPlayer)
         {
             AIPlayer ai = player as AIPlayer;
-            ai.SpawnMinion(transform.position, unitToSpawn);
+            ai.SpawnMinion(position, unitToSpawn);
         }
     }
     private void TickTimer()
