@@ -266,9 +266,8 @@ MonoBehaviour:
   harvestedResourceAmount: 0
   interactionTarget: {fileID: 0}
   buildQueue: []
-  allMeshes: []
   unbuiltRenderers: []
-  finishedRenderers: []
+  finishedRendererParent: {fileID: 0}
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
   rallyMission: 0

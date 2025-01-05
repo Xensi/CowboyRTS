@@ -25,10 +25,11 @@ public class AreaEffector : MonoBehaviour
     public ParticleSystem particleAura;
     public LineRenderer lr;
     public UnityEngine.Color color;
+    private ParticleSystem[] particleSystems;
     private void Start()
     { 
         particleAura = GetComponent<ParticleSystem>();
-
+        particleSystems = GetComponentsInChildren<ParticleSystem>();
     }
     private void Update()
     {
@@ -42,6 +43,30 @@ public class AreaEffector : MonoBehaviour
     }
 
     private int maxArraySize = 50;
+    public void UpdateVisibility(bool val)
+    { 
+        for (int i = 0; i < particleSystems.Length; i++)
+        {
+            if (particleSystems[i] != null)
+            {
+                if (val)
+                {
+                    if (!particleSystems[i].isPlaying) particleSystems[i].Play();
+                }
+                else
+                {
+                    if (particleSystems[i].isPlaying)
+                    {
+                        particleSystems[i].Stop();
+                        particleSystems[i].Clear();
+                    }
+                }
+                /*var emission = particleSystems[i].emission;
+                emission.enabled = val;*/
+            } 
+        }
+        lr.enabled = val;
+    }
     private void UpdateAura()
     {
         if (lr != null)

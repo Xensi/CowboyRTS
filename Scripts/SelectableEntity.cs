@@ -71,9 +71,12 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public SelectableEntity interactionTarget;
 
     [HideInInspector] public List<FactionUnit> buildQueue;
-    public MeshRenderer[] allMeshes;
-    public MeshRenderer[] unbuiltRenderers;
-    public MeshRenderer[] finishedRenderers;
+    private MeshRenderer[] allMeshes;
+    [SerializeField] private MeshRenderer[] unbuiltRenderers;
+    [SerializeField] private GameObject finishedRendererParent;
+    private MeshRenderer[] finishedMeshRenderers;
+
+    private AreaEffector[] areaEffectors;
     //when fog of war changes, check if we should hide or show attack effects
     private bool damaged = false;
     private readonly int delay = 50;
@@ -107,7 +110,7 @@ public class SelectableEntity : NetworkBehaviour
     public EntityTypes entityType = EntityTypes.Melee;
     [HideInInspector]
     public bool isHeavy = false; //heavy units can't garrison into pallbearers
-    [HideInInspector] public bool fullyBuilt = true; //[HideInInspector] 
+    public bool fullyBuilt = true; //[HideInInspector] 
     [HideInInspector]
     public bool isKeystone = false;
     public int allowedWorkers = 1; //how many can build/repair/harvest at a time
@@ -241,15 +244,17 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void Initialize()
     {
+        allMeshes = GetComponentsInChildren<MeshRenderer>();
         if (minionController == null) minionController = GetComponent<MinionController>();
         if (fogUnit == null) fogUnit = GetComponent<FogOfWarUnit>();
-        allMeshes = GetComponentsInChildren<MeshRenderer>();
         if (net == null) net = GetComponent<NetworkObject>();
         if (obstacle == null) obstacle = GetComponentInChildren<NavmeshCut>();
         if (RVO == null) RVO = GetComponent<RVOController>();
         if (physicalCollider == null) physicalCollider = GetComponent<Collider>();
         if (rigid == null) rigid = GetComponent<Rigidbody>();
         if (lootOnDestructionComp == null) lootOnDestructionComp = GetComponent<LootOnDestruction>();
+        if (finishedRendererParent != null) finishedMeshRenderers = finishedRendererParent.GetComponentsInChildren<MeshRenderer>();
+        areaEffectors = GetComponentsInChildren<AreaEffector>();
     }
     private LootOnDestruction lootOnDestructionComp;
     private void InitializeEntityInfo()
@@ -523,6 +528,22 @@ public class SelectableEntity : NetworkBehaviour
             selectIndicator.material.color = selectColor;
         }
     }
+    private void SetFinishedRenderersVisibility(bool val)
+    {
+        if (finishedRendererParent == null) return;
+        for (int i = 0; i < finishedMeshRenderers.Length; i++)
+        {
+            if (finishedMeshRenderers[i] != null) finishedMeshRenderers[i].enabled = (val);
+        }
+        //if (finishedRendererParent != null) finishedRendererParent.SetActive(val);
+    }
+    private void SetUnfinishedRenderersVisibility(bool val)
+    {
+        for (int i = 0; i < unbuiltRenderers.Length; i++)
+        {
+            if (unbuiltRenderers[i] != null) unbuiltRenderers[i].enabled = val;
+        }
+    }
     private void Start() //call stuff here so that network variables are valid (isSpawned)
     {
         Select(false);
@@ -545,14 +566,7 @@ public class SelectableEntity : NetworkBehaviour
                 RVO.enabled = false;
             }
         }
-
-        foreach (MeshRenderer item in finishedRenderers)
-        {
-            if (item != null)
-            {
-                item.enabled = false;
-            }
-        }
+        SetFinishedRenderersVisibility(false);
         foreach (MeshRenderer item in unbuiltRenderers)
         {
             if (item != null)
@@ -1518,35 +1532,39 @@ public class SelectableEntity : NetworkBehaviour
                 if (attackEffects[i] != null) attackEffects[i].enabled = showAttackEffects && isVisibleInFog;
             }
         }
+        UpdateAreaEffectorVisibility(isVisibleInFog);
     }
     private void UpdateMeshVisibility(bool val)
     {
-        if (minionController == null)
+        if (IsStructure())
         {
+            if (healthBar != null) healthBar.SetVisibleHPConditional(val);
             if (fullyBuilt)
             {
-                for (int i = 0; i < finishedRenderers.Length; i++)
-                {
-                    if (finishedRenderers[i] != null) finishedRenderers[i].enabled = val;
-                }
-                if (healthBar != null) healthBar.SetVisibleHPConditional(val);
+                SetFinishedRenderersVisibility(val);
             }
             else
             {
-                for (int i = 0; i < unbuiltRenderers.Length; i++)
-                {
-                    if (unbuiltRenderers[i] != null) unbuiltRenderers[i].enabled = val;
-                }
-                if (healthBar != null) healthBar.SetVisibleHPConditional(val);
+                SetUnfinishedRenderersVisibility(val);
             }
         }
-        else
+        else //Is minion
         {
-            for (int i = 0; i < allMeshes.Length; i++)
-            {
-                if (allMeshes[i] != null) allMeshes[i].enabled = val;
-            }
-            if (healthBar != null) healthBar.SetVisibleHPConditional(val);
+            UpdateAllMeshesVisibility(val);
+        }
+    }
+    private void UpdateAllMeshesVisibility(bool val)
+    { 
+        for (int i = 0; i < allMeshes.Length; i++)
+        {
+            if (allMeshes[i] != null) allMeshes[i].enabled = val;
+        }
+    }
+    private void UpdateAreaEffectorVisibility(bool val)
+    { 
+        for (int i = 0; i < areaEffectors.Length; i++)
+        {
+            if (areaEffectors[i] != null) areaEffectors[i].UpdateVisibility(val);
         }
     }
     private bool FogHideable()
@@ -1594,13 +1612,8 @@ public class SelectableEntity : NetworkBehaviour
                 item.enabled = false;
             }
         }
-        foreach (MeshRenderer item in finishedRenderers)
-        {
-            if (item != null)
-            {
-                item.enabled = true;
-            }
-        }
+
+        SetFinishedRenderersVisibility(true);
         if (fogUnit != null) fogUnit.enabled = true;
         ChangeMaxPopulation(raisePopulationLimitBy);
 
