@@ -709,7 +709,6 @@ public class RTSPlayer : Player
                 break;
         }
 
-
         if (!Input.GetMouseButton(0) && finishedSelection)
         {
             Global.Instance.selectionRect.gameObject.SetActive(false);

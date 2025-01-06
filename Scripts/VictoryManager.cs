@@ -16,6 +16,7 @@ public class VictoryManager : MonoBehaviour
 
     [SerializeField] private VictoryCondition victoryCondition = VictoryCondition.EliminateAllMinionsControlledByWatchedPlayer;
     public string levelGoal = "";
+    private bool victory = false;
     private void Awake()
     { 
         if (Instance != null && Instance != this)
@@ -34,6 +35,7 @@ public class VictoryManager : MonoBehaviour
     }
     private void EvaluateVictoryConditions()
     {
+        if (victory) return;
         bool victoryAchieved = true;
         foreach (Player player in watchedPlayers)
         {
@@ -63,7 +65,8 @@ public class VictoryManager : MonoBehaviour
     }
     private void VictoryAchieved()
     {
-        Debug.Log("YOU WON!");
+        victory = true;
+        //Debug.Log("YOU WON!");
         if (conditionalMessage != null)
         {
 

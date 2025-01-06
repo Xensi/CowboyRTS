@@ -7,6 +7,8 @@ using UnityEngine.SceneManagement;
 public class LevelManager : MonoBehaviour
 {
     public static LevelManager Instance { get; private set; }
+
+    [SerializeField] private List<string> levelNames;
     public readonly string LEVEL1 = "Level1";
     // Start is called before the first frame update
     private void Awake()
@@ -21,6 +23,10 @@ public class LevelManager : MonoBehaviour
         }
     }
     Action loadAction;
+    public string GetLevelName(int levelNum)
+    {
+        return levelNames[levelNum];
+    }
     public void LoadLevel(string level, Action callback)
     {
         SceneManager.LoadScene(level, LoadSceneMode.Additive);

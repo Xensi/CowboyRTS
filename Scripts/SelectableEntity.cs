@@ -45,7 +45,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public enum ResourceType
     {
-        Gold, None
+        Gold, None, Wood, Cactus,
     }
     #endregion
     #region NetworkVariables
@@ -274,7 +274,7 @@ public class SelectableEntity : NetworkBehaviour
         spawnableUnits = factionEntity.spawnableUnits;
         constructableBuildings = factionEntity.constructableBuildings;
         usableAbilities = factionEntity.usableAbilities;
-        isKeystone = factionEntity.isKeystone;
+        //isKeystone = factionEntity.isKeystone;
         isHarvester = factionEntity.isHarvester;
         harvestCapacity = factionEntity.harvestCapacity;
         spawnableAtOnce = factionEntity.spawnableAtOnce;
@@ -301,7 +301,7 @@ public class SelectableEntity : NetworkBehaviour
         selfHarvestableType = factionEntity.selfHarvestableType;
         shouldHideInFog = factionEntity.shouldHideInFog;
 
-        fogUnit.circleRadius = factionEntity.visionRange;
+        if (fogUnit != null) fogUnit.circleRadius = factionEntity.visionRange;
 
         if (factionEntity.soundProfile != null)
         {
@@ -1053,12 +1053,15 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
         if (obstacle != null) //update pathfinding
-        { 
-            AstarPath.active.navmeshUpdates.ForceUpdate();
-            // Block until the updates have finished
-            AstarPath.active.FlushGraphUpdates();
-            //obstacle.DoUpdateGraphs();
-            //AstarPath.active.FlushGraphUpdates();
+        {
+            if (AstarPath.active != null)
+            {
+                AstarPath.active.navmeshUpdates.ForceUpdate();
+                // Block until the updates have finished
+                AstarPath.active.FlushGraphUpdates();
+                //obstacle.DoUpdateGraphs();
+                //AstarPath.active.FlushGraphUpdates();
+            }
         }
     }
     private void Update()
@@ -1250,11 +1253,15 @@ public class SelectableEntity : NetworkBehaviour
         if (healthBar != null) healthBar.Delete();
         if (productionProgressBar != null) productionProgressBar.Delete();
         Global.Instance.allEntities.Remove(this);
-        controllerOfThis.ownedEntities.Remove(this);
-        if (IsMinion())
+        if (controllerOfThis != null)
         {
-            controllerOfThis.ownedMinions.Remove(minionController);
-            controllerOfThis.ownedBuilders.Remove(minionController);
+            controllerOfThis.ownedEntities.Remove(this);
+
+            if (IsMinion())
+            {
+                controllerOfThis.ownedMinions.Remove(minionController);
+                controllerOfThis.ownedBuilders.Remove(minionController);
+            }
         }
         if (IsOwner)
         {
@@ -2027,8 +2034,8 @@ public class SelectableEntity : NetworkBehaviour
         ChangePopulation(consumePopulationAmount);
         ChangeMaxPopulation(raisePopulationLimitBy);
         RTSPlayer playerController = Global.Instance.localPlayer;
-        playerController.ownedEntities.Add(this);
-        if (IsMinion()) playerController.ownedMinions.Add(minionController);
+        if (!playerController.ownedEntities.Contains(this)) playerController.ownedEntities.Add(this);
+        if (IsMinion() && !playerController.ownedMinions.Contains(minionController)) playerController.ownedMinions.Add(minionController);
 
         if (factionEntity.constructableBuildings.Length > 0)
         {

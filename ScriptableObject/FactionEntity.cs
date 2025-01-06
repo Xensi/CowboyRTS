@@ -10,8 +10,8 @@ public class FactionEntity : ScriptableObject
     public GameObject prefabToSpawn;
     public int goldCost = 0;
     public int maxHP = 10;
-    public bool isKeystone = false; //if all keystone entities are destroyed, you lose
-    public int consumePopulationAmount = 1;
+    //public bool isKeystone = false; //if all keystone entities are destroyed, you lose
+    public int consumePopulationAmount = 0;
     public int raisePopulationLimitBy = 0;
     public bool shouldHideInFog = true;
     public float visionRange = 7;

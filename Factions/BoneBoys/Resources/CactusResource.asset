@@ -9,24 +9,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5b888e0fe913eaf4095ed4e0fccd988e, type: 3}
-  m_Name: Gold Ore
+  m_Script: {fileID: 11500000, guid: 5040608eb03c21941b0df73233e2ec94, type: 3}
+  m_Name: CactusResource
   m_EditorClassIdentifier: 
-  productionName: Gold
-  description: Gold ore desc
-  prefabToSpawn: {fileID: 5847112704809811961, guid: 95c239bfce637ba4f8bf8d0850f0461d, type: 3}
+  productionName: Cactus
+  description: Harvest to obtain cactus, used for special unit upgrades.
+  prefabToSpawn: {fileID: 0}
   goldCost: 0
-  maxHP: 1000
-  isKeystone: 0
+  maxHP: 100
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0
   shouldHideInFog: 0
+  visionRange: 0
   soundProfile: {fileID: 0}
   teamType: 1
   constructableBuildings: []
   usableAbilities: []
+  deathEffect: {fileID: 0}
   depositType: 0
-  selfHarvestableType: 0
+  selfHarvestableType: 2
   attackType: 0
   damage: 1
   directionalAttack: 0
@@ -34,7 +35,7 @@ MonoBehaviour:
   attackDuration: 1
   impactTime: 0.5
   areaOfEffectRadius: 1
-  shouldAutoSeekEnemies: 0
+  shouldAggressivelySeekEnemies: 0
   spawnableUnits: []
   spawnableAtOnce: 1
   isHarvester: 0
@@ -43,6 +44,9 @@ MonoBehaviour:
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  spawnTimeCost: 0
-  isHeavy: 0
-  canAttackWhileMoving: 0
+  attackProjectilePrefab: {fileID: 0}
+  hideModelOnDeath: 0
+  needsConstructing: 0
+  buildOffset: {x: 0.5, y: 0, z: 0.5}
+  extendable: 0
+  rotatable: 0

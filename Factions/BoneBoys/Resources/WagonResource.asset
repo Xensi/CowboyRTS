@@ -9,34 +9,33 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5b888e0fe913eaf4095ed4e0fccd988e, type: 3}
-  m_Name: Gunslinger
+  m_Script: {fileID: 11500000, guid: 5040608eb03c21941b0df73233e2ec94, type: 3}
+  m_Name: WagonResource
   m_EditorClassIdentifier: 
-  productionName: Gunslinger
-  description: Basic ranged unit. Slower attack, but has longer range.
-  prefabToSpawn: {fileID: 6726110510975844004, guid: 1c97fa97d1117814cbf2debcd600bf24, type: 3}
-  goldCost: 30
-  maxHP: 6
-  isKeystone: 0
-  consumePopulationAmount: 1
+  productionName: Gold
+  description: Harvest to obtain gold, used to spawn units.
+  prefabToSpawn: {fileID: 0}
+  goldCost: 0
+  maxHP: 100
+  consumePopulationAmount: 0
   raisePopulationLimitBy: 0
-  shouldHideInFog: 1
-  visionRange: 7
-  soundProfile: {fileID: 11400000, guid: 29f47e755f09c694b84170e4c7c354cb, type: 2}
-  teamType: 0
+  shouldHideInFog: 0
+  visionRange: 0
+  soundProfile: {fileID: 0}
+  teamType: 1
   constructableBuildings: []
   usableAbilities: []
   deathEffect: {fileID: 0}
   depositType: 0
-  selfHarvestableType: 1
-  attackType: 1
+  selfHarvestableType: 0
+  attackType: 0
   damage: 1
   directionalAttack: 0
-  attackRange: 4
-  attackDuration: 2
+  attackRange: 1
+  attackDuration: 1
   impactTime: 0.5
   areaOfEffectRadius: 1
-  shouldAggressivelySeekEnemies: 1
+  shouldAggressivelySeekEnemies: 0
   spawnableUnits: []
   spawnableAtOnce: 1
   isHarvester: 0
@@ -47,7 +46,7 @@ MonoBehaviour:
   acceptsHeavy: 0
   attackProjectilePrefab: {fileID: 0}
   hideModelOnDeath: 0
-  maxSpawnTimeCost: 5
-  spawnTimer: 0
-  isHeavy: 0
-  maxSpeed: 2
+  needsConstructing: 0
+  buildOffset: {x: 0.5, y: 0, z: 0.5}
+  extendable: 0
+  rotatable: 0

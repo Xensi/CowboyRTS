@@ -16,12 +16,12 @@ public class ConditionalMessage : MonoBehaviour
     private TMP_Text modifiableMessageText;
     private Image bg;
     [SerializeField] private Button clickToContinue;
-    private void Start()
+    private void OnEnable()
     {
         modifiableMessageText = GetComponentInChildren<TMP_Text>(true);
         bg = GetComponentInChildren<Image>(true);
         SetVisibilityOfConfirmationButton(false);
-
+        linearMessageBookmark = -1;
         ShowNextMessage();
     }
     private void ShowMessage(int id = 0)
@@ -138,7 +138,8 @@ public class ConditionalMessage : MonoBehaviour
             {
                 if (item.selected && item.factionEntity == fac) matchedNum++;
             }
-        } 
+        }
+        //Debug.Log("Matched" + matchedNum + "required" +required);
         return matchedNum >= required; 
     }
     private bool CheckLevelEntitiesDestroyed()

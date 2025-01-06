@@ -910,7 +910,7 @@ public class MinionController : NetworkBehaviour
 
     private void EnterState(MinionStates state)
     {
-        //Debug.Log("Entering state" + state + "Currently in state " + minionState);
+        Debug.Log("Entering state" + state + "Currently in state " + minionState);
         switch (state)
         {
             case MinionStates.Idle: //if we become idle, then create entity searcher on our position  
@@ -2448,6 +2448,7 @@ public class MinionController : NetworkBehaviour
     }
     private void HarvestTarget(SelectableEntity target)
     {
+        //Debug.Log("Harvesting Target Once");
         entity.SimplePlaySound(1); //play impact sound 
         if (target != null && target.IsSpawned)
         {
@@ -2463,7 +2464,8 @@ public class MinionController : NetworkBehaviour
                 RequestHarvestServerRpc(harvestAmount, target);
             }
 
-            entity.harvestedResourceAmount += actualHarvested;
+            entity.harvestedResourceAmount += actualHarvested; //add to harvested resources
+
             if (entity.controllerOfThis is RTSPlayer)
             {
                 RTSPlayer rts = entity.controllerOfThis as RTSPlayer;

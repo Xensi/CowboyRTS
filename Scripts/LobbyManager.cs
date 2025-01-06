@@ -109,9 +109,11 @@ public class LobbyManager : MonoBehaviour
         }
     }
     public UnityTransport singleplayerTransport;
-    public void StartSinglePlayerGame()
+    public void StartSinglePlayerGame(int level)
     {
-        LevelManager.Instance.LoadLevel(LevelManager.Instance.LEVEL1, StartSinglePlayerGameCallback);
+        string levelName = LevelManager.Instance.GetLevelName(level);
+
+        LevelManager.Instance.LoadLevel(levelName, StartSinglePlayerGameCallback);
         if (startSPGameButton != null) startSPGameButton.gameObject.SetActive(false);
     }
     private void StartSinglePlayerGameCallback()

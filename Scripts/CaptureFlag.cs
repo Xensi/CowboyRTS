@@ -84,7 +84,7 @@ public class CaptureFlag : MonoBehaviour
     {
         foreach (SelectableEntity item in captureEntities)
         {
-            if (item != null)
+            if (item != null && item.controllerOfThis != Global.Instance.localPlayer)
             {
                 item.CaptureForLocalPlayer();
             }
