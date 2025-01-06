@@ -100,6 +100,5 @@ public class FactionEntityEditor : Editor
 
         // must be on the end.
         serializedObject.ApplyModifiedProperties();
-
     }
 }

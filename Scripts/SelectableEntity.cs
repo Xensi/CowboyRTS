@@ -1091,7 +1091,7 @@ public class SelectableEntity : NetworkBehaviour
             if (selectIndicator != null) selectIndicator.UpdateSelectionCirclePosition();
         }
     }
-    private bool VisuallySelected()
+    public bool VisuallySelected()
     {
         return selected || infoSelected;
     }

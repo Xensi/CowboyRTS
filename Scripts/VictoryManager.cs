@@ -7,6 +7,7 @@ public class VictoryManager : MonoBehaviour
     public static VictoryManager Instance { get; private set; }
 
     [SerializeField] private List<Player> watchedPlayers = new(); //players to be watched
+    private ConditionalMessage conditionalMessage;
 
     private enum VictoryCondition
     {
@@ -25,6 +26,7 @@ public class VictoryManager : MonoBehaviour
         {
             Instance = this;
         }
+        conditionalMessage = GetComponent<ConditionalMessage>();
     }
     private void Update()
     {
@@ -62,6 +64,10 @@ public class VictoryManager : MonoBehaviour
     private void VictoryAchieved()
     {
         Debug.Log("YOU WON!");
+        if (conditionalMessage != null)
+        {
+
+        }
     }
 
 }

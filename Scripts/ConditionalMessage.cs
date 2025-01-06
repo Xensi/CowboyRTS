@@ -1,121 +1,153 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.ProBuilder;
+using UnityEngine.UI;
+using static MinionController;
 
 public class ConditionalMessage : MonoBehaviour
 {
-    [SerializeField] private List<GameObject> messages;
-    [SerializeField] private GameObject bg;
-    [SerializeField] private List<SelectableEntity> checkForDestruction;
-    [SerializeField] private List<SelectableEntity> winWhenTheseAreDead;
-    [SerializeField] private AIPlayer ai;
+    private int linearMessageBookmark = -1;
+    [SerializeField] private List<MessageWithCondition> linearMessages; //play these messages one after another  
+    private MessageWithCondition currentMessageWithCondition;
+    private TMP_Text modifiableMessageText;
+    private Image bg;
+    [SerializeField] private Button clickToContinue;
     private void Start()
     {
-        ShowMessage(0);
-    }
-    //select grave msg
-    private bool trainUnitMsgShown = false; //train numbskull
-    private bool selectUnitMsgShown = false; //select numbskull unit
-    private bool movementMsgShown = false;
-    private bool attackSpecificMsgShown = false;
-    private bool middleClickMsgShown = false;
-    private bool goalMsgShown = false;
-    private bool victoryMsgShown = false;
-    private void Update()
-    {
-        if (!trainUnitMsgShown && Global.Instance.localPlayer.selectedEntities.Count > 0)
-        {
-            trainUnitMsgShown = true;
-            ShowMessage(1);
-        }
-        if (!selectUnitMsgShown && Global.Instance.localPlayer.ownedMinions.Count >= 1)
-        {
-            selectUnitMsgShown = true;
-            ShowMessage(2);
-        }
-        if (!movementMsgShown && Global.Instance.localPlayer.selectedEntities.Count > 0 && Global.Instance.localPlayer.selectedEntities[0].IsMinion())
-        {
-            movementMsgShown = true;
-            ShowMessage(3);
-        }
-        if (!attackSpecificMsgShown && Input.GetMouseButtonDown(1)) //right clicked
-        {
-            attackSpecificMsgShown = true;
-            ShowMessage(4);
-        }
-        if (!middleClickMsgShown && CheckForDestruction())
-        {
-            middleClickMsgShown = true;
-            //MakeAIAggressive();
-            ShowMessage(5);
-        }
-        if (!goalMsgShown && Input.GetMouseButtonDown(2))
-        {
-            goalMsgShown = true;
-            ShowMessage(6);
-        }
-        if (goalMsgShown)
-        {
-            if (goalMsgShowTime > 0)
-            { 
-                goalMsgShowTime -= Time.deltaTime;
-            }
-            else if (goalMsgShowTime != -999)
-            {
-                goalMsgShowTime = -999;
-                HideMessage();
-            }
-        }
-        if (!victoryMsgShown && PlayerWonByDestroying())
-        {
-            victoryMsgShown = true;
-            ShowMessage(7);
-        }
-    }
-    private float goalMsgShowTime = 4;
-    private void MakeAIAggressive()
-    {
-        ai.behavior = AIPlayer.AIBehavior.HuntDownMinions;
-    }
-    private bool CheckForDestruction()
-    {
-        foreach (SelectableEntity item in checkForDestruction)
-        {
-            if (!item.alive)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-    private bool PlayerWonByDestroying()
-    { 
-        int count = 0;
-        foreach (SelectableEntity item in winWhenTheseAreDead)
-        {
-            if (item == null || !item.alive)
-            {
-                count++;
-            }
-        }
-        if (count >= winWhenTheseAreDead.Count) return true;
-        return false;
+        modifiableMessageText = GetComponentInChildren<TMP_Text>(true);
+        bg = GetComponentInChildren<Image>(true);
+        SetVisibilityOfConfirmationButton(false);
+
+        ShowNextMessage();
     }
     private void ShowMessage(int id = 0)
     {
-        bg.SetActive(true);
-        for (int i = 0; i < messages.Count; i++)
+        if (bg != null) bg.gameObject.SetActive(true);
+        if (modifiableMessageText != null) modifiableMessageText.gameObject.SetActive(true);
+        if (modifiableMessageText != null) modifiableMessageText.text = linearMessages[id].message.messageContents;
+        currentMessageWithCondition = linearMessages[id];
+        SetVisibilityOfConfirmationButton(false);
+    }
+    private bool linearMessageConditionMet = false;
+    private void Update()
+    {
+        EvaluateIfLinearMessageConditionMet();
+    } 
+    private void EvaluateIfLinearMessageConditionMet()
+    { 
+        if (linearMessageConditionMet == false)
+        { 
+            if (currentMessageWithCondition != null)
+            {
+                switch (currentMessageWithCondition.message.condition)
+                {
+                    case Condition.None:
+                        linearMessageConditionMet = true;
+                        break;
+                    case Condition.LevelEntitiesDestroyed:
+                        linearMessageConditionMet = CheckLevelEntitiesDestroyed();
+                        break;
+                    case Condition.SelectedTypeOfFactionEntity:
+                        linearMessageConditionMet = CheckSelectedTypeOfFactionEntity();
+                        break;
+                    case Condition.ControlsTypeOfFactionEntity:
+                        linearMessageConditionMet = CheckControlsTypeOfFactionEntity();
+                        break;
+                    case Condition.MouseInputDetected:
+                        linearMessageConditionMet = Input.GetMouseButtonDown(currentMessageWithCondition.message.mouseInput);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        else
         {
-            messages[i].SetActive(i == id);
+            if (currentMessageWithCondition.message.playerNeedsToClickToContinue)
+            {
+                SetVisibilityOfConfirmationButton(true);
+            }
+            else
+            {
+                ShowNextMessage();
+            }
         }
     }
-    private void HideMessage()
-    {
-        bg.SetActive(false);
-        for (int i = 0; i < messages.Count; i++)
-        {
-            messages[i].SetActive(false);
+    private void ShowNextMessage()
+    { 
+        linearMessageBookmark++;
+        linearMessageConditionMet = false;
+        if (linearMessageBookmark < linearMessages.Count)
+        { 
+            ShowMessage(linearMessageBookmark);
         }
+        else
+        {
+            HideMessages();
+        }
+    }
+    private void HideMessages()
+    {
+        if (bg != null) bg.gameObject.SetActive(false);
+        if (modifiableMessageText != null) modifiableMessageText.gameObject.SetActive(false);
+        currentMessageWithCondition = null;
+        SetVisibilityOfConfirmationButton(false);
+    }
+    private void SetVisibilityOfConfirmationButton(bool val)
+    {
+        clickToContinue.gameObject.SetActive(val);
+    }
+    public void ConfirmationReceived()
+    {
+        ShowNextMessage();
+    }
+    private bool CheckControlsTypeOfFactionEntity()
+    {
+        FactionEntity fac = currentMessageWithCondition.message.entityToCheck;
+        int required = currentMessageWithCondition.message.numEntitiesToCheck;
+        int matchedNum = 0;
+        foreach (SelectableEntity item in Global.Instance.localPlayer.ownedEntities)
+        {
+            if (item != null)
+            {
+                if (item.factionEntity == fac) matchedNum++;
+            }
+        }
+        return matchedNum >= required;
+    }
+    private bool CheckSelectedTypeOfFactionEntity()
+    {
+        FactionEntity fac = currentMessageWithCondition.message.entityToCheck;
+        int required = currentMessageWithCondition.message.numEntitiesToCheck; 
+        int matchedNum = 0;
+        foreach (SelectableEntity item in Global.Instance.localPlayer.ownedEntities)
+        {
+            if (item != null)
+            {
+                if (item.selected && item.factionEntity == fac) matchedNum++;
+            }
+        } 
+        return matchedNum >= required; 
+    }
+    private bool CheckLevelEntitiesDestroyed()
+    {  
+        foreach (SelectableEntity item in currentMessageWithCondition.levelEntities)
+        {
+            if (item != null && item.alive)
+            {
+                return false; 
+            }
+        }
+        return true; //only if no items are alive
     }
 }
+[System.Serializable]
+public class MessageWithCondition
+{
+    public Message message;
+    public List<SelectableEntity> levelEntities;
+} 
