@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: 2selectunit
   m_EditorClassIdentifier: 
   messageContents: LEFT CLICK on the Numbskull to select it.
-  condition: 2
+  conditions: 02000000
   mouseInput: 0
   entityToCheck: {fileID: 11400000, guid: 5482cede677f6c94299d9143b7094d12, type: 2}
   numEntitiesToCheck: 1

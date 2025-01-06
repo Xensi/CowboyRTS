@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: 4.1attackwall
   m_EditorClassIdentifier: 
   messageContents: While your units are selected, RIGHT CLICK on the thin part of
-    the wall to attack it.
-  condition: 1
+    the wall to attack it. Destroy it to continue.
+  conditions: 01000000
   mouseInput: 0
   entityToCheck: {fileID: 0}
   numEntitiesToCheck: 1

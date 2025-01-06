@@ -717,7 +717,7 @@ public class RTSPlayer : Player
         Global.Instance.goldText.text = "Gold: " + gold;
         if (Global.Instance.popText != null)
         {
-            Global.Instance.popText.text = "Population: " + population + "/" + maxPopulation;
+            Global.Instance.popText.text = "Army Size: " + population + "/" + maxPopulation;
         }
         //TryReplaceFakeSpawn();
         UpdateGUIFromSelections();// this might be expensive ...

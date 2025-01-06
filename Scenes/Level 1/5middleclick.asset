@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: 5middleclick
   m_EditorClassIdentifier: 
   messageContents: MIDDLE CLICK to move to a location, attacking enemies along the
-    way.
-  condition: 1
+    way. Kill the guards to continue.
+  conditions: 01000000
   mouseInput: 0
   entityToCheck: {fileID: 0}
   numEntitiesToCheck: 1

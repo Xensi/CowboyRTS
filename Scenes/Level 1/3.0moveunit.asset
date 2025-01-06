@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   messageContents: While the Numbskull is selected, RIGHT CLICK on the ground to
     move.
-  condition: 4
+  conditions: 0200000004000000
   mouseInput: 1
-  entityToCheck: {fileID: 0}
+  entityToCheck: {fileID: 11400000, guid: 5482cede677f6c94299d9143b7094d12, type: 2}
   numEntitiesToCheck: 1
   playerNeedsToClickToContinue: 0

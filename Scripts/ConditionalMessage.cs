@@ -43,26 +43,34 @@ public class ConditionalMessage : MonoBehaviour
         { 
             if (currentMessageWithCondition != null)
             {
-                switch (currentMessageWithCondition.message.condition)
+                int conditionsMet = 0;
+                int required = currentMessageWithCondition.message.conditions.Length;
+                foreach (Condition condition in currentMessageWithCondition.message.conditions)
                 {
-                    case Condition.None:
-                        linearMessageConditionMet = true;
-                        break;
-                    case Condition.LevelEntitiesDestroyed:
-                        linearMessageConditionMet = CheckLevelEntitiesDestroyed();
-                        break;
-                    case Condition.SelectedTypeOfFactionEntity:
-                        linearMessageConditionMet = CheckSelectedTypeOfFactionEntity();
-                        break;
-                    case Condition.ControlsTypeOfFactionEntity:
-                        linearMessageConditionMet = CheckControlsTypeOfFactionEntity();
-                        break;
-                    case Condition.MouseInputDetected:
-                        linearMessageConditionMet = Input.GetMouseButtonDown(currentMessageWithCondition.message.mouseInput);
-                        break;
-                    default:
-                        break;
+                    bool met = false;
+                    switch (condition)
+                    {
+                        case Condition.AutoComplete:
+                            met = true;
+                            break;
+                        case Condition.LevelEntitiesDestroyed:
+                            met = CheckLevelEntitiesDestroyed();
+                            break;
+                        case Condition.SelectedTypeOfFactionEntity:
+                            met = CheckSelectedTypeOfFactionEntity();
+                            break;
+                        case Condition.ControlsTypeOfFactionEntity:
+                            met = CheckControlsTypeOfFactionEntity();
+                            break;
+                        case Condition.MouseInputDetected:
+                            met = Input.GetMouseButtonDown(currentMessageWithCondition.message.mouseInput);
+                            break;
+                        default:
+                            break;
+                    }
+                    if (met) conditionsMet++;
                 }
+                linearMessageConditionMet = conditionsMet >= required;
             }
         }
         else

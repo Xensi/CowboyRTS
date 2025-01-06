@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: 3.1train more
   m_EditorClassIdentifier: 
   messageContents: Raise at least one more Numbskull.
-  condition: 3
+  conditions: 03000000
   mouseInput: 0
   entityToCheck: {fileID: 11400000, guid: 5482cede677f6c94299d9143b7094d12, type: 2}
   numEntitiesToCheck: 2

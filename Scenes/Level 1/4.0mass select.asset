@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   messageContents: "Click and drag to select multiple units. \nPress SPACEBAR to
     select all units.\nDouble click to select all units of a certain type."
-  condition: 2
+  conditions: 02000000
   mouseInput: 0
   entityToCheck: {fileID: 11400000, guid: 5482cede677f6c94299d9143b7094d12, type: 2}
   numEntitiesToCheck: 2
