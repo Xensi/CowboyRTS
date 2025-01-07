@@ -150,7 +150,7 @@ public class AreaEffector : MonoBehaviour
                 case EffectToApply.None:
                     break;
                 case EffectToApply.HealNonAttackers:
-                    if (select.minionController != null && select.minionController.minionState != MinionController.MinionStates.Attacking)
+                    if (select.stateMachineController != null && select.stateMachineController.minionState != StateMachineController.MinionStates.Attacking)
                     {
                         select.RaiseHP((sbyte)effectNumber);
                     }

@@ -10,10 +10,10 @@ public class FactionUnit : FactionEntity
     //public bool canAttackWhileMoving = false;
     public float maxSpeed = 2f;
 
-    public enum UnitTypes
+    /*public enum UnitTypes
     {
         Generic, //default  
-    }
+    }*/
 
     public void Init(string name, int spawnTime, GameObject prefab, int goldCost)
     {

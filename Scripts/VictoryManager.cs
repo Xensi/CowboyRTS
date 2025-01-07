@@ -44,7 +44,7 @@ public class VictoryManager : MonoBehaviour
                 switch (victoryCondition)
                 {
                     case VictoryCondition.EliminateAllMinionsControlledByWatchedPlayer:
-                        foreach (MinionController minion in player.ownedMinions)
+                        foreach (StateMachineController minion in player.ownedMinions)
                         {
                             if (minion != null)
                             {

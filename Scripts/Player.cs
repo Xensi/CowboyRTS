@@ -15,9 +15,9 @@ public class Player : NetworkBehaviour
 {
     public Faction playerFaction;
     public List<SelectableEntity> ownedEntities;
-    public List<MinionController> ownedMinions;
+    public List<StateMachineController> ownedMinions;
     public List<SelectableEntity> unbuiltStructures;
-    public List<MinionController> ownedBuilders;
+    public List<StateMachineController> ownedBuilders;
     public int gold = 100;
     public int population = 0;
     public int maxPopulation = 10;
@@ -40,7 +40,7 @@ public class Player : NetworkBehaviour
     [Serializable]
     public class UnitOrder
     {
-        public MinionController unit;
+        public StateMachineController unit;
         public ActionType action;
         public SelectableEntity target;
         public Vector3 targetPosition;
@@ -87,7 +87,7 @@ public class Player : NetworkBehaviour
             UnitOrder order = UnitOrdersQueue[0]; //fetch first order
             if (order != null)
             {
-                MinionController orderedUnit = order.unit;
+                StateMachineController orderedUnit = order.unit;
                 if (orderedUnit != null && orderedUnit.canReceiveNewCommands)
                 {
                     //Debug.Log("Batch processing orders" + orderedUnit);
@@ -109,7 +109,7 @@ public class Player : NetworkBehaviour
         return searcher;
     }
 
-    public void CreateEntitySearcherAndAssign(Vector3 position, MinionController minion)
+    public void CreateEntitySearcherAndAssign(Vector3 position, StateMachineController minion)
     {
         if (minion == null) return;
         EntitySearcher searcher = CreateEntitySearcherAtPosition(position, minion.entity.controllerOfThis.allegianceTeamID);

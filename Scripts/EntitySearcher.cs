@@ -4,7 +4,7 @@ using UnityEngine;
 using System.Threading.Tasks;
 public class EntitySearcher : MonoBehaviour
 {
-    [SerializeField] private List<MinionController> assignedUnits = new();
+    [SerializeField] private List<StateMachineController> assignedUnits = new();
     private float timer = 0;
     private float searchTime = 0.1f; 
     private int searchedCount = 0; //up to where in array search results are valid
@@ -90,11 +90,11 @@ public class EntitySearcher : MonoBehaviour
             await Task.Yield();
         }
     }
-    public void AssignUnit(MinionController unit)
+    public void AssignUnit(StateMachineController unit)
     {
         assignedUnits.Add(unit);
     }
-    public void UnassignUnit(MinionController unit)
+    public void UnassignUnit(StateMachineController unit)
     {
         assignedUnits.Remove(unit);
     }

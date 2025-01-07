@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.ProBuilder;
 using UnityEngine.UI;
-using static MinionController;
+using static StateMachineController;
 
 public class ConditionalMessage : MonoBehaviour
 {

@@ -137,7 +137,7 @@ public class AIPlayer : Player
     private void AttackMoveClosestKnownMinions()
     {
         //compare distance between one of our units and enemies
-        MinionController compareUnit = null;
+        StateMachineController compareUnit = null;
         if (ownedMinions.Count > 0) compareUnit = ownedMinions[0];
         if (compareUnit == null) return;
         SelectableEntity closestEnemy = null;
@@ -151,8 +151,8 @@ public class AIPlayer : Player
         }
         if (closestEnemy == null) return; 
 
-        List<MinionController> fighters = new();
-        foreach (MinionController item in ownedMinions)
+        List<StateMachineController> fighters = new();
+        foreach (StateMachineController item in ownedMinions)
         {
             if (item != null && item.entity != null && item.entity.factionEntity != null)
             {
@@ -279,14 +279,14 @@ public class AIPlayer : Player
             await Task.Yield();
         }*/
     }
-    private void AIAttackersAttackMove(List<MinionController> fighters, Vector3 target)
+    private void AIAttackersAttackMove(List<StateMachineController> fighters, Vector3 target)
     { 
         //create an entity searcher at the clicked position
         EntitySearcher searcher = CreateEntitySearcherAtPosition(target, 1);
 
         UnitOrdersQueue.Clear();
 
-        foreach (MinionController fighter in fighters)
+        foreach (StateMachineController fighter in fighters)
         {
             if (fighter != null && fighter.IsValidAttacker()) //minion
             {
@@ -310,10 +310,10 @@ public class AIPlayer : Player
     }
     private void SendScoutingParty()
     {
-        MinionController scout = null;
-        foreach (MinionController item in ownedMinions)
+        StateMachineController scout = null;
+        foreach (StateMachineController item in ownedMinions)
         {
-            if (item != null && item.entity != null && item.entity.factionEntity != null && item.minionState == MinionController.MinionStates.Idle)
+            if (item != null && item.entity != null && item.entity.factionEntity != null && item.minionState == StateMachineController.MinionStates.Idle)
             {
                 if (item.entity.factionEntity is FactionUnit)
                 {
@@ -441,7 +441,7 @@ public class AIPlayer : Player
         //pick a unit/building that can spawn units. try to queue up a unit
         SelectableEntity chosenEntity = null;
         FactionBuilding building = null;
-        foreach (MinionController minion in ownedMinions)
+        foreach (StateMachineController minion in ownedMinions)
         {
             if (minion == null) continue;
             SelectableEntity minionEntity = minion.entity;
@@ -517,7 +517,7 @@ public class AIPlayer : Player
             {
                 gold -= building.goldCost;
                 SelectableEntity last = SpawnMinion(validPosition, building);
-                chosenEntity.minionController.ForceBuildTarget(last);
+                chosenEntity.stateMachineController.ForceBuildTarget(last);
             }
         } 
     } 
@@ -605,9 +605,9 @@ public class AIPlayer : Player
             {
                 foreach (SelectableEntity builder in ownedEntities) //get a builder
                 {
-                    if (builder.minionController != null && builder.CanConstruct() && !builder.minionController.IsCurrentlyBuilding()) //minion
+                    if (builder.stateMachineController != null && builder.CanConstruct() && !builder.stateMachineController.IsCurrentlyBuilding()) //minion
                     {
-                        builder.minionController.CommandBuildTarget(building);
+                        builder.stateMachineController.CommandBuildTarget(building);
                         break;
                     }
                 }
@@ -619,16 +619,16 @@ public class AIPlayer : Player
         //Debug.Log("Telling miners to harvest");
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item.minionController != null && item.CanHarvest() && !item.minionController.IsCurrentlyBuilding()) //minion
+            if (item.stateMachineController != null && item.CanHarvest() && !item.stateMachineController.IsCurrentlyBuilding()) //minion
             {
-                switch (item.minionController.minionState)
+                switch (item.stateMachineController.minionState)
                 {
-                    case MinionController.MinionStates.Idle:
-                    case MinionController.MinionStates.FindInteractable:
+                    case StateMachineController.MinionStates.Idle:
+                    case StateMachineController.MinionStates.FindInteractable:
                         if (visibleResources.Count > 0)
                         {
                             int rand = Random.Range(0, visibleResources.Count);
-                            item.minionController.CommandHarvestTarget(visibleResources[rand]); 
+                            item.stateMachineController.CommandHarvestTarget(visibleResources[rand]); 
                         }
                         break;
                 }

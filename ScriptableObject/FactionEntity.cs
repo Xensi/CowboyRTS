@@ -28,11 +28,11 @@ public class FactionEntity : ScriptableObject
     [Header("Depot Behavior")]
     public SelectableEntity.DepositType depositType = SelectableEntity.DepositType.None; //resources depot accepts
     [Header("Resource Behavior")]
-    public SelectableEntity.ResourceType selfHarvestableType = SelectableEntity.ResourceType.None; //ore type
+    public ResourceType selfHarvestableType = ResourceType.None; //ore type
 
 
     [Header("Optional Behavior")]
-    [SerializeField, HideInInspector] public MinionController.AttackType attackType = MinionController.AttackType.None;
+    [SerializeField, HideInInspector] public StateMachineController.AttackType attackType = StateMachineController.AttackType.None;
     [SerializeField, HideInInspector] public sbyte damage = 1;
     [SerializeField, HideInInspector] public bool directionalAttack = false;
     [SerializeField, HideInInspector] public float attackRange = 1;

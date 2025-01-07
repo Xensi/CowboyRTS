@@ -21,7 +21,7 @@ using Unity.VisualScripting;*/
 
 //used for entities that can attack
 [RequireComponent(typeof(SelectableEntity))]
-public class MinionController : NetworkBehaviour
+public class StateMachineController : NetworkBehaviour
 {
     #region Enums
     public enum CommandTypes
@@ -602,7 +602,7 @@ public class MinionController : NetworkBehaviour
         SelectableEntity check = Global.Instance.allEntities[nearbyIndexer]; //fix this so we don't get out of range 
         if (clientSideTargetInRange == null)
         {
-            if (check != null && check.alive && check.selfHarvestableType == SelectableEntity.ResourceType.Gold && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
+            if (check != null && check.alive && check.selfHarvestableType == ResourceType.Gold && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
             { //only check on enemies that are alive, targetable, visible, and in range  
                 clientSideTargetInRange = check;
             }
@@ -2374,7 +2374,7 @@ public class MinionController : NetworkBehaviour
     }
     private bool InvalidHarvestable(SelectableEntity target)
     {
-        return target == null || target.selfHarvestableType == SelectableEntity.ResourceType.None || target.alive == false;
+        return target == null || target.selfHarvestableType == ResourceType.None || target.alive == false;
     }
     private bool CheckFacingTowards(Vector3 pos)
     {
@@ -3431,7 +3431,7 @@ public class MinionController : NetworkBehaviour
     {
         if (entity.CanConstruct())
         {
-            if (select.workersInteracting.Count == 1 && select.workersInteracting[0].minionController.minionState != MinionStates.Building)
+            if (select.workersInteracting.Count == 1 && select.workersInteracting[0].stateMachineController.minionState != MinionStates.Building)
             {
                 select.workersInteracting[0].interactionTarget = null;
                 select.workersInteracting.Clear();

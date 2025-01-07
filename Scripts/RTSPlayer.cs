@@ -19,7 +19,7 @@ public class RTSPlayer : Player
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
     public List<SelectableEntity> selectedEntities; //selected and we can control them  
-    public List<MinionController> selectedBuilders;
+    public List<StateMachineController> selectedBuilders;
     private Vector3 _mousePosition;
     private Vector3 _offset;
     public Vector3 cursorWorldPosition;
@@ -201,20 +201,20 @@ public class RTSPlayer : Player
 
             foreach (SelectableEntity item in selectedEntities)
             {
-                if (item.minionController != null && item.minionController.IsValidAttacker()) //minion
+                if (item.stateMachineController != null && item.stateMachineController.IsValidAttacker()) //minion
                 {
                     //if this unit is already assigned to an entity searcher, unassign it
-                    if (item.minionController.assignedEntitySearcher != null)
+                    if (item.stateMachineController.assignedEntitySearcher != null)
                     {
-                        item.minionController.assignedEntitySearcher.UnassignUnit(item.minionController);
+                        item.stateMachineController.assignedEntitySearcher.UnassignUnit(item.stateMachineController);
                     }
                     //assign the entity searcher to selected units
-                    item.minionController.assignedEntitySearcher = searcher;
+                    item.stateMachineController.assignedEntitySearcher = searcher;
                     //update the entity searcher's assigned units list
-                    item.minionController.assignedEntitySearcher.AssignUnit(item.minionController);
-                    item.minionController.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search
+                    item.stateMachineController.assignedEntitySearcher.AssignUnit(item.stateMachineController);
+                    item.stateMachineController.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search
                     UnitOrder order = new();
-                    order.unit = item.minionController;
+                    order.unit = item.stateMachineController;
                     order.targetPosition = clickedPosition;
                     order.action = ActionType.AttackMove;
                     UnitOrdersQueue.Add(order);
@@ -301,7 +301,7 @@ public class RTSPlayer : Player
                 }
                 else if (hitEntity.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral)
                 {
-                    if (hitEntity.selfHarvestableType != SelectableEntity.ResourceType.None)
+                    if (hitEntity.selfHarvestableType != ResourceType.None)
                     {
                         actionType = ActionType.Harvest;
                     }
@@ -315,33 +315,33 @@ public class RTSPlayer : Player
             UnitOrdersQueue.Clear();
             foreach (SelectableEntity item in selectedEntities)
             {
-                if (item.minionController != null)
+                if (item.stateMachineController != null)
                 {
                     if (actionType == ActionType.AttackTarget) //if attacking a specific target, we need an entity searcher
                     { //for when it's dead
-                        if (item.minionController.IsValidAttacker()) //minion
+                        if (item.stateMachineController.IsValidAttacker()) //minion
                         {
                             //if this unit is already assigned to an entity searcher, unassign it
-                            if (item.minionController.assignedEntitySearcher != null)
+                            if (item.stateMachineController.assignedEntitySearcher != null)
                             {
-                                item.minionController.assignedEntitySearcher.UnassignUnit(item.minionController);
+                                item.stateMachineController.assignedEntitySearcher.UnassignUnit(item.stateMachineController);
                             }
-                            item.minionController.assignedEntitySearcher = searcher;
-                            item.minionController.assignedEntitySearcher.AssignUnit(item.minionController);
+                            item.stateMachineController.assignedEntitySearcher = searcher;
+                            item.stateMachineController.assignedEntitySearcher.AssignUnit(item.stateMachineController);
                         }
                     }
                     else //default to unassigning from any assigned entity searcher
                     {
                         //if we are assigned an entity
-                        if (item.minionController.assignedEntitySearcher != null)
+                        if (item.stateMachineController.assignedEntitySearcher != null)
                         {
-                            item.minionController.assignedEntitySearcher.UnassignUnit(item.minionController);
-                            item.minionController.assignedEntitySearcher = null;
+                            item.stateMachineController.assignedEntitySearcher.UnassignUnit(item.stateMachineController);
+                            item.stateMachineController.assignedEntitySearcher = null;
                         }
                     }
 
                     UnitOrder order = new();
-                    order.unit = item.minionController;
+                    order.unit = item.stateMachineController;
                     order.targetPosition = clickedPosition;
                     order.action = actionType;
                     order.target = hitEntity;
@@ -370,9 +370,9 @@ public class RTSPlayer : Player
     private void SelectAllAttackers()
     {
         DeselectAll();
-        foreach (MinionController item in ownedMinions)
+        foreach (StateMachineController item in ownedMinions)
         {
-            if (item != null && item.attackType != MinionController.AttackType.None && !IsEntityGarrrisoned(item.entity)
+            if (item != null && item.attackType != StateMachineController.AttackType.None && !IsEntityGarrrisoned(item.entity)
                 && !item.entity.CanProduceUnits() && !item.entity.CanHarvest())
             {
                 TrySelectEntity(item.entity);
@@ -395,12 +395,12 @@ public class RTSPlayer : Player
         DeselectAll();
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item != null && item.minionController != null && (item.CanConstruct())) //&& item.canBuild
+            if (item != null && item.stateMachineController != null && (item.CanConstruct())) //&& item.canBuild
             {
-                switch (item.minionController.minionState)
+                switch (item.stateMachineController.minionState)
                 {
-                    case MinionController.MinionStates.Idle:
-                    case MinionController.MinionStates.FindInteractable:
+                    case StateMachineController.MinionStates.Idle:
+                    case StateMachineController.MinionStates.FindInteractable:
                         TrySelectEntity(item);
                         break;
                 }
@@ -427,7 +427,7 @@ public class RTSPlayer : Player
 
             if (entity.factionEntity.constructableBuildings.Length > 0)
             {
-                selectedBuilders.Add(entity.minionController);
+                selectedBuilders.Add(entity.stateMachineController);
             }
 
             entity.Select(true);
@@ -500,7 +500,7 @@ public class RTSPlayer : Player
         float maxAllowableDistance = 10;
         float distance = Mathf.Infinity;
         SelectableEntity currentBuilding = null;
-        MinionController closestBuilder = null;
+        StateMachineController closestBuilder = null;
         //get building and builder that have the least distance
         foreach (SelectableEntity building in unbuiltStructures)
         {
@@ -508,7 +508,7 @@ public class RTSPlayer : Player
             if (building.workersInteracting.Count < building.allowedWorkers)
             {
                 //get the closest available builder in builder list
-                foreach (MinionController builder in selectedBuilders)
+                foreach (StateMachineController builder in selectedBuilders)
                 {
                     if (!builder.IsCurrentlyBuilding())
                     {
@@ -843,7 +843,7 @@ public class RTSPlayer : Player
                 {
                     builderListSelection.Add(item);
                 }
-                else if (item.minionController != null && item.minionController.attackType != MinionController.AttackType.None)
+                else if (item.stateMachineController != null && item.stateMachineController.attackType != StateMachineController.AttackType.None)
                 {
                     militaryList.Add(item);
                 }
@@ -913,10 +913,10 @@ public class RTSPlayer : Player
     private void FindClosestBuilderToBuildStructure(SelectableEntity building)
     {
         float distance = Mathf.Infinity;
-        MinionController closestBuilder = null;
+        StateMachineController closestBuilder = null;
 
         //get the closest available builder in builder list
-        foreach (MinionController builder in selectedBuilders)
+        foreach (StateMachineController builder in selectedBuilders)
         {
             float newDist = Vector3.SqrMagnitude(building.transform.position - builder.transform.position);
             if (newDist < distance)
@@ -1527,12 +1527,12 @@ public class RTSPlayer : Player
 
                     SelectableEntity select = newSpawn.GetComponent<SelectableEntity>();
                     SelectableEntity fake = fakeSpawns[0].GetComponent<SelectableEntity>();
-                    MinionController fakeController = fakeSpawns[0].GetComponent<MinionController>();
+                    StateMachineController fakeController = fakeSpawns[0].GetComponent<StateMachineController>();
                     newSpawn.transform.SetPositionAndRotation(fakeSpawns[0].transform.position, fakeSpawns[0].transform.rotation);
-                    if (select != null && select.minionController != null && fake != null && fakeController != null)
+                    if (select != null && select.stateMachineController != null && fake != null && fakeController != null)
                     {
-                        select.minionController.minionState = fakeController.minionState;
-                        select.minionController.minionState = MinionController.MinionStates.Idle;
+                        select.stateMachineController.minionState = fakeController.minionState;
+                        select.stateMachineController.minionState = StateMachineController.MinionStates.Idle;
                     }
                     if (select != null && fake != null)
                     {
@@ -1784,7 +1784,7 @@ public class RTSPlayer : Player
         return entity != null && ability != null && (entity.fullyBuilt || !ability.usableOnlyWhenBuilt) && entity.net.IsSpawned
             && entity.alive && entity.usableAbilities.Contains(ability)
             && entity.AbilityOffCooldown(ability)
-            && (entity.IsBuilding() || entity.minionController.minionState != MinionController.MinionStates.UsingAbility);
+            && (entity.IsBuilding() || entity.stateMachineController.minionState != StateMachineController.MinionStates.UsingAbility);
     }
     public void UpdateBuildQueueGUI()
     {
