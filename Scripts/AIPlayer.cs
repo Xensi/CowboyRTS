@@ -185,7 +185,7 @@ public class AIPlayer : Player
         int popadders = 0;
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item.CanHarvest())
+            if (item.IsHarvester())
             {
                 harvesters++;
             } 
@@ -193,7 +193,7 @@ public class AIPlayer : Player
             {
                 spawners++;
             }
-            if (!item.CanProduceUnits() && !item.CanHarvest())
+            if (!item.CanProduceUnits() && !item.IsHarvester())
             {
                 fighters++;
             }
@@ -313,7 +313,7 @@ public class AIPlayer : Player
         StateMachineController scout = null;
         foreach (StateMachineController item in ownedMinions)
         {
-            if (item != null && item.entity != null && item.entity.factionEntity != null && item.minionState == StateMachineController.MinionStates.Idle)
+            if (item != null && item.entity != null && item.entity.factionEntity != null && item.currentState == StateMachineController.EntityStates.Idle)
             {
                 if (item.entity.factionEntity is FactionUnit)
                 {
@@ -619,12 +619,12 @@ public class AIPlayer : Player
         //Debug.Log("Telling miners to harvest");
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item.stateMachineController != null && item.CanHarvest() && !item.stateMachineController.IsCurrentlyBuilding()) //minion
+            if (item.stateMachineController != null && item.IsHarvester() && !item.stateMachineController.IsCurrentlyBuilding()) //minion
             {
-                switch (item.stateMachineController.minionState)
+                switch (item.stateMachineController.currentState)
                 {
-                    case StateMachineController.MinionStates.Idle:
-                    case StateMachineController.MinionStates.FindInteractable:
+                    case StateMachineController.EntityStates.Idle:
+                    case StateMachineController.EntityStates.FindInteractable:
                         if (visibleResources.Count > 0)
                         {
                             int rand = Random.Range(0, visibleResources.Count);

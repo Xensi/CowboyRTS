@@ -32,7 +32,7 @@ public class Global : NetworkBehaviour
     public GameObject selectedParent;
     public TMP_Text nameText;
     public TMP_Text descText;
-    public SelectableEntity[] harvestableResources;
+    public List<SelectableEntity> harvestableResources = new();
     public GameObject resourcesParent;
     public TMP_Text resourceText;
     public GameObject gridVisual;
@@ -148,17 +148,17 @@ public class Global : NetworkBehaviour
         {
             item.gameObject.SetActive(false);
         }
-        SelectableEntity[] array = FindObjectsOfType<SelectableEntity>();
+        /*SelectableEntity[] array = FindObjectsOfType<SelectableEntity>();
         harvestableResources = new SelectableEntity[array.Length];
         int j = 0;
         for (int i = 0; i < array.Length; i++)
         {
-            if (array[i] != null && array[i].selfHarvestableType == ResourceType.Gold)
+            if (array[i] != null && array[i].IsOre())
             {
                 harvestableResources[j] = array[i];
                 j++;
             }
-        }
+        }*/
         selectedParent.SetActive(false);
         resourcesParent.SetActive(false);
     }

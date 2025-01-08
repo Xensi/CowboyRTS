@@ -267,12 +267,12 @@ public class RTSPlayer : Player
                 {
                     if (SameAllegiance(hitEntity)) //same team
                     {
-                        if ((hitEntity.depositType == SelectableEntity.DepositType.Gold || hitEntity.depositType == SelectableEntity.DepositType.All)
+                        /*if ((hitEntity.depositType == SelectableEntity.DepositType.Gold || hitEntity.depositType == SelectableEntity.DepositType.All)
                             && hitEntity.fullyBuilt) //if deposit point
                         {
                             actionType = ActionType.Deposit;
-                        }
-                        else if (!hitEntity.fullyBuilt || hitEntity.IsDamaged() && !hitEntity.IsMinion()) //if buildable
+                        }*/
+                        if (!hitEntity.fullyBuilt || hitEntity.IsDamaged() && !hitEntity.IsMinion()) //if buildable
                         {
                             actionType = ActionType.BuildTarget;
 
@@ -299,10 +299,11 @@ public class RTSPlayer : Player
                         Debug.Log("Trying to attack " + hitEntity.name);
                     }
                 }
-                else if (hitEntity.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral)
-                {
-                    if (hitEntity.selfHarvestableType != ResourceType.None)
+                else if (hitEntity.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral) //for now resources are only neutral; this may change
+                { 
+                    if (hitEntity.IsOre())
                     {
+                        Debug.Log("trying to harvest");
                         actionType = ActionType.Harvest;
                     }
                 }
@@ -373,7 +374,7 @@ public class RTSPlayer : Player
         foreach (StateMachineController item in ownedMinions)
         {
             if (item != null && item.attackType != StateMachineController.AttackType.None && !IsEntityGarrrisoned(item.entity)
-                && !item.entity.CanProduceUnits() && !item.entity.CanHarvest())
+                && !item.entity.CanProduceUnits() && !item.entity.IsHarvester())
             {
                 TrySelectEntity(item.entity);
             }
@@ -397,10 +398,10 @@ public class RTSPlayer : Player
         {
             if (item != null && item.stateMachineController != null && (item.CanConstruct())) //&& item.canBuild
             {
-                switch (item.stateMachineController.minionState)
+                switch (item.stateMachineController.currentState)
                 {
-                    case StateMachineController.MinionStates.Idle:
-                    case StateMachineController.MinionStates.FindInteractable:
+                    case StateMachineController.EntityStates.Idle:
+                    case StateMachineController.EntityStates.FindInteractable:
                         TrySelectEntity(item);
                         break;
                 }
@@ -1531,8 +1532,8 @@ public class RTSPlayer : Player
                     newSpawn.transform.SetPositionAndRotation(fakeSpawns[0].transform.position, fakeSpawns[0].transform.rotation);
                     if (select != null && select.stateMachineController != null && fake != null && fakeController != null)
                     {
-                        select.stateMachineController.minionState = fakeController.minionState;
-                        select.stateMachineController.minionState = StateMachineController.MinionStates.Idle;
+                        select.stateMachineController.currentState = fakeController.currentState;
+                        select.stateMachineController.currentState = StateMachineController.EntityStates.Idle;
                     }
                     if (select != null && fake != null)
                     {
@@ -1604,10 +1605,10 @@ public class RTSPlayer : Player
                 Global.Instance.nameText.text = infoSelectedEntity.displayName;
                 Global.Instance.descText.text = infoSelectedEntity.desc;
                 Global.Instance.hpText.text = "HP: " + infoSelectedEntity.currentHP.Value + "/" + infoSelectedEntity.maxHP;
-                if (infoSelectedEntity.isHarvester)
+                if (infoSelectedEntity.IsHarvester())
                 {
-                    Global.Instance.resourcesParent.SetActive(true);
-                    Global.Instance.resourceText.text = "Stored gold: " + infoSelectedEntity.harvestedResourceAmount + "/" + infoSelectedEntity.harvestCapacity;
+                    //Global.Instance.resourcesParent.SetActive(true);
+                    //.Instance.resourceText.text = "Stored gold: " + infoSelectedEntity.harvestedResourceAmount + "/" + infoSelectedEntity.harvestCapacity;
                 }
             }
             else if (selectedEntities.Count <= 0)
@@ -1622,10 +1623,10 @@ public class RTSPlayer : Player
                 Global.Instance.nameText.text = selectedEntities[0].displayName;
                 Global.Instance.descText.text = selectedEntities[0].desc;
                 Global.Instance.hpText.text = "HP: " + selectedEntities[0].currentHP.Value + "/" + selectedEntities[0].maxHP;
-                if (selectedEntities[0].isHarvester)
+                if (selectedEntities[0].IsHarvester())
                 {
-                    Global.Instance.resourcesParent.SetActive(true);
-                    Global.Instance.resourceText.text = "Stored gold: " + selectedEntities[0].harvestedResourceAmount + "/" + selectedEntities[0].harvestCapacity;
+                    //Global.Instance.resourcesParent.SetActive(true);
+                    //Global.Instance.resourceText.text = "Stored gold: " + selectedEntities[0].harvestedResourceAmount + "/" + selectedEntities[0].harvestCapacity;
                 }
             }
             else
@@ -1784,7 +1785,7 @@ public class RTSPlayer : Player
         return entity != null && ability != null && (entity.fullyBuilt || !ability.usableOnlyWhenBuilt) && entity.net.IsSpawned
             && entity.alive && entity.usableAbilities.Contains(ability)
             && entity.AbilityOffCooldown(ability)
-            && (entity.IsBuilding() || entity.stateMachineController.minionState != StateMachineController.MinionStates.UsingAbility);
+            && (entity.IsBuilding() || entity.stateMachineController.currentState != StateMachineController.EntityStates.UsingAbility);
     }
     public void UpdateBuildQueueGUI()
     {
@@ -2001,7 +2002,7 @@ public class RTSPlayer : Player
             if (potential.occupiedGarrison == null)
             {
                 if ((entity.CanConstruct() && potential.CanConstruct()) ||
-                    (entity.CanHarvest() && potential.CanHarvest()) ||
+                    (entity.IsHarvester() && potential.IsHarvester()) ||
                     (entity.IsFighter() && potential.IsFighter() && entity.IsMelee() && potential.IsMelee()) ||
                     (entity.IsFighter() && potential.IsFighter() && !entity.IsMelee() && !potential.IsMelee()) ||
                     (entity.CannotConstructHarvestProduce() && potential.CannotConstructHarvestProduce() && !entity.IsMinion() && !potential.IsMinion()) ||

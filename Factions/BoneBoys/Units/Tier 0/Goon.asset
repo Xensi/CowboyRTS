@@ -17,7 +17,6 @@ MonoBehaviour:
   prefabToSpawn: {fileID: 2545681379473208697, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
   goldCost: 40
   maxHP: 20
-  isKeystone: 0
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
   shouldHideInFog: 1
@@ -34,11 +33,11 @@ MonoBehaviour:
   usableAbilities: []
   deathEffect: {fileID: 1596140512904530975, guid: 69aadaea41d3f1a4ca6fc402ec2fb2ac, type: 3}
   depositType: 0
-  selfHarvestableType: 1
-  attackType: 0
+  selfHarvestableType: 0
+  attackType: 1
   damage: 0
   directionalAttack: 0
-  attackRange: 1
+  attackRange: 0.75
   attackDuration: 1
   impactTime: 0.5
   areaOfEffectRadius: 1
@@ -47,7 +46,7 @@ MonoBehaviour:
   spawnableAtOnce: 1
   isHarvester: 1
   harvestCapacity: 5
-  depositRange: 1
+  depositRange: 0.75
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0

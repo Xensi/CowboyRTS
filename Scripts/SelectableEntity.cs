@@ -56,6 +56,7 @@ public class SelectableEntity : NetworkBehaviour
 
     //Add on components
     private LootOnDestruction lootOnDestructionComp;
+    [HideInInspector] public Depot depot; //Entities that can be deposited to.
     [HideInInspector] public Ore ore; //Entities that are harvestable for resources
     [HideInInspector] public Harvester harvester; //Entities that can harvest resources
     [HideInInspector] public StateMachineController stateMachineController; //Entities that need to pathfind
@@ -66,10 +67,9 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public bool alive = true;
 
     [HideInInspector] public SelectableEntity occupiedGarrison;
-    [HideInInspector] public bool isBuildIndicator = false;
-    [HideInInspector] public bool tryingToTeleport = false;
-    [HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
-    [HideInInspector] public SelectableEntity interactionTarget;
+    [HideInInspector] public bool isBuildIndicator = false; 
+    //[HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
+    public SelectableEntity interactionTarget;
 
     [HideInInspector] public List<FactionUnit> buildQueue;
     private MeshRenderer[] allMeshes;
@@ -103,15 +103,15 @@ public class SelectableEntity : NetworkBehaviour
     //[SerializeField] 
     private short startingHP = 10; //buildings usually don't start with full HP
     [HideInInspector] public short maxHP = 10;
-    [HideInInspector]
-    public DepositType depositType = DepositType.None;
+    //[HideInInspector]
+    //public DepositType depositType = DepositType.None;
     [HideInInspector]
     public TeamBehavior teamType = TeamBehavior.OwnerTeam;
     [HideInInspector]
     public EntityTypes entityType = EntityTypes.Melee;
     [HideInInspector]
     public bool isHeavy = false; //heavy units can't garrison into pallbearers
-    public bool fullyBuilt = true; //[HideInInspector] 
+    [HideInInspector] public bool fullyBuilt = true; //[HideInInspector] 
     [HideInInspector]
     public bool isKeystone = false;
     public int allowedWorkers = 1; //how many can build/repair/harvest at a time
@@ -137,14 +137,14 @@ public class SelectableEntity : NetworkBehaviour
     public FactionAbility[] usableAbilities { get; set; }
 
     //[Header("Harvester Only")]
-    [HideInInspector]
-    public bool isHarvester = false;
-    [HideInInspector]
-    public int harvestCapacity = 10;
+    //[HideInInspector]
+    //public bool isHarvester = false;
+    //[HideInInspector]
+    //public int harvestCapacity = 10;
 
     //[Header("Resource Only")]
-    [HideInInspector]
-    public ResourceType selfHarvestableType = ResourceType.None;
+    //[HideInInspector]
+    //public ResourceType selfHarvestableType = ResourceType.None;
 
     public List<GarrisonablePosition> garrisonablePositions = new();
     [HideInInspector]
@@ -205,15 +205,20 @@ public class SelectableEntity : NetworkBehaviour
     private int oldHarvestedResourceAmount = 0;
     private void DetectChangeHarvestedResourceAmount()
     {
-        if (harvestedResourceAmount != oldHarvestedResourceAmount)
+        if (!IsHarvester()) return;
+        /*if (harvestedResourceAmount != oldHarvestedResourceAmount)
         {
             oldHarvestedResourceAmount = harvestedResourceAmount;
             //UpdateResourceCollectableMeshes();
-        }
+        }*/
     }
     public bool IsMinion() //Minions typically move around
     {
         return stateMachineController != null && stateMachineController.ai != null;
+    }
+    public bool IsHarvester()
+    {
+        return harvester != null;
     }
     private void Initialize()
     {
@@ -230,6 +235,8 @@ public class SelectableEntity : NetworkBehaviour
         areaEffectors = GetComponentsInChildren<AreaEffector>();
         selectIndicator = GetComponentInChildren<SelectionCircle>();
         if (harvester == null) harvester = GetComponent<Harvester>();
+        ore = GetComponent<Ore>();
+        depot = GetComponent<Depot>();
     }
     private void InitializeEntityInfo()
     {
@@ -248,8 +255,7 @@ public class SelectableEntity : NetworkBehaviour
         constructableBuildings = factionEntity.constructableBuildings;
         usableAbilities = factionEntity.usableAbilities;
         //isKeystone = factionEntity.isKeystone;
-        isHarvester = factionEntity.isHarvester;
-        harvestCapacity = factionEntity.harvestCapacity;
+        //isHarvester = factionEntity.isHarvester;
         spawnableAtOnce = factionEntity.spawnableAtOnce;
         //allowedUnfinishedInteractors = factionEntity.allowedUnfinishedInteractors;
         //allowedFinishedInteractors = factionEntity.allowedFinishedInteractors;
@@ -269,9 +275,9 @@ public class SelectableEntity : NetworkBehaviour
         raisePopulationLimitBy = factionEntity.raisePopulationLimitBy;
         //DIFFERENTIATE BETWEEN BUILDING AND UNIT TYPES
         //entityType = factionEntity.entityType;
-        depositType = factionEntity.depositType;
+        //depositType = factionEntity.depositType;
         teamType = factionEntity.teamType;
-        selfHarvestableType = factionEntity.selfHarvestableType;
+        //selfHarvestableType = factionEntity.selfHarvestableType;
         shouldHideInFog = factionEntity.shouldHideInFog;
 
         if (fogUnit != null) fogUnit.circleRadius = factionEntity.visionRange;
@@ -284,6 +290,11 @@ public class SelectableEntity : NetworkBehaviour
         {
             sounds = new AudioClip[0];
         }
+        if (IsHarvester())
+        {
+            harvester.SetBagSize(factionEntity.harvestCapacity);
+            harvester.depositRange = factionEntity.depositRange; //maybe make this attack range?
+        }
         //Debug.Log("Trying to initialize");
         if (IsMinion())
         {
@@ -291,7 +302,6 @@ public class SelectableEntity : NetworkBehaviour
             stateMachineController.attackType = factionEntity.attackType;
             stateMachineController.directionalAttack = factionEntity.directionalAttack;
             stateMachineController.attackRange = factionEntity.attackRange;
-            stateMachineController.depositRange = factionEntity.depositRange;
             stateMachineController.damage = factionEntity.damage;
             stateMachineController.attackDuration = factionEntity.attackDuration;
             stateMachineController.impactTime = factionEntity.impactTime;
@@ -340,6 +350,10 @@ public class SelectableEntity : NetworkBehaviour
     {
         return currentHP.Value < maxHP;
     }
+    public bool IsOre()
+    {
+        return ore != null;
+    }
     private void Awake() //awake, networkspawn, start; verified through testing
     {
         //Debug.Log("Awake");
@@ -356,10 +370,7 @@ public class SelectableEntity : NetworkBehaviour
 
 
     [HideInInspector] public bool initialized = false;
-    public bool CanHarvest()
-    {
-        return isHarvester;
-    }
+
     public bool IsNotYetBuilt()
     {
         return !fullyBuilt && !isBuildIndicator;
@@ -428,7 +439,7 @@ public class SelectableEntity : NetworkBehaviour
                         playerController.lastSpawnedEntity = this;
                         controllerOfThis = playerController;
 
-                        if (factionEntity.constructableBuildings.Length > 0)
+                        if (factionEntity != null && factionEntity.constructableBuildings.Length > 0)
                         {
                             playerController.ownedBuilders.Add(stateMachineController);
                         }
@@ -629,7 +640,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public bool CannotConstructHarvestProduce()
     {
-        return !CanConstruct() && !CanHarvest() && !CanProduceUnits();
+        return !CanConstruct() && !IsHarvester() && !CanProduceUnits();
     }
 
     //private bool teamRenderersUpdated = false;
@@ -669,7 +680,7 @@ public class SelectableEntity : NetworkBehaviour
                     stateMachineController.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Harvest:
-                    if (isHarvester)
+                    if (IsHarvester())
                     {
                         interactionTarget = rallyTarget;
                         stateMachineController.givenMission = spawnerRallyMission;
@@ -721,7 +732,7 @@ public class SelectableEntity : NetworkBehaviour
         Global.Instance.PlayMinionAbilitySound(this);
         if (stateMachineController != null)
         {
-            stateMachineController.SwitchState(StateMachineController.MinionStates.UsingAbility);
+            stateMachineController.SwitchState(StateMachineController.EntityStates.UsingAbility);
         }
     }
     [HideInInspector] public FactionAbility abilityToUse;
@@ -977,9 +988,9 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void DetectIfShouldDie()
     {
-        if (stateMachineController != null && !alive && stateMachineController.minionState != StateMachineController.MinionStates.Die) //force go to death state
+        if (stateMachineController != null && !alive && stateMachineController.currentState != StateMachineController.EntityStates.Die) //force go to death state
         {
-            stateMachineController.SwitchState(StateMachineController.MinionStates.Die);
+            stateMachineController.SwitchState(StateMachineController.EntityStates.Die);
         }
         if (currentHP.Value <= 0 && constructionBegun && alive) //detect death if "present" in game world ie not ghost/corpse
         {
@@ -1040,7 +1051,7 @@ public class SelectableEntity : NetworkBehaviour
         if (IsSpawned)
         {
             DetectIfShouldDie();
-            if (stateMachineController != null && stateMachineController.minionState == StateMachineController.MinionStates.Die) return; //do not do other things if dead
+            if (stateMachineController != null && stateMachineController.currentState == StateMachineController.EntityStates.Die) return; //do not do other things if dead
             UpdateVisibilityFromFogOfWar();
             DetectIfShouldUnghost();
             DetectIfBuilt();
@@ -1700,11 +1711,7 @@ public class SelectableEntity : NetworkBehaviour
         GameObject game = obj;
         //Destroy(game);
         net.Despawn(game);
-    }
-    public bool IsHarvestable()
-    {
-        return selfHarvestableType != ResourceType.None;
-    }
+    } 
     public void SetRally() //later have this take in a vector3?
     {
         Debug.Log("Setting rally");
@@ -1754,7 +1761,7 @@ public class SelectableEntity : NetworkBehaviour
                 }
                 else if (target.teamType == TeamBehavior.FriendlyNeutral)
                 {
-                    if (target.IsHarvestable())
+                    if (target.IsOre())
                     {
                         rallyMission = RallyMission.Harvest;
                         rallyTarget = target;
@@ -2106,9 +2113,5 @@ public class SelectableEntity : NetworkBehaviour
     public bool CanConstruct()
     {
         return constructableBuildings.Length > 0;
-    }
-    public bool HasResourcesToDeposit()
-    {
-        return harvestedResourceAmount > 0;
-    }
+    } 
 }
