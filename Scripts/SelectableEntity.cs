@@ -5,6 +5,7 @@ using Pathfinding;
 using Pathfinding.RVO;
 using FoW;
 using static TargetedEffects;
+using static UnitAnimator;
 public class SelectableEntity : NetworkBehaviour
 {
     [HideInInspector] public bool fakeSpawn = false;
@@ -51,6 +52,7 @@ public class SelectableEntity : NetworkBehaviour
     #region Hidden
     //Automatically set
     private LootOnDestruction lootComponent;
+    [HideInInspector] public UnitAbilities unitAbilities;
     [HideInInspector] public UnitAnimator unitAnimator; //Entities that can be deposited to.
     [HideInInspector] public Depot depot; //Entities that can be deposited to.
     [HideInInspector] public Ore ore; //Entities that are harvestable for resources
@@ -68,6 +70,31 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector]
     public int raisePopulationLimitBy = 0;
     [HideInInspector] public NetworkObject net;
+    [HideInInspector] public Attacker attacker;
+
+    private void Initialize()
+    {
+        allMeshes = GetComponentsInChildren<MeshRenderer>();
+        if (stateMachineController == null) stateMachineController = GetComponent<StateMachineController>();
+        if (fogUnit == null) fogUnit = GetComponent<FogOfWarUnit>();
+        if (net == null) net = GetComponent<NetworkObject>();
+        if (obstacle == null) obstacle = GetComponentInChildren<NavmeshCut>();
+        if (RVO == null) RVO = GetComponent<RVOController>();
+        if (physicalCollider == null) physicalCollider = GetComponent<Collider>();
+        if (rigid == null) rigid = GetComponent<Rigidbody>();
+        if (lootComponent == null) lootComponent = GetComponent<LootOnDestruction>();
+        if (finishedRendererParent != null) finishedMeshRenderers = finishedRendererParent.GetComponentsInChildren<MeshRenderer>();
+        areaEffectors = GetComponentsInChildren<AreaEffector>();
+        selectIndicator = GetComponentInChildren<SelectionCircle>();
+        if (harvester == null) harvester = GetComponent<Harvester>();
+        ore = GetComponent<Ore>();
+        depot = GetComponent<Depot>();
+        unitAnimator = GetComponent<UnitAnimator>();
+        builder = GetComponent<Builder>();
+        spawner = GetComponent<Spawner>();
+        unitAbilities = GetComponent<UnitAbilities>();
+        attacker = GetComponent<Attacker>();
+    }
 
     //Hidden variables 
     [HideInInspector] public bool isVisibleInFog = false;
@@ -147,7 +174,7 @@ public class SelectableEntity : NetworkBehaviour
     [Header("Building Only")]
     [HideInInspector]
     public Vector3 buildOffset = new Vector3(0.5f, 0, 0.5f); 
-    public FactionAbility[] usableAbilities { get; set; } 
+    //public FactionAbility[] usableAbilities { get; set; } 
 
     [HideInInspector]
     public bool passengersAreTargetable = false;
@@ -205,27 +232,6 @@ public class SelectableEntity : NetworkBehaviour
     {
         return harvester != null;
     }
-    private void Initialize()
-    {
-        allMeshes = GetComponentsInChildren<MeshRenderer>();
-        if (stateMachineController == null) stateMachineController = GetComponent<StateMachineController>();
-        if (fogUnit == null) fogUnit = GetComponent<FogOfWarUnit>();
-        if (net == null) net = GetComponent<NetworkObject>();
-        if (obstacle == null) obstacle = GetComponentInChildren<NavmeshCut>();
-        if (RVO == null) RVO = GetComponent<RVOController>();
-        if (physicalCollider == null) physicalCollider = GetComponent<Collider>();
-        if (rigid == null) rigid = GetComponent<Rigidbody>();
-        if (lootComponent == null) lootComponent = GetComponent<LootOnDestruction>();
-        if (finishedRendererParent != null) finishedMeshRenderers = finishedRendererParent.GetComponentsInChildren<MeshRenderer>();
-        areaEffectors = GetComponentsInChildren<AreaEffector>();
-        selectIndicator = GetComponentInChildren<SelectionCircle>();
-        if (harvester == null) harvester = GetComponent<Harvester>();
-        ore = GetComponent<Ore>();
-        depot = GetComponent<Depot>();
-        unitAnimator = GetComponent<UnitAnimator>();
-        builder = GetComponent<Builder>();
-        spawner = GetComponent<Spawner>();
-    }
     private void InitializeEntityInfo()
     {
         if (factionEntity == null)
@@ -268,25 +274,9 @@ public class SelectableEntity : NetworkBehaviour
         {
             sounds = new AudioClip[0];
         }
-        if (IsHarvester())
-        {
-            harvester.SetBagSize(factionEntity.harvestCapacity);
-            harvester.depositRange = factionEntity.depositRange; //maybe make this attack range?
-        }
+        if (IsHarvester()) harvester.InitHarvester();
         //Debug.Log("Trying to initialize");
-        if (IsMinion())
-        {
-            //Debug.Log("Initializing attack type as " + factionEntity.attackType);
-            stateMachineController.attackType = factionEntity.attackType;
-            stateMachineController.directionalAttack = factionEntity.directionalAttack;
-            stateMachineController.attackRange = factionEntity.attackRange;
-            stateMachineController.damage = factionEntity.damage;
-            stateMachineController.attackDuration = factionEntity.attackDuration;
-            stateMachineController.impactTime = factionEntity.impactTime;
-            stateMachineController.areaOfEffectRadius = factionEntity.areaOfEffectRadius;
-            stateMachineController.shouldAggressivelySeekEnemies = factionEntity.shouldAggressivelySeekEnemies;
-            stateMachineController.attackProjectile = factionEntity.attackProjectilePrefab;
-        }
+        if (IsAttacker()) attacker.InitAttacker();
 
         if (factionEntity is FactionBuilding)
         {
@@ -322,6 +312,10 @@ public class SelectableEntity : NetworkBehaviour
             }*/
         }
         hideModelOnDeath = factionEntity.hideModelOnDeath;
+    }
+    public bool IsAttacker()
+    {
+        return attacker != null;
     }
     public bool fullyBuiltInScene = false; //set to true to override needs constructing value 
     public bool IsDamaged()
@@ -659,6 +653,7 @@ public class SelectableEntity : NetworkBehaviour
                     stateMachineController.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Move:
+                case RallyMission.Attack: 
                     stateMachineController.SetDestination(rallyPoint);
                     stateMachineController.givenMission = spawnerRallyMission;
                     break;
@@ -681,269 +676,12 @@ public class SelectableEntity : NetworkBehaviour
                     interactionTarget = rallyTarget;
                     stateMachineController.givenMission = spawnerRallyMission;
                     break;
-                case RallyMission.Attack:
-                    stateMachineController.targetEnemy = rallyTarget;
-                    stateMachineController.givenMission = spawnerRallyMission;
-                    break;
             }
         }
-    }
-    public bool CanUseAbility(FactionAbility ability)
-    {
-        for (int i = 0; i < usableAbilities.Length; i++)
-        {
-            if (usableAbilities[i].abilityName == ability.abilityName) return true; //if ability is in the used abilities list, then we still need to wait  
-        }
-        return false;
-    }
-    public bool AbilityOffCooldown(FactionAbility ability)
-    {
-        for (int i = 0; i < usedAbilities.Count; i++)
-        {
-            Debug.Log("Checking ability:" + ability.abilityName + "against: " + usedAbilities[i].abilityName);
-            if (usedAbilities[i].abilityName == ability.abilityName) return false; //if ability is in the used abilities list, then we still need to wait  
-        }
-        return true;
     }
     public bool IsBuilding()
     {
         return stateMachineController == null;
-    }
-    public void StartUsingAbility(FactionAbility ability)
-    {
-        abilityToUse = ability;
-        Global.Instance.PlayMinionAbilitySound(this);
-        if (stateMachineController != null)
-        {
-            stateMachineController.SwitchState(StateMachineController.EntityStates.UsingAbility);
-        }
-    }
-    [HideInInspector] public FactionAbility abilityToUse;
-    public void ActivateAbility(FactionAbility ability)
-    {
-        Debug.Log("Activating ability: " + ability.name);
-        List<SelectableEntity> targetedEntities = new();
-        foreach (TargetedEffects effect in ability.effectsToApply)
-        {
-            switch (effect.targets)
-            {
-                case TargetedEffects.Targets.Self:
-                    if (!targetedEntities.Contains(this))
-                    {
-                        targetedEntities.Add(this);
-                    }
-                    break;
-            }
-            foreach (SelectableEntity target in targetedEntities)
-            {
-                //get current variable
-                float variableToChange = 0;
-                float secondVariable = 0;
-                switch (effect.status) //set variable to change;
-                {
-                    case StatusEffect.MoveSpeed:
-                        if (target.stateMachineController != null && target.stateMachineController.ai != null)
-                        {
-                            variableToChange = target.stateMachineController.ai.maxSpeed;
-                        }
-                        break;
-                    case StatusEffect.AttackDuration:
-                        if (target.stateMachineController != null)
-                        {
-                            variableToChange = target.stateMachineController.attackDuration;
-                            secondVariable = target.stateMachineController.impactTime;
-                        }
-                        break;
-                    case StatusEffect.HP:
-                        variableToChange = target.currentHP.Value;
-                        break;
-                }
-                float attackAnimMultiplier = 1;
-                float moveSpeedMultiplier = 1;
-                switch (effect.operation) //apply change to variable
-                {
-                    case TargetedEffects.Operation.Set:
-                        variableToChange = effect.statusNumber;
-                        secondVariable = effect.statusNumber;
-                        break;
-                    case TargetedEffects.Operation.Add:
-                        variableToChange += effect.statusNumber;
-                        secondVariable += effect.statusNumber;
-                        break;
-                    case TargetedEffects.Operation.Multiply:
-                        variableToChange *= effect.statusNumber;
-                        secondVariable *= effect.statusNumber;
-                        attackAnimMultiplier /= effect.statusNumber;
-                        moveSpeedMultiplier *= effect.statusNumber;
-                        break;
-                    case Operation.Divide: //use to halve attackDuration
-                        variableToChange /= effect.statusNumber;
-                        secondVariable /= effect.statusNumber;
-                        attackAnimMultiplier *= effect.statusNumber;
-                        moveSpeedMultiplier /= effect.statusNumber;
-                        break;
-                }
-                switch (effect.status) //set actual variable to new variable
-                {
-                    case TargetedEffects.StatusEffect.MoveSpeed:
-                        if (target.stateMachineController != null && target.stateMachineController.ai != null)
-                        {
-                            target.stateMachineController.ai.maxSpeed = variableToChange;
-                            target.stateMachineController.animator.SetFloat("moveSpeedMultiplier", moveSpeedMultiplier); //if we are halving, double animation speed
-                        }
-                        break;
-                    case TargetedEffects.StatusEffect.AttackDuration:
-                        if (target.stateMachineController != null)
-                        {
-                            target.stateMachineController.attackDuration = variableToChange;
-                            target.stateMachineController.impactTime = secondVariable;
-                            target.stateMachineController.animator.SetFloat("attackMultiplier", attackAnimMultiplier); //if we are halving, double animation speed
-                        }
-                        break;
-                    case StatusEffect.HP:
-                        variableToChange = Mathf.Clamp(variableToChange, 0, maxHP);
-                        currentHP.Value = (short)variableToChange;
-                        Debug.Log("setting hitpoints to: " + variableToChange);
-                        break;
-                    case StatusEffect.CancelInProgress:
-                        //if target is ghost, full refund
-                        //if construction in progress, half refund
-                        if (constructionBegun)
-                        {
-                            Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost / 2);
-                        }
-                        else
-                        {
-                            Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost);
-                        }
-                        target.DestroyThis();
-                        break;
-                    case StatusEffect.DestroyThis:
-                        target.DestroyThis();
-                        break;
-                    case StatusEffect.ToggleGate:
-                        ToggleGate();
-                        break;
-                }
-                if (effect.applyAsLingeringEffect)
-                {
-                    TargetedEffects newEffect = new() //NECESSARY to prevent modifying original class
-                    {
-                        targets = effect.targets,
-                        status = effect.status,
-                        expirationTime = effect.expirationTime,
-                        operation = effect.operation,
-                        statusNumber = effect.statusNumber
-                    };
-                    bool foundMatch = false;
-                    foreach (TargetedEffects item in appliedEffects) //extend matching effects
-                    {
-                        if (item != null && item.status == newEffect.status && item.operation == newEffect.operation
-                            && item.statusNumber == effect.statusNumber && item.expirationTime < newEffect.expirationTime)
-                        {
-                            foundMatch = true;
-                            item.expirationTime = newEffect.expirationTime;
-                            break;
-                        }
-                    }
-                    if (!foundMatch)
-                    {
-                        appliedEffects.Add(newEffect);
-                    }
-                }
-
-                if (!UsedSameNameAbility(ability)) //if this unit has not used this ability already, mark it as used
-                {
-                    AbilityOnCooldown newAbility = new()
-                    {
-                        abilityName = ability.abilityName,
-                        cooldownTime = ability.cooldownTime,
-                        shouldCooldown = ability.shouldCooldown,
-                        visitBuildingToRefresh = ability.visitBuildingToRefresh,
-                    };
-                    usedAbilities.Add(newAbility);
-                }
-            }
-        }
-    }
-    public bool UsedSameNameAbility(FactionAbility ability)
-    {
-        for (int i = 0; i < usedAbilities.Count; i++) //find the ability and set the cooldown
-        {
-            if (usedAbilities[i].abilityName == ability.abilityName)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-    [HideInInspector] public List<AbilityOnCooldown> usedAbilities = new();
-    [HideInInspector] public List<TargetedEffects> appliedEffects = new();
-    private void UpdateUsedAbilities()
-    {
-        for (int i = usedAbilities.Count - 1; i >= 0; i--)
-        {
-            if (usedAbilities[i].shouldCooldown)
-            {
-                usedAbilities[i].cooldownTime -= Time.deltaTime;
-                if (usedAbilities[i].cooldownTime <= 0)
-                {
-                    usedAbilities.RemoveAt(i);
-                }
-            }
-        }
-    }
-    private void UpdateAppliedEffects() //handle expiration of these effects; this implementation may be somewhat slow
-    {
-        for (int i = appliedEffects.Count - 1; i >= 0; i--)
-        {
-            appliedEffects[i].expirationTime -= Time.deltaTime;
-            if (appliedEffects[i].expirationTime <= 0)
-            {
-                ResetVariableFromStatusEffect(appliedEffects[i]);
-                appliedEffects.RemoveAt(i);
-                /*TargetedEffects effect = appliedEffects[i];
-                bool foundAnother = false;
-                foreach (TargetedEffects item in appliedEffects)
-                {
-                    if (item == null || item == appliedEffects[i]) continue;
-                    if (item.status == effect.status)
-                    {
-                        foundAnother = true;
-                        break;
-                    }
-                }
-                //search for another iteration of the same effect. if it doesn't exist, reset the variable
-                if (!foundAnother)
-                { 
-                    ResetVariableFromStatusEffect(effect);
-                } 
-                appliedEffects.RemoveAt(i);*/ 
-            }
-        }
-    }
-    private void ResetVariableFromStatusEffect(TargetedEffects effect) //this will work for now but will not work if multiple buffs are stacked
-    {
-        switch (effect.status)
-        {
-            case TargetedEffects.StatusEffect.MoveSpeed:
-                if (stateMachineController != null && stateMachineController.ai != null)
-                {
-                    stateMachineController.ai.maxSpeed = stateMachineController.defaultMoveSpeed;
-                    stateMachineController.animator.SetFloat("moveSpeedMultiplier", 1); //if we are halving, double animation speed
-                }
-                break;
-            case TargetedEffects.StatusEffect.AttackDuration:
-                if (stateMachineController != null)
-                {
-                    stateMachineController.attackDuration = stateMachineController.defaultAttackDuration;
-                    stateMachineController.impactTime = stateMachineController.defaultImpactTime;
-                    stateMachineController.animator.SetFloat("attackMultiplier", 1);
-                }
-                break;
-            default:
-                break;
-        }
     }
     private void UpdateRallyVariables()
     {
@@ -953,7 +691,7 @@ public class SelectableEntity : NetworkBehaviour
             rallyPoint = rallyTarget.transform.position;
         }
     }
-    bool constructionBegun = false;
+    [HideInInspector] public bool constructionBegun = false;
     private void DetectIfBuilt()
     {
         if (!fullyBuilt && currentHP.Value >= maxHP) //detect if built
@@ -1045,9 +783,78 @@ public class SelectableEntity : NetworkBehaviour
                 UpdateTimers();
                 UpdateAppliedEffects();
                 UpdateUsedAbilities();
+                DetectChangeHarvestedResourceAmount();
                 //DetectIfDamaged();
-                DetectChangeHarvestedResourceAmount(); 
             }
+        }
+    }
+    private void UpdateUsedAbilities()
+    {
+        if (HasAbilities()) unitAbilities.UpdateUsedAbilities();
+    }
+    public bool HasAbilities()
+    {
+        return unitAbilities != null;
+    }
+    public bool CanUseAbility(FactionAbility ability)
+    {
+        return HasAbilities() && unitAbilities.CanUseAbility(ability);
+    } 
+    [HideInInspector] public List<TargetedEffects> appliedEffects = new();
+    private void UpdateAppliedEffects() //handle expiration of these effects; this implementation may be somewhat slow
+    {
+        for (int i = appliedEffects.Count - 1; i >= 0; i--)
+        {
+            appliedEffects[i].expirationTime -= Time.deltaTime;
+            if (appliedEffects[i].expirationTime <= 0)
+            {
+                ResetVariableFromStatusEffect(appliedEffects[i]);
+                appliedEffects.RemoveAt(i);
+                /*TargetedEffects effect = appliedEffects[i];
+                bool foundAnother = false;
+                foreach (TargetedEffects item in appliedEffects)
+                {
+                    if (item == null || item == appliedEffects[i]) continue;
+                    if (item.status == effect.status)
+                    {
+                        foundAnother = true;
+                        break;
+                    }
+                }
+                //search for another iteration of the same effect. if it doesn't exist, reset the variable
+                if (!foundAnother)
+                { 
+                    ResetVariableFromStatusEffect(effect);
+                } 
+                appliedEffects.RemoveAt(i);*/
+            }
+        }
+    }
+    private bool HasUnitAnimator()
+    {
+        return unitAnimator != null;
+    }
+    private void ResetVariableFromStatusEffect(TargetedEffects effect) //this will work for now but will not work if multiple buffs are stacked
+    {
+        switch (effect.status)
+        {
+            case TargetedEffects.StatusEffect.MoveSpeed:
+                if (stateMachineController != null && stateMachineController.ai != null)
+                {
+                    stateMachineController.ai.maxSpeed = stateMachineController.defaultMoveSpeed; 
+                    if (HasUnitAnimator()) unitAnimator.ResetMultiplier(MOVE_SPEED);
+                }
+                break;
+            case TargetedEffects.StatusEffect.AttackDuration:
+                if (IsAttacker())
+                {
+                    attacker.duration = attacker.defaultAttackDuration;
+                    attacker.impactTime = attacker.defaultImpactTime;
+                    if (HasUnitAnimator()) unitAnimator.ResetMultiplier(ATTACK_SPEED);
+                } 
+                break;
+            default:
+                break;
         }
     }
     private void UpdateSelectionCirclePosition()
@@ -1122,8 +929,9 @@ public class SelectableEntity : NetworkBehaviour
     }
     public bool IsMelee()
     {
+        if (!IsAttacker()) return false;
         float maxMeleeRange = 1.5f;
-        if (stateMachineController != null && stateMachineController.attackRange <= maxMeleeRange)
+        if (stateMachineController != null && attacker.range <= maxMeleeRange)
         {
             return true;
         }
@@ -1353,17 +1161,17 @@ public class SelectableEntity : NetworkBehaviour
                 {
                     item.passenger = newPassenger;
                     //newPassenger.transform.parent = item.transform;
-                    newPassenger.entity.occupiedGarrison = this;
+                    newPassenger.ent.occupiedGarrison = this;
                     if (IsOwner)
                     {
-                        newPassenger.entity.isTargetable.Value = passengersAreTargetable;
+                        newPassenger.ent.isTargetable.Value = passengersAreTargetable;
                         /*if (newPassenger.minionNetwork != null)
                         {
                             newPassenger.minionNetwork.verticalPosition.Value = item.transform.position.y;
                         }*/
                     }
                     newPassenger.col.isTrigger = true;
-                    Global.Instance.localPlayer.DeselectSpecific(newPassenger.entity);
+                    Global.Instance.localPlayer.DeselectSpecific(newPassenger.ent);
                     //newPassenger.minionNetwork.positionDifferenceThreshold = .1f;
                     //newPassenger.minionNetwork.ForceUpdatePosition(); //update so that passengers are more in the correct y-position
                     break;
@@ -1378,19 +1186,19 @@ public class SelectableEntity : NetworkBehaviour
             if (item.passenger == exiting)
             {
                 item.passenger = null;
-                exiting.entity.occupiedGarrison = null;
+                exiting.ent.occupiedGarrison = null;
                 if (IsOwner)
                 {
                     exiting.ChangeRVOStatus(true);
-                    exiting.entity.isTargetable.Value = true;
-                    exiting.entity.PlaceOnGround();
+                    exiting.ent.isTargetable.Value = true;
+                    exiting.ent.PlaceOnGround();
                     if (IsServer)
                     {
-                        exiting.entity.PlaceOnGroundClientRpc();
+                        exiting.ent.PlaceOnGroundClientRpc();
                     }
                     else
                     {
-                        exiting.entity.PlaceOnGroundServerRpc();
+                        exiting.ent.PlaceOnGroundServerRpc();
                     }
                 }
                 exiting.col.isTrigger = false;
@@ -1502,7 +1310,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     private bool gateOpenStatus = true;
     private GameObject toggleableObject;
-    private void ToggleGate()
+    public void ToggleGate()
     {
         gateOpenStatus = !gateOpenStatus;
         toggleableObject.SetActive(gateOpenStatus);

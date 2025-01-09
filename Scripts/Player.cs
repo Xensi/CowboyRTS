@@ -115,7 +115,7 @@ public class Player : NetworkBehaviour
     public void CreateEntitySearcherAndAssign(Vector3 position, StateMachineController minion)
     {
         if (minion == null) return;
-        EntitySearcher searcher = CreateEntitySearcherAtPosition(position, minion.entity.controllerOfThis.allegianceTeamID);
+        EntitySearcher searcher = CreateEntitySearcherAtPosition(position, minion.ent.controllerOfThis.allegianceTeamID);
         if (searcher == null) return;
         //if this unit is already assigned to an entity searcher, unassign it
         if (minion.assignedEntitySearcher != null)

@@ -13,16 +13,31 @@ public class UnitAnimator : EntityAddon
     public static string SPAWN = "Spawn";
     public static string WALK = "Walk";
     public static string DIE = "Die";
+    public static string BEGIN_ATTACK_WALK = "AttackWalkStart";
+    public static string CONTINUE_ATTACK_WALK = "AttackWalk";
+    public static string USE_ABILITY = "UseAbility";
+
+    public static string ATTACK_SPEED = "attackSpeedMultiplier";
+    public static string MOVE_SPEED = "moveSpeedMultiplier";
     private Animator animator;
+    
+    public void ResetMultiplier(string str)
+    {
+        animator.SetFloat(str, 1);
+    }
 
     public override void Awake()
     {
         base.Awake();
         animator = GetComponentInChildren<Animator>();
     }
-    public void PlayAnimation(string str)
+    public void Play(string str)
     {
         if (animator != null) animator.Play(str);
+    }
+    public bool InState(string str)
+    {
+        return animator.GetCurrentAnimatorStateInfo(0).IsName(str);
     }
     public bool AnimInProgress()
     {

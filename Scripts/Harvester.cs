@@ -1,19 +1,15 @@
 using FoW;
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using Unity.Netcode;
 using UnityEngine;
 using static StateMachineController;
 using static UnitAnimator;
 public enum ResourceType
 {
-    None,
+    None, All,
     Gold,
     Wood,
-    Cactus
+    Cactus,
 }
 public enum HowToFilterResources
 {
@@ -21,16 +17,20 @@ public enum HowToFilterResources
     AllowResources
 }
 public class Harvester : EntityAddon
-{ 
-    [SerializeField] private int amountToHarvestPerSwing = 1;
-    [HideInInspector] public float depositRange = .75f;
-
+{
+    [SerializeField] private HarvesterSettings harvesterSettings;
     [SerializeField] private List<ResourceType> harvesterBag;
-    [SerializeField] private int harvesterBagSize = 5;
 
-    [SerializeField] private HowToFilterResources howToFilterResources = HowToFilterResources.BanResources;
-    [SerializeField] private List<ResourceType> bannedResources; //Resources we can't harvest
-    [SerializeField] private List<ResourceType> allowedResources; //Resources we can harvest
+    private int bagSize = 5;
+    private int amountToHarvestPerSwing = 1;
+    private float range = .75f;
+    private float impactTime = 0.5f;
+    private float duration = 1;
+    private float readyTimer = 0;
+
+    private bool ready = true;
+      
+    private List<ResourceType> allowedResources; //Resources we can harvest
 
 
     //[SerializeField] private MeshRenderer[] resourceCollectingMeshes; //Add to this array to show meshes that indicate collected resources 
@@ -38,9 +38,33 @@ public class Harvester : EntityAddon
     {
         return target == null || target.depositType == SelectableEntity.DepositType.None;
     }*/
-    public void SetBagSize(int size)
+    public HarvesterSettings GetHarvesterSettings()
     {
-        harvesterBagSize = size;
+        return harvesterSettings;
+    }
+    public void InitHarvester()
+    {
+        bagSize = GetHarvesterSettings().bagSize;
+        amountToHarvestPerSwing = GetHarvesterSettings().amountToHarvestPerSwing;
+        range = GetHarvesterSettings().interactRange;
+        impactTime = GetHarvesterSettings().impactTime;
+        duration = GetHarvesterSettings().duration;
+        allowedResources = GetHarvesterSettings().allowedResources;
+    }
+    public void UpdateReadiness()
+    {
+        if (!ready)
+        {
+            if (readyTimer < Mathf.Clamp(duration - impactTime, 0, 999))
+            {
+                readyTimer += Time.deltaTime;
+            }
+            else
+            {
+                ready = true;
+                readyTimer = 0;
+            }
+        }
     }
     public void WalkToDepot()
     { 
@@ -50,7 +74,7 @@ public class Harvester : EntityAddon
         }
         else
         {
-            if (sm.InRangeOfEntity(ent.interactionTarget, depositRange))
+            if (sm.InRangeOfEntity(ent.interactionTarget, range))
             {
                 SwitchState(EntityStates.Depositing);
             }
@@ -72,17 +96,7 @@ public class Harvester : EntityAddon
         bool val = false;
         if (target != null && target.ore != null && target.alive)
         {
-            switch (howToFilterResources)
-            {
-                case HowToFilterResources.BanResources: //if the target's resource type is not in ban list, that's good
-                    if (!bannedResources.Contains(target.ore.resourceType)) val = true;
-                    break;
-                case HowToFilterResources.AllowResources:
-                    if (allowedResources.Contains(target.ore.resourceType)) val = true;
-                    break;
-                default:
-                    break;
-            }
+            if (allowedResources.Contains(target.ore.resourceType)) val = true;
         }
         return val;
     }
@@ -198,12 +212,8 @@ public class Harvester : EntityAddon
     }
     public bool BagHasSpace()
     {
-        return harvesterBag.Count < harvesterBagSize;
+        return harvesterBag.Count < bagSize;
         //return entity.harvestedResourceAmount >= entity.harvestCapacity;
-    }
-    private void SwitchState(EntityStates state)
-    {
-        if (sm != null) sm.SwitchState(state);
     }
     public void WalkToOre()
     {
@@ -214,7 +224,7 @@ public class Harvester : EntityAddon
         }
         else
         {
-            if (sm.InRangeOfEntity(ent.interactionTarget, sm.attackRange))
+            if (sm.InRangeOfEntity(ent.interactionTarget, range))
             {
                 SwitchState(EntityStates.Harvesting);
             }
@@ -240,23 +250,23 @@ public class Harvester : EntityAddon
             SwitchState(EntityStates.FindInteractable);
             sm.SetLastMajorState(EntityStates.Depositing);
         }
-        else if (sm.InRangeOfEntity(ent.interactionTarget, sm.attackRange)) //target is valid and bag has space
+        else if (sm.InRangeOfEntity(ent.interactionTarget, range)) //target is valid and bag has space
         {
             sm.LookAtTarget(ent.interactionTarget.transform);
-            if (sm.attackReady)
+            if (ready)
             {
-                ent.unitAnimator.PlayAnimation(HARVEST);
+                ent.unitAnimator.Play(HARVEST);
                 //sm.animator.Play("Harvest");
                 if (ent.unitAnimator.AnimInProgress()) //sm.AnimatorUnfinished()
                 {
-                    if (sm.stateTimer < sm.impactTime)
+                    if (sm.stateTimer < impactTime)
                     {
                         sm.stateTimer += Time.deltaTime;
                     }
-                    else if (sm.attackReady) //harvest timer reached impact time
+                    else if (ready) //harvest timer reached impact time
                     {
                         sm.stateTimer = 0;
-                        sm.attackReady = false;
+                        ready = false;
                         //Debug.Log("Harvesting once");
                         HarvestTargetOnce(ent.interactionTarget);
                     }
@@ -337,7 +347,7 @@ public class Harvester : EntityAddon
         {
             int actualHarvested = Mathf.Clamp(amountToHarvestPerSwing, 0, target.currentHP.Value); //max amount we can harvest clamped by hitpoints remaining
             //int diff = entity.harvestCapacity - entity.harvestedResourceAmount;
-            int diff = harvesterBagSize - harvesterBag.Count;
+            int diff = bagSize - harvesterBag.Count;
             actualHarvested = Mathf.Clamp(actualHarvested, 0, diff); //max amount we can harvest clamped by remaining carrying capacity
 
             if (actualHarvested <= 0) return;

@@ -23,14 +23,6 @@ public class FactionEntity : ScriptableObject
     public GameObject deathEffect;  
 
     [Header("Optional Behavior")]
-    [SerializeField, HideInInspector] public StateMachineController.AttackType attackType = StateMachineController.AttackType.None;
-    [SerializeField, HideInInspector] public sbyte damage = 1;
-    [SerializeField, HideInInspector] public bool directionalAttack = false;
-    [SerializeField, HideInInspector] public float attackRange = 1;
-    [SerializeField, HideInInspector] public float attackDuration = 1;
-    [SerializeField, HideInInspector] public float impactTime = 0.5f;
-    [SerializeField, HideInInspector] public float areaOfEffectRadius = 1;
-    [SerializeField, HideInInspector] public bool shouldAggressivelySeekEnemies = false; 
 
     [SerializeField, HideInInspector] public bool isHarvester = false;
     [SerializeField, HideInInspector] public int harvestCapacity = 5;
@@ -39,7 +31,6 @@ public class FactionEntity : ScriptableObject
     [SerializeField, HideInInspector] public bool expandGarrisonOptions = false;
     [SerializeField, HideInInspector] public bool passengersAreTargetable = false;
     [SerializeField, HideInInspector] public bool acceptsHeavy = false;
-    [SerializeField, HideInInspector] public Projectile attackProjectilePrefab;
     public bool hideModelOnDeath = false;
 
     public bool IsHarvester()

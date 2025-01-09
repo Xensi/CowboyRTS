@@ -154,11 +154,11 @@ public class AIPlayer : Player
         List<StateMachineController> fighters = new();
         foreach (StateMachineController item in ownedMinions)
         {
-            if (item != null && item.entity != null && item.entity.factionEntity != null)
+            if (item != null && item.ent != null && item.ent.factionEntity != null)
             {
-                if (item.entity.factionEntity is FactionUnit)
+                if (item.ent.factionEntity is FactionUnit)
                 {
-                    FactionUnit facUnit = item.entity.factionEntity as FactionUnit;
+                    FactionUnit facUnit = item.ent.factionEntity as FactionUnit;
                     if (facUnit != null && facUnit.IsFighter())
                     {
                         fighters.Add(item);
@@ -313,11 +313,11 @@ public class AIPlayer : Player
         StateMachineController scout = null;
         foreach (StateMachineController item in ownedMinions)
         {
-            if (item != null && item.entity != null && item.entity.factionEntity != null && item.currentState == StateMachineController.EntityStates.Idle)
+            if (item != null && item.ent != null && item.ent.factionEntity != null && item.currentState == StateMachineController.EntityStates.Idle)
             {
-                if (item.entity.factionEntity is FactionUnit)
+                if (item.ent.factionEntity is FactionUnit)
                 {
-                    FactionUnit facUnit = item.entity.factionEntity as FactionUnit;
+                    FactionUnit facUnit = item.ent.factionEntity as FactionUnit;
                     if (facUnit != null && facUnit.IsFighter())
                     {
                         scout = item;
@@ -444,7 +444,7 @@ public class AIPlayer : Player
         foreach (StateMachineController minion in ownedMinions)
         {
             if (minion == null) continue;
-            SelectableEntity minionEntity = minion.entity;
+            SelectableEntity minionEntity = minion.ent;
             if (minionEntity == null) continue;
             if (minionEntity.IsBuilder() && !minion.IsCurrentlyBuilding())
             {

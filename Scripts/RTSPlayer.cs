@@ -189,6 +189,7 @@ public class RTSPlayer : Player
     }
     private void SelectedAttackMove()
     {
+        Debug.Log("trying to attack move");
         Vector3 clickedPosition;
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
@@ -370,13 +371,14 @@ public class RTSPlayer : Player
     }
     private void SelectAllAttackers()
     {
+        Debug.Log("trying to select all attackers");
         DeselectAll();
         foreach (StateMachineController item in ownedMinions)
         {
-            if (item != null && item.attackType != StateMachineController.AttackType.None && !IsEntityGarrrisoned(item.entity)
-                && !item.entity.IsSpawner() && !item.entity.IsHarvester())
+            if (item != null && item.attackType != AttackType.None && !IsEntityGarrrisoned(item.ent)
+                && !item.ent.IsSpawner() && !item.ent.IsHarvester())
             {
-                TrySelectEntity(item.entity);
+                TrySelectEntity(item.ent);
             }
         }
     }
@@ -844,7 +846,7 @@ public class RTSPlayer : Player
                 {
                     builderListSelection.Add(item);
                 }
-                else if (item.stateMachineController != null && item.stateMachineController.attackType != StateMachineController.AttackType.None)
+                else if (item.stateMachineController != null && item.stateMachineController.attackType != AttackType.None)
                 {
                     militaryList.Add(item);
                 }
@@ -1661,13 +1663,17 @@ public class RTSPlayer : Player
                     continue;
                 }
                 //get abilities
-                foreach (FactionAbility abilityOption in entity.usableAbilities)
-                {
-                    if ((!abilityOption.usableOnlyWhenBuilt && !entity.fullyBuilt) || (entity.fullyBuilt && abilityOption.usableOnlyWhenBuilt))
+                if (entity.HasAbilities())
+                { 
+                    foreach (FactionAbility abilityOption in entity.unitAbilities.GetAbilities())
                     {
-                        if (!availableAbilities.Contains(abilityOption)) availableAbilities.Add(abilityOption);
+                        if ((!abilityOption.usableOnlyWhenBuilt && !entity.fullyBuilt) || (entity.fullyBuilt && abilityOption.usableOnlyWhenBuilt))
+                        {
+                            if (!availableAbilities.Contains(abilityOption)) availableAbilities.Add(abilityOption);
+                        }
                     }
                 }
+
                 if (!entity.fullyBuilt) continue;
 
                 if (entity.IsSpawner())
@@ -1711,14 +1717,15 @@ public class RTSPlayer : Player
                     {
                         //Debug.Log("can use ability" + ability.name);
                         bool foundAbility = false;
-                        for (int j = 0; j < entity.usedAbilities.Count; j++) //find the ability and set the cooldown
+                        List<AbilityOnCooldown> usedAbilities = entity.unitAbilities.GetUsedAbilities();
+                        for (int j = 0; j < usedAbilities.Count; j++) //find the ability and set the cooldown
                         {
-                            if (entity.usedAbilities[j].abilityName == ability.abilityName) //does the ability match?
+                            if (usedAbilities[j].abilityName == ability.abilityName) //does the ability match?
                             {
                                 foundAbility = true;
-                                if (entity.usedAbilities[j].cooldownTime < cooldown) //is the cooldown lower than the current cooldown?
+                                if (usedAbilities[j].cooldownTime < cooldown) //is the cooldown lower than the current cooldown?
                                 {
-                                    cooldown = entity.usedAbilities[j].cooldownTime;
+                                    cooldown = usedAbilities[j].cooldownTime;
                                     //Debug.Log("found ability");
                                 }
                                 break;
@@ -1774,11 +1781,11 @@ public class RTSPlayer : Player
                 {
                     if (entity.IsMinion())
                     {
-                        entity.StartUsingAbility(ability);
+                        entity.unitAbilities.StartUsingAbility(ability);
                     }
                     else
                     {
-                        entity.ActivateAbility(ability);
+                        entity.unitAbilities.ActivateAbility(ability);
                     }
                 }
             }
@@ -1787,8 +1794,8 @@ public class RTSPlayer : Player
     private bool EntityCanUseAbility(SelectableEntity entity, FactionAbility ability)
     {
         return entity != null && ability != null && (entity.fullyBuilt || !ability.usableOnlyWhenBuilt) && entity.net.IsSpawned
-            && entity.alive && entity.usableAbilities.Contains(ability)
-            && entity.AbilityOffCooldown(ability)
+            && entity.alive && entity.CanUseAbility(ability)
+            && entity.unitAbilities.AbilityOffCooldown(ability)
             && (entity.IsBuilding() || entity.stateMachineController.currentState != StateMachineController.EntityStates.UsingAbility);
     }
     public void UpdateBuildQueueGUI()
@@ -1992,9 +1999,9 @@ public class RTSPlayer : Player
         {
             if (item.passenger != null)
             {
-                if (item.passenger.entity != null)
+                if (item.passenger.ent != null)
                 {
-                    TrySelectEntity(item.passenger.entity);
+                    TrySelectEntity(item.passenger.ent);
                 }
             }
         }

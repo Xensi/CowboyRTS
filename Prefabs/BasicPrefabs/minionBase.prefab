@@ -341,6 +341,7 @@ GameObject:
   - component: {fileID: 2723142034339036790}
   - component: {fileID: 8759861570742728164}
   - component: {fileID: 3066640240260945393}
+  - component: {fileID: 2344885485515939443}
   m_Layer: 7
   m_Name: minionBase
   m_TagString: Untagged
@@ -404,17 +405,43 @@ MonoBehaviour:
   fakeSpawn: 0
   isTargetable:
     m_InternalValue: 0
-  healthBar: {fileID: 6900349819852542005}
-  productionProgressBar: {fileID: 8509637767066359466}
-  factionEntity: {fileID: 0}
+  unitAbilities: {fileID: 0}
   unitAnimator: {fileID: 0}
   depot: {fileID: 0}
   ore: {fileID: 0}
   harvester: {fileID: 0}
   stateMachineController: {fileID: 0}
   builder: {fileID: 0}
-  selected: 0
+  spawner: {fileID: 0}
+  physicalCollider: {fileID: 0}
+  rallyMission: 0
+  rallyTarget: {fileID: 0}
+  consumePopulationAmount: 1
+  raisePopulationLimitBy: 0
   net: {fileID: 4126868118260038068}
+  isVisibleInFog: 0
+  oldVisibleInFog: 0
+  hideFogTeam: 0
+  shouldHideInFog: 1
+  obstacle: {fileID: 0}
+  RVO: {fileID: 0}
+  localTeamNumber: 0
+  desiredTeamNumber: 0
+  clientIDToSpawnUnder: 0
+  aiControlled: 0
+  productionBlocked: 0
+  allPhysicalColliders: []
+  healthBar: {fileID: 6900349819852542005}
+  productionProgressBar: {fileID: 8509637767066359466}
+  factionEntity: {fileID: 0}
+  finishedRendererParent: {fileID: 0}
+  rallyVisual: {fileID: 0}
+  attackEffects: []
+  garrisonablePositions: []
+  targetIndicator: {fileID: 3480814061053556006}
+  lineIndicator: {fileID: 555440906972586300}
+  teamRenderers: []
+  selected: 0
   rallyPoint: {x: 0, y: 0, z: 0}
   alive: 1
   occupiedGarrison: {fileID: 0}
@@ -422,13 +449,6 @@ MonoBehaviour:
   interactionTarget: {fileID: 0}
   buildQueue: []
   unbuiltRenderers: []
-  finishedRendererParent: {fileID: 0}
-  consumePopulationAmount: 1
-  raisePopulationLimitBy: 0
-  rallyMission: 0
-  rallyTarget: {fileID: 0}
-  physicalCollider: {fileID: 0}
-  allPhysicalColliders: []
   displayName: name
   desc: desc
   currentHP:
@@ -444,43 +464,22 @@ MonoBehaviour:
   workersInteracting: []
   othersInteracting: []
   buildOffset: {x: 0.5, y: 0, z: 0.5}
-  spawnableAtOnce: 1
-  spawnableUnits: []
-  garrisonablePositions: []
   passengersAreTargetable: 0
   acceptsHeavy: 0
   positionToSpawnMinions: {fileID: 0}
-  rallyVisual: {fileID: 0}
   sounds:
   - {fileID: 8300000, guid: e12124de62f005543a8b08aff5493439, type: 3}
   - {fileID: 8300000, guid: f44f3479724a08e4e8c995e2f633bbfe, type: 3}
   - {fileID: 8300000, guid: f36c995b0cc52224ebecea1e5b408cfa, type: 3}
-  lineIndicator: {fileID: 555440906972586300}
-  damageableMeshes: []
-  targetIndicator: {fileID: 3480814061053556006}
-  teamRenderers: []
-  obstacle: {fileID: 0}
-  RVO: {fileID: 0}
   teamNumber:
     m_InternalValue: 0
-  localTeamNumber: 0
-  desiredTeamNumber: 0
-  clientIDToSpawnUnder: 0
-  aiControlled: 0
   controllerOfThis: {fileID: 0}
-  isVisibleInFog: 0
-  oldVisibleInFog: 0
-  hideFogTeam: 0
-  shouldHideInFog: 1
-  productionBlocked: 0
   isAttackable: 1
   fullyBuiltInScene: 0
   initialized: 0
-  abilityToUse: {fileID: 0}
-  usedAbilities: []
+  constructionBegun: 0
   appliedEffects: []
   fogUnit: {fileID: 0}
-  attackEffects: []
   spawnerThatSpawnedThis: {fileID: 0}
   infoSelected: 0
 --- !u!114 &1556607826778985850
@@ -801,6 +800,21 @@ MonoBehaviour:
   version: 1073741824
   radius: 0.1
   detail: 10
+--- !u!114 &2344885485515939443
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5353858407141398554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aca534e2af2827745a662480aca7edcd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ent: {fileID: 0}
+  sm: {fileID: 0}
+  attackSettings: {fileID: 11400000, guid: 0c64ee6e364419b43ad7da2e25115b9d, type: 2}
 --- !u!1 &6176451757024125140
 GameObject:
   m_ObjectHideFlags: 0
