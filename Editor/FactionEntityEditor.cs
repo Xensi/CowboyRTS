@@ -19,10 +19,7 @@ public class FactionEntityEditor : Editor
 
     SerializedProperty isHarvester;
     SerializedProperty harvestCapacity;
-    SerializedProperty depositRange;
-
-    SerializedProperty spawnableUnits;
-    SerializedProperty spawnableAtOnce;
+    SerializedProperty depositRange; 
 
     SerializedProperty expandGarrisonOptions;
     SerializedProperty passengersAreTargetable;
@@ -43,10 +40,7 @@ public class FactionEntityEditor : Editor
 
         isHarvester = serializedObject.FindProperty("isHarvester");
         harvestCapacity = serializedObject.FindProperty("harvestCapacity");
-        depositRange = serializedObject.FindProperty("depositRange");
-
-        spawnableUnits = serializedObject.FindProperty("spawnableUnits");
-        spawnableAtOnce = serializedObject.FindProperty("spawnableAtOnce");
+        depositRange = serializedObject.FindProperty("depositRange"); 
 
         expandGarrisonOptions = serializedObject.FindProperty("expandGarrisonOptions");
         passengersAreTargetable = serializedObject.FindProperty("passengersAreTargetable");
@@ -84,13 +78,7 @@ public class FactionEntityEditor : Editor
         { 
             EditorGUILayout.PropertyField(harvestCapacity);
             EditorGUILayout.PropertyField(depositRange);
-        }
-        EditorGUILayout.PropertyField(spawnableUnits);
-        if (spawnableUnits.arraySize > 0)
-        {
-            EditorGUILayout.PropertyField(spawnableAtOnce);
-        }
-
+        } 
         EditorGUILayout.PropertyField(expandGarrisonOptions);
         if (expandGarrisonOptions.boolValue == true)
         { 

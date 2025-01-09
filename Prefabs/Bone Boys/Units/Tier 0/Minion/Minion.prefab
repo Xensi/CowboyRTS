@@ -519,7 +519,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Name
-      value: Goon
+      value: Minion
       objectReference: {fileID: 0}
     - target: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Layer
@@ -591,6 +591,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5937290786610886392}
+    - targetCorrespondingSourceObject: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1063275020254013508}
   m_SourcePrefab: {fileID: 100100000, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
 --- !u!1 &2545681379473208697 stripped
 GameObject:
@@ -609,14 +612,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56589a121fe456b499d356fc4d5c7f84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  harvestRange: 1
-  harvestImpactTime: 1
+  ent: {fileID: 0}
+  sm: {fileID: 0}
   amountToHarvestPerSwing: 1
+  depositRange: 0.75
   harvesterBag: 
   harvesterBagSize: 5
   howToFilterResources: 0
   bannedResources: 
   allowedResources: 
+--- !u!114 &1063275020254013508
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2545681379473208697}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3a141997d546014c8e6c2b8c691ae4a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ent: {fileID: 0}
+  sm: {fileID: 0}
+  buildableOptions: {fileID: 11400000, guid: 42a2e6976a859d343ab4e32c30dd20ed, type: 2}
 --- !u!4 &3734019601761256262 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6541845058422189605, guid: f64a2c01c851079439b715bc7354cf81, type: 3}

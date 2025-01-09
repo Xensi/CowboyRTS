@@ -374,7 +374,7 @@ public class RTSPlayer : Player
         foreach (StateMachineController item in ownedMinions)
         {
             if (item != null && item.attackType != StateMachineController.AttackType.None && !IsEntityGarrrisoned(item.entity)
-                && !item.entity.IsUnitProducer() && !item.entity.IsHarvester())
+                && !item.entity.IsSpawner() && !item.entity.IsHarvester())
             {
                 TrySelectEntity(item.entity);
             }
@@ -385,7 +385,7 @@ public class RTSPlayer : Player
         DeselectAll();
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item != null && item.IsUnitProducer())
+            if (item != null && item.IsSpawner())
             {
                 TrySelectEntity(item);
             }
@@ -426,10 +426,10 @@ public class RTSPlayer : Player
         {
             selectedEntities.Add(entity);
 
-            if (entity.factionEntity.constructableBuildings.Length > 0)
+            /*if (entity.factionEntity.constructableBuildings.Length > 0)
             {
                 selectedBuilders.Add(entity.stateMachineController);
-            }
+            }*/
 
             entity.Select(true);
             val = true;
@@ -848,7 +848,7 @@ public class RTSPlayer : Player
                 {
                     militaryList.Add(item);
                 }
-                else if (item.IsUnitProducer())
+                else if (item.IsSpawner())
                 {
                     productionList.Add(item);
                 }
@@ -1669,19 +1669,23 @@ public class RTSPlayer : Player
                     }
                 }
                 if (!entity.fullyBuilt) continue;
-                //get spawnable units
-                foreach (FactionUnit unitOption in entity.spawnableUnits)
+
+                if (entity.IsSpawner())
                 {
-                    if (!availableUnitSpawns.Contains(unitOption)) availableUnitSpawns.Add(unitOption);
-                }
-                //get constructable buildings
-                foreach (FactionBuilding buildingOption in entity.constructableBuildings)
-                {
-                    if (!availableConstructionOptions.Contains(buildingOption)) availableConstructionOptions.Add(buildingOption);
-                }
-                if (entity.spawnableUnits.Length > 0)
-                {
+                    //get spawnable units
+                    foreach (FactionUnit unitOption in entity.spawner.GetSpawnables())
+                    {
+                        if (!availableUnitSpawns.Contains(unitOption)) availableUnitSpawns.Add(unitOption);
+                    }
                     Global.Instance.ChangeRallyPointButton(true);
+                } 
+                if (entity.IsBuilder())
+                { 
+                    //get constructable buildings
+                    foreach (FactionBuilding buildingOption in entity.builder.GetBuildables())
+                    {
+                        if (!availableConstructionOptions.Contains(buildingOption)) availableConstructionOptions.Add(buildingOption);
+                    }
                 }
             }
         }
@@ -1794,7 +1798,7 @@ public class RTSPlayer : Player
 
         SelectableEntity selectedProductionEntity = selectedEntities[0];
         //only works if is production structure, fully built, and spawned
-        if (!selectedProductionEntity.IsUnitProducer() || !selectedProductionEntity.fullyBuilt || !selectedProductionEntity.net.IsSpawned) return;
+        if (!selectedProductionEntity.IsSpawner() || !selectedProductionEntity.fullyBuilt || !selectedProductionEntity.net.IsSpawned) return;
 
         Global.Instance.queueParent.gameObject.SetActive(true);
         int num = Mathf.Clamp(selectedProductionEntity.buildQueue.Count, 0, Global.Instance.queueButtons.Count);
@@ -1885,9 +1889,9 @@ public class RTSPlayer : Player
     }
     private bool TargetCanSpawnThisEntity(SelectableEntity target, FactionEntity entity)
     {
-        for (int i = 0; i < target.spawnableUnits.Length; i++)
+        for (int i = 0; i < target.spawner.GetSpawnables().Length; i++)
         {
-            if (target.spawnableUnits[i].productionName == entity.productionName) return true;
+            if (target.spawner.GetSpawnables()[i].productionName == entity.productionName) return true;
         }
         return false;
     }
@@ -2006,7 +2010,7 @@ public class RTSPlayer : Player
                     (entity.IsFighter() && potential.IsFighter() && entity.IsMelee() && potential.IsMelee()) ||
                     (entity.IsFighter() && potential.IsFighter() && !entity.IsMelee() && !potential.IsMelee()) ||
                     (entity.CannotConstructHarvestProduce() && potential.CannotConstructHarvestProduce() && !entity.IsMinion() && !potential.IsMinion()) ||
-                    (entity.IsUnitProducer() && potential.IsUnitProducer()))
+                    (entity.IsSpawner() && potential.IsSpawner()))
                 {
                     TrySelectEntity(potential);
                 }

@@ -331,6 +331,7 @@ GameObject:
   - component: {fileID: 4126868118260038068}
   - component: {fileID: 1420444146532106229}
   - component: {fileID: 1556607826778985850}
+  - component: {fileID: 4741331578809617205}
   - component: {fileID: 7586105387906439370}
   - component: {fileID: 1965146877331169390}
   - component: {fileID: 4721624654941951496}
@@ -340,7 +341,6 @@ GameObject:
   - component: {fileID: 2723142034339036790}
   - component: {fileID: 8759861570742728164}
   - component: {fileID: 3066640240260945393}
-  - component: {fileID: 4741331578809617205}
   m_Layer: 7
   m_Name: minionBase
   m_TagString: Untagged
@@ -412,6 +412,7 @@ MonoBehaviour:
   ore: {fileID: 0}
   harvester: {fileID: 0}
   stateMachineController: {fileID: 0}
+  builder: {fileID: 0}
   selected: 0
   net: {fileID: 4126868118260038068}
   rallyPoint: {x: 0, y: 0, z: 0}
@@ -445,7 +446,6 @@ MonoBehaviour:
   buildOffset: {x: 0.5, y: 0, z: 0.5}
   spawnableAtOnce: 1
   spawnableUnits: []
-  constructableBuildings: []
   garrisonablePositions: []
   passengersAreTargetable: 0
   acceptsHeavy: 0
@@ -554,6 +554,20 @@ MonoBehaviour:
   lastCommand:
     m_InternalValue: 0
   sqrDistToTargetEnemy: Infinity
+--- !u!114 &4741331578809617205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5353858407141398554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6457ea62977e4847988e0ca65099a2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ent: {fileID: 0}
+  sm: {fileID: 0}
 --- !u!54 &7586105387906439370
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -787,20 +801,6 @@ MonoBehaviour:
   version: 1073741824
   radius: 0.1
   detail: 10
---- !u!114 &4741331578809617205
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5353858407141398554}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b6457ea62977e4847988e0ca65099a2a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  entity: {fileID: 0}
-  sm: {fileID: 0}
 --- !u!1 &6176451757024125140
 GameObject:
   m_ObjectHideFlags: 0

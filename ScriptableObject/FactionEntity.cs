@@ -18,18 +18,9 @@ public class FactionEntity : ScriptableObject
     //public AudioClip[] sounds;
     public UnitSoundsProfile soundProfile;
     public SelectableEntity.TeamBehavior teamType = SelectableEntity.TeamBehavior.OwnerTeam;
-    //public SelectableEntity.EntityTypes entityType = SelectableEntity.EntityTypes.Generic;
+    //public SelectableEntity.EntityTypes entityType = SelectableEntity.EntityTypes.Generic; 
 
-    public FactionBuilding[] constructableBuildings;
-    public FactionAbility[] usableAbilities;
-
-    public GameObject deathEffect;
-
-    [Header("Depot Behavior")]
-    public SelectableEntity.DepositType depositType = SelectableEntity.DepositType.None; //resources depot accepts
-    [Header("Resource Behavior")]
-    public ResourceType selfHarvestableType = ResourceType.None; //ore type
-
+    public GameObject deathEffect;  
 
     [Header("Optional Behavior")]
     [SerializeField, HideInInspector] public StateMachineController.AttackType attackType = StateMachineController.AttackType.None;
@@ -39,10 +30,7 @@ public class FactionEntity : ScriptableObject
     [SerializeField, HideInInspector] public float attackDuration = 1;
     [SerializeField, HideInInspector] public float impactTime = 0.5f;
     [SerializeField, HideInInspector] public float areaOfEffectRadius = 1;
-    [SerializeField, HideInInspector] public bool shouldAggressivelySeekEnemies = false;
-
-    [SerializeField, HideInInspector] public FactionUnit[] spawnableUnits;
-    [SerializeField, HideInInspector] public int spawnableAtOnce = 1; //how many build queue units can be spawned at once
+    [SerializeField, HideInInspector] public bool shouldAggressivelySeekEnemies = false; 
 
     [SerializeField, HideInInspector] public bool isHarvester = false;
     [SerializeField, HideInInspector] public int harvestCapacity = 5;
@@ -57,14 +45,5 @@ public class FactionEntity : ScriptableObject
     public bool IsHarvester()
     {
         return isHarvester;
-    }
-    public bool IsSpawner()
-    {
-        return spawnableUnits.Length > 0;
-    }
-    public bool IsPopulationAdder()
-    {
-        return raisePopulationLimitBy > 0;
-    }
-
+    }  
 }

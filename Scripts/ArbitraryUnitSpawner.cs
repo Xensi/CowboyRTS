@@ -5,7 +5,7 @@ using Unity.Netcode;
 using Unity.Services.Lobbies.Models;
 using UnityEngine; 
 
-public class UnitSpawner : NetworkBehaviour
+public class ArbitraryUnitSpawner : NetworkBehaviour
 {
     [SerializeField] private bool shouldSetAIDecisionTimerOnSpawn = false;
     [SerializeField] private float setTimerOnSpawnValue = 1;

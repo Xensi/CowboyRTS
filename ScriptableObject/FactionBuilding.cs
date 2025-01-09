@@ -14,4 +14,7 @@ public class FactionBuilding : FactionEntity
     {
         Generic, //default  
     }
+    [Header("AI Only")]
+    public bool isSpawner = false;
+    public bool isPopAdder = false;
 }

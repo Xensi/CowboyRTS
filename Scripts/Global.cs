@@ -84,7 +84,7 @@ public class Global : NetworkBehaviour
     public GameObject popFullWarning;
 
     public TMP_Text reinforcementText;
-    public UnitSpawner unitSpawnerToTrackReinforcements;
+    public ArbitraryUnitSpawner unitSpawnerToTrackReinforcements;
     public TMP_Text levelObjective;
     //Minion sound profile mapping:
     // 0: spawn

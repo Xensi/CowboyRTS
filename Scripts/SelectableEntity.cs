@@ -49,51 +49,75 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public NetworkVariable<bool> isTargetable = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
     #region Hidden
-
-    public EntityHealthBar healthBar;
-    public EntityHealthBar productionProgressBar;
-    public FactionEntity factionEntity;
-
-    //Add on components
+    //Automatically set
     private LootOnDestruction lootComponent;
     [HideInInspector] public UnitAnimator unitAnimator; //Entities that can be deposited to.
     [HideInInspector] public Depot depot; //Entities that can be deposited to.
     [HideInInspector] public Ore ore; //Entities that are harvestable for resources
     [HideInInspector] public Harvester harvester; //Entities that can harvest resources
     [HideInInspector] public StateMachineController stateMachineController; //Entities that need to pathfind
+    [HideInInspector] public Builder builder; //Entities that need to pathfind
+    [HideInInspector] public Spawner spawner;
+    private MeshRenderer[] allMeshes;
+    private MeshRenderer[] finishedMeshRenderers;
+    [HideInInspector] public Collider physicalCollider; 
+    [HideInInspector] public RallyMission rallyMission;
+    [HideInInspector] public SelectableEntity rallyTarget;
+    [HideInInspector]
+    public int consumePopulationAmount = 1;
+    [HideInInspector]
+    public int raisePopulationLimitBy = 0;
+    [HideInInspector] public NetworkObject net;
+
+    //Hidden variables 
+    [HideInInspector] public bool isVisibleInFog = false;
+    [HideInInspector] public bool oldVisibleInFog = false;
+    [HideInInspector] public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
+    [HideInInspector] public bool shouldHideInFog = true; // gold should not be hidden 
+    [HideInInspector] public NavmeshCut obstacle;
+    [HideInInspector] public RVOController RVO;
+    [HideInInspector] public int localTeamNumber = 0;
+    [HideInInspector] public sbyte desiredTeamNumber = 0; //only matters if negative
+    [HideInInspector] public byte clientIDToSpawnUnder = 0;
+    [HideInInspector] public bool aiControlled = false;
+    [HideInInspector] public bool productionBlocked = false;
+    [HideInInspector] public Collider[] allPhysicalColliders;
+
+    [Header ("Must Be Manually Set")]
+    public EntityHealthBar healthBar;
+    public EntityHealthBar productionProgressBar;
+    public FactionEntity factionEntity;
+    [SerializeField] private GameObject finishedRendererParent;
+    [SerializeField] private GameObject rallyVisual;
+    //[SerializeField] private MeshRenderer[] damageableMeshes;
+    public MeshRenderer[] attackEffects;
+    public List<GarrisonablePosition> garrisonablePositions = new();
+    public GameObject targetIndicator;
+    public LineRenderer lineIndicator;
+    public List<MeshRenderer> teamRenderers;
+
+    //Add on components
 
     [HideInInspector] public bool selected = false;
-    [HideInInspector] public NetworkObject net;
     [HideInInspector] public Vector3 rallyPoint;
     [HideInInspector] public bool alive = true;
 
     [HideInInspector] public SelectableEntity occupiedGarrison;
-    [HideInInspector] public bool isBuildIndicator = false; 
+    [HideInInspector] public bool isBuildIndicator = false;
     //[HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
+
+    [Header("Debug")]
     public SelectableEntity interactionTarget;
 
     [HideInInspector] public List<FactionUnit> buildQueue;
-    private MeshRenderer[] allMeshes;
-    [SerializeField] private MeshRenderer[] unbuiltRenderers;
-    [SerializeField] private GameObject finishedRendererParent;
-    private MeshRenderer[] finishedMeshRenderers;
-
+    [SerializeField] private MeshRenderer[] unbuiltRenderers; 
     private AreaEffector[] areaEffectors;
     //when fog of war changes, check if we should hide or show attack effects
     private bool damaged = false;
     private readonly int delay = 50;
     private int count = 0;
-    [HideInInspector]
-    public int consumePopulationAmount = 1;
-    [HideInInspector]
-    public int raisePopulationLimitBy = 0;
     #endregion
     #region Variables
-
-    [HideInInspector] public RallyMission rallyMission;
-    [HideInInspector] public SelectableEntity rallyTarget;
-    public Collider physicalCollider;
-    public Collider[] allPhysicalColliders;
     [Header("Behavior Settings")]
     [HideInInspector] public string displayName = "name";
     //[TextArea(2, 4)]
@@ -122,32 +146,9 @@ public class SelectableEntity : NetworkBehaviour
 
     [Header("Building Only")]
     [HideInInspector]
-    public Vector3 buildOffset = new Vector3(0.5f, 0, 0.5f);
+    public Vector3 buildOffset = new Vector3(0.5f, 0, 0.5f); 
+    public FactionAbility[] usableAbilities { get; set; } 
 
-    [Header("Builder Only")]
-    [Tooltip("Spawnable units and constructable buildings")]
-    //public List<int> builderEntityIndices; //list of indices that can be built with this builder.    
-    [HideInInspector]
-    public int spawnableAtOnce = 1; //how many minions can be spawned at at time from this unit. 
-
-    [HideInInspector]
-    public FactionUnit[] spawnableUnits;
-    [HideInInspector]
-    public FactionBuilding[] constructableBuildings;
-    //[HideInInspector]
-    public FactionAbility[] usableAbilities { get; set; }
-
-    //[Header("Harvester Only")]
-    //[HideInInspector]
-    //public bool isHarvester = false;
-    //[HideInInspector]
-    //public int harvestCapacity = 10;
-
-    //[Header("Resource Only")]
-    //[HideInInspector]
-    //public ResourceType selfHarvestableType = ResourceType.None;
-
-    public List<GarrisonablePosition> garrisonablePositions = new();
     [HideInInspector]
     public bool passengersAreTargetable = false;
     [HideInInspector]
@@ -156,43 +157,25 @@ public class SelectableEntity : NetworkBehaviour
     public Transform positionToSpawnMinions; //used for buildings
 
     [Header("Aesthetic Settings")]
-    [SerializeField] private GameObject rallyVisual;
     private Material damagedState;
     [HideInInspector] public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
-    public LineRenderer lineIndicator;
-    [SerializeField] private MeshRenderer[] damageableMeshes;
     private SelectionCircle selectIndicator;
-    public GameObject targetIndicator;
-    public List<MeshRenderer> teamRenderers;
-    [HideInInspector] public NavmeshCut obstacle;
-    [HideInInspector] public RVOController RVO;
-    [HideInInspector]
-    public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
+    [HideInInspector] public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); //negative team numbers are AI controlled
 
-    [HideInInspector] public int localTeamNumber = 0;
-
-    [HideInInspector] public sbyte desiredTeamNumber = 0; //only matters if negative
     //set by AI player when spawned in dynamically
     #endregion
     #region NetworkSpawn 
-    [HideInInspector] public byte clientIDToSpawnUnder = 0;
-    [HideInInspector] public bool aiControlled = false;
     private Rigidbody rigid;
     //private bool hasRegisteredRallyMission = false;
     private List<Material> savedMaterials = new();
     public Player controllerOfThis;
 
-    [HideInInspector] public bool isVisibleInFog = false;
-    [HideInInspector] public bool oldVisibleInFog = false;
-    [HideInInspector] public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
-    [HideInInspector] public bool shouldHideInFog = true; // gold should not be hidden
     private bool oneTimeForceUpdateFog = false;
     //[SerializeField]
     private float fogValue;
     //[SerializeField]
     private FogOfWarTeam fow;
-    [HideInInspector] public bool productionBlocked = false;
     public bool isAttackable = true;
 
 
@@ -240,6 +223,8 @@ public class SelectableEntity : NetworkBehaviour
         ore = GetComponent<Ore>();
         depot = GetComponent<Depot>();
         unitAnimator = GetComponent<UnitAnimator>();
+        builder = GetComponent<Builder>();
+        spawner = GetComponent<Spawner>();
     }
     private void InitializeEntityInfo()
     {
@@ -252,14 +237,7 @@ public class SelectableEntity : NetworkBehaviour
         deathEffect = factionEntity.deathEffect;
         displayName = factionEntity.productionName;
         desc = factionEntity.description;
-        maxHP = (short)factionEntity.maxHP;
-
-        spawnableUnits = factionEntity.spawnableUnits;
-        constructableBuildings = factionEntity.constructableBuildings;
-        usableAbilities = factionEntity.usableAbilities;
-        //isKeystone = factionEntity.isKeystone;
-        //isHarvester = factionEntity.isHarvester;
-        spawnableAtOnce = factionEntity.spawnableAtOnce;
+        maxHP = (short)factionEntity.maxHP;  
         //allowedUnfinishedInteractors = factionEntity.allowedUnfinishedInteractors;
         //allowedFinishedInteractors = factionEntity.allowedFinishedInteractors;
         if (garrisonablePositions.Count > 0)
@@ -276,11 +254,8 @@ public class SelectableEntity : NetworkBehaviour
 
         consumePopulationAmount = factionEntity.consumePopulationAmount;
         raisePopulationLimitBy = factionEntity.raisePopulationLimitBy;
-        //DIFFERENTIATE BETWEEN BUILDING AND UNIT TYPES
-        //entityType = factionEntity.entityType;
-        //depositType = factionEntity.depositType;
-        teamType = factionEntity.teamType;
-        //selfHarvestableType = factionEntity.selfHarvestableType;
+        //DIFFERENTIATE BETWEEN BUILDING AND UNIT TYPES 
+        teamType = factionEntity.teamType; 
         shouldHideInFog = factionEntity.shouldHideInFog;
 
         if (fogUnit != null) fogUnit.circleRadius = factionEntity.visionRange;
@@ -348,7 +323,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         hideModelOnDeath = factionEntity.hideModelOnDeath;
     }
-    public bool fullyBuiltInScene = false; //set to true to override needs constructing value
+    public bool fullyBuiltInScene = false; //set to true to override needs constructing value 
     public bool IsDamaged()
     {
         return currentHP.Value < maxHP;
@@ -444,10 +419,10 @@ public class SelectableEntity : NetworkBehaviour
                         playerController.lastSpawnedEntity = this;
                         controllerOfThis = playerController;
 
-                        if (factionEntity != null && factionEntity.constructableBuildings.Length > 0)
+                        /*if (factionEntity != null && factionEntity.constructableBuildings.Length > 0)
                         {
                             playerController.ownedBuilders.Add(stateMachineController);
-                        }
+                        }*/
                         AddToPlayerOwnedLists(controllerOfThis); 
                         if (!fullyBuilt)
                         {
@@ -648,7 +623,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public bool CannotConstructHarvestProduce()
     {
-        return !IsBuilder() && !IsHarvester() && !IsUnitProducer();
+        return !IsBuilder() && !IsHarvester() && !IsSpawner();
     }
 
     //private bool teamRenderersUpdated = false;
@@ -1477,7 +1452,7 @@ public class SelectableEntity : NetworkBehaviour
     private sbyte damagedThreshold;
     private void CheckIfDamaged()
     {
-        if (currentHP.Value <= damagedThreshold)
+        /*if (currentHP.Value <= damagedThreshold)
         {
             damaged = true;
             for (int i = 0; i < damageableMeshes.Length; i++)
@@ -1487,7 +1462,7 @@ public class SelectableEntity : NetworkBehaviour
                     damageableMeshes[i].material = damagedState;
                 }
             }
-        }
+        }*/
     }
     public void RaiseHP(sbyte delta)
     {
@@ -1792,7 +1767,6 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-    public MeshRenderer[] attackEffects;
 
     private readonly float attackEffectDuration = 0.1f;
     public void DisplayAttackEffects()
@@ -1987,10 +1961,10 @@ public class SelectableEntity : NetworkBehaviour
         if (!playerController.ownedEntities.Contains(this)) playerController.ownedEntities.Add(this);
         if (IsMinion() && !playerController.ownedMinions.Contains(stateMachineController)) playerController.ownedMinions.Add(stateMachineController);
 
-        if (factionEntity.constructableBuildings.Length > 0)
+        /*if (factionEntity.constructableBuildings.Length > 0)
         {
             playerController.ownedBuilders.Add(stateMachineController);
-        }
+        }*/
         if (IsNotYetBuilt())
         {
             playerController.unbuiltStructures.Add(this);
@@ -2023,7 +1997,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (rallyVisual != null)
         {
-            if (IsUnitProducer())
+            if (IsSpawner())
             {
                 rallyVisual.transform.position = rallyPoint;
                 rallyVisual.SetActive(val);
@@ -2056,12 +2030,12 @@ public class SelectableEntity : NetworkBehaviour
         infoSelected = val;
         UpdateIndicator(val);
     }
-    public bool IsUnitProducer()
+    public bool IsSpawner()
     {
-        return spawnableUnits.Length > 0;
+        return spawner != null;
     }
     public bool IsBuilder()
     {
-        return constructableBuildings.Length > 0;
+        return builder != null;
     } 
 }

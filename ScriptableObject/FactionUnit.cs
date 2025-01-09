@@ -31,6 +31,6 @@ public class FactionUnit : FactionEntity
     }
     public bool IsFighter()
     {
-        return isHarvester == false && spawnableUnits.Length == 0;
+        return isHarvester == false;
     }
 }

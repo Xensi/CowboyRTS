@@ -189,11 +189,11 @@ public class AIPlayer : Player
             {
                 harvesters++;
             } 
-            if (item.IsUnitProducer())
+            if (item.IsSpawner())
             {
                 spawners++;
             }
-            if (!item.IsUnitProducer() && !item.IsHarvester())
+            if (!item.IsSpawner() && !item.IsHarvester())
             {
                 fighters++;
             }
@@ -448,25 +448,26 @@ public class AIPlayer : Player
             if (minionEntity == null) continue;
             if (minionEntity.IsBuilder() && !minion.IsCurrentlyBuilding())
             {
-                for (int i = 0; i < minionEntity.constructableBuildings.Length; i++) //check if this has a unit we can spawn
+                FactionBuilding[] buildables = minionEntity.builder.GetBuildables();
+                for (int i = 0; i < buildables.Length; i++) //check if this has a unit we can spawn
                 {
-                    FactionBuilding entity = minionEntity.constructableBuildings[i];
-                    if (CanAfford(entity))
+                    FactionBuilding facBuilding = buildables[i];
+                    if (CanAfford(facBuilding))
                     { 
                         switch (desire)
                         {
                             case BuildingDesire.UnitSpawner:
-                                if (entity.IsSpawner())
+                                if (facBuilding.isSpawner)
                                 { 
                                     chosenEntity = minionEntity;
-                                    building = entity;
+                                    building = facBuilding;
                                 }
                                 break; 
                             case BuildingDesire.PopulationAdder:
-                                if (entity.IsPopulationAdder())
+                                if (facBuilding.isPopAdder)
                                 {
                                     chosenEntity = minionEntity;
-                                    building = entity;
+                                    building = facBuilding;
                                 }
                                 break;
                             default:
@@ -523,11 +524,11 @@ public class AIPlayer : Player
     } 
     private void TryToSpawnType(UnitDesire desire)
     { 
-        //pick a unit/building that can spawn units. try to queue up a unit
+        /*//pick a unit/building that can spawn units. try to queue up a unit
         foreach (SelectableEntity item in ownedEntities)
         {
             if (item == null) continue;
-            if (item.IsUnitProducer())
+            if (item.IsSpawner())
             {
                 SelectableEntity chosenEntity = null;
                 FactionUnit unit = null;
@@ -568,7 +569,7 @@ public class AIPlayer : Player
                     chosenEntity.buildQueue.Add(newUnit);
                 }
             }
-        }
+        }*/
     }
      
     public List<SelectableEntity> visibleResources = new();
