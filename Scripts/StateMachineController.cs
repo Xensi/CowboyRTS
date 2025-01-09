@@ -1031,11 +1031,6 @@ public class StateMachineController : NetworkBehaviour
         pathfindingTarget.position = destination;
     }
 
-    private void ResetGoal() //tell the unit to stop attacking from idle; other use cases: stop attack moving
-    {
-        longTermGoal = Goal.None;
-        lastIdlePosition = transform.position;
-    }
 
     public UnitOrder lastOrder = null;
     private bool OrderValid(UnitOrder order)
@@ -1209,20 +1204,7 @@ public class StateMachineController : NetworkBehaviour
                 {
                     GarrisonedSeekEnemies();
                 }
-                float physSearchRange = attackRange;
-                if (IsMelee())
-                {
-                    physSearchRange = Global.Instance.defaultMeleeSearchRange;
-                }
-                SelectableEntity eligibleIdleEnemy = FindEnemyThroughPhysSearch(physSearchRange, RequiredEnemyType.Minion, false);
-                if (eligibleIdleEnemy != null)
-                {
-                    targetEnemy = eligibleIdleEnemy;
-                    longTermGoal = Goal.AttackFromIdle;
-                    lastIdlePosition = transform.position;
-                    SwitchState(EntityStates.WalkToSpecificEnemy);
-                    if (IsMelee()) Debug.Log("trying to target enemy idle");
-                }
+                if (ent.IsAttacker()) ent.attacker.IdleState();
                 break;
             case EntityStates.UsingAbility:
                 if (skipFirstFrame) //neccesary to give animator a chance to catch up
@@ -1322,25 +1304,7 @@ public class StateMachineController : NetworkBehaviour
                 switch (lastMajorState)
                 {
                     case EntityStates.Building:
-                        if (InvalidBuildable(ent.interactionTarget))
-                        {
-                            SwitchState(EntityStates.FindInteractable);
-                        }
-                        else
-                        {
-                            if (InRangeOfEntity(ent.interactionTarget, attackRange))
-                            {
-                                SwitchState(EntityStates.Building);
-                            }
-                            else
-                            {
-                                animator.Play("Walk");
-                                Vector3 closest = ent.interactionTarget.physicalCollider.ClosestPoint(transform.position);
-                                SetDestinationIfHighDiff(closest);
-                                //if (IsOwner) SetDestination(closest);//destination.Value = closest;
-                                /*selectableEntity.interactionTarget.transform.position;*/
-                            }
-                        }
+                        if (ent.IsBuilder()) ent.builder.WalkToBuildable();
                         break;
                     case EntityStates.Harvesting:
                         if (ent.harvester == null) return;
@@ -1378,60 +1342,15 @@ public class StateMachineController : NetworkBehaviour
                 }
                 break;
             case EntityStates.Building:
-                if (InvalidBuildable(ent.interactionTarget) || !InRangeOfEntity(ent.interactionTarget, attackRange))
-                {
-                    SwitchState(EntityStates.FindInteractable);
-                    lastMajorState = EntityStates.Building;
-                }
-                else
-                {
-                    LookAtTarget(ent.interactionTarget.transform);
-                    if (attackReady)
-                    {
-                        animator.Play("Attack");
-
-                        if (AnimatorUnfinished())
-                        {
-                            if (stateTimer < impactTime)
-                            {
-                                stateTimer += Time.deltaTime;
-                            }
-                            else if (attackReady)
-                            {
-                                stateTimer = 0;
-                                attackReady = false;
-                                BuildTarget(ent.interactionTarget);
-                            }
-                        }
-                        else //animation finished
-                        {
-                            SwitchState(EntityStates.AfterBuildCheck);
-                        }
-                    }
-                }
-                break;
-            case EntityStates.AfterBuildCheck:
-                animator.Play("Idle");
-                if (InvalidBuildable(ent.interactionTarget))
-                {
-                    SwitchState(EntityStates.FindInteractable);
-                    lastMajorState = EntityStates.Building;
-                }
-                else
-                {
-                    SwitchState(EntityStates.Building);
-                }
-                break;
-            #region Harvestable  
+                if (ent.IsBuilder()) ent.builder.BuildingState();
+                break;  
             case EntityStates.Harvesting:
                 if (ent.harvester == null) return;
                 ent.harvester.HarvestingState();
                 break; 
             case EntityStates.Depositing:
-                if (ent.harvester == null) return;
-                ent.harvester.DepositingState();
-                break; 
-            #endregion 
+                if (ent.IsHarvester()) ent.harvester.DepositingState();
+                break;  
             #region Garrison
             case EntityStates.Garrisoning:
                 if (ent.interactionTarget == null)
@@ -1470,14 +1389,6 @@ public class StateMachineController : NetworkBehaviour
         //Debug.DrawRay(entity.transform.position, Vector3.up, Color.red, 5);
         Debug.DrawRay(nudgedTargetEnemyStructurePosition, Vector3.up, Color.green, 5);
     } 
-    private bool IsRanged()
-    {
-        return !IsMelee();
-    }
-    private bool IsMelee()
-    {
-        return attackRange < 1.5f && attackType != AttackType.Projectile;
-    }
     /// <summary>
     /// Get the path and show it with lines.
     /// </summary>
@@ -1843,32 +1754,14 @@ public class StateMachineController : NetworkBehaviour
             transform.LookAt(new Vector3(target.position.x, transform.position.y, target.position.z));
         }
     }
-    public Vector3 targetEnemyClosestPoint;
+
+
     public bool InRangeOfEntity(SelectableEntity target, float range)
     {
-        if (target == null) return false;
-        if (target.physicalCollider != null) //get closest point on collider; //this has an issue
-        {
-            Vector3 centerToMax = target.physicalCollider.bounds.center - target.physicalCollider.bounds.max;
-            float boundsFakeRadius = centerToMax.magnitude;
-            float discrepancyThreshold = boundsFakeRadius + .5f;
-            Vector3 closest = target.physicalCollider.ClosestPoint(transform.position);
-            float rawDist = Vector3.Distance(transform.position, target.transform.position);
-            float closestDist = Vector3.Distance(transform.position, closest);
-            if (Mathf.Abs(rawDist - closestDist) > discrepancyThreshold)
-            {
-                return rawDist <= range;
-            }
-            else
-            {
-                return closestDist <= range;
-            }
-        }
-        else //check dist to center
-        {
-            return Vector3.Distance(transform.position, target.transform.position) <= range;
-        }
+        return ent.InRangeOfEntity(target, range);
     }
+
+    public Vector3 targetEnemyClosestPoint;
     [HideInInspector] public bool shouldAggressivelySeekEnemies = true;
     private bool InvalidBuildable(SelectableEntity target)
     {

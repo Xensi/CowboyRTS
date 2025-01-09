@@ -10,7 +10,7 @@ public class AttackSettings : ScriptableObject
     //public bool shouldAggressivelySeekEnemies = false;
     public AttackType attackType = AttackType.Instant;
     public sbyte damage = 1;
-    public float attackRange = 1;
+    public float range = 1;
     public float attackDuration = 1; //How long does it take until the attack is ready again?
     public float impactTime = 0.5f; //When does the attack deal damage/shoot a projectile?
     public float areaOfEffectRadius = 0;

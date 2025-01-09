@@ -679,6 +679,31 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
+    public bool InRangeOfEntity(SelectableEntity target, float range)
+    {
+        if (target == null) return false;
+        if (target.physicalCollider != null) //get closest point on collider; //this has an issue
+        {
+            Vector3 centerToMax = target.physicalCollider.bounds.center - target.physicalCollider.bounds.max;
+            float boundsFakeRadius = centerToMax.magnitude;
+            float discrepancyThreshold = boundsFakeRadius + .5f;
+            Vector3 closest = target.physicalCollider.ClosestPoint(transform.position);
+            float rawDist = Vector3.Distance(transform.position, target.transform.position);
+            float closestDist = Vector3.Distance(transform.position, closest);
+            if (Mathf.Abs(rawDist - closestDist) > discrepancyThreshold)
+            {
+                return rawDist <= range;
+            }
+            else
+            {
+                return closestDist <= range;
+            }
+        }
+        else //check dist to center
+        {
+            return Vector3.Distance(transform.position, target.transform.position) <= range;
+        }
+    }
     public bool IsBuilding()
     {
         return stateMachineController == null;
@@ -931,11 +956,15 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (!IsAttacker()) return false;
         float maxMeleeRange = 1.5f;
-        if (stateMachineController != null && attacker.range <= maxMeleeRange)
+        if (attacker.range <= maxMeleeRange)
         {
             return true;
         }
         return false;
+    }
+    public bool IsRanged()
+    {
+        return !IsMelee();
     }
     [ServerRpc]
     public void ChangeHitPointsServerRpc(sbyte value)
