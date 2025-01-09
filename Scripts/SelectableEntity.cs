@@ -55,7 +55,8 @@ public class SelectableEntity : NetworkBehaviour
     public FactionEntity factionEntity;
 
     //Add on components
-    private LootOnDestruction lootOnDestructionComp;
+    private LootOnDestruction lootComponent;
+    [HideInInspector] public UnitAnimator unitAnimator; //Entities that can be deposited to.
     [HideInInspector] public Depot depot; //Entities that can be deposited to.
     [HideInInspector] public Ore ore; //Entities that are harvestable for resources
     [HideInInspector] public Harvester harvester; //Entities that can harvest resources
@@ -172,6 +173,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public int localTeamNumber = 0;
 
     [HideInInspector] public sbyte desiredTeamNumber = 0; //only matters if negative
+    //set by AI player when spawned in dynamically
     #endregion
     #region NetworkSpawn 
     [HideInInspector] public byte clientIDToSpawnUnder = 0;
@@ -230,13 +232,14 @@ public class SelectableEntity : NetworkBehaviour
         if (RVO == null) RVO = GetComponent<RVOController>();
         if (physicalCollider == null) physicalCollider = GetComponent<Collider>();
         if (rigid == null) rigid = GetComponent<Rigidbody>();
-        if (lootOnDestructionComp == null) lootOnDestructionComp = GetComponent<LootOnDestruction>();
+        if (lootComponent == null) lootComponent = GetComponent<LootOnDestruction>();
         if (finishedRendererParent != null) finishedMeshRenderers = finishedRendererParent.GetComponentsInChildren<MeshRenderer>();
         areaEffectors = GetComponentsInChildren<AreaEffector>();
         selectIndicator = GetComponentInChildren<SelectionCircle>();
         if (harvester == null) harvester = GetComponent<Harvester>();
         ore = GetComponent<Ore>();
         depot = GetComponent<Depot>();
+        unitAnimator = GetComponent<UnitAnimator>();
     }
     private void InitializeEntityInfo()
     {
@@ -383,34 +386,43 @@ public class SelectableEntity : NetworkBehaviour
     {
         return stateMachineController != null;
     }
+    public bool IsDepot()
+    {
+        return depot != null;
+    }
+    private void AddToPlayerOwnedLists(Player player)
+    {
+        player.ownedEntities.Add(this); 
+        if (IsMinion()) player.ownedMinions.Add(stateMachineController);
+        if (IsNotYetBuilt()) player.unbuiltStructures.Add(this);
+        if (IsHarvester()) player.ownedHarvesters.Add(harvester);
+        if (IsDepot()) player.ownedDepots.Add(depot);
+    }
+    private void AddToPlayerOreList(Player player)
+    { 
+        if (IsOre()) player.friendlyOres.Add(ore);
+    }
     public override void OnNetworkSpawn()
     {
         //Debug.Log("NetworkSpawn");
-
         if (lineIndicator != null)
         {
             lineIndicator.enabled = false;
         }
         if (IsOwner)
         {
-            if (controllerOfThis != null) // placed in scene manually
+            if (controllerOfThis != null) // placed in scene manually and AI controlled
             {
                 teamNumber.Value = (sbyte)controllerOfThis.playerTeamID;
                 if (controllerOfThis is AIPlayer)
                 {
                     if (teamType == TeamBehavior.OwnerTeam)
                     {
-                        controllerOfThis.ownedEntities.Add(this);
-
-                        if (IsMinion()) controllerOfThis.ownedMinions.Add(stateMachineController);
-                        if (IsNotYetBuilt())
-                        {
-                            controllerOfThis.unbuiltStructures.Add(this);
-                        }
+                        AddToPlayerOwnedLists(controllerOfThis);
                     }
                 }
             }
-            else //has no controller already
+            else //has no controller already (dynamically spawned, or neutral and placed in manually)
             {
                 if (desiredTeamNumber < 0) //AI controlled
                 {
@@ -419,23 +431,16 @@ public class SelectableEntity : NetworkBehaviour
                     {
                         AIPlayer AIController = Global.Instance.aiPlayers[Mathf.Abs(desiredTeamNumber) - 1];
                         controllerOfThis = AIController;
-                        controllerOfThis.ownedEntities.Add(this);
-                        if (IsMinion()) controllerOfThis.ownedMinions.Add(stateMachineController);
-                        if (IsNotYetBuilt())
-                        {
-                            controllerOfThis.unbuiltStructures.Add(this);
-                        }
+                        AddToPlayerOwnedLists(controllerOfThis);
                     }
                     //fogUnit.enabled = false;
                 }
-                else //player controlled
+                else //player controlled or friendly neutral
                 {
                     teamNumber.Value = (sbyte)OwnerClientId;
                     if (teamType == TeamBehavior.OwnerTeam)
                     {
                         RTSPlayer playerController = Global.Instance.localPlayer;
-                        playerController.ownedEntities.Add(this);
-                        if (IsMinion()) playerController.ownedMinions.Add(stateMachineController);
                         playerController.lastSpawnedEntity = this;
                         controllerOfThis = playerController;
 
@@ -443,14 +448,17 @@ public class SelectableEntity : NetworkBehaviour
                         {
                             playerController.ownedBuilders.Add(stateMachineController);
                         }
-
-                        if (IsNotYetBuilt())
-                        {
-                            playerController.unbuiltStructures.Add(this);
-                        }
+                        AddToPlayerOwnedLists(controllerOfThis); 
                         if (!fullyBuilt)
                         {
                             RequestBuilders();
+                        }
+                    }
+                    else if (teamType == TeamBehavior.FriendlyNeutral)
+                    {
+                        foreach (Player player in Global.Instance.allPlayers)
+                        {
+                            AddToPlayerOreList(player);
                         }
                     }
                 }
@@ -640,7 +648,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public bool CannotConstructHarvestProduce()
     {
-        return !CanConstruct() && !IsHarvester() && !CanProduceUnits();
+        return !IsBuilder() && !IsHarvester() && !IsUnitProducer();
     }
 
     //private bool teamRenderersUpdated = false;
@@ -935,8 +943,7 @@ public class SelectableEntity : NetworkBehaviour
                 { 
                     ResetVariableFromStatusEffect(effect);
                 } 
-                appliedEffects.RemoveAt(i);*/
-
+                appliedEffects.RemoveAt(i);*/ 
             }
         }
     }
@@ -1226,24 +1233,39 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (obstacle != null) obstacle.enabled = false;
     }
+    private void RemoveFromPlayerLists(Player player)
+    {
+        if (player == null) return;
+        player.ownedEntities.Add(this);
+        if (IsMinion())
+        {
+            player.ownedMinions.Add(stateMachineController);
+            player.ownedBuilders.Remove(stateMachineController);
+        }
+        if (IsNotYetBuilt()) player.unbuiltStructures.Add(this);
+        if (IsHarvester()) player.ownedHarvesters.Add(harvester);
+        if (IsOre()) player.friendlyOres.Add(ore);
+        if (IsDepot()) player.ownedDepots.Add(depot);
+    } 
+    private bool IsLoot()
+    {
+        return lootComponent != null;
+    }
+    private new void OnDestroy()
+    {
+        PrepareForEntityDestruction();
+    }
     public void PrepareForEntityDestruction()
     {
-        if (lootOnDestructionComp != null) lootOnDestructionComp.LootForLocalPlayer();
+        if (IsLoot()) lootComponent.LootForLocalPlayer();
         ClearObstacle();
         RemoveFromEnemyLists(); 
         if (healthBar != null) healthBar.Delete();
         if (productionProgressBar != null) productionProgressBar.Delete();
         Global.Instance.allEntities.Remove(this);
-        if (controllerOfThis != null)
-        {
-            controllerOfThis.ownedEntities.Remove(this);
 
-            if (IsMinion())
-            {
-                controllerOfThis.ownedMinions.Remove(stateMachineController);
-                controllerOfThis.ownedBuilders.Remove(stateMachineController);
-            }
-        }
+        RemoveFromPlayerLists(controllerOfThis); 
+
         if (IsOwner)
         {
             FixPopulationOnDeath();
@@ -1444,7 +1466,7 @@ public class SelectableEntity : NetworkBehaviour
         RTSPlayer local = Global.Instance.localPlayer;
         foreach (SelectableEntity item in local.selectedEntities)
         {
-            if (item.CanConstruct())
+            if (item.IsBuilder())
             {
                 //Debug.Log("requesting builder");
                 StateMachineController minion = item.GetComponent<StateMachineController>();
@@ -1984,85 +2006,13 @@ public class SelectableEntity : NetworkBehaviour
         {
             Instantiate(Global.Instance.defaultCaptureEffect, transform.position, Quaternion.identity);
         }
-    }
-    public void UpdateAttackIndicator()
-    {
-        /*if (targetIndicator != null && minionController != null && minionController.targetEnemy != null)
-        {
-            if (alive)
-            {
-                targetIndicator.SetActive(selected);
-                lineIndicator.enabled = selected;
-                if (selected)
-                {
-                    lineIndicator.SetPositions(LineArray(minionController.targetEnemy.transform.position));
-                }
-            }
-            else //disable if dead
-            {
-                targetIndicator.SetActive(false);
-                lineIndicator.enabled = false;
-            }
-        }*/
-    }
+    } 
     private GameObject deathEffect = null;
     public void UpdatePathIndicator(Vector3[] list)
     {
         lineIndicator.positionCount = list.Length;
         lineIndicator.SetPositions(list);
-    }
-    public void UpdateMoveIndicator()
-    {
-        /*if (targetIndicator != null && minionController != null)
-        {
-            if (alive)
-            {
-                targetIndicator.SetActive(selected);
-                lineIndicator.enabled = selected;
-                if (selected)
-                {
-                    lineIndicator.SetPositions(LineArray(minionController.destination.Value));
-                }
-            }
-            else //disable if dead
-            {
-                targetIndicator.SetActive(false);
-                lineIndicator.enabled = false;
-            }
-        }*/
-    }
-    public void UpdateTargetIndicator()
-    {
-        if (targetIndicator != null)
-        {
-            if (alive)
-            {
-                if (stateMachineController != null && stateMachineController.targetEnemy != null)
-                {
-                    targetIndicator.SetActive(selected);
-                    lineIndicator.enabled = selected;
-                    if (selected)
-                    {
-                        targetIndicator.transform.position = new Vector3(stateMachineController.targetEnemy.transform.position.x, 0.05f, stateMachineController.targetEnemy.transform.position.z);
-                        Vector3[] array = new Vector3[lineIndicator.positionCount];
-                        array[0] = transform.position;
-                        array[1] = stateMachineController.targetEnemy.transform.position;
-                        lineIndicator.SetPositions(array);
-                    }
-                } 
-                else
-                {
-                    targetIndicator.SetActive(false);
-                    lineIndicator.enabled = false;
-                }
-            }
-            else
-            {
-                targetIndicator.SetActive(false);
-                lineIndicator.enabled = false;
-            }
-        }
-    }
+    }  
     public void UpdateIndicator(bool val)
     {
         ChangeSelectIndicatorStatus(val);
@@ -2073,7 +2023,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (rallyVisual != null)
         {
-            if (CanProduceUnits())
+            if (IsUnitProducer())
             {
                 rallyVisual.transform.position = rallyPoint;
                 rallyVisual.SetActive(val);
@@ -2106,11 +2056,11 @@ public class SelectableEntity : NetworkBehaviour
         infoSelected = val;
         UpdateIndicator(val);
     }
-    public bool CanProduceUnits()
+    public bool IsUnitProducer()
     {
         return spawnableUnits.Length > 0;
     }
-    public bool CanConstruct()
+    public bool IsBuilder()
     {
         return constructableBuildings.Length > 0;
     } 

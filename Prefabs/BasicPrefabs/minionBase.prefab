@@ -340,6 +340,7 @@ GameObject:
   - component: {fileID: 2723142034339036790}
   - component: {fileID: 8759861570742728164}
   - component: {fileID: 3066640240260945393}
+  - component: {fileID: 4741331578809617205}
   m_Layer: 7
   m_Name: minionBase
   m_TagString: Untagged
@@ -406,15 +407,17 @@ MonoBehaviour:
   healthBar: {fileID: 6900349819852542005}
   productionProgressBar: {fileID: 8509637767066359466}
   factionEntity: {fileID: 0}
-  minionController: {fileID: 0}
+  unitAnimator: {fileID: 0}
+  depot: {fileID: 0}
+  ore: {fileID: 0}
+  harvester: {fileID: 0}
+  stateMachineController: {fileID: 0}
   selected: 0
   net: {fileID: 4126868118260038068}
   rallyPoint: {x: 0, y: 0, z: 0}
   alive: 1
   occupiedGarrison: {fileID: 0}
   isBuildIndicator: 0
-  tryingToTeleport: 0
-  harvestedResourceAmount: 0
   interactionTarget: {fileID: 0}
   buildQueue: []
   unbuiltRenderers: []
@@ -430,7 +433,6 @@ MonoBehaviour:
   currentHP:
     m_InternalValue: 0
   maxHP: 10
-  depositType: 0
   teamType: 0
   entityType: 1
   isHeavy: 0
@@ -444,9 +446,6 @@ MonoBehaviour:
   spawnableAtOnce: 1
   spawnableUnits: []
   constructableBuildings: []
-  isHarvester: 0
-  harvestCapacity: 10
-  selfHarvestableType: 1
   garrisonablePositions: []
   passengersAreTargetable: 0
   acceptsHeavy: 0
@@ -458,7 +457,6 @@ MonoBehaviour:
   - {fileID: 8300000, guid: f36c995b0cc52224ebecea1e5b408cfa, type: 3}
   lineIndicator: {fileID: 555440906972586300}
   damageableMeshes: []
-  resourceCollectingMeshes: []
   targetIndicator: {fileID: 3480814061053556006}
   teamRenderers: []
   obstacle: {fileID: 0}
@@ -484,8 +482,6 @@ MonoBehaviour:
   fogUnit: {fileID: 0}
   attackEffects: []
   spawnerThatSpawnedThis: {fileID: 0}
-  whenTheseEntitiesKilledTriggerBehavior: []
-  triggerBehavior: 0
   infoSelected: 0
 --- !u!114 &1556607826778985850
 MonoBehaviour:
@@ -499,8 +495,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cba2131cba19af4c9d3a513f211d5ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lastState: 0
+  lastMajorState: 0
   entity: {fileID: 0}
+  stateTimer: 0
   attackMoving: 0
   orderedDestination: {x: 0, y: 0, z: 0}
   attackReadyTimer: 0
@@ -513,7 +510,6 @@ MonoBehaviour:
   attackType: 0
   directionalAttack: 0
   attackRange: 1
-  depositRange: 1
   attackEffectSpawnPosition: {fileID: 0}
   damage: 1
   attackDuration: 1
@@ -523,7 +519,7 @@ MonoBehaviour:
   defaultImpactTime: 0
   pathfindingTarget: {fileID: 0}
   areaOfEffectRadius: 1
-  minionState: 10
+  currentState: 10
   givenMission: 0
   rallyPosition: {x: 0, y: 0, z: 0}
   realLocation:
@@ -534,6 +530,7 @@ MonoBehaviour:
   attackTrails: []
   attackMoveDestinationEnemyArray: []
   nonOwnerRealLocationList: []
+  animatorUnfinished: 0
   pathStatusValid: 0
   assignedEntitySearcher: {fileID: 0}
   lastOrder:
@@ -790,6 +787,20 @@ MonoBehaviour:
   version: 1073741824
   radius: 0.1
   detail: 10
+--- !u!114 &4741331578809617205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5353858407141398554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6457ea62977e4847988e0ca65099a2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  entity: {fileID: 0}
+  sm: {fileID: 0}
 --- !u!1 &6176451757024125140
 GameObject:
   m_ObjectHideFlags: 0

@@ -18,6 +18,9 @@ public class Player : NetworkBehaviour
     public List<StateMachineController> ownedMinions;
     public List<SelectableEntity> unbuiltStructures;
     public List<StateMachineController> ownedBuilders;
+    public List<Harvester> ownedHarvesters = new();
+    public List<Depot> ownedDepots = new();
+    public List<Ore> friendlyOres = new();
     public int gold = 100;
     public int population = 0;
     public int maxPopulation = 10;

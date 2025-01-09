@@ -374,7 +374,7 @@ public class RTSPlayer : Player
         foreach (StateMachineController item in ownedMinions)
         {
             if (item != null && item.attackType != StateMachineController.AttackType.None && !IsEntityGarrrisoned(item.entity)
-                && !item.entity.CanProduceUnits() && !item.entity.IsHarvester())
+                && !item.entity.IsUnitProducer() && !item.entity.IsHarvester())
             {
                 TrySelectEntity(item.entity);
             }
@@ -385,7 +385,7 @@ public class RTSPlayer : Player
         DeselectAll();
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item != null && item.CanProduceUnits())
+            if (item != null && item.IsUnitProducer())
             {
                 TrySelectEntity(item);
             }
@@ -396,7 +396,7 @@ public class RTSPlayer : Player
         DeselectAll();
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item != null && item.stateMachineController != null && (item.CanConstruct())) //&& item.canBuild
+            if (item != null && item.stateMachineController != null && (item.IsBuilder())) //&& item.canBuild
             {
                 switch (item.stateMachineController.currentState)
                 {
@@ -840,7 +840,7 @@ public class RTSPlayer : Player
             productionList = new();
             foreach (SelectableEntity item in evaluation)
             {
-                if (item.CanConstruct())
+                if (item.IsBuilder())
                 {
                     builderListSelection.Add(item);
                 }
@@ -848,7 +848,7 @@ public class RTSPlayer : Player
                 {
                     militaryList.Add(item);
                 }
-                else if (item.CanProduceUnits())
+                else if (item.IsUnitProducer())
                 {
                     productionList.Add(item);
                 }
@@ -1794,7 +1794,7 @@ public class RTSPlayer : Player
 
         SelectableEntity selectedProductionEntity = selectedEntities[0];
         //only works if is production structure, fully built, and spawned
-        if (!selectedProductionEntity.CanProduceUnits() || !selectedProductionEntity.fullyBuilt || !selectedProductionEntity.net.IsSpawned) return;
+        if (!selectedProductionEntity.IsUnitProducer() || !selectedProductionEntity.fullyBuilt || !selectedProductionEntity.net.IsSpawned) return;
 
         Global.Instance.queueParent.gameObject.SetActive(true);
         int num = Mathf.Clamp(selectedProductionEntity.buildQueue.Count, 0, Global.Instance.queueButtons.Count);
@@ -2001,12 +2001,12 @@ public class RTSPlayer : Player
         {
             if (potential.occupiedGarrison == null)
             {
-                if ((entity.CanConstruct() && potential.CanConstruct()) ||
+                if ((entity.IsBuilder() && potential.IsBuilder()) ||
                     (entity.IsHarvester() && potential.IsHarvester()) ||
                     (entity.IsFighter() && potential.IsFighter() && entity.IsMelee() && potential.IsMelee()) ||
                     (entity.IsFighter() && potential.IsFighter() && !entity.IsMelee() && !potential.IsMelee()) ||
                     (entity.CannotConstructHarvestProduce() && potential.CannotConstructHarvestProduce() && !entity.IsMinion() && !potential.IsMinion()) ||
-                    (entity.CanProduceUnits() && potential.CanProduceUnits()))
+                    (entity.IsUnitProducer() && potential.IsUnitProducer()))
                 {
                     TrySelectEntity(potential);
                 }

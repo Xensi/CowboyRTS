@@ -10,9 +10,10 @@ using Pathfinding;
 public class Global : NetworkBehaviour
 {
     public static Global Instance { get; private set; }
-
     public readonly string FRIENDLY_ENTITY = "Entity";
     public readonly string ENEMY_ENTITY = "EnemyEntity";
+    public List<SelectableEntity> allEntities = new();
+
 
     public RectTransform selectionRect;
     public List<Material> colors;
@@ -32,7 +33,6 @@ public class Global : NetworkBehaviour
     public GameObject selectedParent;
     public TMP_Text nameText;
     public TMP_Text descText;
-    public List<SelectableEntity> harvestableResources = new();
     public GameObject resourcesParent;
     public TMP_Text resourceText;
     public GameObject gridVisual;
@@ -72,7 +72,6 @@ public class Global : NetworkBehaviour
     public List<Player> allPlayers = new();
     public Grid grid;
 
-    public List<SelectableEntity> allEntities = new();
     //
     //public List<SelectableEntity> enemyMinions = new();
     public Canvas gameCanvas;

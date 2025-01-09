@@ -2,17 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class UnitProducer : MonoBehaviour
-{
-    // Start is called before the first frame update
-    void Start()
+public class UnitProducer : EntityAddon
+{ 
+    public override void Awake()
     {
-        
-    }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    } 
 }

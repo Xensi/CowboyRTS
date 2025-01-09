@@ -189,11 +189,11 @@ public class AIPlayer : Player
             {
                 harvesters++;
             } 
-            if (item.CanProduceUnits())
+            if (item.IsUnitProducer())
             {
                 spawners++;
             }
-            if (!item.CanProduceUnits() && !item.IsHarvester())
+            if (!item.IsUnitProducer() && !item.IsHarvester())
             {
                 fighters++;
             }
@@ -446,7 +446,7 @@ public class AIPlayer : Player
             if (minion == null) continue;
             SelectableEntity minionEntity = minion.entity;
             if (minionEntity == null) continue;
-            if (minionEntity.CanConstruct() && !minion.IsCurrentlyBuilding())
+            if (minionEntity.IsBuilder() && !minion.IsCurrentlyBuilding())
             {
                 for (int i = 0; i < minionEntity.constructableBuildings.Length; i++) //check if this has a unit we can spawn
                 {
@@ -527,7 +527,7 @@ public class AIPlayer : Player
         foreach (SelectableEntity item in ownedEntities)
         {
             if (item == null) continue;
-            if (item.CanProduceUnits())
+            if (item.IsUnitProducer())
             {
                 SelectableEntity chosenEntity = null;
                 FactionUnit unit = null;
@@ -577,14 +577,15 @@ public class AIPlayer : Player
         //Debug.Log("Evaluating visible resources");
         visibleResources.Clear();
         FogOfWarTeam fow = FogOfWarTeam.GetTeam(playerTeamID);
-        foreach (SelectableEntity item in Global.Instance.harvestableResources)
+        //Broken for now TODO
+        /*foreach (SelectableEntity item in Global.Instance.friendlyOres)
         {
             bool visibleInFog = fow.GetFogValue(item.transform.position) < Global.Instance.minFogStrength * 255;
             if (visibleInFog)
             {
                 visibleResources.Add(item);
             }
-        }
+        }*/
     }
     private void UpdateUnbuilt()
     {
@@ -605,7 +606,7 @@ public class AIPlayer : Player
             {
                 foreach (SelectableEntity builder in ownedEntities) //get a builder
                 {
-                    if (builder.stateMachineController != null && builder.CanConstruct() && !builder.stateMachineController.IsCurrentlyBuilding()) //minion
+                    if (builder.stateMachineController != null && builder.IsBuilder() && !builder.stateMachineController.IsCurrentlyBuilding()) //minion
                     {
                         builder.stateMachineController.CommandBuildTarget(building);
                         break;

@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using Unity.Netcode;
 using UnityEngine;
 using static StateMachineController;
-using static UnityEditorInternal.VersionControl.ListControl;
+using static UnitAnimator;
 public enum ResourceType
 {
     None,
@@ -20,10 +20,8 @@ public enum HowToFilterResources
     BanResources,
     AllowResources
 }
-public class Harvester : MonoBehaviour
-{
-    private SelectableEntity entity;
-    private StateMachineController sm;
+public class Harvester : EntityAddon
+{ 
     [SerializeField] private int amountToHarvestPerSwing = 1;
     [HideInInspector] public float depositRange = .75f;
 
@@ -35,12 +33,7 @@ public class Harvester : MonoBehaviour
     [SerializeField] private List<ResourceType> allowedResources; //Resources we can harvest
 
 
-    //[SerializeField] private MeshRenderer[] resourceCollectingMeshes; //Add to this array to show meshes that indicate collected resources
-    private void Awake()
-    {
-        entity = GetComponent<SelectableEntity>();
-        sm = GetComponent<StateMachineController>(); 
-    }
+    //[SerializeField] private MeshRenderer[] resourceCollectingMeshes; //Add to this array to show meshes that indicate collected resources 
     /*private bool InvalidDeposit(SelectableEntity target) //Add a depot class that will have banned resources for depositing
     {
         return target == null || target.depositType == SelectableEntity.DepositType.None;
@@ -51,20 +44,20 @@ public class Harvester : MonoBehaviour
     }
     public void WalkToDepot()
     { 
-        if (!ValidDepositForHarvester(entity.interactionTarget))
+        if (!ValidDepositForHarvester(ent.interactionTarget))
         {
             SwitchState(EntityStates.FindInteractable);
         }
         else
         {
-            if (sm.InRangeOfEntity(entity.interactionTarget, depositRange))
+            if (sm.InRangeOfEntity(ent.interactionTarget, depositRange))
             {
                 SwitchState(EntityStates.Depositing);
             }
             else
             {
                 sm.animator.Play("Walk");
-                Vector3 closest = entity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
+                Vector3 closest = ent.interactionTarget.physicalCollider.ClosestPoint(transform.position);
                 sm.SetDestinationIfHighDiff(closest);
             }
         }
@@ -132,24 +125,24 @@ public class Harvester : MonoBehaviour
     }
     public void FindDepositState()
     { 
-        if (entity.harvester.ValidDepositForHarvester(entity.interactionTarget))
+        if (ent.harvester.ValidDepositForHarvester(ent.interactionTarget))
         {
             SwitchState(EntityStates.WalkToInteractable);
         }
         else
         {
-            entity.interactionTarget = FindClosestDeposit();
+            ent.interactionTarget = FindClosestDeposit();
         }
     }
     public void FindHarvestableState()
     { 
-        if (entity.harvester.ValidOreForHarvester(entity.interactionTarget))
+        if (ent.harvester.ValidOreForHarvester(ent.interactionTarget))
         {
             SwitchState(EntityStates.WalkToInteractable);
         }
         else
         {
-            entity.interactionTarget = FindClosestHarvestable();
+            ent.interactionTarget = FindClosestHarvestable();
         }
     }
     /// <summary>
@@ -159,13 +152,14 @@ public class Harvester : MonoBehaviour
     private SelectableEntity FindClosestHarvestable()
     {
         //Debug.Log("Finding closest harvestable");
-        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)entity.controllerOfThis.playerTeamID);
-        List<SelectableEntity> list = Global.Instance.harvestableResources;
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)ent.controllerOfThis.playerTeamID);
+        List<Ore> oreList = ent.controllerOfThis.friendlyOres;
 
         SelectableEntity closest = null;
         float distance = Mathf.Infinity;
-        foreach (SelectableEntity item in list)
+        foreach (Ore ore in oreList)
         {
+            SelectableEntity item = ore.GetEntity();
             if (item != null && item.alive && fow.GetFogValue(item.transform.position) <= 0.5 * 255) //item is visible to some degree
             {
                 if (item.workersInteracting.Count < item.allowedWorkers) //there is space for a new harvester
@@ -183,12 +177,13 @@ public class Harvester : MonoBehaviour
     }
     private SelectableEntity FindClosestDeposit() //right now resource agnostic
     {
-        List<SelectableEntity> list = entity.controllerOfThis.ownedEntities;
+        List<Depot> list = ent.controllerOfThis.ownedDepots;
 
         SelectableEntity closest = null;
         float distance = Mathf.Infinity;
-        foreach (SelectableEntity item in list)
+        foreach (Depot depot in list)
         {
+            SelectableEntity item = depot.GetEntity();
             if (item != null && item.fullyBuilt && item.alive && ValidDepositForHarvester(item))
             { 
                 float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position); //faster than .distance
@@ -213,20 +208,20 @@ public class Harvester : MonoBehaviour
     public void WalkToOre()
     {
         if (sm == null) return;
-        if (!ValidOreForHarvester(entity.interactionTarget))
+        if (!ValidOreForHarvester(ent.interactionTarget))
         {
             SwitchState(EntityStates.FindInteractable);
         }
         else
         {
-            if (sm.InRangeOfEntity(entity.interactionTarget, sm.attackRange))
+            if (sm.InRangeOfEntity(ent.interactionTarget, sm.attackRange))
             {
                 SwitchState(EntityStates.Harvesting);
             }
             else
             {
                 sm.animator.Play("Walk");
-                Vector3 closest = entity.interactionTarget.physicalCollider.ClosestPoint(transform.position);
+                Vector3 closest = ent.interactionTarget.physicalCollider.ClosestPoint(transform.position);
                 sm.SetDestinationIfHighDiff(closest);
             }
         }
@@ -235,7 +230,7 @@ public class Harvester : MonoBehaviour
     public void HarvestingState()
     {
         if (sm == null) return;
-        if (!ValidOreForHarvester(entity.interactionTarget)) //invalid ore
+        if (!ValidOreForHarvester(ent.interactionTarget)) //invalid ore
         {
             SwitchState(EntityStates.FindInteractable);
             sm.SetLastMajorState(EntityStates.Harvesting);
@@ -245,13 +240,14 @@ public class Harvester : MonoBehaviour
             SwitchState(EntityStates.FindInteractable);
             sm.SetLastMajorState(EntityStates.Depositing);
         }
-        else if (sm.InRangeOfEntity(entity.interactionTarget, sm.attackRange)) //target is valid and bag has space
+        else if (sm.InRangeOfEntity(ent.interactionTarget, sm.attackRange)) //target is valid and bag has space
         {
-            sm.LookAtTarget(entity.interactionTarget.transform);
+            sm.LookAtTarget(ent.interactionTarget.transform);
             if (sm.attackReady)
             {
-                sm.animator.Play("Harvest");
-                if (sm.AnimatorUnfinished())
+                ent.unitAnimator.PlayAnimation(HARVEST);
+                //sm.animator.Play("Harvest");
+                if (ent.unitAnimator.AnimInProgress()) //sm.AnimatorUnfinished()
                 {
                     if (sm.stateTimer < sm.impactTime)
                     {
@@ -261,13 +257,13 @@ public class Harvester : MonoBehaviour
                     {
                         sm.stateTimer = 0;
                         sm.attackReady = false;
-                        Debug.Log("Harvesting once");
-                        HarvestTargetOnce(entity.interactionTarget);
+                        //Debug.Log("Harvesting once");
+                        HarvestTargetOnce(ent.interactionTarget);
                     }
                 }
                 else
                 {
-                    Debug.Log("Finished harvesting");
+                    //Debug.Log("Finished harvesting");
                     //SwitchState(EntityStates.AfterHarvestCheck);
                     AfterHarvestCheck();
                 }
@@ -286,7 +282,7 @@ public class Harvester : MonoBehaviour
             SwitchState(EntityStates.FindInteractable);
             sm.SetLastMajorState(EntityStates.Depositing);
         }
-        else if (ValidOreForHarvester(entity.interactionTarget)) //keep harvesting if valid harvestable
+        else if (ValidOreForHarvester(ent.interactionTarget)) //keep harvesting if valid harvestable
         {
             SwitchState(EntityStates.Harvesting);
         }
@@ -298,30 +294,30 @@ public class Harvester : MonoBehaviour
     } 
     public void DepositingState()
     {
-        if (!ValidDepositForHarvester(entity.interactionTarget))
+        if (!ValidDepositForHarvester(ent.interactionTarget))
         {
             SwitchState(EntityStates.FindInteractable); 
             sm.SetLastMajorState(EntityStates.Depositing);
         }
         else
         {
-            sm.LookAtTarget(entity.interactionTarget.transform);
+            sm.LookAtTarget(ent.interactionTarget.transform);
             //anim.Play("Attack"); //replace with deposit animation
             //Defaults to instant dropoff, but can take time
-            if (entity != null)
+            if (ent != null)
             {
                 //TODO: add to resources based on stuff in bag
 
                 //entity.controllerOfThis.gold += entity.harvestedResourceAmount;
                 //entity.harvestedResourceAmount = 0;
                 harvesterBag.Clear();
-                if (entity.controllerOfThis is RTSPlayer)
+                if (ent.controllerOfThis is RTSPlayer)
                 {
-                    RTSPlayer rts = entity.controllerOfThis as RTSPlayer;
+                    RTSPlayer rts = ent.controllerOfThis as RTSPlayer;
                     rts.UpdateGUIFromSelections();
                 }
             } 
-            if (entity.harvester.ValidOreForHarvester(entity.interactionTarget))//double check this behavior
+            if (ent.harvester.ValidOreForHarvester(ent.interactionTarget))//double check this behavior
             {
                 SwitchState(EntityStates.WalkToInteractable);
                 sm.SetLastMajorState(EntityStates.Harvesting); 
@@ -336,7 +332,7 @@ public class Harvester : MonoBehaviour
     public void HarvestTargetOnce(SelectableEntity target)
     {
         //Debug.Log("Harvesting Target Once");
-        entity.SimplePlaySound(1); //play impact sound 
+        ent.SimplePlaySound(1); //play impact sound 
         if (target != null && target.IsSpawned && target.IsOre())
         {
             int actualHarvested = Mathf.Clamp(amountToHarvestPerSwing, 0, target.currentHP.Value); //max amount we can harvest clamped by hitpoints remaining
@@ -346,7 +342,7 @@ public class Harvester : MonoBehaviour
 
             if (actualHarvested <= 0) return;
 
-            if (entity.IsServer)
+            if (ent.IsServer)
             {
                 target.Harvest((sbyte)amountToHarvestPerSwing);
             }
@@ -360,9 +356,9 @@ public class Harvester : MonoBehaviour
 
             //entity.harvestedResourceAmount += actualHarvested; //add to harvested resources
 
-            if (entity.controllerOfThis is RTSPlayer)
+            if (ent.controllerOfThis is RTSPlayer)
             {
-                RTSPlayer rts = entity.controllerOfThis as RTSPlayer;
+                RTSPlayer rts = ent.controllerOfThis as RTSPlayer;
                 rts.UpdateGUIFromSelections();
             }
         }

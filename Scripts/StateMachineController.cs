@@ -86,7 +86,7 @@ public class StateMachineController : NetworkBehaviour
     [HideInInspector] public AIPath ai;
     [HideInInspector] public Collider col;
     [HideInInspector] private Rigidbody rigid;
-    [HideInInspector] public Animator animator;
+    [HideInInspector] public Animator animator; //comment this out soon
     public SelectableEntity targetEnemy;
     [HideInInspector] public MinionNetwork minionNetwork;
     bool playedAttackMoveSound = false;
@@ -942,7 +942,7 @@ public class StateMachineController : NetworkBehaviour
 
     public async void SwitchState(EntityStates stateToSwitchTo)
     {
-        Debug.Log(name + " is switching state to: " + stateToSwitchTo);
+        //Debug.Log(name + " is switching state to: " + stateToSwitchTo);
         switch (stateToSwitchTo)
         {
             case EntityStates.Attacking:
@@ -1129,7 +1129,7 @@ public class StateMachineController : NetworkBehaviour
                 WorkOnGarrisoningInto(target);
                 break;
             case ActionType.BuildTarget://try determining how many things need to be built in total, and grabbing closest ones
-                if (entity.CanConstruct())
+                if (entity.IsBuilder())
                 {
                     CommandBuildTarget(target);
                 }
@@ -2252,39 +2252,7 @@ public class StateMachineController : NetworkBehaviour
             return true;
         }
         return false;
-    }
-
-    private void UpdateAttackIndicator()
-    {
-        if (entity != null)
-        {
-            if (UnityEngine.Input.GetKey(KeyCode.Space) && targetEnemy != null)
-            {
-                entity.UpdateAttackIndicator();
-            }
-            else
-            {
-                entity.HideMoveIndicator();
-            }
-        }
-    }
-    /// <summary>
-    /// Update the indicator that shows where the minion will be moving towards.
-    /// </summary>
-    private void UpdateMoveIndicator()
-    {
-        if (entity != null)
-        {
-            if (UnityEngine.Input.GetKey(KeyCode.Space))
-            {
-                entity.UpdateMoveIndicator();
-            }
-            else
-            {
-                entity.HideMoveIndicator();
-            }
-        }
-    }
+    } 
     private void UpdateAttackReadiness()
     {
         if (!attackReady)
@@ -3206,7 +3174,7 @@ public class StateMachineController : NetworkBehaviour
     }
     public void CommandBuildTarget(SelectableEntity select)
     {
-        if (entity.CanConstruct())
+        if (entity.IsBuilder())
         {
             if (select.workersInteracting.Count == 1 && select.workersInteracting[0].stateMachineController.currentState != EntityStates.Building)
             {
