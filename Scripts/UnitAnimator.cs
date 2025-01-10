@@ -39,7 +39,12 @@ public class UnitAnimator : EntityAddon
     {
         return animator.GetCurrentAnimatorStateInfo(0).IsName(str);
     }
-    public bool AnimInProgress()
+    /// <summary>
+    /// Is the animator currently in the middle of playing a nonlooping animation?
+    /// Normalized time >= 1 means the anim has completed once
+    /// </summary>
+    /// <returns></returns>
+    public bool InProgress()
     {
         return animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1;
     }

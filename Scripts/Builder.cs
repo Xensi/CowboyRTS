@@ -1,41 +1,45 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using static StateMachineController;
-using static UnityEditor.ObjectChangeEventStream;
+using static UnitAnimator;
 
 public class Builder : EntityAddon
 {
-    [SerializeField] private BuildableOptions buildableOptions;  
+    [SerializeField] private BuildableOptions buildableOptions; 
     public FactionBuilding[] GetBuildables()
     {
-        return buildableOptions.buildables; 
+        return buildableOptions.buildables;
+    }
+    private bool InvalidBuildable(SelectableEntity target)
+    {
+        return target == null || target.initialized && target.fullyBuilt && !target.IsDamaged() || target.alive == false;
     }
     public void BuildingState()
     {
-
-        if (InvalidBuildable(ent.interactionTarget) || !InRangeOfEntity(ent.interactionTarget, attackRange))
+        if (InvalidBuildable(ent.interactionTarget) || !sm.InRangeOfEntity(ent.interactionTarget, range))
         {
             SwitchState(EntityStates.FindInteractable);
-            lastMajorState = EntityStates.Building;
+            SetLastMajorState(EntityStates.Building);
         }
         else
         {
-            LookAtTarget(ent.interactionTarget.transform);
-            if (attackReady)
+            sm.LookAtTarget(ent.interactionTarget.transform);
+            if (ready)
             {
-                animator.Play("Attack");
+                anim.Play(ATTACK);
 
-                if (AnimatorUnfinished())
+                if (anim.InProgress())
                 {
-                    if (stateTimer < impactTime)
+                    if (sm.stateTimer < impactTime)
                     {
-                        stateTimer += Time.deltaTime;
+                        sm.stateTimer += Time.deltaTime;
                     }
-                    else if (attackReady)
+                    else if (ready)
                     {
-                        stateTimer = 0;
-                        attackReady = false;
+                        sm.stateTimer = 0;
+                        ready = false;
                         BuildTarget(ent.interactionTarget);
                     }
                 }
@@ -46,6 +50,33 @@ public class Builder : EntityAddon
             }
         }
     }
+
+    public void BuildTarget(SelectableEntity target) //since hp is a network variable, changing it on the server will propagate changes to clients as well
+    {
+        //fire locally
+        ent.SimplePlaySound(1);
+
+        if (target != null)
+        {
+            if (IsServer)
+            {
+                target.RaiseHP(delta);
+            }
+            else //client tell server to change the network variable
+            {
+                RequestBuildServerRpc(delta, target);
+            }
+        }
+    }
+    [ServerRpc]
+    private void RequestBuildServerRpc(sbyte buildDelta, NetworkBehaviourReference target)
+    {
+        //server must handle damage! 
+        if (target.TryGet(out SelectableEntity select))
+        {
+            select.RaiseHP(buildDelta);
+        }
+    }
     public void WalkToBuildable()
     { 
         if (InvalidBuildable(ent.interactionTarget))
@@ -54,27 +85,25 @@ public class Builder : EntityAddon
         }
         else
         {
-            if (InRangeOfEntity(ent.interactionTarget, attackRange))
+            if (InRangeOfEntity(ent.interactionTarget, range))
             {
                 SwitchState(EntityStates.Building);
             }
             else
             {
-                animator.Play("Walk");
+                anim.Play(WALK);
                 Vector3 closest = ent.interactionTarget.physicalCollider.ClosestPoint(transform.position);
-                SetDestinationIfHighDiff(closest);
-                //if (IsOwner) SetDestination(closest);//destination.Value = closest;
-                /*selectableEntity.interactionTarget.transform.position;*/
+                sm.SetDestinationIfHighDiff(closest);
             }
         }
     }
     private void AfterBuildCheck()
-    { 
-        animator.Play("Idle");
+    {
+        anim.Play(IDLE); 
         if (InvalidBuildable(ent.interactionTarget))
         {
             SwitchState(EntityStates.FindInteractable);
-            lastMajorState = EntityStates.Building;
+            SetLastMajorState(EntityStates.Building);
         }
         else
         {

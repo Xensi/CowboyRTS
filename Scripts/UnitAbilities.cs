@@ -72,16 +72,16 @@ public class UnitAbilities : EntityAddon
                 switch (effect.status) //set variable to change;
                 {
                     case StatusEffect.MoveSpeed:
-                        if (target.stateMachineController != null && target.stateMachineController.ai != null)
+                        if (target.sm != null && target.sm.ai != null)
                         {
-                            variableToChange = target.stateMachineController.ai.maxSpeed;
+                            variableToChange = target.sm.ai.maxSpeed;
                         }
                         break;
                     case StatusEffect.AttackDuration:
-                        if (target.stateMachineController != null)
+                        if (target.sm != null)
                         {
-                            variableToChange = target.stateMachineController.attackDuration;
-                            secondVariable = target.stateMachineController.impactTime;
+                            variableToChange = target.sm.attackDuration;
+                            secondVariable = target.sm.impactTime;
                         }
                         break;
                     case StatusEffect.HP:
@@ -116,18 +116,18 @@ public class UnitAbilities : EntityAddon
                 switch (effect.status) //set actual variable to new variable
                 {
                     case TargetedEffects.StatusEffect.MoveSpeed:
-                        if (target.stateMachineController != null && target.stateMachineController.ai != null)
+                        if (target.sm != null && target.sm.ai != null)
                         {
-                            target.stateMachineController.ai.maxSpeed = variableToChange;
-                            target.stateMachineController.animator.SetFloat("moveSpeedMultiplier", moveSpeedMultiplier); //if we are halving, double animation speed
+                            target.sm.ai.maxSpeed = variableToChange;
+                            target.sm.animator.SetFloat("moveSpeedMultiplier", moveSpeedMultiplier); //if we are halving, double animation speed
                         }
                         break;
                     case TargetedEffects.StatusEffect.AttackDuration:
-                        if (target.stateMachineController != null)
+                        if (target.sm != null)
                         {
-                            target.stateMachineController.attackDuration = variableToChange;
-                            target.stateMachineController.impactTime = secondVariable;
-                            target.stateMachineController.animator.SetFloat("attackMultiplier", attackAnimMultiplier); //if we are halving, double animation speed
+                            target.sm.attackDuration = variableToChange;
+                            target.sm.impactTime = secondVariable;
+                            target.sm.animator.SetFloat("attackMultiplier", attackAnimMultiplier); //if we are halving, double animation speed
                         }
                         break;
                     case StatusEffect.HP:

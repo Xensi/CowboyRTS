@@ -5,6 +5,7 @@ using Pathfinding;
 using Pathfinding.RVO;
 using FoW;
 using static TargetedEffects;
+using static StateMachineController;
 using static UnitAnimator;
 public class SelectableEntity : NetworkBehaviour
 {
@@ -57,9 +58,11 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public Depot depot; //Entities that can be deposited to.
     [HideInInspector] public Ore ore; //Entities that are harvestable for resources
     [HideInInspector] public Harvester harvester; //Entities that can harvest resources
-    [HideInInspector] public StateMachineController stateMachineController; //Entities that need to pathfind
+    [HideInInspector] public StateMachineController sm; //Entities that need to pathfind
     [HideInInspector] public Builder builder; //Entities that need to pathfind
     [HideInInspector] public Spawner spawner;
+    [HideInInspector] public Pathfinder pf;
+    [HideInInspector] public Garrison garrison;
     private MeshRenderer[] allMeshes;
     private MeshRenderer[] finishedMeshRenderers;
     [HideInInspector] public Collider physicalCollider; 
@@ -75,7 +78,7 @@ public class SelectableEntity : NetworkBehaviour
     private void Initialize()
     {
         allMeshes = GetComponentsInChildren<MeshRenderer>();
-        if (stateMachineController == null) stateMachineController = GetComponent<StateMachineController>();
+        if (sm == null) sm = GetComponent<StateMachineController>();
         if (fogUnit == null) fogUnit = GetComponent<FogOfWarUnit>();
         if (net == null) net = GetComponent<NetworkObject>();
         if (obstacle == null) obstacle = GetComponentInChildren<NavmeshCut>();
@@ -94,6 +97,8 @@ public class SelectableEntity : NetworkBehaviour
         spawner = GetComponent<Spawner>();
         unitAbilities = GetComponent<UnitAbilities>();
         attacker = GetComponent<Attacker>();
+        pf = GetComponent<Pathfinder>();
+        garrison = GetComponent<Garrison>();
     }
 
     //Hidden variables 
@@ -118,7 +123,6 @@ public class SelectableEntity : NetworkBehaviour
     [SerializeField] private GameObject rallyVisual;
     //[SerializeField] private MeshRenderer[] damageableMeshes;
     public MeshRenderer[] attackEffects;
-    public List<GarrisonablePosition> garrisonablePositions = new();
     public GameObject targetIndicator;
     public LineRenderer lineIndicator;
     public List<MeshRenderer> teamRenderers;
@@ -226,7 +230,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public bool IsMinion() //Minions typically move around
     {
-        return stateMachineController != null && stateMachineController.ai != null;
+        return sm != null && sm.ai != null;
     }
     public bool IsHarvester()
     {
@@ -243,17 +247,11 @@ public class SelectableEntity : NetworkBehaviour
         deathEffect = factionEntity.deathEffect;
         displayName = factionEntity.productionName;
         desc = factionEntity.description;
-        maxHP = (short)factionEntity.maxHP;  
+        maxHP = (short)factionEntity.maxHP;
         //allowedUnfinishedInteractors = factionEntity.allowedUnfinishedInteractors;
         //allowedFinishedInteractors = factionEntity.allowedFinishedInteractors;
-        if (garrisonablePositions.Count > 0)
-        {
-            allowedInteractors = garrisonablePositions.Count; //automatically set 
-        }
-        else
-        {
-            allowedInteractors = 100;
-        }
+        //in the future, number of interactors will be per addon; different number of allowed harvesters, depositers, etc.
+        allowedInteractors = 100;
 
         passengersAreTargetable = factionEntity.passengersAreTargetable;
         acceptsHeavy = factionEntity.acceptsHeavy;
@@ -353,7 +351,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public bool IsUnit()
     {
-        return stateMachineController != null;
+        return sm != null;
     }
     public bool IsDepot()
     {
@@ -362,7 +360,7 @@ public class SelectableEntity : NetworkBehaviour
     private void AddToPlayerOwnedLists(Player player)
     {
         player.ownedEntities.Add(this); 
-        if (IsMinion()) player.ownedMinions.Add(stateMachineController);
+        if (IsMinion()) player.ownedMinions.Add(sm);
         if (IsNotYetBuilt()) player.unbuiltStructures.Add(this);
         if (IsHarvester()) player.ownedHarvesters.Add(harvester);
         if (IsDepot()) player.ownedDepots.Add(depot);
@@ -457,7 +455,6 @@ public class SelectableEntity : NetworkBehaviour
             currentHP.Value = startingHP;
         }
         currentHP.OnValueChanged += OnHitPointsChanged;
-        damagedThreshold = (sbyte)(maxHP / 2);
         rallyPoint = transform.position;
 
         if (targetIndicator != null)
@@ -571,7 +568,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (IsMinion())
         {
-            selectIndicator.UpdateRadius(stateMachineController.ai.radius);
+            selectIndicator.UpdateRadius(sm.ai.radius);
         }
         else
         {
@@ -639,7 +636,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void TryToRegisterRallyMission()
     {
-        if (spawnerThatSpawnedThis != null && stateMachineController != null)
+        if (spawnerThatSpawnedThis != null && sm != null)
         {
             //Debug.Log("mission registered");
             RallyMission spawnerRallyMission = spawnerThatSpawnedThis.rallyMission;
@@ -649,32 +646,32 @@ public class SelectableEntity : NetworkBehaviour
             switch (spawnerRallyMission)
             {
                 case RallyMission.None:
-                    stateMachineController.SetDestination(transform.position);
-                    stateMachineController.givenMission = spawnerRallyMission;
+                    pf.SetDestination(transform.position);
+                    sm.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Move:
                 case RallyMission.Attack: 
-                    stateMachineController.SetDestination(rallyPoint);
-                    stateMachineController.givenMission = spawnerRallyMission;
+                    pf.SetDestination(rallyPoint);
+                    sm.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Harvest:
                     if (IsHarvester())
                     {
                         interactionTarget = rallyTarget;
-                        stateMachineController.givenMission = spawnerRallyMission;
+                        sm.givenMission = spawnerRallyMission;
                     }
                     else
                     {
-                        stateMachineController.SetDestination(transform.position);
+                        pf.SetDestination(transform.position);
                     }
                     break;
                 case RallyMission.Build:
                     interactionTarget = rallyTarget;
-                    stateMachineController.givenMission = spawnerRallyMission;
+                    sm.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Garrison:
                     interactionTarget = rallyTarget;
-                    stateMachineController.givenMission = spawnerRallyMission;
+                    sm.givenMission = spawnerRallyMission;
                     break;
             }
         }
@@ -706,7 +703,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public bool IsBuilding()
     {
-        return stateMachineController == null;
+        return sm == null;
     }
     private void UpdateRallyVariables()
     {
@@ -733,9 +730,9 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void DetectIfShouldDie()
     {
-        if (stateMachineController != null && !alive && stateMachineController.currentState != StateMachineController.EntityStates.Die) //force go to death state
+        if (sm != null && !alive && !sm.InState(EntityStates.Die)) //force go to death state
         {
-            stateMachineController.SwitchState(StateMachineController.EntityStates.Die);
+            sm.SwitchState(EntityStates.Die);
         }
         if (currentHP.Value <= 0 && constructionBegun && alive) //detect death if "present" in game world ie not ghost/corpse
         {
@@ -791,12 +788,16 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
+    private bool HasStateMachine()
+    {
+        return sm != null;
+    }
     private void Update()
     {
         if (IsSpawned)
         {
             DetectIfShouldDie();
-            if (stateMachineController != null && stateMachineController.currentState == StateMachineController.EntityStates.Die) return; //do not do other things if dead
+            if (HasStateMachine() && sm.InState(EntityStates.Die)) return;
             UpdateVisibilityFromFogOfWar();
             DetectIfShouldUnghost();
             DetectIfBuilt();
@@ -810,8 +811,13 @@ public class SelectableEntity : NetworkBehaviour
                 UpdateUsedAbilities();
                 DetectChangeHarvestedResourceAmount();
                 //DetectIfDamaged();
+                UpdateEntityAddons();
             }
         }
+    }
+    private void UpdateEntityAddons()
+    {
+
     }
     private void UpdateUsedAbilities()
     {
@@ -835,23 +841,6 @@ public class SelectableEntity : NetworkBehaviour
             {
                 ResetVariableFromStatusEffect(appliedEffects[i]);
                 appliedEffects.RemoveAt(i);
-                /*TargetedEffects effect = appliedEffects[i];
-                bool foundAnother = false;
-                foreach (TargetedEffects item in appliedEffects)
-                {
-                    if (item == null || item == appliedEffects[i]) continue;
-                    if (item.status == effect.status)
-                    {
-                        foundAnother = true;
-                        break;
-                    }
-                }
-                //search for another iteration of the same effect. if it doesn't exist, reset the variable
-                if (!foundAnother)
-                { 
-                    ResetVariableFromStatusEffect(effect);
-                } 
-                appliedEffects.RemoveAt(i);*/
             }
         }
     }
@@ -864,9 +853,9 @@ public class SelectableEntity : NetworkBehaviour
         switch (effect.status)
         {
             case TargetedEffects.StatusEffect.MoveSpeed:
-                if (stateMachineController != null && stateMachineController.ai != null)
+                if (sm != null && sm.ai != null)
                 {
-                    stateMachineController.ai.maxSpeed = stateMachineController.defaultMoveSpeed; 
+                    sm.ai.maxSpeed = sm.defaultMoveSpeed; 
                     if (HasUnitAnimator()) unitAnimator.ResetMultiplier(MOVE_SPEED);
                 }
                 break;
@@ -932,11 +921,11 @@ public class SelectableEntity : NetworkBehaviour
                     OwnerUpdateBuildQueue();
                 }
                 //walking sounds. client side only
-                if (stateMachineController != null)
+                if (sm != null)
                 {
-                    if (stateMachineController.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart")
-                        || stateMachineController.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk")
-                        || stateMachineController.animator.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
+                    if (sm.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart")
+                        || sm.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk")
+                        || sm.animator.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
                     {
                         if (footstepCount < footstepThreshold)
                         {
@@ -950,6 +939,15 @@ public class SelectableEntity : NetworkBehaviour
                     }
                 }
             }
+        }
+    }
+    public void LookAtTarget(Transform target)
+    {
+        if (target != null)
+        {
+            /*transform.rotation = Quaternion.LookRotation(
+                Vector3.RotateTowards(transform.forward, target.position - transform.position, Time.deltaTime * rotationSpeed, 0));*/
+            transform.LookAt(new Vector3(target.position.x, transform.position.y, target.position.z));
         }
     }
     public bool IsMelee()
@@ -1051,8 +1049,8 @@ public class SelectableEntity : NetworkBehaviour
         player.ownedEntities.Add(this);
         if (IsMinion())
         {
-            player.ownedMinions.Add(stateMachineController);
-            player.ownedBuilders.Remove(stateMachineController);
+            player.ownedMinions.Add(sm);
+            player.ownedBuilders.Remove(sm);
         }
         if (IsNotYetBuilt()) player.unbuiltStructures.Add(this);
         if (IsHarvester()) player.ownedHarvesters.Add(harvester);
@@ -1084,17 +1082,13 @@ public class SelectableEntity : NetworkBehaviour
         }
         else
         {
-            //play death animation right away
-            if (stateMachineController != null)
-            {
-                stateMachineController.animator.Play("Die");
-            }
+            if (HasUnitAnimator()) unitAnimator.Play(DIE); 
         }
         if (fogUnit != null)
         {
             fogUnit.enabled = false;
         }
-        foreach (GarrisonablePosition item in garrisonablePositions)
+        /*foreach (GarrisonablePosition item in garrisonablePositions)
         {
             if (item != null)
             {
@@ -1103,7 +1097,7 @@ public class SelectableEntity : NetworkBehaviour
                     UnloadPassenger(item.passenger);
                 }
             }
-        }
+        }*/
 
         if (targetIndicator != null)
         {
@@ -1135,10 +1129,10 @@ public class SelectableEntity : NetworkBehaviour
             }
 
         }
-        if (stateMachineController != null)
+        if (sm != null)
         {
-            stateMachineController.FreezeRigid(true, true);
-            stateMachineController.PrepareForDeath();
+            sm.FreezeRigid(true, true);
+            sm.PrepareForDeath();
 
             Invoke(nameof(Die), deathDuration);
         }
@@ -1180,7 +1174,7 @@ public class SelectableEntity : NetworkBehaviour
         Destroy(targetIndicator);
     }
     #endregion 
-    public void ReceivePassenger(StateMachineController newPassenger)
+    /*public void ReceivePassenger(StateMachineController newPassenger)
     {
         foreach (GarrisonablePosition item in garrisonablePositions)
         {
@@ -1194,10 +1188,10 @@ public class SelectableEntity : NetworkBehaviour
                     if (IsOwner)
                     {
                         newPassenger.ent.isTargetable.Value = passengersAreTargetable;
-                        /*if (newPassenger.minionNetwork != null)
+                        *//*if (newPassenger.minionNetwork != null)
                         {
                             newPassenger.minionNetwork.verticalPosition.Value = item.transform.position.y;
-                        }*/
+                        }*//*
                     }
                     newPassenger.col.isTrigger = true;
                     Global.Instance.localPlayer.DeselectSpecific(newPassenger.ent);
@@ -1207,8 +1201,8 @@ public class SelectableEntity : NetworkBehaviour
                 }
             }
         }
-    }
-    public void UnloadPassenger(StateMachineController exiting)
+    }*/
+    /*public void UnloadPassenger(StateMachineController exiting)
     {
         foreach (GarrisonablePosition item in garrisonablePositions)
         {
@@ -1234,7 +1228,7 @@ public class SelectableEntity : NetworkBehaviour
                 break;
             }
         }
-    }
+    }*/
     [ServerRpc]
     private void PlaceOnGroundServerRpc()
     {
@@ -1255,7 +1249,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public bool HasEmptyGarrisonablePosition()
     {
-        if (garrisonablePositions.Count <= 0)
+        /*if (garrisonablePositions.Count <= 0)
         {
             return false;
         }
@@ -1270,7 +1264,8 @@ public class SelectableEntity : NetworkBehaviour
                 }
             }
             return val;
-        }
+        }*/
+        return false;
     }
     private void RequestBuilders()
     {
@@ -1285,22 +1280,7 @@ public class SelectableEntity : NetworkBehaviour
                 minion.SetBuildDestination(transform.position, this);
             }
         }
-    }
-    private sbyte damagedThreshold;
-    private void CheckIfDamaged()
-    {
-        /*if (currentHP.Value <= damagedThreshold)
-        {
-            damaged = true;
-            for (int i = 0; i < damageableMeshes.Length; i++)
-            {
-                if (damageableMeshes[i] != null)
-                {
-                    damageableMeshes[i].material = damagedState;
-                }
-            }
-        }*/
-    }
+    } 
     public void RaiseHP(sbyte delta)
     {
         currentHP.Value = (sbyte)Mathf.Clamp(currentHP.Value + delta, 0, maxHP);
@@ -1315,22 +1295,6 @@ public class SelectableEntity : NetworkBehaviour
         //currentHP.Value -= amount;
         currentHP.Value = (sbyte)Mathf.Clamp(currentHP.Value - amount, 0, maxHP);
     }
-    /*public void OnTriggerEnter(Collider other)
-    {
-        if (Global.Instance.localPlayer != null && Global.in)
-        {
-            Global.Instance.localPlayer.placementBlocked = true;
-            Global.Instance.localPlayer.UpdatePlacement();
-        }
-    }
-    public void OnTriggerExit(Collider other)
-    {
-        if (Global.Instance.localPlayer != null)
-        {
-            Global.Instance.localPlayer.placementBlocked = false;
-            Global.Instance.localPlayer.UpdatePlacement();
-        }
-    } */
     private int interactorIndex = 0;
     private int othersInteractorIndex = 0;
     public bool IsBusy()
@@ -1513,7 +1477,7 @@ public class SelectableEntity : NetworkBehaviour
 
         if (IsOwner) //only the owner does this
         {
-            if (stateMachineController != null && stateMachineController.pathfindingTarget != null) Destroy(stateMachineController.pathfindingTarget.gameObject);
+            if (sm != null && sm.pathfindingTarget != null) Destroy(sm.pathfindingTarget.gameObject);
             Global.Instance.localPlayer.ownedEntities.Remove(this);
             Global.Instance.localPlayer.selectedEntities.Remove(this);
             if (IsServer) //only the server may destroy networkobjects
@@ -1666,7 +1630,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public bool IsStructure()
     {
-        return stateMachineController == null;
+        return sm == null;
     }
     private void OwnerUpdateBuildQueue()
     {
@@ -1688,13 +1652,13 @@ public class SelectableEntity : NetworkBehaviour
                         SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
                         if (target != null) //something blocking
                         {
-                            if (target.stateMachineController != null && target.controllerOfThis == controllerOfThis)
+                            if (target.sm != null && target.controllerOfThis == controllerOfThis)
                             {
                                 //tell blocker to get out of the way.
                                 float randRadius = 1;
                                 Vector2 randCircle = UnityEngine.Random.insideUnitCircle * randRadius;
                                 Vector3 rand = target.transform.position + new Vector3(randCircle.x, 0, randCircle.y);
-                                target.stateMachineController.MoveTo(rand);
+                                target.sm.MoveTo(rand);
                                 //Debug.Log("trying to move blocking unit to: " + rand);
                                 productionBlocked = true;
                             }
@@ -1796,7 +1760,7 @@ public class SelectableEntity : NetworkBehaviour
         ChangeMaxPopulation(raisePopulationLimitBy);
         RTSPlayer playerController = Global.Instance.localPlayer;
         if (!playerController.ownedEntities.Contains(this)) playerController.ownedEntities.Add(this);
-        if (IsMinion() && !playerController.ownedMinions.Contains(stateMachineController)) playerController.ownedMinions.Add(stateMachineController);
+        if (IsMinion() && !playerController.ownedMinions.Contains(sm)) playerController.ownedMinions.Add(sm);
 
         /*if (factionEntity.constructableBuildings.Length > 0)
         {

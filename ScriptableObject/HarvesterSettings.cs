@@ -7,7 +7,7 @@ using UnityEngine;
 public class HarvesterSettings : ScriptableObject
 {
     public int bagSize = 5;
-    public int amountToHarvestPerSwing = 1; 
+    public sbyte amountToHarvestPerSwing = 1; 
     public float interactRange = .75f;
     public float impactTime = 0.5f;
     public float duration = 1;  

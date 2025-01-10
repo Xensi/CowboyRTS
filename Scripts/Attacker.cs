@@ -9,25 +9,17 @@ using static Player;
 using static StateMachineController;
 using static UnitAnimator;
 using System.Threading.Tasks;
-using NUnit.Framework.Internal.Commands;
 
 public class Attacker : EntityAddon
 {
     [SerializeField] private AttackSettings attackSettings;
-    [HideInInspector] public sbyte damage = 1;
-    [HideInInspector] public float duration = 1;
-    [HideInInspector] public float impactTime = .5f;
     [HideInInspector] public float areaOfEffectRadius = 1; //ignore if not selfdestructer
     [HideInInspector] public AttackType attackType = AttackType.Instant;
-    [HideInInspector] public float range = 1;
     [HideInInspector] public Projectile attackProjectile;
 
     [HideInInspector] public float defaultAttackDuration = 0;
     [HideInInspector] public float defaultImpactTime = 0;
-    [SerializeField] private Transform attackEffectSpawnPosition;
-
-    public float readyTimer = 0;
-    public bool ready = true;
+    [SerializeField] private Transform attackEffectSpawnPosition; 
     [HideInInspector] public bool attackMoving = false;
 
     private SelectableEntity targetEnemy;
@@ -39,11 +31,12 @@ public class Attacker : EntityAddon
     private bool attackOver = false;
 
     enum RequiredEnemyType { Any, Minion, Structure }
+    public bool hasCalledEnemySearchAsyncTask = false;
     public void InitAttacker()
     {  
         attackType = GetAttackSettings().attackType; 
         range = GetAttackSettings().range;
-        damage = GetAttackSettings().damage;
+        delta = GetAttackSettings().damage;
         duration = GetAttackSettings().attackDuration;
         impactTime = GetAttackSettings().impactTime;
         areaOfEffectRadius = GetAttackSettings().areaOfEffectRadius; 
@@ -77,7 +70,7 @@ public class Attacker : EntityAddon
     {
         if (assignedEntitySearcher != null)
         {
-            assignedEntitySearcher.UnassignUnit(this);
+            assignedEntitySearcher.UnassignUnit(sm);
         }
     }
     public async void AttackingState()
@@ -86,28 +79,28 @@ public class Attacker : EntityAddon
         if (sm.lastOrderType == ActionType.AttackMove && targetEnemy != null && targetEnemy.IsStructure())
         {
             MakeAsyncSearchAvailableAgain();
-            sm.ValidatePathStatus();
-            if (!sm.hasCalledEnemySearchAsyncTask)
+            pf.ValidatePathStatus();
+            if (!hasCalledEnemySearchAsyncTask)
             {
-                sm.hasCalledEnemySearchAsyncTask = true;
+                hasCalledEnemySearchAsyncTask = true;
                 await AsyncFindAlternateMinionInSearchArray(range); //sets target enemy 
-                if (sm.currentState != EntityStates.Attacking) return;
+                if (!sm.InState(EntityStates.Attacking)) return;
                 if (alternateAttackTarget != null)
                 {
                     sm.SetDestinationIfHighDiff(alternateAttackTarget.transform.position);
-                    if (sm.PathReaches())
+                    if (pf.PathReaches())
                     {
                         targetEnemy = alternateAttackTarget;
                         SwitchState(EntityStates.AttackMoving);
                     }
                 }
                 //await Task.Delay(100); //right now this limits the ability of units to acquire new targets
-                if (alternateAttackTarget == null) sm.hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
+                if (alternateAttackTarget == null) hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
             }
         }
         //it is very possible for the state to not be equal to attacking by this point because of our task.delay usage
 
-        if (sm.currentState != EntityStates.Attacking) return; 
+        if (!sm.InState(EntityStates.Attacking)) return;
         if (sm.InRangeOfEntity(targetEnemy, range))
         {
             //UpdateAttackIndicator(); 
@@ -119,7 +112,7 @@ public class Attacker : EntityAddon
             {
                 ent.unitAnimator.Play(ATTACK); 
                 //Debug.Log("Anim progress" + animator.GetCurrentAnimatorStateInfo(0).normalizedTime);
-                if (ent.unitAnimator.AnimInProgress()) // && !attackOver
+                if (ent.unitAnimator.InProgress()) // && !attackOver
                 { //is attackOver necessary?
                     /*if (timerUntilAttackTrailBegins < attackTrailBeginTime)
                     {
@@ -143,7 +136,7 @@ public class Attacker : EntityAddon
                         switch (attackType)
                         {
                             case AttackType.Instant:
-                                DamageSpecifiedEnemy(targetEnemy, damage);
+                                DamageSpecifiedEnemy(targetEnemy, delta);
                                 break;
                             case AttackType.SelfDestruct:
                                 SelfDestructInExplosion(areaOfEffectRadius);
@@ -164,10 +157,7 @@ public class Attacker : EntityAddon
                                     }
                                 }
                                 ShootProjectileAtPosition(positionToShoot);
-                                break;
-                            /*case AttackType.Gatling:
-                                DamageSpecifiedEnemy(targetEnemy, damage);
-                                break;*/
+                                break; 
                             case AttackType.None:
                                 break;
                             default:
@@ -200,7 +190,7 @@ public class Attacker : EntityAddon
         {
             Debug.Log("self destructing");
             hasSelfDestructed = true;
-            Global.Instance.localPlayer.CreateExplosionAtPoint(transform.position, explodeRadius, damage);
+            Global.Instance.localPlayer.CreateExplosionAtPoint(transform.position, explodeRadius, delta);
             SimpleExplosionEffect(transform.position);
             Global.Instance.localPlayer.DamageEntity(99, ent); //it is a self destruct, after all
             //selectableEntity.ProperDestroyEntity();
@@ -286,7 +276,7 @@ public class Attacker : EntityAddon
     bool playedAttackMoveSound = false; 
     public void IdleState()
     { 
-        float physSearchRange = attackRange;
+        float physSearchRange = range;
         if (ent.IsMelee())
         {
             physSearchRange = Global.Instance.defaultMeleeSearchRange;
@@ -298,7 +288,7 @@ public class Attacker : EntityAddon
             longTermGoal = Goal.AttackFromIdle;
             lastIdlePosition = transform.position;
             SwitchState(EntityStates.WalkToSpecificEnemy);
-            if (IsMelee()) Debug.Log("trying to target enemy idle");
+            if (ent.IsMelee()) Debug.Log("trying to target enemy idle");
         }
     }
     private void ResetGoal() //tell the unit to stop attacking from idle; other use cases: stop attack moving
@@ -306,7 +296,7 @@ public class Attacker : EntityAddon
         longTermGoal = Goal.None;
         lastIdlePosition = transform.position;
     }
-    public void AttackMovingState()
+    public async Task AttackMovingState()
     { 
         //on entering this state, hasCalledEnemySearchAsyncTask = false;
         #region Aesthetics
@@ -323,8 +313,8 @@ public class Attacker : EntityAddon
         #endregion
         #region Timers
         MakeAsyncSearchAvailableAgain();
-        ValidatePathStatus();
-        if (currentState != EntityStates.AttackMoving) return;
+        pf.ValidatePathStatus();
+        if (!sm.InState(EntityStates.AttackMoving)) return;
         #endregion
         #region Mechanics
         //target enemy is provided by enterstate finding an enemy asynchronously
@@ -332,10 +322,10 @@ public class Attacker : EntityAddon
         if (IsValidTarget(targetEnemy))
         {
             hasCalledEnemySearchAsyncTask = false; //allows new async search 
-            SetTargetEnemyAsDestination();
+            pf.SetTargetEnemyAsDestination();
             //setting destination needs to be called once (or at least not constantly to the same position)
 
-            if (IsMelee())
+            if (ent.IsMelee())
             {
                 SelectableEntity enemy = null;
                 //check if we have path to enemy 
@@ -358,7 +348,7 @@ public class Attacker : EntityAddon
                         SwitchState(EntityStates.Attacking);
                     }
                 }
-                if (PathBlocked()) //no path to enemy, attack structures in our way
+                if (pf.PathBlocked()) //no path to enemy, attack structures in our way
                 {
                     //periodically perform mini physics searches around us and if we get anything attack it 
                     enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Structure, true);
@@ -380,7 +370,7 @@ public class Attacker : EntityAddon
         }
         else //enemy is not valid target
         {
-            if (PathBlocked() && IsMelee()) //if we cannot reach the target destination, we should attack structures on our way
+            if (pf.PathBlocked() && ent.IsMelee()) //if we cannot reach the target destination, we should attack structures on our way
             {
                 SelectableEntity enemy = null;
                 enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Structure, false);
@@ -395,12 +385,12 @@ public class Attacker : EntityAddon
                 hasCalledEnemySearchAsyncTask = true;
                 //Debug.Log("Entity searching");
                 await AsyncSetTargetEnemyToClosestInSearchList(range); //sets target enemy 
-                if (currentState != EntityStates.AttackMoving) return;
-                SetTargetEnemyAsDestination();
+                if (!sm.InState(EntityStates.AttackMoving)) return;
+                pf.SetTargetEnemyAsDestination();
                 if (targetEnemy == null)
                 {
                     hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again 
-                    SetDestinationIfHighDiff(attackMoveDestination);
+                    pf.SetDestinationIfHighDiff(attackMoveDestination);
                 }
             }
         }
@@ -475,6 +465,39 @@ public class Attacker : EntityAddon
         }
     }
 
+    private void SimpleTrail(Vector3 star, Vector3 dest)
+    {
+        SpawnTrail(star, dest); //spawn effect locally
+
+        //spawn for other clients as well
+        if (IsServer)
+        {
+            TrailClientRpc(star, dest);
+        }
+        else
+        {
+            RequestTrailServerRpc(star, dest);
+        }
+    }
+    private void SpawnTrail(Vector3 start, Vector3 destination)
+    {
+        TrailController tra = Instantiate(Global.Instance.gunTrailGlobal, start, Quaternion.identity);
+        tra.start = start;
+        tra.destination = destination;
+    }
+    [ServerRpc]
+    private void RequestTrailServerRpc(Vector3 star, Vector3 dest)
+    {
+        TrailClientRpc(star, dest);
+    }
+    [ClientRpc]
+    private void TrailClientRpc(Vector3 star, Vector3 dest)
+    {
+        if (!IsOwner)
+        {
+            SpawnTrail(star, dest);
+        }
+    }
     private void SpawnProjectile(Vector3 spawnPos, Vector3 destination)
     {
         if (attackProjectile != null)
@@ -483,7 +506,7 @@ public class Attacker : EntityAddon
             proj.groundTarget = destination;
             proj.entityToHomeOnto = targetEnemy;
             proj.isLocal = IsOwner;
-            proj.firingUnitrange = range;
+            proj.firingUnitAttackRange = range;
         }
     }
     [ClientRpc]
@@ -929,6 +952,23 @@ public class Attacker : EntityAddon
             {
                 asyncSearchCancellationToken?.Dispose();
                 asyncSearchCancellationToken = null;
+            }
+        }
+    }
+
+    Vector3 targetEnemyLastPosition;
+
+    private void UpdateTargetEnemyLastPosition()
+    {
+        if (ent.IsAttacker())
+        {
+            if (ent.attacker.GetTargetEnemy() != null)
+            {
+                targetEnemyLastPosition = targetEnemy.transform.position;
+            }
+            else
+            {
+                targetEnemyLastPosition = transform.position;
             }
         }
     }

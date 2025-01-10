@@ -90,7 +90,7 @@ public class StateMachineController : NetworkBehaviour
     public readonly float garrisonRange = 1.1f;
     //50 fps fixed update
     //private readonly int delay = 0; 
-    public EntityStates currentState = EntityStates.Spawn;
+    private EntityStates currentState = EntityStates.Spawn;
     [HideInInspector] public SelectableEntity.RallyMission givenMission = SelectableEntity.RallyMission.None;
     [HideInInspector] public Vector3 rallyPosition; //deprecated
     #endregion
@@ -151,10 +151,18 @@ public class StateMachineController : NetworkBehaviour
         if (animator == null)
         {
             animator = GetComponentInChildren<Animator>();
-        }
-        maxDetectable = Mathf.RoundToInt(20 * attackRange);
+        } 
     }
     public SelectableEntity[] attackMoveDestinationEnemyArray = new SelectableEntity[0];
+
+    private bool IsMelee()
+    {
+        return ent.IsMelee();
+    }
+    private bool IsRanged()
+    {
+        return ent.IsRanged();
+    }
     private void Start()
     {
         FactionEntity factionEntity = ent.factionEntity;
@@ -169,13 +177,15 @@ public class StateMachineController : NetworkBehaviour
                 }
             }
         }
-        if (IsMelee())
-        {
-            maximumChaseRange = Global.Instance.defaultMeleeSearchRange;
-        }
-        else
-        {
-            maximumChaseRange = attackRange * 2f;
+        if (ent.IsAttacker()) { 
+            if (IsMelee())
+            {
+                maximumChaseRange = Global.Instance.defaultMeleeSearchRange;
+            }
+            else
+            {
+                maximumChaseRange = ent.attacker.range * 2f;
+            }
         }
         attackMoveDestinationEnemyArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
         ChangeAttackTrailState(false);
@@ -238,8 +248,7 @@ public class StateMachineController : NetworkBehaviour
         //enabled = IsOwner;
         oldPosition = transform.position;
         orderedDestination = transform.position;
-    }
-    private int maxDetectable;
+    } 
     public bool IsCurrentlyBuilding()
     {
         return currentState == EntityStates.Building || currentState == EntityStates.WalkToInteractable && lastMajorState == EntityStates.Building;
@@ -332,21 +341,7 @@ public class StateMachineController : NetworkBehaviour
         {
             ai.autoRepath.mode = AutoRepathPolicy.Mode.Never;
         }
-    }
-
-    Vector3 targetEnemyLastPosition;
-
-    private void UpdateTargetEnemyLastPosition()
-    {
-        if (targetEnemy != null)
-        {
-            targetEnemyLastPosition = targetEnemy.transform.position;
-        }
-        else
-        {
-            targetEnemyLastPosition = transform.position;
-        }
-    }
+    } 
     public bool animatorUnfinished = false;
     private void Update()
     {
@@ -639,14 +634,6 @@ public class StateMachineController : NetworkBehaviour
     // The duration of the interpolation, in seconds    
     float m_LerpTime = .1f;
 
-    private bool PathBlocked()
-    {
-        return pathStatusValid && pathReachesDestination == PathStatus.Blocked;
-    }
-    public bool PathReaches()
-    {
-        return pathStatusValid && pathReachesDestination == PathStatus.Reaches;
-    }
     public Vector3 LerpPosition(Vector3 current, Vector3 target)
     {
         if (current != target)
@@ -679,74 +666,17 @@ public class StateMachineController : NetworkBehaviour
     private new void OnDestroy()
     {
         CancelAllAsyncTasks();
-    }
-    private void OnDrawGizmosSelected()
-    {
-        /*foreach (SelectableEntity item in nearbyEnemies)
-        { 
-            if (item != null) Gizmos.DrawWireSphere(item.transform.position, .1f);
-        }*/
-        /*if (minionState == MinionStates.AttackMoving)
-        {
-            if (targetEnemy != null)
-            {
-                Gizmos.color = Color.green;
-                Gizmos.DrawLine(transform.position, targetEnemy.transform.position);
-            }
-            else
-            {
-                Gizmos.color = Color.yellow;
-                Gizmos.DrawLine(transform.position, pathfindingTarget.transform.position);
-            }
-        }
-        else
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawLine(transform.position, pathfindingTarget.transform.position);
-        }*/
-    }
-    private void OnDrawGizmos()
-    {
-
-        /*Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(transform.position, destination);
-        if (targetEnemy != null)
-        { 
-            Gizmos.color = Color.red;
-            Gizmos.DrawLine(transform.position, targetEnemy.transform.position);
-            Gizmos.DrawWireSphere(targetEnemy.transform.position, .1f);
-        }
-        Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(attackMoveDestination, .1f);
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(adjustedTargetEnemyStructurePosition, .1f);*/
-        /*if (entity.IsMelee())
-        {
-            float defaultDetectionRange = 5;
-            Gizmos.DrawWireSphere(transform.position, defaultDetectionRange);
-        }*/
-        /*if (!IsOwner)
-        {
-            foreach (Vector3 loc in nonOwnerRealLocationList)
-            {
-                Gizmos.DrawWireSphere(loc, .1f);
-            }
-        }
-        else
-        {
-            Gizmos.DrawWireSphere(DequantizePosition(realLocation.Value), .1f);
-        }*/
-    }
+    } 
     #endregion
     #region States 
-    private void StopWalkingInGarrison()
+    /*private void StopWalkingInGarrison()
     {
         if (ent.occupiedGarrison != null)
         {
             ent.interactionTarget = null;
             SwitchState(EntityStates.Idle);
         }
-    }
+    }*/
     private void FollowGivenMission()
     {
         switch (givenMission)
@@ -826,7 +756,7 @@ public class StateMachineController : NetworkBehaviour
             SwitchState(MinionStates.WalkToSpecificEnemy);
         }*/
     }
-    private void GarrisonedSeekEnemies()
+    /*private void GarrisonedSeekEnemies()
     {
         if (IsValidTarget(targetEnemy))
         {
@@ -836,7 +766,7 @@ public class StateMachineController : NetworkBehaviour
         {
             targetEnemy = FindEnemyToAttack(attackRange);
         }
-    }
+    }*/
     private void FinishSpawning()
     {
         SwitchState(EntityStates.Idle);
@@ -904,7 +834,6 @@ public class StateMachineController : NetworkBehaviour
             }
         }
     }
-    public bool pathStatusValid = false; //when this is true, the current path result is valid
 
     public async void SwitchState(EntityStates stateToSwitchTo)
     {
@@ -996,32 +925,6 @@ public class StateMachineController : NetworkBehaviour
     private bool IsEffectivelyIdle(float forXSeconds)
     {
         return effectivelyIdleInstances > forXSeconds;
-    }
-    /// <summary>
-    /// Only set destination if there's a significant difference
-    /// </summary>
-    /// <param name="target"></param>
-    public void SetDestinationIfHighDiff(Vector3 target, float threshold = 0.1f)
-    {
-        Vector3 offset = target - destination;
-        if (Vector3.SqrMagnitude(offset) > threshold * threshold)
-        {
-            //Debug.Log("Setting destination bc diff");
-            SetDestination(target);
-        }
-    }
-    /// <summary>
-    /// Tells server this minion's destination so it can pathfind there on other clients
-    /// </summary>
-    /// <param name="position"></param>
-    public void SetDestination(Vector3 position)
-    {
-        //print("setting destination");
-        destination = position; //tell server where we're going
-        //Debug.Log("Setting destination to " + destination);
-        UpdateSetterTargetPosition(); //move pathfinding target
-        pathStatusValid = false;
-        //ai.SearchPath();
     }
     /// <summary>
     /// Update pathfinding target to match actual destination
@@ -1125,7 +1028,6 @@ public class StateMachineController : NetworkBehaviour
             }
         }
     }
-    public bool hasCalledEnemySearchAsyncTask = false;
     private List<SelectableEntity> preservedAsyncSearchResults = new();
 
     CancellationTokenSource pathStatusTimerCancellationToken;
@@ -1149,40 +1051,14 @@ public class StateMachineController : NetworkBehaviour
         CancelTimers();
     }
     private bool asyncSearchTimerActive = false;
-    private bool pathfindingValidationTimerActive = false;
     private float searchTimerDuration = 0.1f;
-    private float pathfindingValidationTimerDuration = 0.5f;
-    /// <summary>
-    /// This is a timer that runs for 100 ms if the path status is invalid. The path status can become invalid by the destination
-    /// changing. After the timer elapses, the path status will become valid, meaning that the game has had enough time to do path
-    /// calculations. This timer is set up in a way so that it can be safely cancelled. It will be cancelled if the attack moving
-    /// state is exited.
-    /// </summary>
-    public async void ValidatePathStatus()
+
+    public bool InState(EntityStates state)
     {
-        if (!pathStatusValid && !pathfindingValidationTimerActive) //path status becomes invalid if the destination changes, since we need to recalculate and ensure the
-        { //blocked status is correct 
-            pathStatusTimerCancellationToken = new CancellationTokenSource();
-            pathfindingValidationTimerActive = true;
-            try
-            {
-                await Task.Delay(TimeSpan.FromSeconds(pathfindingValidationTimerDuration), pathStatusTimerCancellationToken.Token);
-            }
-            catch
-            {
-                //Debug.Log("Timer1 was cancelled!");
-                return;
-            }
-            finally
-            {
-                pathStatusTimerCancellationToken?.Dispose();
-                pathStatusTimerCancellationToken = null;
-                pathStatusValid = true;
-                pathfindingValidationTimerActive = false;
-            }
-        }
+        return currentState == state;
     }
-    private async void OwnerUpdateState()
+
+    private void OwnerUpdateState()
     {
         CheckIfAttackTrailIsActiveErroneously();
         switch (currentState)
@@ -1747,12 +1623,7 @@ public class StateMachineController : NetworkBehaviour
     }
     public void LookAtTarget(Transform target)
     {
-        if (target != null)
-        {
-            /*transform.rotation = Quaternion.LookRotation(
-                Vector3.RotateTowards(transform.forward, target.position - transform.position, Time.deltaTime * rotationSpeed, 0));*/
-            transform.LookAt(new Vector3(target.position.x, transform.position.y, target.position.z));
-        }
+        ent.LookAtTarget(target);
     }
 
 
@@ -1763,22 +1634,6 @@ public class StateMachineController : NetworkBehaviour
 
     public Vector3 targetEnemyClosestPoint;
     [HideInInspector] public bool shouldAggressivelySeekEnemies = true;
-    private bool InvalidBuildable(SelectableEntity target)
-    {
-        /*if (target == null)
-        {
-            Debug.LogWarning("Target Null");
-        }
-        else
-        { 
-            if (target.initialized && target.fullyBuilt) Debug.LogWarning("Target Already Built");
-            if (target.alive == false) Debug.LogWarning("Target Not Alive");
-        }*/
-        //invalid if null
-        //or target is fully built and not damaged
-        //or if dead
-        return target == null || target.initialized && target.fullyBuilt && !target.IsDamaged() || target.alive == false;
-    }
     /*private bool CheckFacingTowards(Vector3 pos)
     {
         if (!directionalAttack) return true;
@@ -1883,18 +1738,6 @@ public class StateMachineController : NetworkBehaviour
         return false;
         //return target.teamNumber.Value != entity.teamNumber.Value;
     } 
-    private void SetTargetEnemyAsDestination()
-    {
-        if (targetEnemy == null) return;
-        if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
-        {
-            SetDestinationIfHighDiff(nudgedTargetEnemyStructurePosition);
-        }
-        else
-        {
-            SetDestinationIfHighDiff(targetEnemy.transform.position);
-        }
-    }
     
     #endregion
     #region Attacks 
@@ -1910,65 +1753,6 @@ public class StateMachineController : NetworkBehaviour
                 break;
             default:
                 break;
-        }
-    }
-    public void BuildTarget(SelectableEntity target) //since hp is a network variable, changing it on the server will propagate changes to clients as well
-    {
-        //fire locally
-        ent.SimplePlaySound(1);
-
-        if (target != null)
-        {
-            if (IsServer)
-            {
-                target.RaiseHP(buildDelta);
-            }
-            else //client tell server to change the network variable
-            {
-                RequestBuildServerRpc(buildDelta, target);
-            }
-        }
-    }
-    [ServerRpc]
-    private void RequestBuildServerRpc(sbyte buildDelta, NetworkBehaviourReference target)
-    {
-        //server must handle damage! 
-        if (target.TryGet(out SelectableEntity select))
-        {
-            select.RaiseHP(buildDelta);
-        }
-    }
-    private void SimpleTrail(Vector3 star, Vector3 dest)
-    {
-        SpawnTrail(star, dest); //spawn effect locally
-
-        //spawn for other clients as well
-        if (IsServer)
-        {
-            TrailClientRpc(star, dest);
-        }
-        else
-        {
-            RequestTrailServerRpc(star, dest);
-        }
-    }
-    private void SpawnTrail(Vector3 start, Vector3 destination)
-    {
-        TrailController tra = Instantiate(Global.Instance.gunTrailGlobal, start, Quaternion.identity);
-        tra.start = start;
-        tra.destination = destination;
-    }
-    [ServerRpc]
-    private void RequestTrailServerRpc(Vector3 star, Vector3 dest)
-    {
-        TrailClientRpc(star, dest);
-    }
-    [ClientRpc]
-    private void TrailClientRpc(Vector3 star, Vector3 dest)
-    {
-        if (!IsOwner)
-        {
-            SpawnTrail(star, dest);
         }
     }
     private void ClearTargets()
@@ -2116,7 +1900,7 @@ public class StateMachineController : NetworkBehaviour
     {
         if (ent.IsBuilder())
         {
-            if (select.workersInteracting.Count == 1 && select.workersInteracting[0].stateMachineController.currentState != EntityStates.Building)
+            if (select.workersInteracting.Count == 1 && select.workersInteracting[0].sm.currentState != EntityStates.Building)
             {
                 select.workersInteracting[0].interactionTarget = null;
                 select.workersInteracting.Clear();
@@ -2129,11 +1913,11 @@ public class StateMachineController : NetworkBehaviour
             lastMajorState = EntityStates.Building;
         }
     }
-    private bool IsGarrisoned()
+    /*private bool IsGarrisoned()
     {
         return ent.occupiedGarrison != null;
-    }
-    public void WorkOnGarrisoningInto(SelectableEntity garrison)
+    }*/
+    /*public void WorkOnGarrisoningInto(SelectableEntity garrison)
     {
         if (garrison.garrisonablePositions.Count <= 0)
         {
@@ -2161,13 +1945,13 @@ public class StateMachineController : NetworkBehaviour
                 }
             }
             lastCommand.Value = CommandTypes.Move;
-            /*SelectableEntity garrison = select.occupiedGarrison;
+            *//*SelectableEntity garrison = select.occupiedGarrison;
             selectableEntity.tryingToTeleport = true;
             selectableEntity.interactionTarget = select;
             state = State.WalkToInteractable;
-            lastState = State.Garrisoning;*/
+            lastState = State.Garrisoning;*//*
         }
-    }
+    }*/
     public void ChangeRVOStatus(bool val)
     {
         if (ent.RVO != null) ent.RVO.enabled = val;

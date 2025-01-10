@@ -202,20 +202,20 @@ public class RTSPlayer : Player
 
             foreach (SelectableEntity item in selectedEntities)
             {
-                if (item.stateMachineController != null && item.stateMachineController.IsValidAttacker()) //minion
+                if (item.sm != null && item.sm.IsValidAttacker()) //minion
                 {
                     //if this unit is already assigned to an entity searcher, unassign it
-                    if (item.stateMachineController.assignedEntitySearcher != null)
+                    if (item.sm.assignedEntitySearcher != null)
                     {
-                        item.stateMachineController.assignedEntitySearcher.UnassignUnit(item.stateMachineController);
+                        item.sm.assignedEntitySearcher.UnassignUnit(item.sm);
                     }
                     //assign the entity searcher to selected units
-                    item.stateMachineController.assignedEntitySearcher = searcher;
+                    item.sm.assignedEntitySearcher = searcher;
                     //update the entity searcher's assigned units list
-                    item.stateMachineController.assignedEntitySearcher.AssignUnit(item.stateMachineController);
-                    item.stateMachineController.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search
+                    item.sm.assignedEntitySearcher.AssignUnit(item.sm);
+                    item.sm.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search
                     UnitOrder order = new();
-                    order.unit = item.stateMachineController;
+                    order.unit = item.sm;
                     order.targetPosition = clickedPosition;
                     order.action = ActionType.AttackMove;
                     UnitOrdersQueue.Add(order);
@@ -317,33 +317,33 @@ public class RTSPlayer : Player
             UnitOrdersQueue.Clear();
             foreach (SelectableEntity item in selectedEntities)
             {
-                if (item.stateMachineController != null)
+                if (item.sm != null)
                 {
                     if (actionType == ActionType.AttackTarget) //if attacking a specific target, we need an entity searcher
                     { //for when it's dead
-                        if (item.stateMachineController.IsValidAttacker()) //minion
+                        if (item.sm.IsValidAttacker()) //minion
                         {
                             //if this unit is already assigned to an entity searcher, unassign it
-                            if (item.stateMachineController.assignedEntitySearcher != null)
+                            if (item.sm.assignedEntitySearcher != null)
                             {
-                                item.stateMachineController.assignedEntitySearcher.UnassignUnit(item.stateMachineController);
+                                item.sm.assignedEntitySearcher.UnassignUnit(item.sm);
                             }
-                            item.stateMachineController.assignedEntitySearcher = searcher;
-                            item.stateMachineController.assignedEntitySearcher.AssignUnit(item.stateMachineController);
+                            item.sm.assignedEntitySearcher = searcher;
+                            item.sm.assignedEntitySearcher.AssignUnit(item.sm);
                         }
                     }
                     else //default to unassigning from any assigned entity searcher
                     {
                         //if we are assigned an entity
-                        if (item.stateMachineController.assignedEntitySearcher != null)
+                        if (item.sm.assignedEntitySearcher != null)
                         {
-                            item.stateMachineController.assignedEntitySearcher.UnassignUnit(item.stateMachineController);
-                            item.stateMachineController.assignedEntitySearcher = null;
+                            item.sm.assignedEntitySearcher.UnassignUnit(item.sm);
+                            item.sm.assignedEntitySearcher = null;
                         }
                     }
 
                     UnitOrder order = new();
-                    order.unit = item.stateMachineController;
+                    order.unit = item.sm;
                     order.targetPosition = clickedPosition;
                     order.action = actionType;
                     order.target = hitEntity;
@@ -398,9 +398,9 @@ public class RTSPlayer : Player
         DeselectAll();
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item != null && item.stateMachineController != null && (item.IsBuilder())) //&& item.canBuild
+            if (item != null && item.sm != null && (item.IsBuilder())) //&& item.canBuild
             {
-                switch (item.stateMachineController.currentState)
+                switch (item.sm.currentState)
                 {
                     case StateMachineController.EntityStates.Idle:
                     case StateMachineController.EntityStates.FindInteractable:
@@ -846,7 +846,7 @@ public class RTSPlayer : Player
                 {
                     builderListSelection.Add(item);
                 }
-                else if (item.stateMachineController != null && item.stateMachineController.attackType != AttackType.None)
+                else if (item.sm != null && item.sm.attackType != AttackType.None)
                 {
                     militaryList.Add(item);
                 }
@@ -1532,10 +1532,10 @@ public class RTSPlayer : Player
                     SelectableEntity fake = fakeSpawns[0].GetComponent<SelectableEntity>();
                     StateMachineController fakeController = fakeSpawns[0].GetComponent<StateMachineController>();
                     newSpawn.transform.SetPositionAndRotation(fakeSpawns[0].transform.position, fakeSpawns[0].transform.rotation);
-                    if (select != null && select.stateMachineController != null && fake != null && fakeController != null)
+                    if (select != null && select.sm != null && fake != null && fakeController != null)
                     {
-                        select.stateMachineController.currentState = fakeController.currentState;
-                        select.stateMachineController.currentState = StateMachineController.EntityStates.Idle;
+                        select.sm.currentState = fakeController.currentState;
+                        select.sm.currentState = StateMachineController.EntityStates.Idle;
                     }
                     if (select != null && fake != null)
                     {
@@ -1796,7 +1796,7 @@ public class RTSPlayer : Player
         return entity != null && ability != null && (entity.fullyBuilt || !ability.usableOnlyWhenBuilt) && entity.net.IsSpawned
             && entity.alive && entity.CanUseAbility(ability)
             && entity.unitAbilities.AbilityOffCooldown(ability)
-            && (entity.IsBuilding() || entity.stateMachineController.currentState != StateMachineController.EntityStates.UsingAbility);
+            && (entity.IsBuilding() || entity.sm.currentState != StateMachineController.EntityStates.UsingAbility);
     }
     public void UpdateBuildQueueGUI()
     {

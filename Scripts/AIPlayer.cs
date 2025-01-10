@@ -518,7 +518,7 @@ public class AIPlayer : Player
             {
                 gold -= building.goldCost;
                 SelectableEntity last = SpawnMinion(validPosition, building);
-                chosenEntity.stateMachineController.ForceBuildTarget(last);
+                chosenEntity.sm.ForceBuildTarget(last);
             }
         } 
     } 
@@ -607,9 +607,9 @@ public class AIPlayer : Player
             {
                 foreach (SelectableEntity builder in ownedEntities) //get a builder
                 {
-                    if (builder.stateMachineController != null && builder.IsBuilder() && !builder.stateMachineController.IsCurrentlyBuilding()) //minion
+                    if (builder.sm != null && builder.IsBuilder() && !builder.sm.IsCurrentlyBuilding()) //minion
                     {
-                        builder.stateMachineController.CommandBuildTarget(building);
+                        builder.sm.CommandBuildTarget(building);
                         break;
                     }
                 }
@@ -621,16 +621,16 @@ public class AIPlayer : Player
         //Debug.Log("Telling miners to harvest");
         foreach (SelectableEntity item in ownedEntities)
         {
-            if (item.stateMachineController != null && item.IsHarvester() && !item.stateMachineController.IsCurrentlyBuilding()) //minion
+            if (item.sm != null && item.IsHarvester() && !item.sm.IsCurrentlyBuilding()) //minion
             {
-                switch (item.stateMachineController.currentState)
+                switch (item.sm.currentState)
                 {
                     case StateMachineController.EntityStates.Idle:
                     case StateMachineController.EntityStates.FindInteractable:
                         if (visibleResources.Count > 0)
                         {
                             int rand = Random.Range(0, visibleResources.Count);
-                            item.stateMachineController.CommandHarvestTarget(visibleResources[rand]); 
+                            item.sm.CommandHarvestTarget(visibleResources[rand]); 
                         }
                         break;
                 }

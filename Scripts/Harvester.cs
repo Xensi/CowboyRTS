@@ -22,13 +22,6 @@ public class Harvester : EntityAddon
     [SerializeField] private List<ResourceType> harvesterBag;
 
     private int bagSize = 5;
-    private int amountToHarvestPerSwing = 1;
-    private float range = .75f;
-    private float impactTime = 0.5f;
-    private float duration = 1;
-    private float readyTimer = 0;
-
-    private bool ready = true;
       
     private List<ResourceType> allowedResources; //Resources we can harvest
 
@@ -45,7 +38,7 @@ public class Harvester : EntityAddon
     public void InitHarvester()
     {
         bagSize = GetHarvesterSettings().bagSize;
-        amountToHarvestPerSwing = GetHarvesterSettings().amountToHarvestPerSwing;
+        delta = GetHarvesterSettings().amountToHarvestPerSwing;
         range = GetHarvesterSettings().interactRange;
         impactTime = GetHarvesterSettings().impactTime;
         duration = GetHarvesterSettings().duration;
@@ -257,7 +250,7 @@ public class Harvester : EntityAddon
             {
                 ent.unitAnimator.Play(HARVEST);
                 //sm.animator.Play("Harvest");
-                if (ent.unitAnimator.AnimInProgress()) //sm.AnimatorUnfinished()
+                if (ent.unitAnimator.InProgress()) //sm.AnimatorUnfinished()
                 {
                     if (sm.stateTimer < impactTime)
                     {
@@ -345,7 +338,7 @@ public class Harvester : EntityAddon
         ent.SimplePlaySound(1); //play impact sound 
         if (target != null && target.IsSpawned && target.IsOre())
         {
-            int actualHarvested = Mathf.Clamp(amountToHarvestPerSwing, 0, target.currentHP.Value); //max amount we can harvest clamped by hitpoints remaining
+            int actualHarvested = Mathf.Clamp(delta, 0, target.currentHP.Value); //max amount we can harvest clamped by hitpoints remaining
             //int diff = entity.harvestCapacity - entity.harvestedResourceAmount;
             int diff = bagSize - harvesterBag.Count;
             actualHarvested = Mathf.Clamp(actualHarvested, 0, diff); //max amount we can harvest clamped by remaining carrying capacity
@@ -354,11 +347,11 @@ public class Harvester : EntityAddon
 
             if (ent.IsServer)
             {
-                target.Harvest((sbyte)amountToHarvestPerSwing);
+                target.Harvest((sbyte)delta);
             }
             else //client tell server to change the network variable
             {
-                RequestHarvestServerRpc((sbyte)amountToHarvestPerSwing, target);
+                RequestHarvestServerRpc((sbyte)delta, target);
             }
             ResourceType resourceType = target.ore.resourceType;
 
