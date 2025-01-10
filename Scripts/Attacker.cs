@@ -10,7 +10,7 @@ using static StateMachineController;
 using static UnitAnimator;
 using System.Threading.Tasks;
 
-public class Attacker : EntityAddon
+public class Attacker : SwingEntityAddon
 {
     [SerializeField] private AttackSettings attackSettings;
     [HideInInspector] public float areaOfEffectRadius = 1; //ignore if not selfdestructer
@@ -22,7 +22,7 @@ public class Attacker : EntityAddon
     [SerializeField] private Transform attackEffectSpawnPosition; 
     [HideInInspector] public bool attackMoving = false;
 
-    private SelectableEntity targetEnemy;
+    public SelectableEntity targetEnemy;
     public SelectableEntity alternateAttackTarget;
     private enum Goal { None, AttackFromIdle, OrderedToAttackMove }
     private Goal longTermGoal = Goal.None;
@@ -32,6 +32,10 @@ public class Attacker : EntityAddon
 
     enum RequiredEnemyType { Any, Minion, Structure }
     public bool hasCalledEnemySearchAsyncTask = false;
+    public Vector3 attackMoveDestination;
+    public float sqrDistToTargetEnemy = Mathf.Infinity;
+    private float sqrDistToAlternateTarget = Mathf.Infinity;
+    private readonly float minAttackMoveDestinationViabilityRange = 4;
     public void InitAttacker()
     {  
         attackType = GetAttackSettings().attackType; 
@@ -87,7 +91,7 @@ public class Attacker : EntityAddon
                 if (!sm.InState(EntityStates.Attacking)) return;
                 if (alternateAttackTarget != null)
                 {
-                    sm.SetDestinationIfHighDiff(alternateAttackTarget.transform.position);
+                    pf.SetDestinationIfHighDiff(alternateAttackTarget.transform.position);
                     if (pf.PathReaches())
                     {
                         targetEnemy = alternateAttackTarget;
@@ -110,9 +114,9 @@ public class Attacker : EntityAddon
 
             if (ready) // && CheckFacingTowards(targetEnemy.transform.position
             {
-                ent.unitAnimator.Play(ATTACK); 
+                ent.anim.Play(ATTACK); 
                 //Debug.Log("Anim progress" + animator.GetCurrentAnimatorStateInfo(0).normalizedTime);
-                if (ent.unitAnimator.InProgress()) // && !attackOver
+                if (ent.anim.InProgress()) // && !attackOver
                 { //is attackOver necessary?
                     /*if (timerUntilAttackTrailBegins < attackTrailBeginTime)
                     {
@@ -172,9 +176,9 @@ public class Attacker : EntityAddon
                     AfterAttackCheck();
                 }
             }
-            else if (!ent.unitAnimator.InState(ATTACK))
+            else if (!ent.anim.InState(ATTACK))
             {
-                ent.unitAnimator.Play(IDLE);
+                ent.anim.Play(IDLE);
             }
         }
         else //walk to enemy if out of range
@@ -238,7 +242,7 @@ public class Attacker : EntityAddon
     }
     private void AfterAttackCheck()
     {
-        ent.unitAnimator.Play(IDLE); 
+        ent.anim.Play(IDLE); 
         if (!IsValidTarget(targetEnemy)) //target enemy is not valid because it is dead or missing
         {
             HandleLackOfValidTargetEnemy();
@@ -257,7 +261,6 @@ public class Attacker : EntityAddon
     {
         if (target == null || !target.isAttackable || !target.alive || !target.isTargetable.Value
             || (IsPlayerControlled() && !target.isVisibleInFog)
-            //|| (!canAttackStructures && target.IsStructure())
             )
         //reject if target is null, or target is dead, or target is untargetable, or this unit is player controlled and target is hidden,
         //or this unit can't attack structures and target is structure
@@ -291,24 +294,42 @@ public class Attacker : EntityAddon
             if (ent.IsMelee()) Debug.Log("trying to target enemy idle");
         }
     }
+
+    private void GenericAttackMovePrep(Vector3 target)
+    {
+        attackMoveDestination = target;
+        sm.lastCommand.Value = CommandTypes.Attack;
+        sm.ClearTargets();
+        pf.ClearIdleness();
+        SwitchState(EntityStates.AttackMoving);
+        playedAttackMoveSound = false;
+        pf.SetDestination(target);
+        pf.orderedDestination = pf.destination;
+    }
+    public void AttackMoveToPosition(Vector3 target) //called by local player
+    {
+        if (!ent.alive) return; //dead units cannot be ordered
+        //if (IsGarrisoned()) return;
+        GenericAttackMovePrep(target);
+    }
     private void ResetGoal() //tell the unit to stop attacking from idle; other use cases: stop attack moving
     {
         longTermGoal = Goal.None;
         lastIdlePosition = transform.position;
     }
-    public async Task AttackMovingState()
+    public async void AttackMovingState()
     { 
         //on entering this state, hasCalledEnemySearchAsyncTask = false;
         #region Aesthetics
-        if (!ent.unitAnimator.InState(BEGIN_ATTACK_WALK) 
-            && !ent.unitAnimator.InState(CONTINUE_ATTACK_WALK))
+        if (!ent.anim.InState(BEGIN_ATTACK_WALK) 
+            && !ent.anim.InState(CONTINUE_ATTACK_WALK))
         {
             if (!playedAttackMoveSound) //play sound and anim
             {
                 playedAttackMoveSound = true;
                 ent.SimplePlaySound(2);
             }
-            ent.unitAnimator.Play(BEGIN_ATTACK_WALK);
+            ent.anim.Play(BEGIN_ATTACK_WALK);
         }
         #endregion
         #region Timers
@@ -322,7 +343,7 @@ public class Attacker : EntityAddon
         if (IsValidTarget(targetEnemy))
         {
             hasCalledEnemySearchAsyncTask = false; //allows new async search 
-            pf.SetTargetEnemyAsDestination();
+            SetTargetEnemyAsDestination();
             //setting destination needs to be called once (or at least not constantly to the same position)
 
             if (ent.IsMelee())
@@ -386,7 +407,7 @@ public class Attacker : EntityAddon
                 //Debug.Log("Entity searching");
                 await AsyncSetTargetEnemyToClosestInSearchList(range); //sets target enemy 
                 if (!sm.InState(EntityStates.AttackMoving)) return;
-                pf.SetTargetEnemyAsDestination();
+                SetTargetEnemyAsDestination();
                 if (targetEnemy == null)
                 {
                     hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again 
@@ -397,6 +418,26 @@ public class Attacker : EntityAddon
         //currrently, this will prioritize minions. however, if a wall is in the way, then the unit will just walk into the wall
         #endregion
     }
+    public void SetTargetEnemyAsDestination()
+    {
+        if (targetEnemy == null) return;
+        if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
+        {
+            pf.SetDestinationIfHighDiff(pf.nudgedTargetEnemyStructurePosition);
+        }
+        else
+        {
+            pf.SetDestinationIfHighDiff(targetEnemy.transform.position);
+        }
+    }
+    private bool asyncSearchTimerActive = false;
+    public void OnEnterState()
+    { 
+        asyncSearchTimerActive = false;
+        pf.pathfindingValidationTimerActive = false;
+        hasCalledEnemySearchAsyncTask = false;
+        alternateAttackTarget = null;
+    }
     private void HandleLackOfValidTargetEnemy()
     {
         switch (longTermGoal)
@@ -404,7 +445,7 @@ public class Attacker : EntityAddon
             case Goal.None:
                 break;
             case Goal.AttackFromIdle:
-                MoveTo(lastIdlePosition);
+                pf.MoveTo(lastIdlePosition);
                 ResetGoal();
                 break;
             case Goal.OrderedToAttackMove:
@@ -565,7 +606,7 @@ public class Attacker : EntityAddon
                 default:
                     break;
             }
-            if (matchesRequiredType)
+            /*if (matchesRequiredType)
             {
                 if (mustBeInSearchList)
                 {
@@ -594,7 +635,7 @@ public class Attacker : EntityAddon
                 {
                     break;
                 }
-            }
+            }*/
             select = null; //reaching the end of the loop without breaking resets select
         }
         return select;
@@ -624,7 +665,7 @@ public class Attacker : EntityAddon
         for (int i = 0; i < searchCount; i++)
         {
             SelectableEntity check = searchArray[i];
-            if (IsEnemy(check) && check.alive && check.isTargetable.Value) //only check on enemies that are alive, targetable, visible
+            if (ent.IsEnemyOf(check) && check.alive && check.isTargetable.Value) //only check on enemies that are alive, targetable, visible
             {
                 Vector3 offset = check.transform.position - transform.position;
                 if (offset.sqrMagnitude < range * range) //return first enemy that's in range
@@ -671,7 +712,7 @@ public class Attacker : EntityAddon
         for (int i = 0; i < searchCount; i++)
         {
             SelectableEntity check = searchArray[i];
-            if (IsEnemy(check) && check.alive && check.isTargetable.Value && check == enemy) //only check on enemies that are alive, targetable, visible
+            if (ent.IsEnemyOf(check) && check.alive && check.isTargetable.Value && check == enemy) //only check on enemies that are alive, targetable, visible
             {
                 Vector3 offset = check.transform.position - transform.position;
                 if (offset.sqrMagnitude < range * range) //return first enemy that's in range
@@ -685,6 +726,39 @@ public class Attacker : EntityAddon
 
     CancellationTokenSource asyncSearchCancellationToken;
 
+    private async Task<SelectableEntity> FindEnemyMinionToAttack(float range)
+    {
+        Debug.Log("Running idle find enemy minion to attack search");
+
+        if (ent.IsMelee())
+        {
+            range = defaultMeleeDetectionRange;
+        }
+        else
+        {
+            range += 1;
+        }
+
+        List<SelectableEntity> enemyList = ent.controllerOfThis.visibleEnemies;
+        SelectableEntity valid = null;
+
+        for (int i = 0; i < enemyList.Count; i++)
+        {
+            SelectableEntity check = enemyList[i];
+            if (ent.IsEnemyOf(check) && check.alive && check.isTargetable.Value && check.IsMinion())
+            //only check on enemies that are alive, targetable, visible, and in range. also only care about enemy minions
+            {
+                if (InRangeOfEntity(check, range)) //ai controlled doesn't care about fog
+                {
+                    valid = check;
+                }
+            }
+            await Task.Yield();
+            if (valid != null) return valid;
+        }
+        return valid;
+    }
+    public float maximumChaseRange = 5;
     /// <summary>
     /// Cancel an in-progress async search (searching through list of enemies for a target enemy).
     /// </summary>
@@ -714,7 +788,8 @@ public class Attacker : EntityAddon
                     SwitchState(EntityStates.Idle);
                     return;
                 }
-                animator.Play("AttackWalk");
+                
+                anim.Play(CONTINUE_ATTACK_WALK);
 
                 //if target is a structure, move the destination closer to us until it no longer hits obstacle
                 SetTargetEnemyAsDestination();
@@ -738,6 +813,9 @@ public class Attacker : EntityAddon
             //AutomaticAttackMove();*/
         }
     }
+
+    private float searchTimerDuration = 0.1f;
+    CancellationTokenSource hasCalledEnemySearchAsyncTaskTimerCancellationToken;
     /// <summary>
     /// When this timer elapses, a new async search through the enemy list will become available.
     /// hasCalledEnemySearchAsyncTask == true means that we have started running a search through the enemy list already
@@ -780,6 +858,9 @@ public class Attacker : EntityAddon
     { 
         alternateAttackTarget = null;
     }
+    public int attackMoveDestinationEnemyCount = 0;
+    private readonly float defaultMeleeDetectionRange = 4;
+    private readonly float rangedUnitRangeExtension = 2;
 
     /// <summary>
     /// Sets target enemy to the closest enemy
@@ -820,7 +901,7 @@ public class Attacker : EntityAddon
         for (int i = 0; i < searchCount; i++)
         {
             SelectableEntity check = searchArray[i];
-            if (IsEnemy(check) && check.alive && check.isTargetable.Value) //only check on enemies that are alive, targetable, visible
+            if (ent.IsEnemyOf(check) && check.alive && check.isTargetable.Value) //only check on enemies that are alive, targetable, visible
             {
                 //viability range is 4 unless attack range is higher
                 //viability range is how far targets can be from the attack move destination and still be a valid target
@@ -830,7 +911,7 @@ public class Attacker : EntityAddon
                 //AI doesn't care about attack move range viability; otherwise must be in range of the attack move destination
                 //later add failsafe for if there's nobody in that range
                 {
-                    if (canAttackStructures || check.IsMinion())
+                    if (check.IsMinion())
                     {
                         if (InRangeOfEntity(check, range)) //is enemy in range and visible?
                         {
@@ -863,7 +944,7 @@ public class Attacker : EntityAddon
                     targetEnemy = valid;
                     if (targetEnemy.IsStructure())
                     {
-                        NudgeTargetEnemyStructureDestination(targetEnemy);
+                        pf.NudgeTargetEnemyStructureDestination(targetEnemy);
                     }
                     Debug.DrawRay(valid.transform.position, Vector3.up, Color.green, 1);
                     //  Debug.Log("Square distance to: " + targetEnemy.name + " is " + sqrDistToTargetEnemy);
@@ -912,7 +993,7 @@ public class Attacker : EntityAddon
         for (int i = 0; i < searchCount; i++)
         {
             SelectableEntity check = searchArray[i];
-            if (IsEnemy(check) && check.alive && check.isTargetable.Value && check.IsMinion())
+            if (ent.IsEnemyOf(check) && check.alive && check.isTargetable.Value && check.IsMinion())
             //only check on enemies that are alive, targetable, visible, and in range, and are minions
             {
                 if (InRangeOfEntity(check, range))
@@ -958,7 +1039,7 @@ public class Attacker : EntityAddon
 
     Vector3 targetEnemyLastPosition;
 
-    private void UpdateTargetEnemyLastPosition()
+    public void UpdateTargetEnemyLastPosition()
     {
         if (ent.IsAttacker())
         {

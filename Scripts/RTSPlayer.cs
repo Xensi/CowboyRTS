@@ -202,7 +202,8 @@ public class RTSPlayer : Player
 
             foreach (SelectableEntity item in selectedEntities)
             {
-                if (item.sm != null && item.sm.IsValidAttacker()) //minion
+                //TODO
+                /*if (item.sm != null && item.sm.IsValidAttacker()) //minion
                 {
                     //if this unit is already assigned to an entity searcher, unassign it
                     if (item.sm.assignedEntitySearcher != null)
@@ -219,7 +220,7 @@ public class RTSPlayer : Player
                     order.targetPosition = clickedPosition;
                     order.action = ActionType.AttackMove;
                     UnitOrdersQueue.Add(order);
-                }
+                }*/
             }
             //totalNumUnitOrders = UnitOrdersQueue.Count; 
         }
@@ -319,7 +320,8 @@ public class RTSPlayer : Player
             {
                 if (item.sm != null)
                 {
-                    if (actionType == ActionType.AttackTarget) //if attacking a specific target, we need an entity searcher
+                    //TODO
+                    /*if (actionType == ActionType.AttackTarget) //if attacking a specific target, we need an entity searcher
                     { //for when it's dead
                         if (item.sm.IsValidAttacker()) //minion
                         {
@@ -340,7 +342,7 @@ public class RTSPlayer : Player
                             item.sm.assignedEntitySearcher.UnassignUnit(item.sm);
                             item.sm.assignedEntitySearcher = null;
                         }
-                    }
+                    }*/
 
                     UnitOrder order = new();
                     order.unit = item.sm;
@@ -375,7 +377,7 @@ public class RTSPlayer : Player
         DeselectAll();
         foreach (StateMachineController item in ownedMinions)
         {
-            if (item != null && item.attackType != AttackType.None && !IsEntityGarrrisoned(item.ent)
+            if (item != null && !IsEntityGarrrisoned(item.ent)
                 && !item.ent.IsSpawner() && !item.ent.IsHarvester())
             {
                 TrySelectEntity(item.ent);
@@ -400,7 +402,7 @@ public class RTSPlayer : Player
         {
             if (item != null && item.sm != null && (item.IsBuilder())) //&& item.canBuild
             {
-                switch (item.sm.currentState)
+                switch (item.sm.GetState())
                 {
                     case StateMachineController.EntityStates.Idle:
                     case StateMachineController.EntityStates.FindInteractable:
@@ -846,7 +848,7 @@ public class RTSPlayer : Player
                 {
                     builderListSelection.Add(item);
                 }
-                else if (item.sm != null && item.sm.attackType != AttackType.None)
+                else if (item.sm != null)
                 {
                     militaryList.Add(item);
                 }
@@ -1514,7 +1516,7 @@ public class RTSPlayer : Player
         }
     }
     private List<SelectableEntity> newSpawnsSpawnerList = new();
-    private void TryReplaceFakeSpawn() //not being used yet
+    /*private void TryReplaceFakeSpawn() //not being used yet
     {
         if (fakeSpawns.Count > 0 && fakeSpawnsReadyForReplacement.Count > 0) //fakeSpawnsReadyForReplacement.Count > 0 && 
         {
@@ -1534,7 +1536,7 @@ public class RTSPlayer : Player
                     newSpawn.transform.SetPositionAndRotation(fakeSpawns[0].transform.position, fakeSpawns[0].transform.rotation);
                     if (select != null && select.sm != null && fake != null && fakeController != null)
                     {
-                        select.sm.currentState = fakeController.currentState;
+                        select.sm.currentState = fakeController.GetState();
                         select.sm.currentState = StateMachineController.EntityStates.Idle;
                     }
                     if (select != null && fake != null)
@@ -1554,7 +1556,7 @@ public class RTSPlayer : Player
                 }
             }
         }
-    }
+    }*/
     #endregion
     #region Selection
     private void DoNotDoubleSelect()
@@ -1796,7 +1798,7 @@ public class RTSPlayer : Player
         return entity != null && ability != null && (entity.fullyBuilt || !ability.usableOnlyWhenBuilt) && entity.net.IsSpawned
             && entity.alive && entity.CanUseAbility(ability)
             && entity.unitAbilities.AbilityOffCooldown(ability)
-            && (entity.IsBuilding() || entity.sm.currentState != StateMachineController.EntityStates.UsingAbility);
+            && (entity.IsBuilding() || entity.sm.GetState() != StateMachineController.EntityStates.UsingAbility);
     }
     public void UpdateBuildQueueGUI()
     {
@@ -1995,7 +1997,7 @@ public class RTSPlayer : Player
     }
     private void SelectAllInSameGarrison(SelectableEntity garrison)
     {
-        foreach (GarrisonablePosition item in garrison.garrisonablePositions)
+        /*foreach (GarrisonablePosition item in garrison.garrisonablePositions)
         {
             if (item.passenger != null)
             {
@@ -2004,7 +2006,7 @@ public class RTSPlayer : Player
                     TrySelectEntity(item.passenger.ent);
                 }
             }
-        }
+        }*/
     }
     private void SelectAllSameTypeExcludingInGarrisons(SelectableEntity entity)
     {

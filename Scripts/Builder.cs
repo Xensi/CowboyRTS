@@ -5,7 +5,7 @@ using UnityEngine;
 using static StateMachineController;
 using static UnitAnimator;
 
-public class Builder : EntityAddon
+public class Builder : SwingEntityAddon
 {
     [SerializeField] private BuildableOptions buildableOptions; 
     public FactionBuilding[] GetBuildables()
@@ -93,7 +93,7 @@ public class Builder : EntityAddon
             {
                 anim.Play(WALK);
                 Vector3 closest = ent.interactionTarget.physicalCollider.ClosestPoint(transform.position);
-                sm.SetDestinationIfHighDiff(closest);
+                pf.SetDestinationIfHighDiff(closest);
             }
         }
     }

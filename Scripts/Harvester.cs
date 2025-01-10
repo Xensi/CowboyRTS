@@ -16,7 +16,7 @@ public enum HowToFilterResources
     BanResources,
     AllowResources
 }
-public class Harvester : EntityAddon
+public class Harvester : SwingEntityAddon
 {
     [SerializeField] private HarvesterSettings harvesterSettings;
     [SerializeField] private List<ResourceType> harvesterBag;
@@ -37,12 +37,15 @@ public class Harvester : EntityAddon
     }
     public void InitHarvester()
     {
-        bagSize = GetHarvesterSettings().bagSize;
-        delta = GetHarvesterSettings().amountToHarvestPerSwing;
-        range = GetHarvesterSettings().interactRange;
-        impactTime = GetHarvesterSettings().impactTime;
-        duration = GetHarvesterSettings().duration;
-        allowedResources = GetHarvesterSettings().allowedResources;
+        if (harvesterSettings != null)
+        { 
+            bagSize = harvesterSettings.bagSize;
+            delta = harvesterSettings.amountToHarvestPerSwing;
+            range = harvesterSettings.interactRange;
+            impactTime = harvesterSettings.impactTime;
+            duration = harvesterSettings.duration;
+            allowedResources = harvesterSettings.allowedResources;
+        }
     }
     public void UpdateReadiness()
     {
@@ -73,9 +76,9 @@ public class Harvester : EntityAddon
             }
             else
             {
-                sm.animator.Play("Walk");
+                anim.Play(WALK);
                 Vector3 closest = ent.interactionTarget.physicalCollider.ClosestPoint(transform.position);
-                sm.SetDestinationIfHighDiff(closest);
+                pf.SetDestinationIfHighDiff(closest);
             }
         }
     }
@@ -223,9 +226,9 @@ public class Harvester : EntityAddon
             }
             else
             {
-                sm.animator.Play("Walk");
+                anim.Play(WALK);
                 Vector3 closest = ent.interactionTarget.physicalCollider.ClosestPoint(transform.position);
-                sm.SetDestinationIfHighDiff(closest);
+                pf.SetDestinationIfHighDiff(closest);
             }
         }
     }
@@ -248,9 +251,9 @@ public class Harvester : EntityAddon
             sm.LookAtTarget(ent.interactionTarget.transform);
             if (ready)
             {
-                ent.unitAnimator.Play(HARVEST);
+                ent.anim.Play(HARVEST);
                 //sm.animator.Play("Harvest");
-                if (ent.unitAnimator.InProgress()) //sm.AnimatorUnfinished()
+                if (ent.anim.InProgress()) //sm.AnimatorUnfinished()
                 {
                     if (sm.stateTimer < impactTime)
                     {

@@ -282,7 +282,7 @@ public class AIPlayer : Player
     private void AIAttackersAttackMove(List<StateMachineController> fighters, Vector3 target)
     { 
         //create an entity searcher at the clicked position
-        EntitySearcher searcher = CreateEntitySearcherAtPosition(target, 1);
+        /*EntitySearcher searcher = CreateEntitySearcherAtPosition(target, 1);
 
         UnitOrdersQueue.Clear();
 
@@ -306,11 +306,11 @@ public class AIPlayer : Player
                 order.action = ActionType.AttackMove;
                 UnitOrdersQueue.Add(order);
             }
-        } 
+        } */
     }
     private void SendScoutingParty()
     {
-        StateMachineController scout = null;
+        /*StateMachineController scout = null;
         foreach (StateMachineController item in ownedMinions)
         {
             if (item != null && item.ent != null && item.ent.factionEntity != null && item.currentState == StateMachineController.EntityStates.Idle)
@@ -346,7 +346,7 @@ public class AIPlayer : Player
                     Debug.DrawRay(randomTarget, Vector3.up, Color.red, 1);
                 }
             } 
-        }
+        }*/
     }
     Vector3 currentScoutingDestination; 
     private void EconAction()

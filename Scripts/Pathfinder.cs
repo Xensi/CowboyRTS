@@ -1,16 +1,292 @@
+using NUnit.Framework.Internal.Commands;
+using Pathfinding;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
+using Unity.Netcode;
+using Unity.Services.Relay.Models;
 using UnityEngine;
 using static StateMachineController;
+using static UnitAnimator;
 
 public class Pathfinder : EntityAddon
 {
 
     public bool pathStatusValid = false; //when this is true, the current path result is valid
-    private bool pathfindingValidationTimerActive = false;
+    public bool pathfindingValidationTimerActive = false;
     private float pathfindingValidationTimerDuration = 0.5f;
+    public enum PathStatus { Pending, Reaches, Blocked }
+    public PathStatus pathReachesDestination = PathStatus.Pending;
+    public float pathDistFromTarget = 0;
+    [HideInInspector] public Vector3 orderedDestination; //remembers where player told minion to go
+
+    //controls where the AI will pathfind to
+    [HideInInspector]
+    public Vector3 destination;
+    CancellationTokenSource pathStatusTimerCancellationToken;
+     public AIPath ai;
+     public Seeker seeker;
+
+    public override void Awake()
+    {
+        base.Awake(); 
+        setter = GetComponent<AIDestinationSetter>();
+        ai = GetComponent<AIPath>();
+        seeker = GetComponent<Seeker>();
+    }
+    public void Start()
+    { 
+        FactionEntity factionEntity = ent.factionEntity;
+        if (factionEntity is FactionUnit)
+        {
+            FactionUnit factionUnit = factionEntity as FactionUnit;
+            {
+                if (ai != null) 
+                {
+                    ai.maxSpeed = factionUnit.maxSpeed; 
+                }
+            }
+        }
+        if (setter != null && setter.target == null)
+        { //create a target that our setter will use to update our pathfinding
+            GameObject obj = new GameObject("target");
+            obj.transform.parent = Global.Instance.transform;
+            pathfindingTarget = obj.transform;
+            pathfindingTarget.position = transform.position; //set to be on us
+            setter.target = pathfindingTarget;
+        }
+        defaultMoveSpeed = ai.maxSpeed;
+    }
+    [HideInInspector] public float defaultMoveSpeed = 0;
+
+    /// <summary>
+    /// Use to check if path reaches a position. Do not use to check if path reaches a structure. Assumes that the path has been searched already,
+    /// so may fail if it has not been searched manually or automatically before calling this
+    /// </summary>
+    /// <param name="position"></param>
+    /// <returns></returns>
+    private bool EndOfPathReachesPosition(Vector3 position)
+    {
+        float pathThreshold = 0.1f;
+        var buffer = new List<Vector3>();
+        ai.GetRemainingPath(buffer, out bool stale);
+        float dist = (position - buffer.Last()).sqrMagnitude;
+
+        Vector3 prePos = buffer[0];
+        for (int i = 1; i < buffer.Count; i++)
+        {
+            Debug.DrawLine(prePos, buffer[i], Color.blue, 1);
+            prePos = buffer[i];
+        }
+        //Debug.DrawRay(position, Vector3.up, Color.yellow, 4);
+        //Debug.DrawRay(buffer.Last(), Vector3.up, Color.blue, 4);
+        return dist < pathThreshold * pathThreshold;
+    }
+
+
+    private void BecomeObstacle()
+    {
+        if (!ent.alive)
+        {
+            ent.ClearObstacle();
+        }
+        else // if (!IsGarrisoned())
+        {
+            ent.MakeObstacle();
+        }
+    }
+    public void ClearObstacle()
+    {
+        ent.ClearObstacle();
+    }
+    private void ForceUpdateRealLocation()
+    {
+        if (IsOwner)
+        {
+            SetRealLocation();
+        }
+    }
+    [HideInInspector]
+    public NetworkVariable<Vector2Int> realLocation = new NetworkVariable<Vector2Int>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    private Vector3 oldRealLocation;
+    public void SetRealLocation()
+    {
+        oldRealLocation = transform.position;
+        realLocation.Value = QuantizePosition(transform.position);
+    }
+    private Vector2Int QuantizePosition(Vector3 vec) //(5.55)
+    {
+        int x = Mathf.RoundToInt(vec.x * 10); //56
+        int y = Mathf.RoundToInt(vec.z * 10);
+
+        return new Vector2Int(x, y);
+    }
+    private Vector3 DequantizePosition(Vector2Int vec) //(5.55)
+    {
+        float x = vec.x; //5.6
+        float z = vec.y;
+
+        return new Vector3(x / 10, 0, z / 10);
+    }
+    public List<Vector3> nonOwnerRealLocationList = new(); //only used by non owners to store real locations that should be pathfound to sequentially
+
+    public void NonOwnerPathfindToOldestRealLocation()
+    {
+        if (nonOwnerRealLocationList.Count > 0)
+        {
+            if (nonOwnerRealLocationList.Count >= Global.Instance.maximumQueuedRealLocations)
+            {
+                nonOwnerRealLocationList.RemoveAt(0); //remove oldest 
+
+            }
+            if (Vector3.Distance(nonOwnerRealLocationList[0], transform.position) > Global.Instance.allowedNonOwnerError)
+            {
+                transform.position = LerpPosition(transform.position, nonOwnerRealLocationList[0]);
+                if (pf.ai != null) pf.ai.enabled = false;
+            }
+            else
+            {
+                ent.pf.pathfindingTarget.position = nonOwnerRealLocationList[0]; //update pathfinding target to oldest real location 
+                if (pf.ai != null) pf.ai.enabled = true;
+            }
+
+            if (nonOwnerRealLocationList.Count > 1)
+            {
+                Vector3 offset = transform.position - ent.pf.pathfindingTarget.position;
+                float dist = offset.sqrMagnitude;
+                //for best results, make this higher than unit's slow down distance. at time of writing slowdown dist is .2
+                if (dist < Global.Instance.closeEnoughDist * Global.Instance.closeEnoughDist) //square the distance to compare against
+                {
+                    nonOwnerRealLocationList.RemoveAt(0); //remove oldest 
+                }
+                pf.ai.maxSpeed = pf.defaultMoveSpeed * (1 + (nonOwnerRealLocationList.Count - 1) / Global.Instance.maximumQueuedRealLocations);
+            }
+        }
+        else //make sure we have at least one position
+        {
+            nonOwnerRealLocationList.Add(transform.position);
+        }
+    }
+    private void OnRealLocationChanged(Vector2Int prev, Vector2Int cur)
+    {
+        //finishedInitializingRealLocation = true;
+        if (!IsOwner)
+        {
+            //may have to ray cast down to retrieve height data
+            Vector3 deq = DequantizePosition(realLocation.Value);
+            if (Physics.Raycast(deq + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.groundLayer))
+            {
+                deq.y = hit.point.y;
+            }
+            nonOwnerRealLocationList.Add(deq);
+        }
+    }
+    private bool highPrecisionMovement = false;
+    // Calculated start for the most recent interpolation
+    Vector3 m_LerpStart;
+
+    // Calculated time elapsed for the most recent interpolation
+    float m_CurrentLerpTime;
+
+    // The duration of the interpolation, in seconds    
+    float m_LerpTime = .1f;
+
+    public Vector3 LerpPosition(Vector3 current, Vector3 target)
+    {
+        if (current != target)
+        {
+            m_LerpStart = current;
+            m_CurrentLerpTime = 0f;
+        }
+
+        m_CurrentLerpTime += Time.deltaTime * Global.Instance.lerpScale;
+
+        /*// gentler lerp for shorter distances
+        float dist = Vector3.Distance(current, target);
+        float modifiedLerpTime = m_LerpTime * dist;
+
+        if (m_CurrentLerpTime > modifiedLerpTime)
+        {
+            m_CurrentLerpTime = modifiedLerpTime;
+        }
+
+        var lerpPercentage = m_CurrentLerpTime / modifiedLerpTime;*/
+        if (m_CurrentLerpTime > m_LerpTime)
+        {
+            m_CurrentLerpTime = m_LerpTime;
+        }
+
+        var lerpPercentage = m_CurrentLerpTime / m_LerpTime;
+
+        return Vector3.Lerp(m_LerpStart, target, lerpPercentage);
+    }
+    /// <summary>
+    /// Freeze rigidbody. Defaults to completely freezing it.
+    /// </summary>
+    /// <param name="freezePosition"></param>
+    /// <param name="freezeRotation"></param>
+    public void FreezeRigid(bool freezePosition = true, bool freezeRotation = true)
+    {
+        if (!freezePosition) //unfreeze
+        {
+            ClearObstacle();
+            pf.ai.canMove = true;
+        }
+        else //freeze
+        {
+            ForceUpdateRealLocation();
+            BecomeObstacle();
+            pf.ai.canMove = false; //TODO ERROR
+        }
+        highPrecisionMovement = freezePosition;
+
+        RigidbodyConstraints posCon;
+        RigidbodyConstraints rotCon;
+        //if (obstacle != null) obstacle.affectGraph = freezePosition; //should the minion act as a pathfinding obstacle?
+        //obstacleCollider.enabled = freezePosition;
+        if (freezePosition)
+        {
+            posCon = RigidbodyConstraints.FreezePositionX | RigidbodyConstraints.FreezePositionZ;
+        }
+        else
+        {
+            posCon = RigidbodyConstraints.None;
+            //posCon = RigidbodyConstraints.FreezePositionY;
+        }
+        //posCon = RigidbodyConstraints.FreezePositionY;
+        if (freezeRotation)
+        {
+            rotCon = RigidbodyConstraints.FreezeRotation;
+        }
+        else
+        {
+            rotCon = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        }
+        if (rigid != null) rigid.constraints = posCon | rotCon;
+    }
+    private readonly float pathReachesThreshold = 0.25f;
+    public Vector3 lastPathPosition;
+    [HideInInspector] public Transform pathfindingTarget;
+    private void UpdatePathStatus()
+    {
+        bool pathReached = EndOfPathReachesPosition(pathfindingTarget.transform.position);
+        if (ai.pathPending)
+        {
+            pathReachesDestination = PathStatus.Pending;
+        }
+        else if (pathReached)
+        {
+            pathReachesDestination = PathStatus.Reaches;
+        }
+        else
+        {
+            pathReachesDestination = PathStatus.Blocked;
+        }
+    }
     /// <summary>
     /// This is a timer that runs for 100 ms if the path status is invalid. The path status can become invalid by the destination
     /// changing. After the timer elapses, the path status will become valid, meaning that the game has had enough time to do path
@@ -45,21 +321,23 @@ public class Pathfinder : EntityAddon
     {
         return pathStatusValid && pathReachesDestination == PathStatus.Blocked;
     }
+    public Vector3 nudgedTargetEnemyStructurePosition;
+    /// <summary>
+    /// Slight nudge
+    /// </summary>
+    /// <param name="entity"></param>
+    public void NudgeTargetEnemyStructureDestination(SelectableEntity entity)
+    {
+        nudgedTargetEnemyStructurePosition = entity.transform.position;
+        float step = 10 * Time.deltaTime;
+        Vector3 newPosition = Vector3.MoveTowards(nudgedTargetEnemyStructurePosition, transform.position, step);
+        nudgedTargetEnemyStructurePosition = newPosition;
+        //Debug.DrawRay(entity.transform.position, Vector3.up, Color.red, 5);
+        Debug.DrawRay(nudgedTargetEnemyStructurePosition, Vector3.up, Color.green, 5);
+    }
     public bool PathReaches()
     {
         return pathStatusValid && pathReachesDestination == PathStatus.Reaches;
-    }
-    public void SetTargetEnemyAsDestination()
-    {
-        if (targetEnemy == null) return;
-        if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
-        {
-            SetDestinationIfHighDiff(nudgedTargetEnemyStructurePosition);
-        }
-        else
-        {
-            SetDestinationIfHighDiff(targetEnemy.transform.position);
-        }
     }
 
     /// <summary>
@@ -88,4 +366,129 @@ public class Pathfinder : EntityAddon
         pathStatusValid = false;
         //ai.SearchPath();
     }
+    /// <summary>
+    /// Update pathfinding target to match actual destination
+    /// </summary>
+    private void UpdateSetterTargetPosition()
+    {
+        pathfindingTarget.position = destination;
+    }
+    /// <summary>
+    /// Use to send unit to the specified location.
+    /// </summary>
+    /// <param name="target"></param>
+    public void MoveTo(Vector3 target)
+    {
+        sm.lastCommand.Value = CommandTypes.Move;
+        if (sm.currentState != EntityStates.Spawn)
+        {
+            BasicWalkTo(target);
+        }
+    }
+    public void UpdateIdleCount()
+    {
+        if (change <= walkAnimThreshold && effectivelyIdleInstances <= idleThreshold)
+        {
+            effectivelyIdleInstances += Time.deltaTime;
+        }
+        if (change > walkAnimThreshold)
+        {
+            effectivelyIdleInstances = 0;
+        }
+    }
+    public float walkStartTimer = 0;
+    public readonly float walkStartTimerSet = 1.5f; 
+    private AIDestinationSetter setter;
+    public void DetectIfShouldReturnToIdle()
+    {
+        if (IsEffectivelyIdle(idleThreshold))
+        {
+            //Debug.Log("Effectively Idle");
+            SwitchState(EntityStates.Idle);
+        }
+        else if (walkStartTimer <= 0 && ai.reachedDestination)
+        {
+            //Debug.Log("AI reached");
+            SwitchState(EntityStates.Idle);
+        }
+    }
+    private bool IsEffectivelyIdle(float forXSeconds)
+    {
+        return effectivelyIdleInstances > forXSeconds;
+    }
+    private float moveTimer = 0;
+    private readonly float moveTimerMax = .5f;
+    public Vector3 oldPosition;
+    public void GetActualPositionChange()
+    {
+        //float dist = Vector3.Distance(transform.position, oldPosition);
+        //oldPosition = transform.position;
+        moveTimer += Time.deltaTime;
+        if (moveTimer >= moveTimerMax)
+        {
+            moveTimer = 0;
+            Vector3 offset = transform.position - oldPosition;
+            float sqrLen = offset.sqrMagnitude;
+            change = sqrLen;
+            oldPosition = transform.position;
+            //Debug.Log(change);
+        }
+    }
+    private float change;
+    public void UpdateStopDistance()
+    {
+        float limit = 0.1f;
+        if (change < limit * limit && walkStartTimer <= 0)
+        {
+            ai.endReachedDistance += Time.deltaTime;
+        }
+    }
+    public void UpdateMinionTimers()
+    {
+        if (walkStartTimer > 0)
+        {
+            walkStartTimer -= Time.deltaTime;
+        }
+    }
+    public void IdleOrWalkContextuallyAnimationOnly()
+    {
+        float limit = 0.1f;
+        if (change < limit * limit && walkStartTimer <= 0 || ai.reachedDestination) //basicallyIdleInstances > idleThreshold
+        {
+            anim.Play(IDLE);
+        }
+        else
+        {
+            anim.Play(WALK);
+        }
+    }
+    private void BasicWalkTo(Vector3 target)
+    {
+        sm.ClearTargets();
+        ClearIdleness();
+        SwitchState(EntityStates.Walk);
+        SetOrderedDestination(target);
+        walkStartTimer = walkStartTimerSet;
+
+        /*SelectableEntity justLeftGarrison = null;
+        if (ent.occupiedGarrison != null) //we are currently garrisoned
+        {
+            justLeftGarrison = ent.occupiedGarrison;
+            RemovePassengerFrom(ent.occupiedGarrison);
+            PlaceOnGround(); //snap to ground
+        }*/
+    }
+    public void SetOrderedDestination(Vector3 target)
+    {
+        SetDestination(target);
+        //destination.Value = target; //set destination
+        orderedDestination = target; //remember where we set destination 
+    }
+    public void ClearIdleness()
+    {
+        effectivelyIdleInstances = 0; //we're not idle anymore
+    }
+    public readonly float walkAnimThreshold = 0.0001f;
+    private float effectivelyIdleInstances = 0;
+    private readonly float idleThreshold = 3f;//3; //seconds of being stuck
 }

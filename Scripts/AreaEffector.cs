@@ -1,6 +1,7 @@
 using System; 
 using System.Drawing;
-using UnityEngine; 
+using UnityEngine;
+using static StateMachineController;
 public class AreaEffector : MonoBehaviour
 {
     private readonly float lrWidth = 0.05f;
@@ -150,7 +151,7 @@ public class AreaEffector : MonoBehaviour
                 case EffectToApply.None:
                     break;
                 case EffectToApply.HealNonAttackers:
-                    if (select.sm != null && select.sm.currentState != StateMachineController.EntityStates.Attacking)
+                    if (select.sm != null && !select.sm.InState(EntityStates.Attacking))
                     {
                         select.RaiseHP((sbyte)effectNumber);
                     }

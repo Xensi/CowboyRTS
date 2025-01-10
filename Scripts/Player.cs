@@ -114,7 +114,7 @@ public class Player : NetworkBehaviour
 
     public void CreateEntitySearcherAndAssign(Vector3 position, StateMachineController minion)
     {
-        if (minion == null) return;
+        /*if (minion == null) return;
         EntitySearcher searcher = CreateEntitySearcherAtPosition(position, minion.ent.controllerOfThis.allegianceTeamID);
         if (searcher == null) return;
         //if this unit is already assigned to an entity searcher, unassign it
@@ -126,7 +126,7 @@ public class Player : NetworkBehaviour
         minion.assignedEntitySearcher = searcher;
         //update the entity searcher's assigned units list
         minion.assignedEntitySearcher.AssignUnit(minion);
-        minion.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search 
+        minion.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search */
     }
     private void UpdateVisibilities() //AI will need a different solution
     {

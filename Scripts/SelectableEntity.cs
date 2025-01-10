@@ -54,14 +54,14 @@ public class SelectableEntity : NetworkBehaviour
     //Automatically set
     private LootOnDestruction lootComponent;
     [HideInInspector] public UnitAbilities unitAbilities;
-    [HideInInspector] public UnitAnimator unitAnimator; //Entities that can be deposited to.
+    [HideInInspector] public UnitAnimator anim; //Entities that can be deposited to.
     [HideInInspector] public Depot depot; //Entities that can be deposited to.
     [HideInInspector] public Ore ore; //Entities that are harvestable for resources
     [HideInInspector] public Harvester harvester; //Entities that can harvest resources
     [HideInInspector] public StateMachineController sm; //Entities that need to pathfind
     [HideInInspector] public Builder builder; //Entities that need to pathfind
     [HideInInspector] public Spawner spawner;
-    [HideInInspector] public Pathfinder pf;
+    public Pathfinder pf;
     [HideInInspector] public Garrison garrison;
     private MeshRenderer[] allMeshes;
     private MeshRenderer[] finishedMeshRenderers;
@@ -74,7 +74,6 @@ public class SelectableEntity : NetworkBehaviour
     public int raisePopulationLimitBy = 0;
     [HideInInspector] public NetworkObject net;
     [HideInInspector] public Attacker attacker;
-
     private void Initialize()
     {
         allMeshes = GetComponentsInChildren<MeshRenderer>();
@@ -92,7 +91,7 @@ public class SelectableEntity : NetworkBehaviour
         if (harvester == null) harvester = GetComponent<Harvester>();
         ore = GetComponent<Ore>();
         depot = GetComponent<Depot>();
-        unitAnimator = GetComponent<UnitAnimator>();
+        anim = GetComponent<UnitAnimator>();
         builder = GetComponent<Builder>();
         spawner = GetComponent<Spawner>();
         unitAbilities = GetComponent<UnitAbilities>();
@@ -230,7 +229,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public bool IsMinion() //Minions typically move around
     {
-        return sm != null && sm.ai != null;
+        return sm != null && pf != null;
     }
     public bool IsHarvester()
     {
@@ -504,7 +503,7 @@ public class SelectableEntity : NetworkBehaviour
         }
     }
     private void Start() //call stuff here so that network variables are valid (isSpawned)
-    {
+    { 
         SetStartingSelectionRadius();
         Select(false);
         PlaySpawnSound();
@@ -568,7 +567,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (IsMinion())
         {
-            selectIndicator.UpdateRadius(sm.ai.radius);
+            selectIndicator.UpdateRadius(pf.ai.radius); //TODO ERROR
         }
         else
         {
@@ -720,14 +719,7 @@ public class SelectableEntity : NetworkBehaviour
         {
             BecomeFullyBuilt();
         }
-    }
-    private void DetectIfDamaged()
-    {
-        if (fullyBuilt && !damaged) //if built, detect if damaged
-        {
-            CheckIfDamaged();
-        }
-    }
+    } 
     private void DetectIfShouldDie()
     {
         if (sm != null && !alive && !sm.InState(EntityStates.Die)) //force go to death state
@@ -846,17 +838,17 @@ public class SelectableEntity : NetworkBehaviour
     }
     private bool HasUnitAnimator()
     {
-        return unitAnimator != null;
+        return anim != null;
     }
     private void ResetVariableFromStatusEffect(TargetedEffects effect) //this will work for now but will not work if multiple buffs are stacked
     {
         switch (effect.status)
         {
             case TargetedEffects.StatusEffect.MoveSpeed:
-                if (sm != null && sm.ai != null)
+                if (sm != null && pf.ai != null)
                 {
-                    sm.ai.maxSpeed = sm.defaultMoveSpeed; 
-                    if (HasUnitAnimator()) unitAnimator.ResetMultiplier(MOVE_SPEED);
+                    pf.ai.maxSpeed = pf.defaultMoveSpeed; 
+                    if (HasUnitAnimator()) anim.ResetMultiplier(MOVE_SPEED);
                 }
                 break;
             case TargetedEffects.StatusEffect.AttackDuration:
@@ -864,7 +856,7 @@ public class SelectableEntity : NetworkBehaviour
                 {
                     attacker.duration = attacker.defaultAttackDuration;
                     attacker.impactTime = attacker.defaultImpactTime;
-                    if (HasUnitAnimator()) unitAnimator.ResetMultiplier(ATTACK_SPEED);
+                    if (HasUnitAnimator()) anim.ResetMultiplier(ATTACK_SPEED);
                 } 
                 break;
             default:
@@ -923,9 +915,10 @@ public class SelectableEntity : NetworkBehaviour
                 //walking sounds. client side only
                 if (sm != null)
                 {
-                    if (sm.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart")
-                        || sm.animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk")
-                        || sm.animator.GetCurrentAnimatorStateInfo(0).IsName("Walk"))
+                    if (anim.InState(BEGIN_ATTACK_WALK)
+                        || anim.InState(CONTINUE_ATTACK_WALK)
+                        || anim.InState(WALK)
+                        )
                     {
                         if (footstepCount < footstepThreshold)
                         {
@@ -1082,7 +1075,7 @@ public class SelectableEntity : NetworkBehaviour
         }
         else
         {
-            if (HasUnitAnimator()) unitAnimator.Play(DIE); 
+            if (HasUnitAnimator()) anim.Play(DIE); 
         }
         if (fogUnit != null)
         {
@@ -1174,9 +1167,9 @@ public class SelectableEntity : NetworkBehaviour
         Destroy(targetIndicator);
     }
     #endregion 
-    /*public void ReceivePassenger(StateMachineController newPassenger)
+    public void ReceivePassenger(StateMachineController newPassenger)
     {
-        foreach (GarrisonablePosition item in garrisonablePositions)
+        /*foreach (GarrisonablePosition item in garrisonablePositions)
         {
             if (item != null)
             {
@@ -1188,10 +1181,10 @@ public class SelectableEntity : NetworkBehaviour
                     if (IsOwner)
                     {
                         newPassenger.ent.isTargetable.Value = passengersAreTargetable;
-                        *//*if (newPassenger.minionNetwork != null)
+                        if (newPassenger.minionNetwork != null)
                         {
                             newPassenger.minionNetwork.verticalPosition.Value = item.transform.position.y;
-                        }*//*
+                        }
                     }
                     newPassenger.col.isTrigger = true;
                     Global.Instance.localPlayer.DeselectSpecific(newPassenger.ent);
@@ -1200,11 +1193,20 @@ public class SelectableEntity : NetworkBehaviour
                     break;
                 }
             }
-        }
-    }*/
-    /*public void UnloadPassenger(StateMachineController exiting)
+        }*/
+    }
+    public bool IsEnemyOf(SelectableEntity target)
     {
-        foreach (GarrisonablePosition item in garrisonablePositions)
+        if (target != null)
+        {
+            return target.controllerOfThis.allegianceTeamID != controllerOfThis.allegianceTeamID;
+        }
+        return false;
+        //return target.teamNumber.Value != entity.teamNumber.Value;
+    }
+    public void UnloadPassenger(StateMachineController exiting)
+    {
+        /*foreach (GarrisonablePosition item in garrisonablePositions)
         {
             if (item.passenger == exiting)
             {
@@ -1227,8 +1229,8 @@ public class SelectableEntity : NetworkBehaviour
                 exiting.col.isTrigger = false;
                 break;
             }
-        }
-    }*/
+        }*/
+    }
     [ServerRpc]
     private void PlaceOnGroundServerRpc()
     {
@@ -1473,11 +1475,10 @@ public class SelectableEntity : NetworkBehaviour
     }
     private readonly float deathDuration = 10;
     private void Die()
-    {
-
+    { 
         if (IsOwner) //only the owner does this
         {
-            if (sm != null && sm.pathfindingTarget != null) Destroy(sm.pathfindingTarget.gameObject);
+            if (sm != null && pf.pathfindingTarget != null) Destroy(pf.pathfindingTarget.gameObject);
             Global.Instance.localPlayer.ownedEntities.Remove(this);
             Global.Instance.localPlayer.selectedEntities.Remove(this);
             if (IsServer) //only the server may destroy networkobjects
@@ -1658,7 +1659,7 @@ public class SelectableEntity : NetworkBehaviour
                                 float randRadius = 1;
                                 Vector2 randCircle = UnityEngine.Random.insideUnitCircle * randRadius;
                                 Vector3 rand = target.transform.position + new Vector3(randCircle.x, 0, randCircle.y);
-                                target.sm.MoveTo(rand);
+                                target.pf.MoveTo(rand);
                                 //Debug.Log("trying to move blocking unit to: " + rand);
                                 productionBlocked = true;
                             }

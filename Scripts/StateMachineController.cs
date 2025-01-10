@@ -11,13 +11,7 @@ using System.Threading.Tasks;
 using System.Data.Common;
 using System;
 using System.Threading;
-using TMPro;
-/*using static UnityEngine.GraphicsBuffer;
-using Unity.Burst.CompilerServices;
-using System.Data.Common;
-using Unity.VisualScripting;*/
-//using UnityEngine.Rendering;
-//using UnityEngine.Windows;
+using TMPro; 
 
 //used for entities that can attack
 [RequireComponent(typeof(SelectableEntity))]
@@ -61,24 +55,14 @@ public class StateMachineController : NetworkBehaviour
     private Camera cam;
     [HideInInspector] public SelectableEntity ent;
     private RaycastModifier rayMod;
-    private Seeker seeker;
     private readonly float spawnDuration = .5f;
     private readonly sbyte buildDelta = 5; 
     public float stateTimer = 0;
     private float rotationSpeed = 10f;
     //[HideInInspector] public bool followingMoveOrder = false;
-    [HideInInspector] public Vector3 orderedDestination; //remembers where player told minion to go
-    private float effectivelyIdleInstances = 0;
-    private readonly float idleThreshold = 3f;//3; //seconds of being stuck
-    private float change;
-    public readonly float walkAnimThreshold = 0.0001f;
-    private Vector3 oldPosition;
-    [HideInInspector] public AIPath ai;
     [HideInInspector] public Collider col;
-    [HideInInspector] private Rigidbody rigid;
-    [HideInInspector] public Animator animator; //comment this out soon 
+    [HideInInspector] private Rigidbody rigid; 
     [HideInInspector] public MinionNetwork minionNetwork;
-    private AIDestinationSetter setter;
     #endregion
     #region Variables
 
@@ -86,72 +70,49 @@ public class StateMachineController : NetworkBehaviour
 
     //[SerializeField] private LocalRotation localRotate;
     //[HideInInspector] public bool canMoveWhileAttacking = false; //Does not do anything yet
-    [HideInInspector] public Transform pathfindingTarget;
     public readonly float garrisonRange = 1.1f;
     //50 fps fixed update
     //private readonly int delay = 0; 
-    private EntityStates currentState = EntityStates.Spawn;
+    public EntityStates currentState = EntityStates.Spawn;
     [HideInInspector] public SelectableEntity.RallyMission givenMission = SelectableEntity.RallyMission.None;
     [HideInInspector] public Vector3 rallyPosition; //deprecated
     #endregion
-    #region NetworkVariables
-    //maybe optimize this as vector 2 later
-    [HideInInspector]
-    public NetworkVariable<Vector2Int> realLocation = new NetworkVariable<Vector2Int>(default,
-        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    private Vector3 oldRealLocation;
-    //controls where the AI will pathfind to
-    [HideInInspector]
-    public Vector3 destination;
+    #region NetworkVariables 
     public bool canReceiveNewCommands = true;
-    [HideInInspector] public float defaultMoveSpeed = 0;
 
-    public Vector3 attackMoveDestination;
     [SerializeField] private List<TrailRenderer> attackTrails = new();
+    [HideInInspector]
+    public NetworkVariable<CommandTypes> lastCommand = new NetworkVariable<CommandTypes>(default,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
-
-    private float maximumChaseRange = 5;
+    private Pathfinder pf;
+    private UnitAnimator anim;
 
     #region Core 
-    void OnEnable()
+    private bool CanPathfind()
     {
-        rayMod = GetComponent<RaycastModifier>();
-        seeker = GetComponent<Seeker>();
-        col = GetComponent<Collider>();
-        ent = GetComponent<SelectableEntity>();
-        minionNetwork = GetComponent<MinionNetwork>();
-        animator = GetComponentInChildren<Animator>();
-        rigid = GetComponent<Rigidbody>();
-        //obstacle = GetComponentInChildren<MinionObstacle>();  
-
-        if (ent.fakeSpawn)
-        {
-            FreezeRigid();
-            ai.enabled = false;
-        }
-        nearbyIndexer = 0;// Random.Range(0, Global.Instance.allFactionEntities.Count);
-
-        setter = GetComponent<AIDestinationSetter>();
-        if (setter != null && setter.target == null)
-        {
-            GameObject obj = new GameObject("target");
-            obj.transform.parent = Global.Instance.transform;
-            pathfindingTarget = obj.transform;
-            pathfindingTarget.position = transform.position; //set to be on us
-            setter.target = pathfindingTarget;
-        }
-        defaultMoveSpeed = ai.maxSpeed;
+        return pf != null;
     }
     private void Awake()
     {
-        ai = GetComponent<AIPath>();
+        Initialize();
         enemyMask = LayerMask.GetMask("Entity", "Obstacle");
-        cam = Camera.main;
 
-        if (animator == null)
+        /*if (ent.fakeSpawn)
         {
-            animator = GetComponentInChildren<Animator>();
-        } 
+            FreezeRigid();
+            ent.pf.ai.enabled = false;
+        }*/
+        nearbyIndexer = 0;  
+    }
+    private void Initialize()
+    { 
+        rayMod = GetComponent<RaycastModifier>();;
+        col = GetComponent<Collider>();
+        ent = GetComponent<SelectableEntity>();
+        minionNetwork = GetComponent<MinionNetwork>();
+        rigid = GetComponent<Rigidbody>();  
+        cam = Camera.main;
     }
     public SelectableEntity[] attackMoveDestinationEnemyArray = new SelectableEntity[0];
 
@@ -165,26 +126,17 @@ public class StateMachineController : NetworkBehaviour
     }
     private void Start()
     {
-        FactionEntity factionEntity = ent.factionEntity;
-        if (factionEntity is FactionUnit)
-        {
-            FactionUnit factionUnit = factionEntity as FactionUnit;
-            {
-                if (ai != null)
-                {
-                    ai.maxSpeed = factionUnit.maxSpeed;
-                    //Debug.Log("setting " + name + " speed to " + ai.maxSpeed);
-                }
-            }
-        }
+        pf = ent.pf;
+        anim = ent.anim;
+
         if (ent.IsAttacker()) { 
             if (IsMelee())
             {
-                maximumChaseRange = Global.Instance.defaultMeleeSearchRange;
+                ent.attacker.maximumChaseRange = Global.Instance.defaultMeleeSearchRange;
             }
             else
             {
-                maximumChaseRange = ent.attacker.range * 2f;
+                ent.attacker.maximumChaseRange = ent.attacker.range * 2f;
             }
         }
         attackMoveDestinationEnemyArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
@@ -201,37 +153,21 @@ public class StateMachineController : NetworkBehaviour
             return false;
         }
     }
-    private Vector2Int QuantizePosition(Vector3 vec) //(5.55)
+    public EntityStates GetState()
     {
-        int x = Mathf.RoundToInt(vec.x * 10); //56
-        int y = Mathf.RoundToInt(vec.z * 10);
-
-        return new Vector2Int(x, y);
-    }
-    private Vector3 DequantizePosition(Vector2Int vec) //(5.55)
-    {
-        float x = vec.x; //5.6
-        float z = vec.y;
-
-        return new Vector3(x / 10, 0, z / 10);
-    }
-    private void SetRealLocation()
-    {
-        oldRealLocation = transform.position;
-        realLocation.Value = QuantizePosition(transform.position);
+        return currentState;
     }
     public override void OnNetworkSpawn()
     {
         if (IsOwner)
         {
-            SetRealLocation();
+            pf.SetRealLocation();
             //destination.Value = transform.position; 
 
             SwitchState(EntityStates.Spawn);
             Invoke(nameof(FinishSpawning), spawnDuration);
             //finishedInitializingRealLocation = true;
-            lastCommand.Value = CommandTypes.Move;
-            defaultEndReachedDistance = ai.endReachedDistance;
+            lastCommand.Value = CommandTypes.Move; 
         }
         else
         {
@@ -246,130 +182,55 @@ public class StateMachineController : NetworkBehaviour
         }
         realLocation.OnValueChanged += OnRealLocationChanged;
         //enabled = IsOwner;
-        oldPosition = transform.position;
-        orderedDestination = transform.position;
+        ent.pf.oldPosition = transform.position;
+        ent.pf.orderedDestination = transform.position;
     } 
     public bool IsCurrentlyBuilding()
     {
         return currentState == EntityStates.Building || currentState == EntityStates.WalkToInteractable && lastMajorState == EntityStates.Building;
     }
 
-    private void NonOwnerPathfindToOldestRealLocation()
-    {
-        if (nonOwnerRealLocationList.Count > 0)
-        {
-            if (nonOwnerRealLocationList.Count >= Global.Instance.maximumQueuedRealLocations)
-            {
-                nonOwnerRealLocationList.RemoveAt(0); //remove oldest 
-
-            }
-            if (Vector3.Distance(nonOwnerRealLocationList[0], transform.position) > Global.Instance.allowedNonOwnerError)
-            {
-                transform.position = LerpPosition(transform.position, nonOwnerRealLocationList[0]);
-                if (ai != null) ai.enabled = false;
-            }
-            else
-            {
-                pathfindingTarget.position = nonOwnerRealLocationList[0]; //update pathfinding target to oldest real location 
-                if (ai != null) ai.enabled = true;
-            }
-
-            if (nonOwnerRealLocationList.Count > 1)
-            {
-                Vector3 offset = transform.position - pathfindingTarget.position;
-                float dist = offset.sqrMagnitude;
-                //for best results, make this higher than unit's slow down distance. at time of writing slowdown dist is .2
-                if (dist < Global.Instance.closeEnoughDist * Global.Instance.closeEnoughDist) //square the distance to compare against
-                {
-                    nonOwnerRealLocationList.RemoveAt(0); //remove oldest 
-                }
-                ai.maxSpeed = defaultMoveSpeed * (1 + (nonOwnerRealLocationList.Count - 1) / Global.Instance.maximumQueuedRealLocations);
-            }
-        }
-        else //make sure we have at least one position
-        {
-            nonOwnerRealLocationList.Add(transform.position);
-        }
-    }
-    private float moveTimer = 0;
-    private readonly float moveTimerMax = .5f;
-    private void GetActualPositionChange()
-    {
-        //float dist = Vector3.Distance(transform.position, oldPosition);
-        //oldPosition = transform.position;
-        moveTimer += Time.deltaTime;
-        if (moveTimer >= moveTimerMax)
-        {
-            moveTimer = 0;
-            Vector3 offset = transform.position - oldPosition;
-            float sqrLen = offset.sqrMagnitude;
-            change = sqrLen;
-            oldPosition = transform.position;
-            //Debug.Log(change);
-        }
-    }
-    private void OnRealLocationChanged(Vector2Int prev, Vector2Int cur)
-    {
-        //finishedInitializingRealLocation = true;
-        if (!IsOwner)
-        {
-            //may have to ray cast down to retrieve height data
-            Vector3 deq = DequantizePosition(realLocation.Value);
-            if (Physics.Raycast(deq + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.groundLayer))
-            {
-                deq.y = hit.point.y;
-            }
-            nonOwnerRealLocationList.Add(deq);
-        }
-    }
-    public List<Vector3> nonOwnerRealLocationList = new(); //only used by non owners to store real locations that should be pathfound to sequentially
-
     //private bool finishedInitializingRealLocation = false;
     private void UpdateRepathRate()
     {
         float defaultPathRate = 2;
         float attackMovePathRate = 0.5f;
-        ai.autoRepath.maximumPeriod = defaultPathRate;
-        ai.autoRepath.mode = AutoRepathPolicy.Mode.Dynamic;
+        pf.ai.autoRepath.maximumPeriod = defaultPathRate;
+        pf.ai.autoRepath.mode = AutoRepathPolicy.Mode.Dynamic;
 
         if (lastOrderType == ActionType.AttackMove)
         {
-            ai.autoRepath.maximumPeriod = attackMovePathRate;
+            pf.ai.autoRepath.maximumPeriod = attackMovePathRate;
         }
         else if (currentState == EntityStates.Idle || currentState == EntityStates.Harvesting
             || currentState == EntityStates.Building)
         {
-            ai.autoRepath.mode = AutoRepathPolicy.Mode.Never;
+            pf.ai.autoRepath.mode = AutoRepathPolicy.Mode.Never;
         }
-    } 
-    public bool animatorUnfinished = false;
+    }  
     private void Update()
     {
         //update real location, or catch up
         if (!ent.fakeSpawn && IsSpawned)
         {
-            GetActualPositionChange();
-            UpdateIdleCount();
+            ent.pf.GetActualPositionChange();
+            ent.pf.UpdateIdleCount();
             if (IsOwner)
             {   
                 //EvaluateNearbyEntities();
                 UpdateRealLocation();
-                UpdateMinionTimers();
+                ent.pf.UpdateMinionTimers();
                 UpdateReadiness();
                 UpdateInteractors();
                 OwnerUpdateState();
                 UpdateRepathRate();
                 //UpdateSetterTargetPosition();
                 FixGarrisonObstacle();
-                UpdateTargetEnemyLastPosition();
-                animatorUnfinished = AnimatorUnfinished();
+                ent.attacker.UpdateTargetEnemyLastPosition(); 
             }
             else // if (finishedInitializingRealLocation) //not owned by us
             {
-                NonOwnerPathfindToOldestRealLocation();
-                //CatchUpIfHighError();
-                //NonOwnerUpdateAnimationBasedOnContext(); //maybe there is issue with this 
-                //if (ai != null) ai.destination = destination.Value;
+                pf.NonOwnerPathfindToOldestRealLocation();
             }
         }
     }
@@ -413,50 +274,23 @@ public class StateMachineController : NetworkBehaviour
     }*/
     private void FixGarrisonObstacle()
     {
-        if (IsGarrisoned())
+        /*if (IsGarrisoned())
         {
             ClearObstacle();
-        }
+        }*/
     }
     //float stopDistIncreaseThreshold = 0.01f;
     float defaultEndReachedDistance = 0.5f;
-    private void UpdateStopDistance()
-    {
-        float limit = 0.1f;
-        if (change < limit * limit && walkStartTimer <= 0)
-        {
-            ai.endReachedDistance += Time.deltaTime;
-        }
-    }
-    private void UpdateMinionTimers()
-    {
-        if (walkStartTimer > 0)
-        {
-            walkStartTimer -= Time.deltaTime;
-        }
-    }
-    private void IdleOrWalkContextuallyAnimationOnly()
-    {
-        float limit = 0.1f;
-        if (change < limit * limit && walkStartTimer <= 0 || ai.reachedDestination) //basicallyIdleInstances > idleThreshold
-        {
-            animator.Play("Idle");
-        }
-        else
-        {
-            animator.Play("Walk");
-        }
-    }
     private void ClientSeekEnemy()
     {
-        if (nearbyIndexer >= Global.Instance.allEntities.Count)
+        /*if (nearbyIndexer >= Global.Instance.allEntities.Count)
         {
             nearbyIndexer = Global.Instance.allEntities.Count - 1;
         }
         SelectableEntity check = Global.Instance.allEntities[nearbyIndexer]; //fix this so we don't get out of range 
         if (clientSideTargetInRange == null)
         {
-            if (check != null && check.alive && check.teamNumber.Value != ent.teamNumber.Value && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
+            if (check != null && check.alive && check.teamNumber.Value != ent.teamNumber.Value) //  && check.visibleInFog <-- doesn't work?
             { //only check on enemies that are alive, targetable, visible, and in range  
                 clientSideTargetInRange = check;
             }
@@ -467,22 +301,11 @@ public class StateMachineController : NetworkBehaviour
         if (clientSideTargetInRange != null)
         {
             FreezeRigid();
-        }
-    }
-    private void UpdateIdleCount()
-    {
-        if (change <= walkAnimThreshold && effectivelyIdleInstances <= idleThreshold)
-        {
-            effectivelyIdleInstances += Time.deltaTime;
-        }
-        if (change > walkAnimThreshold)
-        {
-            effectivelyIdleInstances = 0;
-        }
+        }*/
     }
     private void NonOwnerUpdateAnimationBasedOnContext()
     {
-        if (ent.alive)
+        /*if (ent.alive)
         {
             if (ent.occupiedGarrison != null)
             {
@@ -490,7 +313,7 @@ public class StateMachineController : NetworkBehaviour
                 if (clientSideTargetInRange != null)
                 {
                     //Debug.DrawLine(transform.position, clientSideEnemyInRange.transform.position, Color.red, 0.1f);
-                    animator.Play("Attack");
+                    anim.Play("Attack");
                     LookAtTarget(clientSideTargetInRange.transform);
                 }
                 else
@@ -504,7 +327,7 @@ public class StateMachineController : NetworkBehaviour
                 {
                     case CommandTypes.Move:
                     case CommandTypes.Deposit:
-                        IdleOrWalkContextuallyAnimationOnly();
+                        ent.pf.IdleOrWalkContextuallyAnimationOnly();
                         break;
                     case CommandTypes.Attack:
                         ClientSeekEnemy();
@@ -524,11 +347,11 @@ public class StateMachineController : NetworkBehaviour
         else
         {
             animator.Play("Die");
-        }
+        }*/
     }
     private void ContextualIdleOrHarvestBuild()
     {
-        if (effectivelyIdleInstances > idleThreshold || ai.reachedDestination)
+        /*if (effectivelyIdleInstances > idleThreshold || ai.reachedDestination)
         {
             if (clientSideTargetInRange != null)
             {
@@ -540,11 +363,11 @@ public class StateMachineController : NetworkBehaviour
         else
         {
             animator.Play("Walk");
-        }
+        }*/
     }
     private void ContextualIdleOrAttack()
     {
-        if (effectivelyIdleInstances > idleThreshold || ai.reachedDestination)
+        /*if (effectivelyIdleInstances > idleThreshold || ai.reachedDestination)
         {
             if (clientSideTargetInRange != null)
             {
@@ -559,11 +382,11 @@ public class StateMachineController : NetworkBehaviour
             {
                 animator.Play("AttackWalkStart");
             }
-        }
+        }*/
     }
     private void ClientSeekHarvestable()
     {
-        if (nearbyIndexer >= Global.Instance.allEntities.Count)
+        /*if (nearbyIndexer >= Global.Instance.allEntities.Count)
         {
             nearbyIndexer = Global.Instance.allEntities.Count - 1;
         }
@@ -582,7 +405,7 @@ public class StateMachineController : NetworkBehaviour
         if (clientSideTargetInRange != null)
         {
             FreezeRigid();
-        }
+        }*/
     }
 
     private void ClientSeekBuildable()
@@ -595,7 +418,7 @@ public class StateMachineController : NetworkBehaviour
         if (clientSideTargetInRange == null)
         {
             if (check != null && check.alive && check.teamNumber == ent.teamNumber &&
-                !check.fullyBuilt && InRangeOfEntity(check, attackRange)) //  && check.visibleInFog <-- doesn't work?
+                !check.fullyBuilt) //  && check.visibleInFog <-- doesn't work?
             { //only check on enemies that are alive, targetable, visible, and in range  
                 clientSideTargetInRange = check;
             }
@@ -605,7 +428,7 @@ public class StateMachineController : NetworkBehaviour
 
         if (clientSideTargetInRange != null)
         {
-            FreezeRigid();
+            pf.FreezeRigid();
         }
     }
     private SelectableEntity clientSideTargetInRange = null;
@@ -624,45 +447,6 @@ public class StateMachineController : NetworkBehaviour
     //private bool realLocationReached = false;
     //private float updateRealLocThreshold = 1f; //1
     //private readonly float allowedNonOwnerError = 1.5f; //1.5 ideally higher than real loc update; don't want to lerp to old position
-    private bool highPrecisionMovement = false;
-    // Calculated start for the most recent interpolation
-    Vector3 m_LerpStart;
-
-    // Calculated time elapsed for the most recent interpolation
-    float m_CurrentLerpTime;
-
-    // The duration of the interpolation, in seconds    
-    float m_LerpTime = .1f;
-
-    public Vector3 LerpPosition(Vector3 current, Vector3 target)
-    {
-        if (current != target)
-        {
-            m_LerpStart = current;
-            m_CurrentLerpTime = 0f;
-        }
-
-        m_CurrentLerpTime += Time.deltaTime * Global.Instance.lerpScale;
-
-        /*// gentler lerp for shorter distances
-        float dist = Vector3.Distance(current, target);
-        float modifiedLerpTime = m_LerpTime * dist;
-
-        if (m_CurrentLerpTime > modifiedLerpTime)
-        {
-            m_CurrentLerpTime = modifiedLerpTime;
-        }
-
-        var lerpPercentage = m_CurrentLerpTime / modifiedLerpTime;*/
-        if (m_CurrentLerpTime > m_LerpTime)
-        {
-            m_CurrentLerpTime = m_LerpTime;
-        }
-
-        var lerpPercentage = m_CurrentLerpTime / m_LerpTime;
-
-        return Vector3.Lerp(m_LerpStart, target, lerpPercentage);
-    }
     private new void OnDestroy()
     {
         CancelAllAsyncTasks();
@@ -792,11 +576,11 @@ public class StateMachineController : NetworkBehaviour
                 break;
             case EntityStates.Attacking:
                 ChangeAttackTrailState(false);
-                CancelAsyncSearch();
+                //CancelAsyncSearch();
                 CancelTimers();
                 break;
             case EntityStates.AttackMoving:
-                CancelAsyncSearch();
+                //CancelAsyncSearch();
                 CancelTimers();
                 break;
         }
@@ -811,26 +595,23 @@ public class StateMachineController : NetworkBehaviour
                 break;
             case EntityStates.Attacking:
             case EntityStates.AttackMoving:
-                asyncSearchTimerActive = false;
-                pathfindingValidationTimerActive = false;
-                hasCalledEnemySearchAsyncTask = false;
-                alternateAttackTarget = null;
+                if (ent.IsAttacker()) ent.attacker.OnEnterState();
                 break;
         }
-    }
+    } 
     private void ChangeBlockedByMinionObstacleStatus(bool blocked)
     {
         GraphMask includingObstacles = GraphMask.FromGraphName("GraphIncludingMinionNavmeshCuts");
         GraphMask excludingObstacles = GraphMask.FromGraphName("GraphExcludingMinionNavmeshCuts");
-        if (seeker != null)
+        if (pf.seeker != null)
         {
             if (blocked)
             {
-                seeker.graphMask = includingObstacles;
+                pf.seeker.graphMask = includingObstacles;
             }
             else
             {
-                seeker.graphMask = excludingObstacles;
+                pf.seeker.graphMask = excludingObstacles;
             }
         }
     }
@@ -847,13 +628,13 @@ public class StateMachineController : NetworkBehaviour
                 timerUntilAttackTrailBegins = 0;
                 attackTrailTriggered = false;
                 ChangeAttackTrailState(false);
-                FreezeRigid(true, false);
+                pf.FreezeRigid(true, false);
                 canReceiveNewCommands = true;
                 break;
             case EntityStates.Harvesting:
             case EntityStates.Building:
                 stateTimer = 0;
-                FreezeRigid(true, false);
+                pf.FreezeRigid(true, false);
                 canReceiveNewCommands = true;
                 break;
             case EntityStates.Idle:
@@ -864,12 +645,12 @@ public class StateMachineController : NetworkBehaviour
             case EntityStates.AfterGarrisonCheck:
             case EntityStates.AfterAttackCheck:
             case EntityStates.AfterBuildCheck:
-                FreezeRigid(true, true);
+                pf.FreezeRigid(true, true);
                 canReceiveNewCommands = true;
                 break;
             case EntityStates.UsingAbility:
-                FreezeRigid(true, true);
-                animator.Play("UseAbility");
+                pf.FreezeRigid(true, true);
+                //animator.Play("UseAbility");
                 canReceiveNewCommands = false;
                 skipFirstFrame = true;
                 break;
@@ -881,9 +662,8 @@ public class StateMachineController : NetworkBehaviour
             case EntityStates.Garrisoning:
             case EntityStates.Depositing:
             case EntityStates.WalkToTarget:
-                ai.endReachedDistance = defaultEndReachedDistance;
                 //ClearObstacle();
-                FreezeRigid(false, false);
+                pf.FreezeRigid(false, false);
                 canReceiveNewCommands = true;
                 break;
         }
@@ -907,33 +687,7 @@ public class StateMachineController : NetworkBehaviour
         }
     }
     private bool skipFirstFrame = true;
-    private bool attackTrailActive = false;
-    private void DetectIfShouldReturnToIdle()
-    {
-        if (IsEffectivelyIdle(idleThreshold))
-        {
-            //Debug.Log("Effectively Idle");
-            SwitchState(EntityStates.Idle);
-        }
-        else if (walkStartTimer <= 0 && ai.reachedDestination)
-        {
-            //Debug.Log("AI reached");
-            SwitchState(EntityStates.Idle);
-        }
-
-    }
-    private bool IsEffectivelyIdle(float forXSeconds)
-    {
-        return effectivelyIdleInstances > forXSeconds;
-    }
-    /// <summary>
-    /// Update pathfinding target to match actual destination
-    /// </summary>
-    private void UpdateSetterTargetPosition()
-    {
-        pathfindingTarget.position = destination;
-    }
-
+    private bool attackTrailActive = false; 
 
     public UnitOrder lastOrder = null;
     private bool OrderValid(UnitOrder order)
@@ -950,7 +704,7 @@ public class StateMachineController : NetworkBehaviour
     public ActionType lastOrderType;
     public void ProcessOrder(Player.UnitOrder order)
     {
-        ResetGoal();
+        /*ResetGoal();
         Vector3 targetPosition = order.targetPosition;
         SelectableEntity target = order.target;
         lastOrderType = order.action;
@@ -974,7 +728,7 @@ public class StateMachineController : NetworkBehaviour
                 CommandHarvestTarget(target);
                 break;
             case ActionType.Deposit: //try to deposit if we have stuff to deposit
-                /*if (entity.HasResourcesToDeposit())
+                *//*if (entity.HasResourcesToDeposit())
                 {
                     DepositTo(target);
                 }
@@ -985,10 +739,10 @@ public class StateMachineController : NetworkBehaviour
                 else
                 {
                     MoveToTarget(target);
-                }*/
+                }*//*
                 break;
             case ActionType.Garrison:
-                WorkOnGarrisoningInto(target);
+                //WorkOnGarrisoningInto(target);
                 break;
             case ActionType.BuildTarget://try determining how many things need to be built in total, and grabbing closest ones
                 if (ent.IsBuilder())
@@ -997,27 +751,23 @@ public class StateMachineController : NetworkBehaviour
                 }
                 else
                 {
-                    WorkOnGarrisoningInto(target);
+                    //WorkOnGarrisoningInto(target);
                 }
                 break;
         }
-        lastOrder = order;
+        lastOrder = order;*/
     }
     private void AttackTarget(SelectableEntity select)
     { 
-        Debug.Log("Received order to attack " + select.name);
+        /*Debug.Log("Received order to attack " + select.name);
         lastCommand.Value = CommandTypes.Attack;
         ClearIdleness();
         if (ent.attacker.GetTargetEnemy().IsStructure()) nudgedTargetEnemyStructurePosition = ent.attacker.GetTargetEnemy().transform.position;
-        if (ent.IsAttacker()) ent.attacker.AttackTarget(select);
+        if (ent.IsAttacker()) ent.attacker.AttackTarget(select);*/
     }
     [SerializeField] private float attackTrailBeginTime = 0.2f;
     private float timerUntilAttackTrailBegins = 0;
-    private bool attackTrailTriggered = false;
-    private bool AnimatorTransitioning()
-    {
-        return animator.IsInTransition(0);
-    }
+    private bool attackTrailTriggered = false; 
     private void CheckIfAttackTrailIsActiveErroneously()
     {
         if (currentState != EntityStates.Attacking)
@@ -1029,17 +779,13 @@ public class StateMachineController : NetworkBehaviour
         }
     }
     private List<SelectableEntity> preservedAsyncSearchResults = new();
-
-    CancellationTokenSource pathStatusTimerCancellationToken;
-
-    CancellationTokenSource hasCalledEnemySearchAsyncTaskTimerCancellationToken;
     /// <summary>
     /// Cancel async timers.
     /// </summary>
     private void CancelTimers()
     {
-        hasCalledEnemySearchAsyncTaskTimerCancellationToken?.Cancel();
-        pathStatusTimerCancellationToken?.Cancel();
+        /*hasCalledEnemySearchAsyncTaskTimerCancellationToken?.Cancel();
+        pathStatusTimerCancellationToken?.Cancel();*/
     }
     public void SetLastMajorState(EntityStates state)
     {
@@ -1047,11 +793,9 @@ public class StateMachineController : NetworkBehaviour
     }
     private void CancelAllAsyncTasks()
     {
-        CancelAsyncSearch();
-        CancelTimers();
+        /*CancelAsyncSearch();
+        CancelTimers();*/
     }
-    private bool asyncSearchTimerActive = false;
-    private float searchTimerDuration = 0.1f;
 
     public bool InState(EntityStates state)
     {
@@ -1064,13 +808,13 @@ public class StateMachineController : NetworkBehaviour
         switch (currentState)
         {
             case EntityStates.Spawn: //play the spawn animation  
-                animator.Play("Spawn");
+                //animator.Play("Spawn");
                 break;
             case EntityStates.Die:
-                animator.Play("Die");
+                //animator.Play("Die");
                 break;
             case EntityStates.Idle:
-                IdleOrWalkContextuallyAnimationOnly();
+                ent.pf.IdleOrWalkContextuallyAnimationOnly();
                 if (ent.occupiedGarrison == null) //if not in garrison
                 {
                     FollowGivenMission(); //if we have a rally mission, attempt to do it
@@ -1078,12 +822,12 @@ public class StateMachineController : NetworkBehaviour
                 }
                 else
                 {
-                    GarrisonedSeekEnemies();
+                    //GarrisonedSeekEnemies();
                 }
                 if (ent.IsAttacker()) ent.attacker.IdleState();
                 break;
             case EntityStates.UsingAbility:
-                if (skipFirstFrame) //neccesary to give animator a chance to catch up
+                /*if (skipFirstFrame) //neccesary to give animator a chance to catch up
                 {
                     skipFirstFrame = false;
                 }
@@ -1092,15 +836,15 @@ public class StateMachineController : NetworkBehaviour
                     ent.unitAbilities.ActivateAbility(ent.unitAbilities.GetQueuedAbility());
                     SwitchState(EntityStates.Idle);
                     ResumeLastOrder();
-                }
+                }*/
                 break;
             case EntityStates.Walk:
-                UpdateStopDistance();
-                IdleOrWalkContextuallyAnimationOnly();
-                DetectIfShouldReturnToIdle();
+                ent.pf.UpdateStopDistance();
+                ent.pf.IdleOrWalkContextuallyAnimationOnly();
+                ent.pf.DetectIfShouldReturnToIdle();
                 break;
             case EntityStates.WalkToTarget:
-                UpdateStopDistance();
+                /*UpdateStopDistance();
                 IdleOrWalkContextuallyAnimationOnly();
                 if (ent.interactionTarget != null)
                 {
@@ -1133,10 +877,10 @@ public class StateMachineController : NetworkBehaviour
                             }
                         }
                     }
-                }
+                }*/
                 break;
             case EntityStates.WalkToRally:
-                IdleOrWalkContextuallyAnimationOnly();
+                //IdleOrWalkContextuallyAnimationOnly();
                 break;
             case EntityStates.AttackMoving: //walk forwards while searching for enemies to attack
                 if (ent.IsAttacker()) ent.attacker.AttackMovingState();
@@ -1147,9 +891,8 @@ public class StateMachineController : NetworkBehaviour
             case EntityStates.Attacking:
                 if (ent.IsAttacker()) ent.attacker.AttackingState(); 
                 break; 
-            case EntityStates.FindInteractable:
-                //FreezeRigid();
-                animator.Play("Idle");
+            case EntityStates.FindInteractable: 
+                /*animator.Play("Idle");
                 //prioritize based on last state
                 switch (lastMajorState) //this may be broken by the recent lastState change to switchstate
                 {
@@ -1173,7 +916,7 @@ public class StateMachineController : NetworkBehaviour
                         break;
                     default:
                         break;
-                }
+                }*/
                 break;
             case EntityStates.WalkToInteractable:
                 //UpdateMoveIndicator();
@@ -1191,7 +934,7 @@ public class StateMachineController : NetworkBehaviour
                         ent.harvester.WalkToDepot();
                         break;
                     case EntityStates.Garrisoning:
-                        if (ent.interactionTarget == null)
+                        /*if (ent.interactionTarget == null)
                         {
                             SwitchState(EntityStates.FindInteractable); //later make this check for nearby garrisonables in the same target?
                         }
@@ -1211,7 +954,7 @@ public class StateMachineController : NetworkBehaviour
                                     SetDestinationIfHighDiff(closest);
                                 }
                             }
-                        }
+                        }*/
                         break;
                     default:
                         break;
@@ -1244,27 +987,9 @@ public class StateMachineController : NetworkBehaviour
                 #endregion
         }
         DrawPath();
-        UpdatePathStatus();
-        //UpdateColliderStatus();
-        /*if (attackType == AttackType.Gatling)
-        {
-            animator.SetFloat("AttackSpeed", 0);
-        }*/
+        //UpdatePathStatus();
+         
     }
-    public Vector3 nudgedTargetEnemyStructurePosition;
-    /// <summary>
-    /// Slight nudge
-    /// </summary>
-    /// <param name="entity"></param>
-    private void NudgeTargetEnemyStructureDestination(SelectableEntity entity)
-    {
-        nudgedTargetEnemyStructurePosition = entity.transform.position;
-        float step = 10 * Time.deltaTime;
-        Vector3 newPosition = Vector3.MoveTowards(nudgedTargetEnemyStructurePosition, transform.position, step);
-        nudgedTargetEnemyStructurePosition = newPosition;
-        //Debug.DrawRay(entity.transform.position, Vector3.up, Color.red, 5);
-        Debug.DrawRay(nudgedTargetEnemyStructurePosition, Vector3.up, Color.green, 5);
-    } 
     /// <summary>
     /// Get the path and show it with lines.
     /// </summary>
@@ -1280,7 +1005,7 @@ public class StateMachineController : NetworkBehaviour
             case EntityStates.WalkToTarget:
 
                 var buffer = new List<Vector3>();
-                ai.GetRemainingPath(buffer, out bool stale);
+                pf.ai.GetRemainingPath(buffer, out bool stale);
                 if (ent.selected)
                 {
                     if (ent.lineIndicator != null) ent.lineIndicator.enabled = true;
@@ -1293,101 +1018,9 @@ public class StateMachineController : NetworkBehaviour
                 break;
         }
 
-    }
-    private void UpdatePathStatus()
-    {
-        bool pathReached = EndOfPathReachesPosition(pathfindingTarget.transform.position);
-        if (ai.pathPending)
-        {
-            pathReachesDestination = PathStatus.Pending;
-        }
-        else if (pathReached)
-        {
-            pathReachesDestination = PathStatus.Reaches;
-        }
-        else
-        {
-            pathReachesDestination = PathStatus.Blocked;
-        }
-    }
-    public enum PathStatus { Pending, Reaches, Blocked }
-    public PathStatus pathReachesDestination = PathStatus.Pending;
-    public float pathDistFromTarget = 0;
-    /// <summary>
-    /// Use to check if path reaches a position. Do not use to check if path reaches a structure. Assumes that the path has been searched already,
-    /// so may fail if it has not been searched manually or automatically before calling this
-    /// </summary>
-    /// <param name="position"></param>
-    /// <returns></returns>
-    private bool EndOfPathReachesPosition(Vector3 position)
-    {
-        float pathThreshold = 0.1f;
-        var buffer = new List<Vector3>();
-        ai.GetRemainingPath(buffer, out bool stale);
-        float dist = (position - buffer.Last()).sqrMagnitude;
-
-        Vector3 prePos = buffer[0];
-        for (int i = 1; i < buffer.Count; i++)
-        {
-            Debug.DrawLine(prePos, buffer[i], Color.blue, 1);
-            prePos = buffer[i];
-        }
-        //Debug.DrawRay(position, Vector3.up, Color.yellow, 4);
-        //Debug.DrawRay(buffer.Last(), Vector3.up, Color.blue, 4);
-        return dist < pathThreshold * pathThreshold;
-    }
-    private readonly float pathReachesThreshold = 0.25f;
-    public Vector3 lastPathPosition;
-    /*private void UpdatePathReachesTarget(Vector3 lastPathPos)
-    {   
-        lastPathPosition = lastPathPos;
-        if (targetEnemy != null && targetEnemy.IsStructure()) //structures need to be evaluated based on closest point
-        { 
-            if (targetEnemy.physicalCollider != null) //get closest point on collider; //this has an issue
-            {
-                Vector3 centerToMax = targetEnemy.physicalCollider.bounds.center - targetEnemy.physicalCollider.bounds.max;
-                float boundsFakeRadius = centerToMax.magnitude;
-                float discrepancyThreshold = boundsFakeRadius + .5f;
-                Vector3 closest = targetEnemy.physicalCollider.ClosestPoint(transform.position);
-                float rawDist = Vector3.Distance(transform.position, targetEnemy.transform.position);
-                float closestDist = Vector3.Distance(transform.position, closest);
-                if (Mathf.Abs(rawDist - closestDist) > discrepancyThreshold)
-                {
-                    targetEnemyClosestPoint = targetEnemy.transform.position; 
-                }
-                else
-                {
-                    targetEnemyClosestPoint = closest;
-                }
-            }
-
-            Vector2 flattenedClosestPoint = new Vector2(targetEnemyClosestPoint.x, targetEnemyClosestPoint.z);
-            Vector2 flattenedLastPathPos = new Vector2(lastPathPos.x, lastPathPos.z);
-            pathDistFromTarget = (flattenedClosestPoint - flattenedLastPathPos).sqrMagnitude;
-            //Debug.DrawLine(targetEnemyClosestPoint, lastPathPos, Color.black);
-            //Debug.DrawRay(lastPathPos, Vector3.up, Color.red);
-            //Debug.DrawRay(targetEnemyClosestPoint, Vector3.up, Color.yellow);
-        }
-        else
-        {
-            pathDistFromTarget = (pathfindingTarget.transform.position - lastPathPos).sqrMagnitude;
-        }
-        pathReachesDestination = pathDistFromTarget < pathReachesThreshold;
-    }*/
+    } 
     #endregion
-    #region UpdaterFunctions
-    /*private void UpdateColliderStatus()
-    {
-        if (rigid != null && IsOwner)
-        {
-            rigid.isKinematic = currentState switch
-            {
-                EntityStates.FindInteractable or EntityStates.WalkToInteractable or EntityStates.Harvesting or EntityStates.Depositing or EntityStates.AfterDepositCheck
-                or EntityStates.Building or EntityStates.AfterBuildCheck => true,
-                _ => false,
-            };
-        }
-    }*/
+    #region UpdaterFunctions 
     private void UpdateInteractors()
     {
         if (ent.interactionTarget != null && ent.interactionTarget.alive)
@@ -1445,10 +1078,10 @@ public class StateMachineController : NetworkBehaviour
         }
         ent.Select(false);
         SwitchState(EntityStates.Die);
-        ai.enabled = false;
+        pf.ai.enabled = false;
         if (ent.RVO != null) ent.RVO.enabled = false;
         if (rayMod != null) rayMod.enabled = false;
-        seeker.enabled = false;
+        pf.seeker.enabled = false;
         Destroy(rigid);
         Destroy(col);
     }
@@ -1459,7 +1092,7 @@ public class StateMachineController : NetworkBehaviour
     /// <param name="ent"></param>
     public void SetBuildDestination(Vector3 pos, SelectableEntity ent)
     {
-        destination = pos;
+        //destination = pos;
         this.ent.interactionTarget = ent;
         lastMajorState = EntityStates.Building;
         SwitchState(EntityStates.WalkToInteractable);
@@ -1484,40 +1117,7 @@ public class StateMachineController : NetworkBehaviour
                 SetDestination(orderedDestination);//destination.Value = orderedDestination;
             }
         }
-    }*/
-    private bool DetectIfStuck()
-    {
-        bool val = false;
-        if (ai.slowWhenNotFacingTarget || ai.maxSpeed <= 1) //because they're slow so special case
-        {
-            if (ai.reachedDestination)
-            {
-                val = true;
-            }
-        }
-        else
-        {
-            if (change <= walkAnimThreshold && effectivelyIdleInstances <= idleThreshold)
-            {
-                effectivelyIdleInstances++;
-            }
-            else if (change > walkAnimThreshold)
-            {
-                effectivelyIdleInstances = 0;
-            }
-            if (effectivelyIdleInstances > idleThreshold || ai.reachedDestination)
-            {
-                val = true;
-                //followingMoveOrder = false;
-                /*if (attackMoving)
-                {
-                    //Debug.Log("moving to ordered destination");
-                    destination = orderedDestination;
-                }*/
-            }
-        }
-        return val;
-    }
+    }*/ 
     #endregion
     #region More Stuff
     private void HideMoveIndicator()
@@ -1539,7 +1139,7 @@ public class StateMachineController : NetworkBehaviour
     //ai.GetRemainingPath
     private void FleeFromPosition(Vector3 position)
     {
-        if (ai == null) return;
+        if (pf.ai == null) return;
         // The path will be returned when the path is over a specified length (or more accurately when the traversal cost is greater than a specified value).
         // A score of 1000 is approximately equal to the cost of moving one world unit.
         int fleeAmount = 1000 * 1;
@@ -1550,82 +1150,14 @@ public class StateMachineController : NetworkBehaviour
         path.aimStrength = 1;
         // Determines the variation in path length that is allowed
         path.spread = 4000;
-        ai.SetPath(path);
-    }
-
-    /// <summary>
-    /// Freeze rigidbody. Defaults to completely freezing it.
-    /// </summary>
-    /// <param name="freezePosition"></param>
-    /// <param name="freezeRotation"></param>
-    public void FreezeRigid(bool freezePosition = true, bool freezeRotation = true)
-    {
-        if (!freezePosition) //unfreeze
-        {
-            ClearObstacle();
-            ai.canMove = true;
-        }
-        else //freeze
-        {
-            ForceUpdateRealLocation();
-            BecomeObstacle();
-            ai.canMove = false;
-        }
-        highPrecisionMovement = freezePosition;
-
-        RigidbodyConstraints posCon;
-        RigidbodyConstraints rotCon;
-        //if (obstacle != null) obstacle.affectGraph = freezePosition; //should the minion act as a pathfinding obstacle?
-        //obstacleCollider.enabled = freezePosition;
-        if (freezePosition)
-        {
-            posCon = RigidbodyConstraints.FreezePositionX | RigidbodyConstraints.FreezePositionZ;
-        }
-        else
-        {
-            posCon = RigidbodyConstraints.None;
-            //posCon = RigidbodyConstraints.FreezePositionY;
-        }
-        //posCon = RigidbodyConstraints.FreezePositionY;
-        if (freezeRotation)
-        {
-            rotCon = RigidbodyConstraints.FreezeRotation;
-        }
-        else
-        {
-            rotCon = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-        }
-        if (rigid != null) rigid.constraints = posCon | rotCon;
+        pf.ai.SetPath(path);
     }
     private float graphUpdateTime = 0.02f; //derived through trial and error
     //public bool allowBecomingObstacles = false;
-    private void BecomeObstacle()
-    {
-        if (!ent.alive)
-        {
-            ent.ClearObstacle();
-        }
-        else if (!IsGarrisoned())
-        {
-            ent.MakeObstacle();
-        }
-    }
-    public void ClearObstacle()
-    {
-        ent.ClearObstacle();
-    }
-    private void ForceUpdateRealLocation()
-    {
-        if (IsOwner)
-        {
-            SetRealLocation();
-        }
-    }
     public void LookAtTarget(Transform target)
     {
         ent.LookAtTarget(target);
-    }
-
+    } 
 
     public bool InRangeOfEntity(SelectableEntity target, float range)
     {
@@ -1656,11 +1188,7 @@ public class StateMachineController : NetworkBehaviour
     {
         float frames = seconds * 50;
         return frames;
-    }
-    public bool AnimatorUnfinished()
-    {
-        return animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1; //animator.GetCurrentAnimatorStateInfo(0).length > 
-    }
+    } 
     private SelectableEntity FindClosestBuildable()
     {
         List<SelectableEntity> list = ent.controllerOfThis.ownedEntities;
@@ -1688,103 +1216,13 @@ public class StateMachineController : NetworkBehaviour
     //SelectableEntity currentClosestEnemy = null;
     int nearbyIndexer = 0;
 
-    public int attackMoveDestinationEnemyCount = 0;
-    private readonly float defaultMeleeDetectionRange = 4;
-    private async Task<SelectableEntity> FindEnemyMinionToAttack(float range)
-    {
-        Debug.Log("Running idle find enemy minion to attack search");
-
-        if (ent.IsMelee())
-        {
-            range = defaultMeleeDetectionRange;
-        }
-        else
-        {
-            range += 1;
-        }
-
-        List<SelectableEntity> enemyList = ent.controllerOfThis.visibleEnemies;
-        SelectableEntity valid = null;
-
-        for (int i = 0; i < enemyList.Count; i++)
-        {
-            SelectableEntity check = enemyList[i];
-            if (IsEnemy(check) && check.alive && check.isTargetable.Value && check.IsMinion())
-            //only check on enemies that are alive, targetable, visible, and in range. also only care about enemy minions
-            {
-                if (InRangeOfEntity(check, range)) //ai controlled doesn't care about fog
-                {
-                    valid = check;
-                }
-            }
-            await Task.Yield();
-            if (valid != null) return valid;
-        }
-        return valid;
-    }
-    [SerializeField] private bool canAttackStructures = true;
-    private readonly float minAttackMoveDestinationViabilityRange = 4;
-    private readonly float rangedUnitRangeExtension = 2;
 
 
-    private float sqrDistToAlternateTarget = 0;
-
-    private bool IsEnemy(SelectableEntity target)
-    {
-        if (target != null)
-        {
-            return target.controllerOfThis.allegianceTeamID != ent.controllerOfThis.allegianceTeamID;
-        }
-        return false;
-        //return target.teamNumber.Value != entity.teamNumber.Value;
-    } 
-    
     #endregion
-    #region Attacks 
-    private void ReturnState()
-    {
-        switch (attackType)
-        {
-            case AttackType.Instant:
-                SwitchState(EntityStates.Idle);
-                attackReady = true;
-                break;
-            case AttackType.SelfDestruct:
-                break;
-            default:
-                break;
-        }
-    }
-    private void ClearTargets()
-    {
-        targetEnemy = null;
-        sqrDistToTargetEnemy = Mathf.Infinity;
-        ent.interactionTarget = null;
-    }
-    [HideInInspector]
-    public NetworkVariable<CommandTypes> lastCommand = new NetworkVariable<CommandTypes>(default,
-        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    #region Attacks  
     public void AIAttackMove(Vector3 target)
     {
-        AttackMoveToPosition(target);
-    }
-    public float sqrDistToTargetEnemy = Mathf.Infinity;
-    private void GenericAttackMovePrep(Vector3 target)
-    {
-        attackMoveDestination = target;
-        lastCommand.Value = CommandTypes.Attack;
-        ClearTargets();
-        ClearIdleness();
-        SwitchState(EntityStates.AttackMoving);
-        playedAttackMoveSound = false;
-        SetDestination(target);
-        orderedDestination = destination;
-    }
-    public void AttackMoveToPosition(Vector3 target) //called by local player
-    {
-        if (!ent.alive) return; //dead units cannot be ordered
-        if (IsGarrisoned()) return;
-        GenericAttackMovePrep(target);
+        //AttackMoveToPosition(target);
     }
     public void PlaceOnGround()
     {
@@ -1801,72 +1239,11 @@ public class StateMachineController : NetworkBehaviour
         SwitchState(EntityStates.WalkToInteractable);
         lastMajorState = EntityStates.Building;
     }
-    private float walkStartTimer = 0;
-    private readonly float walkStartTimerSet = 1.5f;
-    private void BasicWalkTo(Vector3 target)
+    public void ClearTargets()
     {
-        ClearTargets();
-        ClearIdleness();
-        SwitchState(EntityStates.Walk);
-        SetOrderedDestination(target);
-        walkStartTimer = walkStartTimerSet;
-
-        SelectableEntity justLeftGarrison = null;
-        if (ent.occupiedGarrison != null) //we are currently garrisoned
-        {
-            justLeftGarrison = ent.occupiedGarrison;
-            RemovePassengerFrom(ent.occupiedGarrison);
-            PlaceOnGround(); //snap to ground
-        }
-    }
-    private void ClearIdleness()
-    {
-        effectivelyIdleInstances = 0; //we're not idle anymore
-    }
-    private void SetOrderedDestination(Vector3 target)
-    {
-        SetDestination(target);
-        //destination.Value = target; //set destination
-        orderedDestination = target; //remember where we set destination 
-    }
-    public bool IsValidAttacker()
-    {
-        return attackType != AttackType.None;
-    }
-    public void MoveToTarget(SelectableEntity target)
-    {
-        if (target == null) return;
-        Debug.Log("Moving to target");
-        lastCommand.Value = CommandTypes.Move;
-        if (currentState != EntityStates.Spawn)
-        {
-            ClearTargets();
-            ClearIdleness();
-            SwitchState(EntityStates.WalkToTarget);
-            ent.interactionTarget = target;
-            SetOrderedDestination(ent.interactionTarget.transform.position);
-            walkStartTimer = walkStartTimerSet;
-
-            SelectableEntity justLeftGarrison = null;
-            if (ent.occupiedGarrison != null) //we are currently garrisoned
-            {
-                justLeftGarrison = ent.occupiedGarrison;
-                RemovePassengerFrom(ent.occupiedGarrison);
-                PlaceOnGround(); //snap to ground
-            }
-        }
-    }
-    /// <summary>
-    /// Use to send unit to the specified location.
-    /// </summary>
-    /// <param name="target"></param>
-    public void MoveTo(Vector3 target)
-    {
-        lastCommand.Value = CommandTypes.Move;
-        if (currentState != EntityStates.Spawn)
-        {
-            BasicWalkTo(target);
-        }
+        ent.attacker.targetEnemy = null;
+        ent.attacker.sqrDistToTargetEnemy = Mathf.Infinity;
+        ent.interactionTarget = null;
     }
     public void CommandHarvestTarget(SelectableEntity select)
     {
@@ -1887,6 +1264,29 @@ public class StateMachineController : NetworkBehaviour
                 SwitchState(EntityStates.FindInteractable);
                 lastMajorState = EntityStates.Depositing;
             }*/
+        }
+    }
+    public void MoveToTarget(SelectableEntity target)
+    {
+        if (target == null) return;
+        Debug.Log("Moving to target");
+        lastCommand.Value = CommandTypes.Move;
+        if (currentState != EntityStates.Spawn)
+        {
+            ClearTargets();
+            ent.pf.ClearIdleness();
+            SwitchState(EntityStates.WalkToTarget);
+            ent.interactionTarget = target;
+            ent.pf.SetOrderedDestination(ent.interactionTarget.transform.position);
+            ent.pf.walkStartTimer = ent.pf.walkStartTimerSet;
+
+            SelectableEntity justLeftGarrison = null;
+            if (ent.occupiedGarrison != null) //we are currently garrisoned
+            {
+                justLeftGarrison = ent.occupiedGarrison;
+                RemovePassengerFrom(ent.occupiedGarrison);
+                PlaceOnGround(); //snap to ground
+            }
         }
     }
     public void DepositTo(SelectableEntity select)
@@ -1958,7 +1358,7 @@ public class StateMachineController : NetworkBehaviour
     }
     private void LoadPassengerInto(SelectableEntity garrison)
     {
-        if (garrison.controllerOfThis.playerTeamID == ent.controllerOfThis.playerTeamID)
+        /*if (garrison.controllerOfThis.playerTeamID == ent.controllerOfThis.playerTeamID)
         {
             ChangeRVOStatus(false);
             SwitchState(EntityStates.Idle);
@@ -1972,7 +1372,7 @@ public class StateMachineController : NetworkBehaviour
             {
                 LockToSeatServerRpc(garrison);
             }
-        }
+        }*/
     }
     [ServerRpc]
     private void LockToSeatServerRpc(NetworkBehaviourReference reference)

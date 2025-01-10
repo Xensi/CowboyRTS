@@ -334,6 +334,7 @@ GameObject:
   - component: {fileID: 4741331578809617205}
   - component: {fileID: 7586105387906439370}
   - component: {fileID: 1965146877331169390}
+  - component: {fileID: 168264175324395471}
   - component: {fileID: 4721624654941951496}
   - component: {fileID: 801487402834003379}
   - component: {fileID: 2350746098491832441}
@@ -406,19 +407,22 @@ MonoBehaviour:
   isTargetable:
     m_InternalValue: 0
   unitAbilities: {fileID: 0}
-  unitAnimator: {fileID: 0}
+  anim: {fileID: 0}
   depot: {fileID: 0}
   ore: {fileID: 0}
   harvester: {fileID: 0}
-  stateMachineController: {fileID: 0}
+  sm: {fileID: 0}
   builder: {fileID: 0}
   spawner: {fileID: 0}
+  pf: {fileID: 0}
+  garrison: {fileID: 0}
   physicalCollider: {fileID: 0}
   rallyMission: 0
   rallyTarget: {fileID: 0}
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
   net: {fileID: 4126868118260038068}
+  attacker: {fileID: 0}
   isVisibleInFog: 0
   oldVisibleInFog: 0
   hideFogTeam: 0
@@ -437,7 +441,6 @@ MonoBehaviour:
   finishedRendererParent: {fileID: 0}
   rallyVisual: {fileID: 0}
   attackEffects: []
-  garrisonablePositions: []
   targetIndicator: {fileID: 3480814061053556006}
   lineIndicator: {fileID: 555440906972586300}
   teamRenderers: []
@@ -495,43 +498,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lastMajorState: 0
-  entity: {fileID: 0}
+  ent: {fileID: 0}
   stateTimer: 0
-  attackMoving: 0
-  orderedDestination: {x: 0, y: 0, z: 0}
-  attackReadyTimer: 0
-  attackReady: 1
-  ai: {fileID: 0}
   col: {fileID: 0}
   animator: {fileID: 0}
-  targetEnemy: {fileID: 0}
   minionNetwork: {fileID: 0}
-  attackType: 0
-  directionalAttack: 0
-  attackRange: 1
-  attackEffectSpawnPosition: {fileID: 0}
-  damage: 1
-  attackDuration: 1
-  impactTime: 0.5
-  defaultMoveSpeed: 0
-  defaultAttackDuration: 0
-  defaultImpactTime: 0
-  pathfindingTarget: {fileID: 0}
-  areaOfEffectRadius: 1
   currentState: 10
   givenMission: 0
   rallyPosition: {x: 0, y: 0, z: 0}
   realLocation:
     m_InternalValue: {x: 0, y: 0}
-  destination: {x: 0, y: 0, z: 0}
   canReceiveNewCommands: 1
-  attackMoveDestination: {x: 0, y: 0, z: 0}
   attackTrails: []
+  lastCommand:
+    m_InternalValue: 0
   attackMoveDestinationEnemyArray: []
   nonOwnerRealLocationList: []
   animatorUnfinished: 0
-  pathStatusValid: 0
-  assignedEntitySearcher: {fileID: 0}
   lastOrder:
     unit: {fileID: 0}
     action: 0
@@ -539,20 +522,8 @@ MonoBehaviour:
     targetPosition: {x: 0, y: 0, z: 0}
   lastOrderType: 0
   attackTrailBeginTime: 0.4
-  alternateAttackTarget: {fileID: 0}
-  hasCalledEnemySearchAsyncTask: 0
-  nudgedTargetEnemyStructurePosition: {x: 0, y: 0, z: 0}
-  pathReachesDestination: 0
-  pathDistFromTarget: 0
-  lastPathPosition: {x: 0, y: 0, z: 0}
   targetEnemyClosestPoint: {x: 0, y: 0, z: 0}
   shouldAggressivelySeekEnemies: 1
-  attackMoveDestinationEnemyCount: 0
-  canAttackStructures: 1
-  attackProjectile: {fileID: 0}
-  lastCommand:
-    m_InternalValue: 0
-  sqrDistToTargetEnemy: Infinity
 --- !u!114 &4741331578809617205
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -567,6 +538,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ent: {fileID: 0}
   sm: {fileID: 0}
+  anim: {fileID: 0}
+  pf: {fileID: 0}
 --- !u!54 &7586105387906439370
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -629,6 +602,36 @@ MonoBehaviour:
   multithreading: 1
   cellBased: 0
   snapToPixelCenter: 0
+--- !u!114 &168264175324395471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5353858407141398554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8232ad39a7fec8a44a9cb1da3a70c864, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ent: {fileID: 0}
+  sm: {fileID: 0}
+  anim: {fileID: 0}
+  pf: {fileID: 0}
+  pathStatusValid: 0
+  pathfindingValidationTimerActive: 0
+  pathReachesDestination: 0
+  pathDistFromTarget: 0
+  orderedDestination: {x: 0, y: 0, z: 0}
+  destination: {x: 0, y: 0, z: 0}
+  ai: {fileID: 0}
+  seeker: {fileID: 0}
+  defaultMoveSpeed: 0
+  lastPathPosition: {x: 0, y: 0, z: 0}
+  pathfindingTarget: {fileID: 0}
+  nudgedTargetEnemyStructurePosition: {x: 0, y: 0, z: 0}
+  walkStartTimer: 0
+  oldPosition: {x: 0, y: 0, z: 0}
 --- !u!114 &4721624654941951496
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -814,7 +817,30 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ent: {fileID: 0}
   sm: {fileID: 0}
+  anim: {fileID: 0}
+  pf: {fileID: 0}
+  ready: 1
+  readyTimer: 0
+  range: 1
+  impactTime: 1
+  delta: 1
+  duration: 1
   attackSettings: {fileID: 11400000, guid: 0c64ee6e364419b43ad7da2e25115b9d, type: 2}
+  areaOfEffectRadius: 1
+  attackType: 1
+  attackProjectile: {fileID: 0}
+  defaultAttackDuration: 0
+  defaultImpactTime: 0
+  attackEffectSpawnPosition: {fileID: 0}
+  attackMoving: 0
+  targetEnemy: {fileID: 0}
+  alternateAttackTarget: {fileID: 0}
+  assignedEntitySearcher: {fileID: 0}
+  hasCalledEnemySearchAsyncTask: 0
+  attackMoveDestination: {x: 0, y: 0, z: 0}
+  sqrDistToTargetEnemy: Infinity
+  maximumChaseRange: 5
+  attackMoveDestinationEnemyCount: 0
 --- !u!1 &6176451757024125140
 GameObject:
   m_ObjectHideFlags: 0

@@ -72,16 +72,16 @@ public class UnitAbilities : EntityAddon
                 switch (effect.status) //set variable to change;
                 {
                     case StatusEffect.MoveSpeed:
-                        if (target.sm != null && target.sm.ai != null)
+                        /*if (target.sm != null && target.sm.ai != null)
                         {
                             variableToChange = target.sm.ai.maxSpeed;
-                        }
+                        }*/
                         break;
                     case StatusEffect.AttackDuration:
                         if (target.sm != null)
                         {
-                            variableToChange = target.sm.attackDuration;
-                            secondVariable = target.sm.impactTime;
+                            //variableToChange = target.sm.attackDuration;
+                            //secondVariable = target.sm.impactTime;
                         }
                         break;
                     case StatusEffect.HP:
@@ -116,18 +116,18 @@ public class UnitAbilities : EntityAddon
                 switch (effect.status) //set actual variable to new variable
                 {
                     case TargetedEffects.StatusEffect.MoveSpeed:
-                        if (target.sm != null && target.sm.ai != null)
+                        /*if (target.sm != null && target.sm.ai != null)
                         {
                             target.sm.ai.maxSpeed = variableToChange;
                             target.sm.animator.SetFloat("moveSpeedMultiplier", moveSpeedMultiplier); //if we are halving, double animation speed
-                        }
+                        }*/
                         break;
                     case TargetedEffects.StatusEffect.AttackDuration:
                         if (target.sm != null)
                         {
-                            target.sm.attackDuration = variableToChange;
-                            target.sm.impactTime = secondVariable;
-                            target.sm.animator.SetFloat("attackMultiplier", attackAnimMultiplier); //if we are halving, double animation speed
+                            //target.sm.attackDuration = variableToChange;
+                            //target.sm.impactTime = secondVariable;
+                            //target.sm.animator.SetFloat("attackMultiplier", attackAnimMultiplier); //if we are halving, double animation speed
                         }
                         break;
                     case StatusEffect.HP:
