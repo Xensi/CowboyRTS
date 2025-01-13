@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static StateMachineController;
 
 /// <summary>
 /// Handles setting animations and names of unit animation states
@@ -47,5 +48,46 @@ public class UnitAnimator : EntityAddon
     public bool InProgress()
     {
         return animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1;
+    }
+    public void IdleOrWalkContextuallyAnimationOnly()
+    {
+        if (pf == null) return;
+        float limit = 0.1f;
+        if (pf.change < limit * limit && pf.walkStartTimer <= 0 || pf.ai.reachedDestination) //basicallyIdleInstances > idleThreshold
+        {
+            Play(IDLE); 
+        }
+        else
+        {
+            Play(WALK); 
+        }
+    }
+    /// <summary>
+    /// Handles code for playing animations for certain states that loop a single animation.
+    /// </summary>
+    public void StateBasedAnimations()
+    {
+        switch (sm.currentState)
+        {
+            case EntityStates.Idle:
+            case EntityStates.FindInteractable:
+            case EntityStates.Walk:
+            case EntityStates.WalkToSpecificEnemy:
+            case EntityStates.WalkToInteractable:
+            case EntityStates.WalkToRally:
+            case EntityStates.WalkToTarget:
+                IdleOrWalkContextuallyAnimationOnly();
+                break;  
+            case EntityStates.Spawn:
+                Play(SPAWN);
+                break;
+            case EntityStates.Die:
+                Play(DIE);
+                break;     
+            case EntityStates.UsingAbility:
+                break;
+            default:
+                break;
+        }
     }
 }

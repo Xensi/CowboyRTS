@@ -317,4 +317,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f54456ea670d04f469c69de2dc87b8c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resourceType: 1
+  ent: {fileID: 0}
+  sm: {fileID: 0}
+  anim: {fileID: 0}
+  pf: {fileID: 0}
+  resourceType: 2
+  maxHarvesters: 1

@@ -35,33 +35,22 @@ public class Harvester : SwingEntityAddon
     {
         return harvesterSettings;
     }
-    public void InitHarvester()
+    public bool BagContainsResources()
+    {
+        return harvesterBag.Count > 0;
+    }
+    public override void InitAddon()
     {
         if (harvesterSettings != null)
         { 
             bagSize = harvesterSettings.bagSize;
-            delta = harvesterSettings.amountToHarvestPerSwing;
+            swingDelta = harvesterSettings.amountToHarvestPerSwing;
             range = harvesterSettings.interactRange;
             impactTime = harvesterSettings.impactTime;
             duration = harvesterSettings.duration;
             allowedResources = harvesterSettings.allowedResources;
         }
-    }
-    public void UpdateReadiness()
-    {
-        if (!ready)
-        {
-            if (readyTimer < Mathf.Clamp(duration - impactTime, 0, 999))
-            {
-                readyTimer += Time.deltaTime;
-            }
-            else
-            {
-                ready = true;
-                readyTimer = 0;
-            }
-        }
-    }
+    } 
     public void WalkToDepot()
     { 
         if (!ValidDepositForHarvester(ent.interactionTarget))
@@ -88,13 +77,13 @@ public class Harvester : SwingEntityAddon
     /// <param name="target"></param>
     /// <returns></returns>
     public bool ValidOreForHarvester(SelectableEntity target)
-    {
-        bool val = false;
+    { 
         if (target != null && target.ore != null && target.alive)
         {
-            if (allowedResources.Contains(target.ore.resourceType)) val = true;
+            if (target.ore.resourceType == ResourceType.All) return true;
+            if (allowedResources.Contains(target.ore.resourceType)) return true;
         }
-        return val;
+        return false;
     }
     public bool ValidDepositForHarvester(SelectableEntity targetDepot)
     {
@@ -146,7 +135,7 @@ public class Harvester : SwingEntityAddon
     }
     public void FindHarvestableState()
     { 
-        if (ent.harvester.ValidOreForHarvester(ent.interactionTarget))
+        if (ValidOreForHarvester(ent.interactionTarget))
         {
             SwitchState(EntityStates.WalkToInteractable);
         }
@@ -312,11 +301,32 @@ public class Harvester : SwingEntityAddon
             //Defaults to instant dropoff, but can take time
             if (ent != null)
             {
-                //TODO: add to resources based on stuff in bag
 
+                for (int i = harvesterBag.Count - 1; i >= 0; i--)
+                {
+                    ResourceType resource = harvesterBag[i];
+                    switch (resource)
+                    {
+                        case ResourceType.None:
+                            break;
+                        case ResourceType.All:
+                            break;
+                        case ResourceType.Gold:
+                            ent.controllerOfThis.gold++;
+                            break;
+                        case ResourceType.Wood:
+                            ent.controllerOfThis.wood++;
+                            break;
+                        case ResourceType.Cactus:
+                            ent.controllerOfThis.cactus++;
+                            break;
+                        default:
+                            break;
+                    }
+                    harvesterBag.RemoveAt(i);
+                }
                 //entity.controllerOfThis.gold += entity.harvestedResourceAmount;
-                //entity.harvestedResourceAmount = 0;
-                harvesterBag.Clear();
+                //entity.harvestedResourceAmount = 0; 
                 if (ent.controllerOfThis is RTSPlayer)
                 {
                     RTSPlayer rts = ent.controllerOfThis as RTSPlayer;
@@ -341,7 +351,7 @@ public class Harvester : SwingEntityAddon
         ent.SimplePlaySound(1); //play impact sound 
         if (target != null && target.IsSpawned && target.IsOre())
         {
-            int actualHarvested = Mathf.Clamp(delta, 0, target.currentHP.Value); //max amount we can harvest clamped by hitpoints remaining
+            int actualHarvested = Mathf.Clamp(swingDelta, 0, target.currentHP.Value); //max amount we can harvest clamped by hitpoints remaining
             //int diff = entity.harvestCapacity - entity.harvestedResourceAmount;
             int diff = bagSize - harvesterBag.Count;
             actualHarvested = Mathf.Clamp(actualHarvested, 0, diff); //max amount we can harvest clamped by remaining carrying capacity
@@ -350,11 +360,11 @@ public class Harvester : SwingEntityAddon
 
             if (ent.IsServer)
             {
-                target.Harvest((sbyte)delta);
+                target.Harvest((sbyte)swingDelta);
             }
             else //client tell server to change the network variable
             {
-                RequestHarvestServerRpc((sbyte)delta, target);
+                RequestHarvestServerRpc((sbyte)swingDelta, target);
             }
             ResourceType resourceType = target.ore.resourceType;
 

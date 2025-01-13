@@ -7,10 +7,23 @@ using static UnitAnimator;
 
 public class Builder : SwingEntityAddon
 {
-    [SerializeField] private BuildableOptions buildableOptions; 
+    [SerializeField] private BuildableOptions buildableOptions;
+    FactionBuilding[] buildables;
+    public override void InitAddon()
+    {
+        buildables = new FactionBuilding[0];
+        if (buildableOptions != null)
+        {
+            buildables = buildableOptions.buildables;
+            swingDelta = buildableOptions.amountToBuildPerSwing;
+            range = buildableOptions.interactRange;
+            impactTime = buildableOptions.impactTime;
+            duration = buildableOptions.duration;
+        }
+    }
     public FactionBuilding[] GetBuildables()
     {
-        return buildableOptions.buildables;
+        return buildables;
     }
     private bool InvalidBuildable(SelectableEntity target)
     {
@@ -60,11 +73,11 @@ public class Builder : SwingEntityAddon
         {
             if (IsServer)
             {
-                target.RaiseHP(delta);
+                target.RaiseHP(swingDelta);
             }
             else //client tell server to change the network variable
             {
-                RequestBuildServerRpc(delta, target);
+                RequestBuildServerRpc(swingDelta, target);
             }
         }
     }

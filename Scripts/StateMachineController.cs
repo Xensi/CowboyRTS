@@ -28,20 +28,16 @@ public class StateMachineController : NetworkBehaviour
         Walk,
         AttackMoving,
         WalkToSpecificEnemy,
-        Attacking,
-        AfterAttackCheck,
+        Attacking, 
         FindInteractable,
         WalkToInteractable,
-        Building,
-        AfterBuildCheck,
+        Building, 
         Spawn,
         Die,
         Harvesting,
         AttackCooldown, 
-        Depositing,
-        AfterDepositCheck,
-        Garrisoning,
-        AfterGarrisonCheck,
+        Depositing, 
+        Garrisoning, 
         WalkToRally,
         WalkToTarget,
         UsingAbility,
@@ -53,16 +49,12 @@ public class StateMachineController : NetworkBehaviour
     #region Hidden
     LayerMask enemyMask;
     private Camera cam;
-    [HideInInspector] public SelectableEntity ent;
     private RaycastModifier rayMod;
     private readonly float spawnDuration = .5f;
     private readonly sbyte buildDelta = 5; 
     public float stateTimer = 0;
     private float rotationSpeed = 10f;
     //[HideInInspector] public bool followingMoveOrder = false;
-    [HideInInspector] public Collider col;
-    [HideInInspector] private Rigidbody rigid; 
-    [HideInInspector] public MinionNetwork minionNetwork;
     #endregion
     #region Variables
 
@@ -85,51 +77,55 @@ public class StateMachineController : NetworkBehaviour
     public NetworkVariable<CommandTypes> lastCommand = new NetworkVariable<CommandTypes>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
-    private Pathfinder pf;
-    private UnitAnimator anim;
+    public Pathfinder pf;
+    public UnitAnimator anim;
 
     #region Core 
     private bool CanPathfind()
     {
         return pf != null;
     }
+    #region Just Spawned Code
+    #region Awake
     private void Awake()
     {
         Initialize();
-        enemyMask = LayerMask.GetMask("Entity", "Obstacle");
-
-        /*if (ent.fakeSpawn)
-        {
-            FreezeRigid();
-            ent.pf.ai.enabled = false;
-        }*/
-        nearbyIndexer = 0;  
+        enemyMask = LayerMask.GetMask("Entity", "Obstacle"); 
+        nearbyIndexer = 0;
     }
+    [HideInInspector] public SelectableEntity ent;
+    [HideInInspector] public Collider col;
+    [HideInInspector] private Rigidbody rigid;
+    public Attacker attacker;
     private void Initialize()
-    { 
-        rayMod = GetComponent<RaycastModifier>();;
+    {  
         col = GetComponent<Collider>();
         ent = GetComponent<SelectableEntity>();
-        minionNetwork = GetComponent<MinionNetwork>();
-        rigid = GetComponent<Rigidbody>();  
+        rigid = GetComponent<Rigidbody>();
         cam = Camera.main;
     }
-    public SelectableEntity[] attackMoveDestinationEnemyArray = new SelectableEntity[0];
-
-    private bool IsMelee()
+    #endregion
+    #region Network Spawn 
+    public override void OnNetworkSpawn()
     {
-        return ent.IsMelee();
+        if (IsOwner)
+        { 
+            SwitchState(EntityStates.Spawn);
+            Invoke(nameof(FinishSpawning), spawnDuration); //jank 
+            lastCommand.Value = CommandTypes.Move;
+        }
+        else //Representation that other players see
+        {
+            rigid.isKinematic = true; //don't get knocked around
+            //gameObject.layer = LayerMask.NameToLayer("OtherEntities"); //can pass through each other 
+        } 
     }
-    private bool IsRanged()
-    {
-        return ent.IsRanged();
-    }
+    #endregion
+    #region Start Code 
     private void Start()
-    {
-        pf = ent.pf;
-        anim = ent.anim;
-
-        if (ent.IsAttacker()) { 
+    {  
+        if (ent.IsAttacker())
+        {
             if (IsMelee())
             {
                 ent.attacker.maximumChaseRange = Global.Instance.defaultMeleeSearchRange;
@@ -141,6 +137,18 @@ public class StateMachineController : NetworkBehaviour
         }
         attackMoveDestinationEnemyArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
         ChangeAttackTrailState(false);
+    }
+    #endregion
+    #endregion
+    public SelectableEntity[] attackMoveDestinationEnemyArray = new SelectableEntity[0];
+
+    private bool IsMelee()
+    {
+        return ent.IsMelee();
+    }
+    private bool IsRanged()
+    {
+        return ent.IsRanged();
     }
     public bool IsAlive()
     {
@@ -157,34 +165,6 @@ public class StateMachineController : NetworkBehaviour
     {
         return currentState;
     }
-    public override void OnNetworkSpawn()
-    {
-        if (IsOwner)
-        {
-            pf.SetRealLocation();
-            //destination.Value = transform.position; 
-
-            SwitchState(EntityStates.Spawn);
-            Invoke(nameof(FinishSpawning), spawnDuration);
-            //finishedInitializingRealLocation = true;
-            lastCommand.Value = CommandTypes.Move; 
-        }
-        else
-        {
-            rigid.isKinematic = true; //don't get knocked around
-            //gameObject.layer = LayerMask.NameToLayer("OtherEntities"); //can pass through each other 
-            nonOwnerRealLocationList.Add(transform.position);
-            ent.RVO.enabled = false;
-            /*
-              ai.enabled = false;
-              rayMod.enabled = false;
-              seeker.enabled = false;*/
-        }
-        realLocation.OnValueChanged += OnRealLocationChanged;
-        //enabled = IsOwner;
-        ent.pf.oldPosition = transform.position;
-        ent.pf.orderedDestination = transform.position;
-    } 
     public bool IsCurrentlyBuilding()
     {
         return currentState == EntityStates.Building || currentState == EntityStates.WalkToInteractable && lastMajorState == EntityStates.Building;
@@ -435,13 +415,13 @@ public class StateMachineController : NetworkBehaviour
     private void UpdateRealLocation()
     {
         //float updateThreshold = 1f; //does not need to be equal to allowed error, but seems to work when it is
-        Vector3 offset = transform.position - oldRealLocation;
+        Vector3 offset = transform.position - pf.oldRealLocation;
         float dist = offset.sqrMagnitude;//Vector3.Distance(transform.position, realLocation.Value);
 
         if (dist > Global.Instance.updateRealLocThreshold * Global.Instance.updateRealLocThreshold) //square the distance to compare against
         {
             //realLocationReached = false;
-            SetRealLocation();
+            pf.SetRealLocation();
         }
     }
     //private bool realLocationReached = false;
@@ -603,7 +583,7 @@ public class StateMachineController : NetworkBehaviour
     {
         GraphMask includingObstacles = GraphMask.FromGraphName("GraphIncludingMinionNavmeshCuts");
         GraphMask excludingObstacles = GraphMask.FromGraphName("GraphExcludingMinionNavmeshCuts");
-        if (pf.seeker != null)
+        if (pf != null && pf.seeker != null)
         {
             if (blocked)
             {
@@ -628,28 +608,24 @@ public class StateMachineController : NetworkBehaviour
                 timerUntilAttackTrailBegins = 0;
                 attackTrailTriggered = false;
                 ChangeAttackTrailState(false);
-                pf.FreezeRigid(true, false);
+                if (pf != null) pf.FreezeRigid(true, false);
                 canReceiveNewCommands = true;
                 break;
             case EntityStates.Harvesting:
             case EntityStates.Building:
                 stateTimer = 0;
-                pf.FreezeRigid(true, false);
+                if (pf != null) pf.FreezeRigid(true, false);
                 canReceiveNewCommands = true;
                 break;
             case EntityStates.Idle:
             case EntityStates.Die:
             case EntityStates.Spawn:
-            case EntityStates.FindInteractable: 
-            case EntityStates.AfterDepositCheck:
-            case EntityStates.AfterGarrisonCheck:
-            case EntityStates.AfterAttackCheck:
-            case EntityStates.AfterBuildCheck:
-                pf.FreezeRigid(true, true);
+            case EntityStates.FindInteractable:
+                if (pf != null) pf.FreezeRigid(true, true);
                 canReceiveNewCommands = true;
                 break;
             case EntityStates.UsingAbility:
-                pf.FreezeRigid(true, true);
+                if (pf != null) pf.FreezeRigid(true, true);
                 //animator.Play("UseAbility");
                 canReceiveNewCommands = false;
                 skipFirstFrame = true;
@@ -663,7 +639,7 @@ public class StateMachineController : NetworkBehaviour
             case EntityStates.Depositing:
             case EntityStates.WalkToTarget:
                 //ClearObstacle();
-                pf.FreezeRigid(false, false);
+                if (pf != null) pf.FreezeRigid(false, false);
                 canReceiveNewCommands = true;
                 break;
         }
@@ -701,10 +677,11 @@ public class StateMachineController : NetworkBehaviour
             ProcessOrder(lastOrder);
         }
     }
-    public ActionType lastOrderType;
-    public void ProcessOrder(Player.UnitOrder order)
+    public ActionType lastOrderType; 
+    public void ProcessOrder(UnitOrder order)
     {
-        /*ResetGoal();
+        Debug.Log("Processing order");
+        if (attacker != null) attacker.ResetGoal();
         Vector3 targetPosition = order.targetPosition;
         SelectableEntity target = order.target;
         lastOrderType = order.action;
@@ -714,11 +691,10 @@ public class StateMachineController : NetworkBehaviour
                 MoveToTarget(target);
                 break;
             case ActionType.AttackMove:
-                longTermGoal = Goal.OrderedToAttackMove;
-                AttackMoveToPosition(targetPosition);
+                if (attacker != null) attacker.AttackMoveToPosition(targetPosition);
                 break;
             case ActionType.Move:
-                MoveTo(targetPosition);
+                if (pf != null) pf.MoveTo(targetPosition);
                 break;
             case ActionType.AttackTarget:
                 //Debug.Log("Processing order to " + order.action + order.target);
@@ -728,18 +704,18 @@ public class StateMachineController : NetworkBehaviour
                 CommandHarvestTarget(target);
                 break;
             case ActionType.Deposit: //try to deposit if we have stuff to deposit
-                *//*if (entity.HasResourcesToDeposit())
+                if (ent.HasResourcesToDeposit())
                 {
                     DepositTo(target);
                 }
-                else if (target.IsDamaged() && entity.CanConstruct()) //if its damaged, we can try to build it
+                else if (target.IsDamaged() && ent.IsBuilder()) //if its damaged, we can try to build it
                 {
                     CommandBuildTarget(target);
                 }
                 else
                 {
                     MoveToTarget(target);
-                }*//*
+                }
                 break;
             case ActionType.Garrison:
                 //WorkOnGarrisoningInto(target);
@@ -755,7 +731,7 @@ public class StateMachineController : NetworkBehaviour
                 }
                 break;
         }
-        lastOrder = order;*/
+        lastOrder = order;
     }
     private void AttackTarget(SelectableEntity select)
     { 
@@ -801,20 +777,18 @@ public class StateMachineController : NetworkBehaviour
     {
         return currentState == state;
     }
-
+    
     private void OwnerUpdateState()
     {
         CheckIfAttackTrailIsActiveErroneously();
+        if (anim != null) anim.StateBasedAnimations();
         switch (currentState)
         {
             case EntityStates.Spawn: //play the spawn animation  
-                //animator.Play("Spawn");
                 break;
-            case EntityStates.Die:
-                //animator.Play("Die");
+            case EntityStates.Die: 
                 break;
             case EntityStates.Idle:
-                ent.pf.IdleOrWalkContextuallyAnimationOnly();
                 if (ent.occupiedGarrison == null) //if not in garrison
                 {
                     FollowGivenMission(); //if we have a rally mission, attempt to do it
@@ -840,7 +814,6 @@ public class StateMachineController : NetworkBehaviour
                 break;
             case EntityStates.Walk:
                 ent.pf.UpdateStopDistance();
-                ent.pf.IdleOrWalkContextuallyAnimationOnly();
                 ent.pf.DetectIfShouldReturnToIdle();
                 break;
             case EntityStates.WalkToTarget:
@@ -892,23 +865,21 @@ public class StateMachineController : NetworkBehaviour
                 if (ent.IsAttacker()) ent.attacker.AttackingState(); 
                 break; 
             case EntityStates.FindInteractable: 
-                /*animator.Play("Idle");
                 //prioritize based on last state
                 switch (lastMajorState) //this may be broken by the recent lastState change to switchstate
                 {
                     case EntityStates.Building:
-                        if (InvalidBuildable(ent.interactionTarget))
+                        /*if (InvalidBuildable(ent.interactionTarget))
                         {
                             ent.interactionTarget = FindClosestBuildable();
                         }
                         else
                         {
                             SwitchState(EntityStates.WalkToInteractable);
-                        }
+                        }*/
                         break;
                     case EntityStates.Harvesting:
-                        if (ent.harvester == null) return;
-                        ent.harvester.FindHarvestableState();
+                        if (ent.harvester != null) ent.harvester.FindHarvestableState();
                         break;
                     case EntityStates.Depositing:
                         if (ent.harvester == null) return;
@@ -916,7 +887,7 @@ public class StateMachineController : NetworkBehaviour
                         break;
                     default:
                         break;
-                }*/
+                }
                 break;
             case EntityStates.WalkToInteractable:
                 //UpdateMoveIndicator();
@@ -926,8 +897,7 @@ public class StateMachineController : NetworkBehaviour
                         if (ent.IsBuilder()) ent.builder.WalkToBuildable();
                         break;
                     case EntityStates.Harvesting:
-                        if (ent.harvester == null) return;
-                        ent.harvester.WalkToOre();
+                        if (ent.harvester != null) ent.harvester.WalkToOre();
                         break;
                     case EntityStates.Depositing:
                         if (ent.harvester == null) return;
@@ -1079,8 +1049,7 @@ public class StateMachineController : NetworkBehaviour
         ent.Select(false);
         SwitchState(EntityStates.Die);
         pf.ai.enabled = false;
-        if (ent.RVO != null) ent.RVO.enabled = false;
-        if (rayMod != null) rayMod.enabled = false;
+        if (ent.pf.RVO != null) ent.pf.RVO.enabled = false; 
         pf.seeker.enabled = false;
         Destroy(rigid);
         Destroy(col);
@@ -1183,6 +1152,7 @@ public class StateMachineController : NetworkBehaviour
     {
         if (ent.IsAttacker()) ent.attacker.UpdateReadiness();
         if (ent.IsHarvester()) ent.harvester.UpdateReadiness();
+        if (ent.IsBuilder()) ent.builder.UpdateReadiness();
     }
     private float ConvertTimeToFrames(float seconds) //1 second is 50 frames
     {
@@ -1247,16 +1217,22 @@ public class StateMachineController : NetworkBehaviour
     }
     public void CommandHarvestTarget(SelectableEntity select)
     {
+        //Debug.Log("Received command to harvest");
         if (ent != null && ent.IsHarvester())
         {
-            if (ent.harvester.BagHasSpace() && ent.harvester.ValidOreForHarvester(select))
-            { 
-                Debug.Log("Harvesting");
-                lastCommand.Value = CommandTypes.Harvest;
-                ent.interactionTarget = select;
-                SwitchState(EntityStates.WalkToInteractable);
-                lastMajorState = EntityStates.Harvesting;
-            } 
+            //Debug.Log("Is harvester");
+            if (ent.harvester.BagHasSpace())
+            {
+                //Debug.Log("bag");
+                if (ent.harvester.ValidOreForHarvester(select))
+                {
+                    //Debug.Log("valid ore");
+                    lastCommand.Value = CommandTypes.Harvest;
+                    ent.interactionTarget = select;
+                    SwitchState(EntityStates.WalkToInteractable);
+                    lastMajorState = EntityStates.Harvesting;
+                }
+            }
             /*else
             {
                 Debug.Log("Depositing");
@@ -1274,11 +1250,11 @@ public class StateMachineController : NetworkBehaviour
         if (currentState != EntityStates.Spawn)
         {
             ClearTargets();
-            ent.pf.ClearIdleness();
+            pf.ClearIdleness();
             SwitchState(EntityStates.WalkToTarget);
             ent.interactionTarget = target;
-            ent.pf.SetOrderedDestination(ent.interactionTarget.transform.position);
-            ent.pf.walkStartTimer = ent.pf.walkStartTimerSet;
+            pf.SetOrderedDestination(ent.interactionTarget.transform.position);
+            pf.walkStartTimer = ent.pf.walkStartTimerSet;
 
             SelectableEntity justLeftGarrison = null;
             if (ent.occupiedGarrison != null) //we are currently garrisoned
@@ -1352,9 +1328,9 @@ public class StateMachineController : NetworkBehaviour
             lastState = State.Garrisoning;*//*
         }
     }*/
-    public void ChangeRVOStatus(bool val)
+    public void ChangeRVOStatus(bool val) //used
     {
-        if (ent.RVO != null) ent.RVO.enabled = val;
+        if (ent.pf.RVO != null) ent.pf.RVO.enabled = val;
     }
     private void LoadPassengerInto(SelectableEntity garrison)
     {

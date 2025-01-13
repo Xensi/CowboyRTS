@@ -36,11 +36,11 @@ public class Attacker : SwingEntityAddon
     public float sqrDistToTargetEnemy = Mathf.Infinity;
     private float sqrDistToAlternateTarget = Mathf.Infinity;
     private readonly float minAttackMoveDestinationViabilityRange = 4;
-    public void InitAttacker()
+    public override void InitAddon()
     {  
         attackType = GetAttackSettings().attackType; 
         range = GetAttackSettings().range;
-        delta = GetAttackSettings().damage;
+        swingDelta = GetAttackSettings().damage;
         duration = GetAttackSettings().attackDuration;
         impactTime = GetAttackSettings().impactTime;
         areaOfEffectRadius = GetAttackSettings().areaOfEffectRadius; 
@@ -51,24 +51,6 @@ public class Attacker : SwingEntityAddon
     public AttackSettings GetAttackSettings()
     {
         return attackSettings;
-    }
-    /// <summary>
-    /// Updates attack readiness during the time between impact and the attack duration.
-    /// </summary>
-    public void UpdateReadiness()
-    { 
-        if (!ready)
-        {
-            if (readyTimer < Mathf.Clamp(duration - impactTime, 0, 999))
-            {
-                readyTimer += Time.deltaTime;
-            }
-            else
-            {
-                ready = true;
-                readyTimer = 0; 
-            }
-        }
     }
     private void RemoveFromEntitySearcher()
     {
@@ -140,7 +122,7 @@ public class Attacker : SwingEntityAddon
                         switch (attackType)
                         {
                             case AttackType.Instant:
-                                DamageSpecifiedEnemy(targetEnemy, delta);
+                                DamageSpecifiedEnemy(targetEnemy, swingDelta);
                                 break;
                             case AttackType.SelfDestruct:
                                 SelfDestructInExplosion(areaOfEffectRadius);
@@ -194,7 +176,7 @@ public class Attacker : SwingEntityAddon
         {
             Debug.Log("self destructing");
             hasSelfDestructed = true;
-            Global.Instance.localPlayer.CreateExplosionAtPoint(transform.position, explodeRadius, delta);
+            Global.Instance.localPlayer.CreateExplosionAtPoint(transform.position, explodeRadius, swingDelta);
             SimpleExplosionEffect(transform.position);
             Global.Instance.localPlayer.DamageEntity(99, ent); //it is a self destruct, after all
             //selectableEntity.ProperDestroyEntity();
@@ -309,10 +291,11 @@ public class Attacker : SwingEntityAddon
     public void AttackMoveToPosition(Vector3 target) //called by local player
     {
         if (!ent.alive) return; //dead units cannot be ordered
-        //if (IsGarrisoned()) return;
+                                //if (IsGarrisoned()) return;
+        longTermGoal = Goal.OrderedToAttackMove;
         GenericAttackMovePrep(target);
     }
-    private void ResetGoal() //tell the unit to stop attacking from idle; other use cases: stop attack moving
+    public void ResetGoal() //tell the unit to stop attacking from idle; other use cases: stop attack moving
     {
         longTermGoal = Goal.None;
         lastIdlePosition = transform.position;

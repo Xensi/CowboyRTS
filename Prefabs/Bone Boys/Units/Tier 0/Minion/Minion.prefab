@@ -614,13 +614,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ent: {fileID: 0}
   sm: {fileID: 0}
-  amountToHarvestPerSwing: 1
-  depositRange: 0.75
+  anim: {fileID: 0}
+  pf: {fileID: 0}
+  ready: 1
+  readyTimer: 0
+  range: 1
+  impactTime: 1
+  delta: 1
+  duration: 1
+  harvesterSettings: {fileID: 11400000, guid: fc2bdd5806e54e246a4bc17e68ebe8e6, type: 2}
   harvesterBag: 
-  harvesterBagSize: 5
-  howToFilterResources: 0
-  bannedResources: 
-  allowedResources: 
 --- !u!114 &1063275020254013508
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -635,6 +638,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ent: {fileID: 0}
   sm: {fileID: 0}
+  anim: {fileID: 0}
+  pf: {fileID: 0}
+  ready: 1
+  readyTimer: 0
+  range: 1
+  impactTime: 1
+  delta: 1
+  duration: 1
   buildableOptions: {fileID: 11400000, guid: 42a2e6976a859d343ab4e32c30dd20ed, type: 2}
 --- !u!4 &3734019601761256262 stripped
 Transform:

@@ -15,9 +15,14 @@ public class EntityAddon : NetworkBehaviour
     {
         ent = GetComponent<SelectableEntity>();
         sm = GetComponent<StateMachineController>();
-        anim = ent.anim;
-        pf = ent.pf; 
     }
+    private void Start()
+    { 
+        anim = ent.anim;
+        pf = ent.pf;
+        InitAddon();
+    }
+    public virtual void InitAddon() { }
     public SelectableEntity GetEntity()
     {
         return ent;

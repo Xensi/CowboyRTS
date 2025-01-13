@@ -22,6 +22,8 @@ public class Player : NetworkBehaviour
     public List<Depot> ownedDepots = new();
     public List<Ore> friendlyOres = new();
     public int gold = 100;
+    public int wood = 0;
+    public int cactus = 0;
     public int population = 0;
     public int maxPopulation = 10;
     public int playerTeamID = 0; //used for a player's fog of war
@@ -93,7 +95,7 @@ public class Player : NetworkBehaviour
                 StateMachineController orderedUnit = order.unit;
                 if (orderedUnit != null && orderedUnit.canReceiveNewCommands)
                 {
-                    //Debug.Log("Batch processing orders" + orderedUnit);
+                    Debug.Log("Batch processing orders" + orderedUnit);
                     orderedUnit.ProcessOrder(order);
                     UnitOrdersQueue.RemoveAt(0);
                 }

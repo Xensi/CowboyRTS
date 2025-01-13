@@ -7,6 +7,10 @@ using FoW;
 using static TargetedEffects;
 using static StateMachineController;
 using static UnitAnimator;
+
+/// <summary>
+/// Handles core behavior, like selection, HP, destruction, etc.
+/// </summary>
 public class SelectableEntity : NetworkBehaviour
 {
     [HideInInspector] public bool fakeSpawn = false;
@@ -19,13 +23,7 @@ public class SelectableEntity : NetworkBehaviour
         Build,
         Garrison,
         Attack
-    }
-    public enum DepositType
-    {
-        None,
-        All,
-        Gold
-    }
+    } 
     public enum TeamBehavior
     {
         OwnerTeam, //be on the same team as owner
@@ -46,59 +44,9 @@ public class SelectableEntity : NetworkBehaviour
         ExtendableWall
     }
     #endregion
-    #region NetworkVariables
-    //public ushort fakeSpawnNetID = 0; 
+    #region NetworkVariables 
     [HideInInspector] public NetworkVariable<bool> isTargetable = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     #endregion
-    #region Hidden
-    //Automatically set
-    private LootOnDestruction lootComponent;
-    [HideInInspector] public UnitAbilities unitAbilities;
-    [HideInInspector] public UnitAnimator anim; //Entities that can be deposited to.
-    [HideInInspector] public Depot depot; //Entities that can be deposited to.
-    [HideInInspector] public Ore ore; //Entities that are harvestable for resources
-    [HideInInspector] public Harvester harvester; //Entities that can harvest resources
-    [HideInInspector] public StateMachineController sm; //Entities that need to pathfind
-    [HideInInspector] public Builder builder; //Entities that need to pathfind
-    [HideInInspector] public Spawner spawner;
-    public Pathfinder pf;
-    [HideInInspector] public Garrison garrison;
-    private MeshRenderer[] allMeshes;
-    private MeshRenderer[] finishedMeshRenderers;
-    [HideInInspector] public Collider physicalCollider; 
-    [HideInInspector] public RallyMission rallyMission;
-    [HideInInspector] public SelectableEntity rallyTarget;
-    [HideInInspector]
-    public int consumePopulationAmount = 1;
-    [HideInInspector]
-    public int raisePopulationLimitBy = 0;
-    [HideInInspector] public NetworkObject net;
-    [HideInInspector] public Attacker attacker;
-    private void Initialize()
-    {
-        allMeshes = GetComponentsInChildren<MeshRenderer>();
-        if (sm == null) sm = GetComponent<StateMachineController>();
-        if (fogUnit == null) fogUnit = GetComponent<FogOfWarUnit>();
-        if (net == null) net = GetComponent<NetworkObject>();
-        if (obstacle == null) obstacle = GetComponentInChildren<NavmeshCut>();
-        if (RVO == null) RVO = GetComponent<RVOController>();
-        if (physicalCollider == null) physicalCollider = GetComponent<Collider>();
-        if (rigid == null) rigid = GetComponent<Rigidbody>();
-        if (lootComponent == null) lootComponent = GetComponent<LootOnDestruction>();
-        if (finishedRendererParent != null) finishedMeshRenderers = finishedRendererParent.GetComponentsInChildren<MeshRenderer>();
-        areaEffectors = GetComponentsInChildren<AreaEffector>();
-        selectIndicator = GetComponentInChildren<SelectionCircle>();
-        if (harvester == null) harvester = GetComponent<Harvester>();
-        ore = GetComponent<Ore>();
-        depot = GetComponent<Depot>();
-        anim = GetComponent<UnitAnimator>();
-        builder = GetComponent<Builder>();
-        spawner = GetComponent<Spawner>();
-        unitAbilities = GetComponent<UnitAbilities>();
-        attacker = GetComponent<Attacker>();
-        pf = GetComponent<Pathfinder>();
-        garrison = GetComponent<Garrison>();
-    }
 
     //Hidden variables 
     [HideInInspector] public bool isVisibleInFog = false;
@@ -106,15 +54,14 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
     [HideInInspector] public bool shouldHideInFog = true; // gold should not be hidden 
     [HideInInspector] public NavmeshCut obstacle;
-    [HideInInspector] public RVOController RVO;
     [HideInInspector] public int localTeamNumber = 0;
-    [HideInInspector] public sbyte desiredTeamNumber = 0; //only matters if negative
+    [HideInInspector] public sbyte desiredTeamNumber = 0; //Set when spawned by AI. Only matters if negative
     [HideInInspector] public byte clientIDToSpawnUnder = 0;
     [HideInInspector] public bool aiControlled = false;
     [HideInInspector] public bool productionBlocked = false;
     [HideInInspector] public Collider[] allPhysicalColliders;
 
-    [Header ("Must Be Manually Set")]
+    [Header("Must Be Manually Set")]
     public EntityHealthBar healthBar;
     public EntityHealthBar productionProgressBar;
     public FactionEntity factionEntity;
@@ -140,26 +87,21 @@ public class SelectableEntity : NetworkBehaviour
     public SelectableEntity interactionTarget;
 
     [HideInInspector] public List<FactionUnit> buildQueue;
-    [SerializeField] private MeshRenderer[] unbuiltRenderers; 
+    [SerializeField] private MeshRenderer[] unbuiltRenderers;
     private AreaEffector[] areaEffectors;
     //when fog of war changes, check if we should hide or show attack effects
     private bool damaged = false;
     private readonly int delay = 50;
     private int count = 0;
-    #endregion
     #region Variables
     [Header("Behavior Settings")]
     [HideInInspector] public string displayName = "name";
     //[TextArea(2, 4)]
     [HideInInspector]
     public string desc = "desc";
-    public NetworkVariable<short> currentHP = new();
-
-    //[SerializeField] 
+    public NetworkVariable<short> currentHP = new(); 
     private short startingHP = 10; //buildings usually don't start with full HP
-    [HideInInspector] public short maxHP = 10;
-    //[HideInInspector]
-    //public DepositType depositType = DepositType.None;
+    [HideInInspector] public short maxHP = 10; 
     [HideInInspector]
     public TeamBehavior teamType = TeamBehavior.OwnerTeam;
     [HideInInspector]
@@ -176,7 +118,7 @@ public class SelectableEntity : NetworkBehaviour
 
     [Header("Building Only")]
     [HideInInspector]
-    public Vector3 buildOffset = new Vector3(0.5f, 0, 0.5f); 
+    public Vector3 buildOffset = new Vector3(0.5f, 0, 0.5f);
     //public FactionAbility[] usableAbilities { get; set; } 
 
     [HideInInspector]
@@ -190,13 +132,13 @@ public class SelectableEntity : NetworkBehaviour
     private Material damagedState;
     [HideInInspector] public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
     private SelectionCircle selectIndicator;
-    [HideInInspector] public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
+    [HideInInspector]
+    public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); //negative team numbers are AI controlled
 
     //set by AI player when spawned in dynamically
     #endregion
     #region NetworkSpawn 
-    private Rigidbody rigid;
     //private bool hasRegisteredRallyMission = false;
     private List<Material> savedMaterials = new();
     public Player controllerOfThis;
@@ -207,8 +149,322 @@ public class SelectableEntity : NetworkBehaviour
     //[SerializeField]
     private FogOfWarTeam fow;
     public bool isAttackable = true;
+    #region Automatically Set
+    //Automatically set
+    [HideInInspector] public Rigidbody rigid; 
+    private LootOnDestruction lootComponent;
+    [HideInInspector] public UnitAbilities unitAbilities;
+    [HideInInspector] public UnitAnimator anim; //Entities that can be deposited to.
+    [HideInInspector] public Depot depot; //Entities that can be deposited to.
+    [HideInInspector] public Ore ore; //Entities that are harvestable for resources
+    [HideInInspector] public Harvester harvester; //Entities that can harvest resources
+    [HideInInspector] public StateMachineController sm; //Entities that need to be able to switch states
+    [HideInInspector] public Builder builder; //Entities that need to pathfind
+    [HideInInspector] public Spawner spawner;
+    public Pathfinder pf;
+    [HideInInspector] public Garrison garrison;
+    private MeshRenderer[] allMeshes;
+    private MeshRenderer[] finishedMeshRenderers;
+    [HideInInspector] public Collider physicalCollider; 
+    [HideInInspector] public RallyMission rallyMission;
+    [HideInInspector] public SelectableEntity rallyTarget;
+    [HideInInspector]
+    public int consumePopulationAmount = 1;
+    [HideInInspector]
+    public int raisePopulationLimitBy = 0;
+    [HideInInspector] public NetworkObject net;
+    [HideInInspector] public Attacker attacker;
+    #endregion
+    #region Just Spawned Code
+    #region Awake Code 
+    private void Awake() //Awake should be used to initialize component automatically
+    { //in scene placed: Awake, Start, NetworkSpawn //Dynamic: awake, networkspawn, start 
+        //Debug.Log("Awake");
+        Initialize();
+        InitializeEntityInfo();
+        initialized = true;
+    }
+    private void Initialize()
+    {
+        //Used by all entities
+        allMeshes = GetComponentsInChildren<MeshRenderer>();
+        if (finishedRendererParent != null) finishedMeshRenderers = finishedRendererParent.GetComponentsInChildren<MeshRenderer>();
+        if (rigid == null) rigid = GetComponent<Rigidbody>();
+        if (fogUnit == null) fogUnit = GetComponent<FogOfWarUnit>();
+        if (net == null) net = GetComponent<NetworkObject>();
+        if (obstacle == null) obstacle = GetComponentInChildren<NavmeshCut>();
+        if (physicalCollider == null) physicalCollider = GetComponent<Collider>();
+        selectIndicator = GetComponentInChildren<SelectionCircle>(); 
+        //Modular entity add ons
+        if (harvester == null) harvester = GetComponent<Harvester>();
+        ore = GetComponent<Ore>();
+        depot = GetComponent<Depot>();
+        anim = GetComponent<UnitAnimator>();
+        builder = GetComponent<Builder>();
+        spawner = GetComponent<Spawner>();
+        unitAbilities = GetComponent<UnitAbilities>();
+        attacker = GetComponent<Attacker>();
+        pf = GetComponent<Pathfinder>();
+        garrison = GetComponent<Garrison>();
+        //soft addons
+        areaEffectors = GetComponentsInChildren<AreaEffector>();
+        if (lootComponent == null) lootComponent = GetComponent<LootOnDestruction>();
+        //Not used by all entities
+        if (sm == null) sm = GetComponent<StateMachineController>();
+        if (sm != null)
+        {
+            sm.pf = pf;
+            sm.anim = anim;
+            sm.attacker = attacker;
+        }
+    }  
+    private void InitializeEntityInfo()
+    {
+        //add more initializations; for pathfinder, for depot, etc.
+        if (factionEntity != null)
+        { 
+            //set faction entity information
+            deathEffect = factionEntity.deathEffect;
+            displayName = factionEntity.productionName;
+            desc = factionEntity.description;
+            maxHP = (short)factionEntity.maxHP;
+            //allowedUnfinishedInteractors = factionEntity.allowedUnfinishedInteractors;
+            //allowedFinishedInteractors = factionEntity.allowedFinishedInteractors;
+            //in the future, number of interactors will be per addon; different number of allowed harvesters, depositers, etc.
+            allowedInteractors = 100;
 
+            passengersAreTargetable = factionEntity.passengersAreTargetable;
+            acceptsHeavy = factionEntity.acceptsHeavy;
 
+            consumePopulationAmount = factionEntity.consumePopulationAmount;
+            raisePopulationLimitBy = factionEntity.raisePopulationLimitBy;
+            //DIFFERENTIATE BETWEEN BUILDING AND UNIT TYPES 
+            teamType = factionEntity.teamType;
+            shouldHideInFog = factionEntity.shouldHideInFog;
+
+            if (fogUnit != null) fogUnit.circleRadius = factionEntity.visionRange;
+
+            if (factionEntity.soundProfile != null)
+            {
+                sounds = factionEntity.soundProfile.sounds;
+            }
+            else
+            {
+                sounds = new AudioClip[0];
+            }
+            if (factionEntity is FactionBuilding)
+            {
+                FactionBuilding factionBuilding = factionEntity as FactionBuilding;
+                buildOffset = factionBuilding.buildOffset;
+                if (fullyBuiltInScene)
+                {
+                    fullyBuilt = false;
+                    startingHP = maxHP;
+                }
+                else
+                {
+                    fullyBuilt = !factionBuilding.needsConstructing;
+                    if (factionBuilding.needsConstructing)
+                    {
+                        startingHP = 0;
+                    }
+                    else
+                    {
+                        startingHP = maxHP;
+                    }
+                }
+            }
+            else if (factionEntity is FactionUnit)
+            {
+                FactionUnit factionUnit = factionEntity as FactionUnit;
+                isHeavy = factionUnit.isHeavy;
+                startingHP = maxHP; 
+            }
+            hideModelOnDeath = factionEntity.hideModelOnDeath;
+        }
+    }
+    #endregion 
+    public override void OnNetworkSpawn() //Netcode related initialization ONLY
+    {
+        Debug.Log("Network Spawn");
+
+        if (IsOwner)
+        {
+            InitializeBasedOffController();
+
+            //place effect dependent on "controller of this" being defined after this line!
+            if (controllerOfThis != null)
+            {
+                StartGameAddToEnemyLists();
+                if (fogUnit != null) fogUnit.team = controllerOfThis.playerTeamID;
+            }
+        }
+        if (IsServer)
+        {
+            currentHP.Value = startingHP;
+        }
+        currentHP.OnValueChanged += OnHitPointsChanged;
+
+        localTeamNumber = System.Convert.ToInt32(net.OwnerClientId);
+    }
+    #region Network Spawn Code
+    private void InitializeBasedOffController()
+    {
+        if (controllerOfThis != null)
+        {
+            ControllerFound();
+        }
+        else //has no controller already (dynamically spawned, or neutral and placed in manually)
+        {
+            ControllerNull();
+        }
+    }
+    private void ControllerFound() // placed in scene manually and AI controlled
+    { 
+        teamNumber.Value = (sbyte)controllerOfThis.playerTeamID;
+        if (teamType == TeamBehavior.OwnerTeam)
+        {
+            AddToPlayerOwnedLists(controllerOfThis);
+        }
+    }
+    private void ControllerNull()
+    {
+        if (desiredTeamNumber < 0) //AI controlled
+        {
+            DynamicallySpawnedUnderAIControl();
+        }
+        else //player controlled or friendly neutral
+        {
+            if (teamType == TeamBehavior.OwnerTeam)
+            {
+                SpawnedUnderPlayerControl();
+            }
+            else if (teamType == TeamBehavior.FriendlyNeutral)
+            {
+                PlacedInSceneAsNeutral();
+            }
+        }
+    }
+    private void SpawnedUnderPlayerControl()
+    { 
+        RTSPlayer playerController = Global.Instance.localPlayer;
+        playerController.lastSpawnedEntity = this;
+        controllerOfThis = playerController;
+        AddToPlayerOwnedLists(controllerOfThis);
+        if (!fullyBuilt)
+        {
+            RequestBuilders();
+        }
+        teamNumber.Value = (sbyte)OwnerClientId;
+    }
+    private void PlacedInSceneAsNeutral()
+    {
+        if (IsOre())
+        { 
+            foreach (Player player in Global.Instance.allPlayers)
+            {
+                AddToPlayerOreList(player);
+            }
+        } 
+    }
+    private void DynamicallySpawnedUnderAIControl()
+    { 
+        teamNumber.Value = desiredTeamNumber;
+        if (teamType == TeamBehavior.OwnerTeam)
+        {
+            AIPlayer AIController = Global.Instance.aiPlayers[Mathf.Abs(desiredTeamNumber) - 1];
+            controllerOfThis = AIController;
+            AddToPlayerOwnedLists(controllerOfThis);
+        }
+    } 
+    #endregion
+    private void Start() //Non netcode related initialization
+    { 
+        if (currentHP.Value <= 0 && !constructionBegun) //buildings begun as untargetable (by enemies)
+        {
+            isTargetable.Value = false;
+        }
+        else
+        {
+            isTargetable.Value = true;
+        }
+        if (teamType == TeamBehavior.OwnerTeam) ChangePopulation(consumePopulationAmount);
+        Select(false);
+        rallyPoint = transform.position;
+        ChangeSelectIndicatorStatus(selected);
+        if (lineIndicator != null)
+        {
+            lineIndicator.enabled = false;
+        }
+        if (targetIndicator != null)
+        {
+            targetIndicator.transform.parent = Global.Instance.transform;
+        }
+        SetStartingSelectionRadius();
+        TryToRegisterRallyMission();
+        SetInitialVisuals();
+        aiControlled = desiredTeamNumber < 0 || controllerOfThis is AIPlayer;
+        if (isKeystone && Global.Instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
+        {
+            Global.Instance.localPlayer.keystoneUnits.Add(this);
+        }
+        if (isBuildIndicator)
+        {
+            if (obstacle != null)
+            {
+                obstacle.enabled = false;
+            }
+        }
+        SetFinishedRenderersVisibility(false);
+        foreach (MeshRenderer item in unbuiltRenderers)
+        {
+            if (item != null)
+            {
+                item.enabled = true;
+            }
+        }
+        if (!isBuildIndicator)
+        {
+            for (int i = 0; i < unbuiltRenderers.Length; i++)
+            {
+                if (unbuiltRenderers[i] != null)
+                {
+                    savedMaterials.Add(unbuiltRenderers[i].material);
+                    unbuiltRenderers[i].material = Global.Instance.transparent;
+                }
+            }
+        }
+        if (rallyVisual != null) rallyVisual.SetActive(false);
+        if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allEntities.Add(this);
+
+        InitializeBars();
+        DetermineLayerBasedOnAllegiance();
+        PlaySpawnSound();
+    }
+    #region Start() Code
+    private void DetermineLayerBasedOnAllegiance()
+    { 
+        if (controllerOfThis != null && controllerOfThis.allegianceTeamID != Global.Instance.localPlayer.allegianceTeamID)
+        {   //this should be counted as an enemy 
+            gameObject.layer = LayerMask.NameToLayer("EnemyEntity");
+        }
+    }
+    private void InitializeBars()
+    { 
+        if (healthBar != null)
+        {
+            healthBar.entity = this;
+            healthBar.SetVisibleHPConditional(false);
+        }
+        if (productionProgressBar != null)
+        {
+            productionProgressBar.entity = this;
+            productionProgressBar.SetVisible(false);
+        } 
+        RetainHealthBarPosition();
+    }
+    #endregion
+    #endregion
     private void OnDrawGizmos()
     {
         if (fakeSpawn)
@@ -235,81 +491,6 @@ public class SelectableEntity : NetworkBehaviour
     {
         return harvester != null;
     }
-    private void InitializeEntityInfo()
-    {
-        if (factionEntity == null)
-        {
-            Debug.Log("Return");
-            return;
-        }
-        //set faction entity information
-        deathEffect = factionEntity.deathEffect;
-        displayName = factionEntity.productionName;
-        desc = factionEntity.description;
-        maxHP = (short)factionEntity.maxHP;
-        //allowedUnfinishedInteractors = factionEntity.allowedUnfinishedInteractors;
-        //allowedFinishedInteractors = factionEntity.allowedFinishedInteractors;
-        //in the future, number of interactors will be per addon; different number of allowed harvesters, depositers, etc.
-        allowedInteractors = 100;
-
-        passengersAreTargetable = factionEntity.passengersAreTargetable;
-        acceptsHeavy = factionEntity.acceptsHeavy;
-
-        consumePopulationAmount = factionEntity.consumePopulationAmount;
-        raisePopulationLimitBy = factionEntity.raisePopulationLimitBy;
-        //DIFFERENTIATE BETWEEN BUILDING AND UNIT TYPES 
-        teamType = factionEntity.teamType; 
-        shouldHideInFog = factionEntity.shouldHideInFog;
-
-        if (fogUnit != null) fogUnit.circleRadius = factionEntity.visionRange;
-
-        if (factionEntity.soundProfile != null)
-        {
-            sounds = factionEntity.soundProfile.sounds;
-        }
-        else
-        {
-            sounds = new AudioClip[0];
-        }
-        if (IsHarvester()) harvester.InitHarvester();
-        //Debug.Log("Trying to initialize");
-        if (IsAttacker()) attacker.InitAttacker();
-
-        if (factionEntity is FactionBuilding)
-        {
-            FactionBuilding factionBuilding = factionEntity as FactionBuilding;
-            buildOffset = factionBuilding.buildOffset;
-            if (fullyBuiltInScene)
-            {
-                fullyBuilt = false;
-                startingHP = maxHP;
-            }
-            else
-            {
-                fullyBuilt = !factionBuilding.needsConstructing;
-                if (factionBuilding.needsConstructing)
-                {
-                    startingHP = 0;
-                }
-                else
-                {
-                    startingHP = maxHP;
-                }
-            }
-        }
-        else if (factionEntity is FactionUnit)
-        {
-            FactionUnit factionUnit = factionEntity as FactionUnit;
-            isHeavy = factionUnit.isHeavy;
-            startingHP = maxHP;
-
-            /*if (minionController != null)
-            {
-                minionController.canMoveWhileAttacking = factionUnit.canAttackWhileMoving; 
-            }*/
-        }
-        hideModelOnDeath = factionEntity.hideModelOnDeath;
-    }
     public bool IsAttacker()
     {
         return attacker != null;
@@ -323,14 +504,6 @@ public class SelectableEntity : NetworkBehaviour
     {
         return ore != null;
     }
-    private void Awake() //awake, networkspawn, start; verified through testing
-    {
-        //Debug.Log("Awake");
-        Initialize();
-        InitializeEntityInfo();
-        RetainHealthBarPosition();
-        initialized = true; 
-    } 
     private Vector3 healthBarOffset;
     private void RetainHealthBarPosition()
     {
@@ -358,8 +531,17 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void AddToPlayerOwnedLists(Player player)
     {
-        player.ownedEntities.Add(this); 
-        if (IsMinion()) player.ownedMinions.Add(sm);
+        Debug.Log("Adding to player lists");
+        player.ownedEntities.Add(this);
+        if (IsMinion())
+        {
+            Debug.Log("Adding to minion list");
+            player.ownedMinions.Add(sm);
+        }
+        else
+        {
+            Debug.Log("Not a minion");
+        }
         if (IsNotYetBuilt()) player.unbuiltStructures.Add(this);
         if (IsHarvester()) player.ownedHarvesters.Add(harvester);
         if (IsDepot()) player.ownedDepots.Add(depot);
@@ -367,110 +549,6 @@ public class SelectableEntity : NetworkBehaviour
     private void AddToPlayerOreList(Player player)
     { 
         if (IsOre()) player.friendlyOres.Add(ore);
-    }
-    public override void OnNetworkSpawn()
-    {
-        //Debug.Log("NetworkSpawn");
-        if (lineIndicator != null)
-        {
-            lineIndicator.enabled = false;
-        }
-        if (IsOwner)
-        {
-            if (controllerOfThis != null) // placed in scene manually and AI controlled
-            {
-                teamNumber.Value = (sbyte)controllerOfThis.playerTeamID;
-                if (controllerOfThis is AIPlayer)
-                {
-                    if (teamType == TeamBehavior.OwnerTeam)
-                    {
-                        AddToPlayerOwnedLists(controllerOfThis);
-                    }
-                }
-            }
-            else //has no controller already (dynamically spawned, or neutral and placed in manually)
-            {
-                if (desiredTeamNumber < 0) //AI controlled
-                {
-                    teamNumber.Value = desiredTeamNumber;
-                    if (teamType == TeamBehavior.OwnerTeam)
-                    {
-                        AIPlayer AIController = Global.Instance.aiPlayers[Mathf.Abs(desiredTeamNumber) - 1];
-                        controllerOfThis = AIController;
-                        AddToPlayerOwnedLists(controllerOfThis);
-                    }
-                    //fogUnit.enabled = false;
-                }
-                else //player controlled or friendly neutral
-                {
-                    teamNumber.Value = (sbyte)OwnerClientId;
-                    if (teamType == TeamBehavior.OwnerTeam)
-                    {
-                        RTSPlayer playerController = Global.Instance.localPlayer;
-                        playerController.lastSpawnedEntity = this;
-                        controllerOfThis = playerController;
-
-                        /*if (factionEntity != null && factionEntity.constructableBuildings.Length > 0)
-                        {
-                            playerController.ownedBuilders.Add(stateMachineController);
-                        }*/
-                        AddToPlayerOwnedLists(controllerOfThis); 
-                        if (!fullyBuilt)
-                        {
-                            RequestBuilders();
-                        }
-                    }
-                    else if (teamType == TeamBehavior.FriendlyNeutral)
-                    {
-                        foreach (Player player in Global.Instance.allPlayers)
-                        {
-                            AddToPlayerOreList(player);
-                        }
-                    }
-                }
-            }
-            //place effect dependent on "controller of this" being defined after this line!
-            if (controllerOfThis != null)
-            {
-                StartGameAddToEnemyLists();
-                if (fogUnit != null) fogUnit.team = controllerOfThis.playerTeamID;
-            }
-
-            if (teamType == TeamBehavior.OwnerTeam)
-            {
-                ChangePopulation(consumePopulationAmount);
-            }
-            if (currentHP.Value <= 0 && !constructionBegun) //buildings begun as untargetable (by enemies)
-            {
-                isTargetable.Value = false;
-            }
-            else
-            {
-                isTargetable.Value = true;
-            }
-        }
-        if (IsServer)
-        {
-            currentHP.Value = startingHP;
-        }
-        currentHP.OnValueChanged += OnHitPointsChanged;
-        rallyPoint = transform.position;
-
-        if (targetIndicator != null)
-        {
-            targetIndicator.transform.parent = Global.Instance.transform;
-        }
-        ChangeSelectIndicatorStatus(selected);
-
-
-        //allowedBuilders = allowedUnfinishedInteractors;
-        /*if (IsOwner && !hasRegisteredRallyMission)
-        {
-            hasRegisteredRallyMission = true;
-            TryToRegisterRallyMission();
-        }*/
-
-        localTeamNumber = System.Convert.ToInt32(net.OwnerClientId);
     }
     private void ChangeSelectIndicatorStatus(bool val)
     {
@@ -500,67 +578,6 @@ public class SelectableEntity : NetworkBehaviour
         for (int i = 0; i < unbuiltRenderers.Length; i++)
         {
             if (unbuiltRenderers[i] != null) unbuiltRenderers[i].enabled = val;
-        }
-    }
-    private void Start() //call stuff here so that network variables are valid (isSpawned)
-    { 
-        SetStartingSelectionRadius();
-        Select(false);
-        PlaySpawnSound();
-        TryToRegisterRallyMission();
-        SetInitialVisuals();
-        aiControlled = desiredTeamNumber < 0 || controllerOfThis is AIPlayer;
-        if (isKeystone && Global.Instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
-        {
-            Global.Instance.localPlayer.keystoneUnits.Add(this);
-        }
-        if (isBuildIndicator)
-        {
-            if (obstacle != null)
-            {
-                obstacle.enabled = false;
-            }
-            if (RVO != null)
-            {
-                RVO.enabled = false;
-            }
-        }
-        SetFinishedRenderersVisibility(false);
-        foreach (MeshRenderer item in unbuiltRenderers)
-        {
-            if (item != null)
-            {
-                item.enabled = true;
-            }
-        }
-        if (!isBuildIndicator)
-        {
-            for (int i = 0; i < unbuiltRenderers.Length; i++)
-            {
-                if (unbuiltRenderers[i] != null)
-                {
-                    savedMaterials.Add(unbuiltRenderers[i].material);
-                    unbuiltRenderers[i].material = Global.Instance.transparent;
-                }
-            }
-        }
-        if (rallyVisual != null) rallyVisual.SetActive(false);
-        if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allEntities.Add(this);
-
-        if (healthBar != null)
-        { 
-            healthBar.entity = this;
-            healthBar.SetVisibleHPConditional(false);
-        }
-        if (productionProgressBar != null)
-        {
-            productionProgressBar.entity = this;
-            productionProgressBar.SetVisible(false);
-        } 
-
-        if (controllerOfThis != null && controllerOfThis.allegianceTeamID != Global.Instance.localPlayer.allegianceTeamID)
-        {   //this should be counted as an enemy 
-            gameObject.layer = LayerMask.NameToLayer("EnemyEntity");
         }
     }
     private void SetStartingSelectionRadius()
@@ -611,6 +628,10 @@ public class SelectableEntity : NetworkBehaviour
             hideFogTeam = (int)Global.Instance.localPlayer.OwnerClientId;
         }
     }
+    public bool HasResourcesToDeposit()
+    {
+        return harvester != null && harvester.BagContainsResources();
+    }
     public bool CannotConstructHarvestProduce()
     {
         return !IsBuilder() && !IsHarvester() && !IsSpawner();
@@ -645,12 +666,12 @@ public class SelectableEntity : NetworkBehaviour
             switch (spawnerRallyMission)
             {
                 case RallyMission.None:
-                    pf.SetDestination(transform.position);
+                    if (pf != null) pf.SetDestination(transform.position);
                     sm.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Move:
                 case RallyMission.Attack: 
-                    pf.SetDestination(rallyPoint);
+                    if (pf != null) pf.SetDestination(rallyPoint);
                     sm.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Harvest:
@@ -661,7 +682,7 @@ public class SelectableEntity : NetworkBehaviour
                     }
                     else
                     {
-                        pf.SetDestination(transform.position);
+                        if (pf != null) pf.SetDestination(transform.position);
                     }
                     break;
                 case RallyMission.Build:
@@ -1122,9 +1143,10 @@ public class SelectableEntity : NetworkBehaviour
             }
 
         }
+        if (CanPathfind())
+            pf.FreezeRigid(true, true);
         if (sm != null)
         {
-            sm.FreezeRigid(true, true);
             sm.PrepareForDeath();
 
             Invoke(nameof(Die), deathDuration);
@@ -1140,6 +1162,10 @@ public class SelectableEntity : NetworkBehaviour
             Instantiate(deathEffect, transform.position, Quaternion.identity);
         }
         enabled = false;
+    }
+    private bool CanPathfind()
+    {
+        return pf != null;
     }
     private void CheckGameVictoryState()
     {
@@ -1832,6 +1858,7 @@ public class SelectableEntity : NetworkBehaviour
         infoSelected = val;
         UpdateIndicator(val);
     }
+    #region Bools
     public bool IsSpawner()
     {
         return spawner != null;
@@ -1839,5 +1866,6 @@ public class SelectableEntity : NetworkBehaviour
     public bool IsBuilder()
     {
         return builder != null;
-    } 
+    }
+    #endregion
 }

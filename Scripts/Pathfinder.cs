@@ -1,5 +1,6 @@
 using NUnit.Framework.Internal.Commands;
 using Pathfinding;
+using Pathfinding.RVO;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -24,11 +25,11 @@ public class Pathfinder : EntityAddon
     [HideInInspector] public Vector3 orderedDestination; //remembers where player told minion to go
 
     //controls where the AI will pathfind to
-    [HideInInspector]
-    public Vector3 destination;
+    [HideInInspector] public Vector3 destination;
     CancellationTokenSource pathStatusTimerCancellationToken;
-     public AIPath ai;
-     public Seeker seeker;
+    [HideInInspector] public AIPath ai;
+    [HideInInspector] public Seeker seeker;
+    [HideInInspector] public RVOController RVO;
 
     public override void Awake()
     {
@@ -36,6 +37,19 @@ public class Pathfinder : EntityAddon
         setter = GetComponent<AIDestinationSetter>();
         ai = GetComponent<AIPath>();
         seeker = GetComponent<Seeker>();
+        RVO = GetComponent<RVOController>();
+    }
+    public override void OnNetworkSpawn()
+    {
+        SetRealLocation();
+        realLocation.OnValueChanged += OnRealLocationChanged;
+        oldPosition = transform.position;
+        orderedDestination = transform.position;
+        if (!IsOwner)
+        {
+            nonOwnerRealLocationList.Add(transform.position);
+            RVO.enabled = false;
+        }
     }
     public void Start()
     { 
@@ -112,7 +126,7 @@ public class Pathfinder : EntityAddon
     [HideInInspector]
     public NetworkVariable<Vector2Int> realLocation = new NetworkVariable<Vector2Int>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    private Vector3 oldRealLocation;
+    public Vector3 oldRealLocation;
     public void SetRealLocation()
     {
         oldRealLocation = transform.position;
@@ -171,7 +185,7 @@ public class Pathfinder : EntityAddon
             nonOwnerRealLocationList.Add(transform.position);
         }
     }
-    private void OnRealLocationChanged(Vector2Int prev, Vector2Int cur)
+    public void OnRealLocationChanged(Vector2Int prev, Vector2Int cur)
     {
         //finishedInitializingRealLocation = true;
         if (!IsOwner)
@@ -234,13 +248,13 @@ public class Pathfinder : EntityAddon
         if (!freezePosition) //unfreeze
         {
             ClearObstacle();
-            pf.ai.canMove = true;
+            if (ai != null) ai.canMove = true;
         }
         else //freeze
         {
             ForceUpdateRealLocation();
             BecomeObstacle();
-            pf.ai.canMove = false; //TODO ERROR
+            if (ai != null) ai.canMove = false;
         }
         highPrecisionMovement = freezePosition;
 
@@ -266,7 +280,7 @@ public class Pathfinder : EntityAddon
         {
             rotCon = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         }
-        if (rigid != null) rigid.constraints = posCon | rotCon;
+        if (ent.rigid != null) ent.rigid.constraints = posCon | rotCon;
     }
     private readonly float pathReachesThreshold = 0.25f;
     public Vector3 lastPathPosition;
@@ -371,7 +385,7 @@ public class Pathfinder : EntityAddon
     /// </summary>
     private void UpdateSetterTargetPosition()
     {
-        pathfindingTarget.position = destination;
+        if (pathfindingTarget != null) pathfindingTarget.position = destination;
     }
     /// <summary>
     /// Use to send unit to the specified location.
@@ -434,7 +448,7 @@ public class Pathfinder : EntityAddon
             //Debug.Log(change);
         }
     }
-    private float change;
+    public float change;
     public void UpdateStopDistance()
     {
         float limit = 0.1f;
@@ -448,18 +462,6 @@ public class Pathfinder : EntityAddon
         if (walkStartTimer > 0)
         {
             walkStartTimer -= Time.deltaTime;
-        }
-    }
-    public void IdleOrWalkContextuallyAnimationOnly()
-    {
-        float limit = 0.1f;
-        if (change < limit * limit && walkStartTimer <= 0 || ai.reachedDestination) //basicallyIdleInstances > idleThreshold
-        {
-            anim.Play(IDLE);
-        }
-        else
-        {
-            anim.Play(WALK);
         }
     }
     private void BasicWalkTo(Vector3 target)

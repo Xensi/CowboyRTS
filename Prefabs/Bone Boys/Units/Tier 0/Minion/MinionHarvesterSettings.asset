@@ -9,13 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c9e39f785ab47a2498b795d7af4d44b1, type: 3}
-  m_Name: MinionBuildables
+  m_Script: {fileID: 11500000, guid: 37d70f0e130795c4285a5df96fed23e6, type: 3}
+  m_Name: MinionHarvesterSettings
   m_EditorClassIdentifier: 
-  buildables:
-  - {fileID: 11400000, guid: 9272fcf1d648ea143823dcd20788f7fa, type: 2}
-  - {fileID: 11400000, guid: caa5c448d3a92e04e8c3b58c5fa5488c, type: 2}
-  amountToBuildPerSwing: 50
-  interactRange: 0.75
+  bagSize: 5
+  amountToHarvestPerSwing: 1
+  interactRange: 0.5
   impactTime: 0.5
   duration: 1
+  allowedResources: 02000000

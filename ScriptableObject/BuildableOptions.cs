@@ -6,4 +6,8 @@ using UnityEngine;
 public class BuildableOptions : ScriptableObject
 {
     public FactionBuilding[] buildables;
+    public sbyte amountToBuildPerSwing = 1;
+    public float interactRange = .75f;
+    public float impactTime = 0.5f;
+    public float duration = 1;
 }

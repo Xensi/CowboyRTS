@@ -260,7 +260,7 @@ public class RTSPlayer : Player
         }
         EntitySearcher searcher = CreateEntitySearcherAtPosition(clickedPosition);
 
-        if (hits > 0) //Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer)
+        if (hits > 0) 
         {
             //determine action type
             if (hitEntity != null && PositionExplored(clickedPosition)) //if exists and is explored at least
@@ -313,6 +313,7 @@ public class RTSPlayer : Player
             else
             {
                 actionType = ActionType.Move;
+                Debug.Log("Moving");
             }
             //finished determining action type 
             UnitOrdersQueue.Clear();
@@ -1469,14 +1470,14 @@ public class RTSPlayer : Player
                 if (spawner.TryGet(out SelectableEntity spawnerEntity))
                 {
                     select.spawnerThatSpawnedThis = spawnerEntity;
+                    select.controllerOfThis = spawnerEntity.controllerOfThis;
                 }
                 //grant ownership 
                 if (NetworkManager.ConnectedClients.ContainsKey(clientID))
                 {
                     select.clientIDToSpawnUnder = clientID;
                     //Debug.Log("Granting ownership of " + select.name + " to client " + clientID); 
-                    if (select.net == null) select.net = select.GetComponent<NetworkObject>();
-
+                    if (select.net == null) select.net = select.GetComponent<NetworkObject>(); 
                     select.net.SpawnWithOwnership(clientID);
                     //change fog of war unit to the correct team
                     //select.localTeamNumber = clientID;
