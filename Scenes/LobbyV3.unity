@@ -14614,6 +14614,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82e73b3aac0ef464aa40db3496d90676, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  allEntities: []
   selectionRect: {fileID: 736966070}
   colors:
   - {fileID: 2100000, guid: f6e72cb4d0f2f0a47895a02988eaae88, type: 2}
@@ -14673,7 +14674,6 @@ MonoBehaviour:
   selectedParent: {fileID: 1076464098}
   nameText: {fileID: 1720408164}
   descText: {fileID: 379104344}
-  harvestableResources: []
   resourcesParent: {fileID: 1539402572}
   resourceText: {fileID: 995845711}
   gridVisual: {fileID: 904017616}
@@ -14719,7 +14719,6 @@ MonoBehaviour:
   aiPlayers: []
   allPlayers: []
   grid: {fileID: 1949437213}
-  allEntities: []
   gameCanvas: {fileID: 1357281861}
   defaultCaptureEffect: {fileID: 5408459219581451750, guid: 79fdd10ce92332f48bdd4a70e0180172, type: 3}
   setRallyPointButton: {fileID: 1319956301}
