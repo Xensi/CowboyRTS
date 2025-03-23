@@ -284,7 +284,7 @@ public class Pathfinder : EntityAddon
     }
     private readonly float pathReachesThreshold = 0.25f;
     public Vector3 lastPathPosition;
-    [HideInInspector] public Transform pathfindingTarget;
+    public Transform pathfindingTarget;
     private void UpdatePathStatus()
     {
         bool pathReached = EndOfPathReachesPosition(pathfindingTarget.transform.position);
@@ -348,6 +348,7 @@ public class Pathfinder : EntityAddon
         nudgedTargetEnemyStructurePosition = newPosition;
         //Debug.DrawRay(entity.transform.position, Vector3.up, Color.red, 5);
         Debug.DrawRay(nudgedTargetEnemyStructurePosition, Vector3.up, Color.green, 5);
+        Debug.Log("Nudged to " + nudgedTargetEnemyStructurePosition);
     }
     public bool PathReaches()
     {

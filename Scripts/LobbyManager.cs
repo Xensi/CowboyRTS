@@ -16,8 +16,7 @@ using Unity.Netcode.Transports.UTP;
 using Unity.Networking.Transport.Relay;
 #if UNITY_EDITOR 
 using ParrelSync;
-#endif
-using Unity.VisualScripting;
+#endif 
 public class LobbyManager : MonoBehaviour
 {
 

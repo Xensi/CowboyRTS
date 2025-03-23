@@ -757,21 +757,21 @@ public class Attacker : SwingEntityAddon
             AutomaticAttackMove();
         }*/
         if (IsValidTarget(targetEnemy))
-        {
+        { 
             if (longTermGoal == Goal.AttackFromIdle && Vector3.Distance(lastIdlePosition, targetEnemy.transform.position) > maximumChaseRange)
-            {
+            { 
                 HandleLackOfValidTargetEnemy();
                 return;
             }
             //UpdateAttackIndicator();
             if (!InRangeOfEntity(targetEnemy, range))
-            {
-                if (ent.occupiedGarrison != null)
+            { 
+                /*if (ent.occupiedGarrison != null)
                 {
-                    SwitchState(EntityStates.Idle);
+                    SwitchState(EntityStates.Idle); 
                     return;
-                }
-                
+                }*/
+
                 anim.Play(CONTINUE_ATTACK_WALK);
 
                 //if target is a structure, move the destination closer to us until it no longer hits obstacle
@@ -784,7 +784,7 @@ public class Attacker : SwingEntityAddon
             }
         }
         else
-        {
+        { 
             HandleLackOfValidTargetEnemy();
             /*if (lastOrderType == ActionType.AttackTarget) //if we were last attacking a specific target, start a new attack move on that
             { //target's last position

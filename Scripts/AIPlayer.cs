@@ -4,8 +4,7 @@ using UnityEngine;
 using Unity.Netcode;
 using System.Linq;
 //using static UnityEditor.Progress;
-using Pathfinding.Drawing;
-using Unity.VisualScripting;
+using Pathfinding.Drawing; 
 using static Player;
 using System.Threading.Tasks;
 /// <summary>

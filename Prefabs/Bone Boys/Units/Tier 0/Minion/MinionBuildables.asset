@@ -15,7 +15,7 @@ MonoBehaviour:
   buildables:
   - {fileID: 11400000, guid: 9272fcf1d648ea143823dcd20788f7fa, type: 2}
   - {fileID: 11400000, guid: caa5c448d3a92e04e8c3b58c5fa5488c, type: 2}
-  amountToBuildPerSwing: 50
+  amountToBuildPerSwing: 1
   interactRange: 0.75
   impactTime: 0.5
   duration: 1

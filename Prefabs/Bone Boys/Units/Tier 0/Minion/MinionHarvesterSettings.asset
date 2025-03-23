@@ -17,4 +17,4 @@ MonoBehaviour:
   interactRange: 0.5
   impactTime: 0.5
   duration: 1
-  allowedResources: 02000000
+  allowedResources: 020000000400000003000000

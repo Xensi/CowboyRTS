@@ -598,7 +598,7 @@ public class StateMachineController : NetworkBehaviour
 
     public async void SwitchState(EntityStates stateToSwitchTo)
     {
-        //Debug.Log(name + " is switching state to: " + stateToSwitchTo);
+        Debug.Log(name + " is switching state to: " + stateToSwitchTo);
         switch (stateToSwitchTo)
         {
             case EntityStates.Attacking:
@@ -734,12 +734,19 @@ public class StateMachineController : NetworkBehaviour
         lastOrder = order;
     }
     private void AttackTarget(SelectableEntity select)
-    { 
-        /*Debug.Log("Received order to attack " + select.name);
-        lastCommand.Value = CommandTypes.Attack;
-        ClearIdleness();
-        if (ent.attacker.GetTargetEnemy().IsStructure()) nudgedTargetEnemyStructurePosition = ent.attacker.GetTargetEnemy().transform.position;
-        if (ent.IsAttacker()) ent.attacker.AttackTarget(select);*/
+    {
+        Debug.Log("Received order to attack " + select.name);
+        if (ent.IsAttacker())
+        {
+            lastCommand.Value = CommandTypes.Attack;
+            if (pf != null) pf.ClearIdleness();
+            if (select.IsStructure())
+            { 
+                pf.NudgeTargetEnemyStructureDestination(select);
+                //pf.nudgedTargetEnemyStructurePosition = select.transform.position;
+            }
+            ent.attacker.AttackTarget(select);
+        }
     }
     [SerializeField] private float attackTrailBeginTime = 0.2f;
     private float timerUntilAttackTrailBegins = 0;

@@ -202,27 +202,25 @@ public class RTSPlayer : Player
 
             foreach (SelectableEntity item in selectedEntities)
             {
-                //TODO
-                /*if (item.sm != null && item.sm.IsValidAttacker()) //minion
+                if (item.sm != null && item.IsAttacker()) //minion
                 {
                     //if this unit is already assigned to an entity searcher, unassign it
-                    if (item.sm.assignedEntitySearcher != null)
+                    if (item.attacker.assignedEntitySearcher != null)
                     {
-                        item.sm.assignedEntitySearcher.UnassignUnit(item.sm);
+                        item.attacker.assignedEntitySearcher.UnassignUnit(item.sm);
                     }
                     //assign the entity searcher to selected units
-                    item.sm.assignedEntitySearcher = searcher;
+                    item.attacker.assignedEntitySearcher = searcher;
                     //update the entity searcher's assigned units list
-                    item.sm.assignedEntitySearcher.AssignUnit(item.sm);
-                    item.sm.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search
+                    item.attacker.assignedEntitySearcher.AssignUnit(item.sm);
+                    item.attacker.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search
                     UnitOrder order = new();
                     order.unit = item.sm;
                     order.targetPosition = clickedPosition;
                     order.action = ActionType.AttackMove;
                     UnitOrdersQueue.Add(order);
-                }*/
-            }
-            //totalNumUnitOrders = UnitOrdersQueue.Count; 
+                }
+            } 
         }
     }
     private bool SameAllegiance(SelectableEntity foreign)
@@ -246,7 +244,7 @@ public class RTSPlayer : Player
         for (int i = 0; i < hits; i++)
         {
             SelectableEntity checkEntity = Global.Instance.FindEntityFromObject(raycastHits[i].collider.gameObject);
-            if (hitEntity == null || checkEntity.controllerOfThis.allegianceTeamID != allegianceTeamID)
+            if (hitEntity == null || checkEntity.controllerOfThis != null && checkEntity.controllerOfThis.allegianceTeamID != allegianceTeamID)
             {
                 //enemy takes priority over allies 
                 hitEntity = checkEntity;
