@@ -93,7 +93,7 @@ PrefabInstance:
     - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: anim
       value: 
-      objectReference: {fileID: 1123810511653194625, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
+      objectReference: {fileID: 0}
     - target: {fileID: 1556607826778985850, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: state
       value: 11
@@ -118,6 +118,10 @@ PrefabInstance:
       propertyPath: attackDuration
       value: 2.5
       objectReference: {fileID: 0}
+    - target: {fileID: 2344885485515939443, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: attackSettings
+      value: 
+      objectReference: {fileID: 11400000, guid: be7bd6c9563d2cf4a8259ceaa04b6642, type: 2}
     - target: {fileID: 2794094538110024962, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Enabled
       value: 1
@@ -128,7 +132,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4126868118260038068, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1082460594
+      value: 3055209113
       objectReference: {fileID: 0}
     - target: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Name

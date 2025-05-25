@@ -348,7 +348,7 @@ public class Pathfinder : EntityAddon
         nudgedTargetEnemyStructurePosition = newPosition;
         //Debug.DrawRay(entity.transform.position, Vector3.up, Color.red, 5);
         Debug.DrawRay(nudgedTargetEnemyStructurePosition, Vector3.up, Color.green, 5);
-        Debug.Log("Nudged to " + nudgedTargetEnemyStructurePosition);
+        //Debug.Log("Nudged to " + nudgedTargetEnemyStructurePosition);
     }
     public bool PathReaches()
     {
@@ -397,7 +397,32 @@ public class Pathfinder : EntityAddon
         sm.lastCommand.Value = CommandTypes.Move;
         if (sm.currentState != EntityStates.Spawn)
         {
+            if (ent.IsAttacker()) ent.attacker.ResetGoal();
             BasicWalkTo(target);
+        }
+    }
+    public void MoveToTarget(SelectableEntity target)
+    {
+        if (target == null) return;
+        //Debug.Log("Moving to target");
+        sm.lastCommand.Value = CommandTypes.Move;
+        if (sm.currentState != EntityStates.Spawn)
+        {
+            if (ent.IsAttacker()) ent.attacker.ResetGoal();
+            sm.ClearTargets();
+            pf.ClearIdleness();
+            SwitchState(EntityStates.WalkToTarget);
+            ent.interactionTarget = target;
+            pf.SetOrderedDestination(ent.interactionTarget.transform.position);
+            pf.walkStartTimer = ent.pf.walkStartTimerSet;
+
+            SelectableEntity justLeftGarrison = null;
+            if (ent.occupiedGarrison != null) //we are currently garrisoned
+            {
+                justLeftGarrison = ent.occupiedGarrison;
+                sm.RemovePassengerFrom(ent.occupiedGarrison);
+                sm.PlaceOnGround(); //snap to ground
+            }
         }
     }
     public void UpdateIdleCount()

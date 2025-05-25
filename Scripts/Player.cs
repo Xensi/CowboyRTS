@@ -95,7 +95,7 @@ public class Player : NetworkBehaviour
                 StateMachineController orderedUnit = order.unit;
                 if (orderedUnit != null && orderedUnit.canReceiveNewCommands)
                 {
-                    Debug.Log("Batch processing orders" + orderedUnit);
+                    //Debug.Log("Batch processing orders" + orderedUnit); 
                     orderedUnit.ProcessOrder(order);
                     UnitOrdersQueue.RemoveAt(0);
                 }

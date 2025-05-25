@@ -107,7 +107,7 @@ PrefabInstance:
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: indicator
       value: 
-      objectReference: {fileID: 1402130451776015957}
+      objectReference: {fileID: 0}
     - target: {fileID: 1420444146532106229, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: displayName
       value: Goon
@@ -244,6 +244,10 @@ PrefabInstance:
       propertyPath: shouldAutoSeekOutEnemies
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2344885485515939443, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: attackSettings
+      value: 
+      objectReference: {fileID: 11400000, guid: 24d73b604fb09a14f8d406f9f009c910, type: 2}
     - target: {fileID: 2794094538110024962, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Enabled
       value: 1
@@ -328,11 +332,6 @@ PrefabInstance:
       addedObject: {fileID: 1801151150211686630}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
---- !u!1 &1402130451776015957 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8821975901658637110, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
-  m_PrefabInstance: {fileID: 7572990106638052707}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &3734019601761256262 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6541845058422189605, guid: f64a2c01c851079439b715bc7354cf81, type: 3}

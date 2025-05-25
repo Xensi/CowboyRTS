@@ -296,14 +296,14 @@ public class RTSPlayer : Player
                     else //enemy
                     { //try to target this enemy specifically
                         actionType = ActionType.AttackTarget;
-                        Debug.Log("Trying to attack " + hitEntity.name);
+                        //Debug.Log("Trying to attack " + hitEntity.name);
                     }
                 }
                 else if (hitEntity.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral) //for now resources are only neutral; this may change
                 { 
                     if (hitEntity.IsOre())
                     {
-                        Debug.Log("trying to harvest");
+                        //Debug.Log("trying to harvest");
                         actionType = ActionType.Harvest;
                     }
                 }
@@ -311,7 +311,7 @@ public class RTSPlayer : Player
             else
             {
                 actionType = ActionType.Move;
-                Debug.Log("Moving");
+                //Debug.Log("Moving");
             }
             //finished determining action type 
             UnitOrdersQueue.Clear();
@@ -372,7 +372,7 @@ public class RTSPlayer : Player
     }
     private void SelectAllAttackers()
     {
-        Debug.Log("trying to select all attackers");
+        //Debug.Log("trying to select all attackers");
         DeselectAll();
         foreach (StateMachineController item in ownedMinions)
         {

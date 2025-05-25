@@ -27,6 +27,10 @@ public class EntityAddon : NetworkBehaviour
     {
         return ent;
     } 
+    /// <summary>
+    /// Switches the state machine controller state.
+    /// </summary>
+    /// <param name="state"></param>
     public void SwitchState(EntityStates state)
     {
         if (sm != null) sm.SwitchState(state);

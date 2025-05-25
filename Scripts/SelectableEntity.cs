@@ -286,7 +286,7 @@ public class SelectableEntity : NetworkBehaviour
     #endregion 
     public override void OnNetworkSpawn() //Netcode related initialization ONLY
     {
-        Debug.Log("Network Spawn");
+        //Debug.Log("Network Spawn");
 
         if (IsOwner)
         {
@@ -531,16 +531,16 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void AddToPlayerOwnedLists(Player player)
     {
-        Debug.Log("Adding to player lists");
+        //Debug.Log("Adding to player lists");
         player.ownedEntities.Add(this);
         if (IsMinion())
         {
-            Debug.Log("Adding to minion list");
+            //Debug.Log("Adding to minion list");
             player.ownedMinions.Add(sm);
         }
         else
         {
-            Debug.Log("Not a minion");
+            //Debug.Log("Not a minion");
         }
         if (IsNotYetBuilt()) player.unbuiltStructures.Add(this);
         if (IsHarvester()) player.ownedHarvesters.Add(harvester);
@@ -1079,6 +1079,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         PrepareForEntityDestruction();
     }
+    bool deathEffectPlayed = false;
     public void PrepareForEntityDestruction()
     {
         if (IsLoot()) lootComponent.LootForLocalPlayer();
@@ -1157,8 +1158,9 @@ public class SelectableEntity : NetworkBehaviour
             Invoke(nameof(Die), deathDuration); //structures cannot be deleted immediately because we need some time
             //for values to updated. better method is to destroy cosmetically
         }
-        if (deathEffect != null)
+        if (deathEffect != null && !deathEffectPlayed)
         {
+            deathEffectPlayed = true;
             Instantiate(deathEffect, transform.position, Quaternion.identity);
         }
         enabled = false;

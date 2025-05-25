@@ -171,6 +171,9 @@ public class StateMachineController : NetworkBehaviour
     }
 
     //private bool finishedInitializingRealLocation = false;
+    /// <summary>
+    /// Update repath rate based on order or current state. Attack move has a faster repath rate.
+    /// </summary>
     private void UpdateRepathRate()
     {
         float defaultPathRate = 2;
@@ -205,7 +208,7 @@ public class StateMachineController : NetworkBehaviour
                 OwnerUpdateState();
                 UpdateRepathRate();
                 //UpdateSetterTargetPosition();
-                FixGarrisonObstacle();
+                //FixGarrisonObstacle();
                 ent.attacker.UpdateTargetEnemyLastPosition(); 
             }
             else // if (finishedInitializingRealLocation) //not owned by us
@@ -252,6 +255,9 @@ public class StateMachineController : NetworkBehaviour
     {
 
     }*/
+    /// <summary>
+    /// No functionality.
+    /// </summary>
     private void FixGarrisonObstacle()
     {
         /*if (IsGarrisoned())
@@ -598,7 +604,7 @@ public class StateMachineController : NetworkBehaviour
 
     public async void SwitchState(EntityStates stateToSwitchTo)
     {
-        Debug.Log(name + " is switching state to: " + stateToSwitchTo);
+        //Debug.Log(name + " is switching state to: " + stateToSwitchTo);
         switch (stateToSwitchTo)
         {
             case EntityStates.Attacking:
@@ -680,15 +686,15 @@ public class StateMachineController : NetworkBehaviour
     public ActionType lastOrderType; 
     public void ProcessOrder(UnitOrder order)
     {
-        Debug.Log("Processing order");
-        if (attacker != null) attacker.ResetGoal();
+        //Debug.Log("Processing order");
+        //if (attacker != null) attacker.ResetGoal();
         Vector3 targetPosition = order.targetPosition;
         SelectableEntity target = order.target;
         lastOrderType = order.action;
         switch (order.action)
         {
             case ActionType.MoveToTarget:
-                MoveToTarget(target);
+                if (pf != null) pf.MoveToTarget(target);
                 break;
             case ActionType.AttackMove:
                 if (attacker != null) attacker.AttackMoveToPosition(targetPosition);
@@ -714,7 +720,7 @@ public class StateMachineController : NetworkBehaviour
                 }
                 else
                 {
-                    MoveToTarget(target);
+                    if (pf != null) pf.MoveToTarget(target);
                 }
                 break;
             case ActionType.Garrison:
@@ -735,7 +741,7 @@ public class StateMachineController : NetworkBehaviour
     }
     private void AttackTarget(SelectableEntity select)
     {
-        Debug.Log("Received order to attack " + select.name);
+        //Debug.Log("Received order to attack " + select.name);
         if (ent.IsAttacker())
         {
             lastCommand.Value = CommandTypes.Attack;
@@ -1249,29 +1255,6 @@ public class StateMachineController : NetworkBehaviour
             }*/
         }
     }
-    public void MoveToTarget(SelectableEntity target)
-    {
-        if (target == null) return;
-        Debug.Log("Moving to target");
-        lastCommand.Value = CommandTypes.Move;
-        if (currentState != EntityStates.Spawn)
-        {
-            ClearTargets();
-            pf.ClearIdleness();
-            SwitchState(EntityStates.WalkToTarget);
-            ent.interactionTarget = target;
-            pf.SetOrderedDestination(ent.interactionTarget.transform.position);
-            pf.walkStartTimer = ent.pf.walkStartTimerSet;
-
-            SelectableEntity justLeftGarrison = null;
-            if (ent.occupiedGarrison != null) //we are currently garrisoned
-            {
-                justLeftGarrison = ent.occupiedGarrison;
-                RemovePassengerFrom(ent.occupiedGarrison);
-                PlaceOnGround(); //snap to ground
-            }
-        }
-    }
     public void DepositTo(SelectableEntity select)
     {
         lastCommand.Value = CommandTypes.Deposit;
@@ -1374,7 +1357,7 @@ public class StateMachineController : NetworkBehaviour
             }
         }
     }
-    private void RemovePassengerFrom(SelectableEntity garrison)
+    public void RemovePassengerFrom(SelectableEntity garrison)
     {
         garrison.UnloadPassenger(this); //leave garrison by moving out of it
 

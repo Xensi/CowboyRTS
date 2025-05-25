@@ -51,9 +51,9 @@ public class EntitySearcher : MonoBehaviour
             searchMask = Global.Instance.friendlyEntityLayer;
         }
         searchedCount = Physics.OverlapSphereNonAlloc(transform.position, searchRadius, enemyArray, searchMask); //use fixed distance for now
-        minionCount = 0;
-        structureCount = 0;
-        allCount = 0;
+        int tempMinionCount = 0;
+        int tempStructureCount = 0;
+        int tempAllCount = 0;
         for (int i = 0; i < searchedCount; i++) //place valid entities into array
         {
             if (enemyArray[i] == null) continue; //if invalid do not increment slotToWriteTo
@@ -68,27 +68,30 @@ public class EntitySearcher : MonoBehaviour
 
             if (select.IsMinion())
             {
-                if (minionCount < searchedMinions.Length)
+                if (tempMinionCount < searchedMinions.Length)
                 { 
-                    searchedMinions[minionCount] = select;
-                    minionCount++;
+                    searchedMinions[tempMinionCount] = select;
+                    tempMinionCount++;
                 }
             }
             else
             {
-                if (structureCount < searchedStructures.Length)
+                if (tempStructureCount < searchedStructures.Length)
                 { 
-                    searchedStructures[structureCount] = select;
-                    structureCount++;
+                    searchedStructures[tempStructureCount] = select;
+                    tempStructureCount++;
                 }
             }
-            if (allCount < searchedAll.Length)
+            if (tempAllCount < searchedAll.Length)
             { 
-                searchedAll[allCount] = select;
-                allCount++;
+                searchedAll[tempAllCount] = select;
+                tempAllCount++;
             }
             await Task.Yield();
         }
+        allCount = tempAllCount;
+        minionCount = tempMinionCount;
+        structureCount = tempStructureCount;
     }
     public void AssignUnit(StateMachineController unit)
     {
