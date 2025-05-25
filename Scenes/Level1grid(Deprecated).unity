@@ -901,48 +901,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f220e0ea7f23f941b76a7129cd4c3f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  messages:
-  - {fileID: 313462090}
-  - {fileID: 1089865252}
-  - {fileID: 1231688151}
-  - {fileID: 1831325852}
-  - {fileID: 1050645767}
-  - {fileID: 889473945}
-  - {fileID: 1447286385}
-  - {fileID: 816694248}
-  bg: {fileID: 297754195}
-  checkForDestruction:
-  - {fileID: 614427467}
-  winWhenTheseAreDead:
-  - {fileID: 722061830}
-  - {fileID: 0}
-  - {fileID: 821638474}
-  - {fileID: 1642079958}
-  - {fileID: 710471783}
-  - {fileID: 41671501}
-  - {fileID: 1821118929}
-  - {fileID: 0}
-  - {fileID: 500364237}
-  - {fileID: 0}
-  - {fileID: 2129407158}
-  - {fileID: 588094089}
-  - {fileID: 1023818713}
-  - {fileID: 0}
-  - {fileID: 1694934065}
-  - {fileID: 1863939389}
-  - {fileID: 1951684373}
-  - {fileID: 0}
-  - {fileID: 1037911365}
-  - {fileID: 0}
-  - {fileID: 481070772}
-  - {fileID: 1913793879}
-  - {fileID: 1897569948}
-  - {fileID: 369556017}
-  - {fileID: 1496318124}
-  - {fileID: 0}
-  - {fileID: 594323854}
-  - {fileID: 340464231}
-  ai: {fileID: 0}
+  linearMessages: []
+  clickToContinue: {fileID: 0}
 --- !u!1 &26833601
 GameObject:
   m_ObjectHideFlags: 0
@@ -5365,7 +5325,12 @@ MonoBehaviour:
   ownedMinions: []
   unbuiltStructures: []
   ownedBuilders: []
+  ownedHarvesters: []
+  ownedDepots: []
+  friendlyOres: []
   gold: 100
+  wood: 0
+  cactus: 0
   population: 0
   maxPopulation: 10
   playerTeamID: -4
@@ -5375,10 +5340,14 @@ MonoBehaviour:
   visibleEnemies: []
   enable: 1
   playerColor: {r: 1, g: 0, b: 0, a: 1}
+  actionType: 0
+  UnitOrdersQueue: []
   attackTime: 5
+  timer: 0
   spawnPosition: {fileID: 0}
   knownEnemyStructures: []
   knownEnemyUnits: []
+  watchedEntities: []
   behavior: 1
   desiredPopAdders: 0
   desiredHarvesters: 5
@@ -11478,7 +11447,12 @@ MonoBehaviour:
   ownedMinions: []
   unbuiltStructures: []
   ownedBuilders: []
+  ownedHarvesters: []
+  ownedDepots: []
+  friendlyOres: []
   gold: 100
+  wood: 0
+  cactus: 0
   population: 0
   maxPopulation: 10
   playerTeamID: -2
@@ -11488,10 +11462,14 @@ MonoBehaviour:
   visibleEnemies: []
   enable: 1
   playerColor: {r: 1, g: 0, b: 0, a: 1}
+  actionType: 0
+  UnitOrdersQueue: []
   attackTime: 30
+  timer: 0
   spawnPosition: {fileID: 0}
   knownEnemyStructures: []
   knownEnemyUnits: []
+  watchedEntities: []
   behavior: 2
   desiredPopAdders: 0
   desiredHarvesters: 5
@@ -19301,7 +19279,12 @@ MonoBehaviour:
   ownedMinions: []
   unbuiltStructures: []
   ownedBuilders: []
+  ownedHarvesters: []
+  ownedDepots: []
+  friendlyOres: []
   gold: 100
+  wood: 0
+  cactus: 0
   population: 0
   maxPopulation: 10
   playerTeamID: -6
@@ -19311,10 +19294,14 @@ MonoBehaviour:
   visibleEnemies: []
   enable: 1
   playerColor: {r: 1, g: 0, b: 0, a: 1}
+  actionType: 0
+  UnitOrdersQueue: []
   attackTime: 5
+  timer: 0
   spawnPosition: {fileID: 0}
   knownEnemyStructures: []
   knownEnemyUnits: []
+  watchedEntities: []
   behavior: 2
   desiredPopAdders: 0
   desiredHarvesters: 5
@@ -19567,7 +19554,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3166409628928317650, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -20.3824
+      value: -20.6324
       objectReference: {fileID: 0}
     - target: {fileID: 3166409628928317650, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
       propertyPath: m_LocalRotation.w
@@ -27021,7 +27008,12 @@ MonoBehaviour:
   ownedMinions: []
   unbuiltStructures: []
   ownedBuilders: []
+  ownedHarvesters: []
+  ownedDepots: []
+  friendlyOres: []
   gold: 100
+  wood: 0
+  cactus: 0
   population: 0
   maxPopulation: 10
   playerTeamID: -1
@@ -27031,10 +27023,14 @@ MonoBehaviour:
   visibleEnemies: []
   enable: 1
   playerColor: {r: 1, g: 0, b: 0, a: 1}
+  actionType: 0
+  UnitOrdersQueue: []
   attackTime: 5
+  timer: 0
   spawnPosition: {fileID: 0}
   knownEnemyStructures: []
   knownEnemyUnits: []
+  watchedEntities: []
   behavior: 1
   desiredPopAdders: 0
   desiredHarvesters: 5
@@ -27443,7 +27439,12 @@ MonoBehaviour:
   ownedMinions: []
   unbuiltStructures: []
   ownedBuilders: []
+  ownedHarvesters: []
+  ownedDepots: []
+  friendlyOres: []
   gold: 100
+  wood: 0
+  cactus: 0
   population: 0
   maxPopulation: 10
   playerTeamID: -3
@@ -27453,10 +27454,14 @@ MonoBehaviour:
   visibleEnemies: []
   enable: 1
   playerColor: {r: 1, g: 0, b: 0, a: 1}
+  actionType: 0
+  UnitOrdersQueue: []
   attackTime: 30
+  timer: 0
   spawnPosition: {fileID: 0}
   knownEnemyStructures: []
   knownEnemyUnits: []
+  watchedEntities: []
   behavior: 2
   desiredPopAdders: 0
   desiredHarvesters: 5
@@ -27534,7 +27539,12 @@ MonoBehaviour:
   ownedMinions: []
   unbuiltStructures: []
   ownedBuilders: []
+  ownedHarvesters: []
+  ownedDepots: []
+  friendlyOres: []
   gold: 100
+  wood: 0
+  cactus: 0
   population: 0
   maxPopulation: 10
   playerTeamID: -5
@@ -27544,10 +27554,14 @@ MonoBehaviour:
   visibleEnemies: []
   enable: 1
   playerColor: {r: 1, g: 0, b: 0, a: 1}
+  actionType: 0
+  UnitOrdersQueue: []
   attackTime: 5
+  timer: 0
   spawnPosition: {fileID: 0}
   knownEnemyStructures: []
   knownEnemyUnits: []
+  watchedEntities: []
   behavior: 2
   desiredPopAdders: 0
   desiredHarvesters: 5
@@ -39341,7 +39355,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3166409628928317650, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -8.8824
+      value: -9.1324
       objectReference: {fileID: 0}
     - target: {fileID: 3166409628928317650, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
       propertyPath: m_LocalRotation.w

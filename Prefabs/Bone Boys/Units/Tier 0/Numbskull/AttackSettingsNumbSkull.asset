@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   attackType: 1
   damage: 1
-  attackRange: 0.75
+  range: 0.5
   attackDuration: 1
   impactTime: 0.5
   areaOfEffectRadius: 0
