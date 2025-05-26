@@ -14,9 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   attackType: 1
   damage: 1
-  directionalAttack: 0
-  attackRange: 1
+  range: 0.5
   attackDuration: 1
   impactTime: 0.5
   areaOfEffectRadius: 0
-  shouldAggressivelySeekEnemies: 0
+  attackProjectilePrefab: {fileID: 0}

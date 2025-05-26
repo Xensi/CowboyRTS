@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b888e0fe913eaf4095ed4e0fccd988e, type: 3}
-  m_Name: Drunkard
+  m_Name: BarBrawler
   m_EditorClassIdentifier: 
   productionName: Bar Brawler
   description: Tough fighter. Drink to heal and speed up. Buy new drinks at the saloon.

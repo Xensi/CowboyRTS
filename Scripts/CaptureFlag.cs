@@ -20,6 +20,7 @@ public class CaptureFlag : MonoBehaviour
     [SerializeField] private List<SelectableEntity> destroyEntities = new();
     private bool switched = false;
     [SerializeField] private int numAlive = 0;
+    [HideInInspector] public SelectableEntity ent;
     private void Start()
     {
         initialWatchedEntities = watchedEntities.Count;
@@ -39,7 +40,10 @@ public class CaptureFlag : MonoBehaviour
             {
                 if (item != null && item.alive)
                 {
-                    numAlive++;
+                    if (item.capFlag != null && !item.capFlag.switched || item.IsEnemyOfPlayer(Global.Instance.localPlayer))
+                    {
+                        numAlive++;
+                    }
                 }
             }
 
@@ -60,12 +64,24 @@ public class CaptureFlag : MonoBehaviour
     {
         if (switched) return;
         bool shouldSwitch = true;
+
         foreach (SelectableEntity item in watchedEntities)
         {
             if (item != null && item.alive)
-            {
-                shouldSwitch = false;
-                break;
+            {   
+                //if watched cap flag is switched, that's valid
+                if (item.capFlag != null && !item.capFlag.switched)
+                {
+                    shouldSwitch = false;
+                    break;
+                }
+
+                //if item is not on our team, should switch = false
+                if (item.IsEnemyOfPlayer(Global.Instance.localPlayer))
+                {   
+                    shouldSwitch = false;
+                    break;
+                }
             }
         }
         if (shouldSwitch)

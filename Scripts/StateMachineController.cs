@@ -11,7 +11,8 @@ using System.Threading.Tasks;
 using System.Data.Common;
 using System;
 using System.Threading;
-using TMPro; 
+using TMPro;
+using static UnitAnimator;
 
 //used for entities that can attack
 [RequireComponent(typeof(SelectableEntity))]
@@ -266,7 +267,6 @@ public class StateMachineController : NetworkBehaviour
         }*/
     }
     //float stopDistIncreaseThreshold = 0.01f;
-    float defaultEndReachedDistance = 0.5f;
     private void ClientSeekEnemy()
     {
         /*if (nearbyIndexer >= Global.Instance.allEntities.Count)
@@ -802,6 +802,7 @@ public class StateMachineController : NetworkBehaviour
             case EntityStates.Die: 
                 break;
             case EntityStates.Idle:
+                if (pf != null) pf.ResetEndReachedDistance();
                 if (ent.occupiedGarrison == null) //if not in garrison
                 {
                     FollowGivenMission(); //if we have a rally mission, attempt to do it
@@ -814,16 +815,15 @@ public class StateMachineController : NetworkBehaviour
                 if (ent.IsAttacker()) ent.attacker.IdleState();
                 break;
             case EntityStates.UsingAbility:
-                /*if (skipFirstFrame) //neccesary to give animator a chance to catch up
+                if (skipFirstFrame) //neccesary to give animator a chance to catch up
                 {
                     skipFirstFrame = false;
                 }
-                else if (!animator.GetCurrentAnimatorStateInfo(0).IsName("UseAbility"))
+                else if (!anim.InState(USE_ABILITY)) 
                 {
-                    ent.unitAbilities.ActivateAbility(ent.unitAbilities.GetQueuedAbility());
                     SwitchState(EntityStates.Idle);
                     ResumeLastOrder();
-                }*/
+                }
                 break;
             case EntityStates.Walk:
                 ent.pf.UpdateStopDistance();

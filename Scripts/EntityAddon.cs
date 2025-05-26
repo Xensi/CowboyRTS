@@ -23,6 +23,7 @@ public class EntityAddon : NetworkBehaviour
         InitAddon();
     }
     public virtual void InitAddon() { }
+    public virtual void UpdateAddon() { }
     public SelectableEntity GetEntity()
     {
         return ent;

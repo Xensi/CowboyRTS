@@ -131,7 +131,7 @@ public class SelectableEntity : NetworkBehaviour
     [Header("Aesthetic Settings")]
     private Material damagedState;
     [HideInInspector] public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
-    private SelectionCircle selectIndicator;
+    public SelectionCircle selectIndicator;
     [HideInInspector]
     public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner); //negative team numbers are AI controlled
@@ -174,6 +174,7 @@ public class SelectableEntity : NetworkBehaviour
     public int raisePopulationLimitBy = 0;
     [HideInInspector] public NetworkObject net;
     [HideInInspector] public Attacker attacker;
+    public CaptureFlag capFlag;
     #endregion
     #region Just Spawned Code
     #region Awake Code 
@@ -217,6 +218,8 @@ public class SelectableEntity : NetworkBehaviour
             sm.anim = anim;
             sm.attacker = attacker;
         }
+        if (capFlag == null) capFlag = GetComponentInChildren<CaptureFlag>();
+        if (capFlag != null) capFlag.ent = this;
     }  
     private void InitializeEntityInfo()
     {
@@ -830,7 +833,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void UpdateEntityAddons()
     {
-
+        if (pf != null) pf.UpdateAddon();
     }
     private void UpdateUsedAbilities()
     {
@@ -849,12 +852,6 @@ public class SelectableEntity : NetworkBehaviour
     {
         for (int i = appliedEffects.Count - 1; i >= 0; i--)
         {
-            appliedEffects[i].expirationTime -= Time.deltaTime;
-            if (appliedEffects[i].expirationTime <= 0)
-            {
-                ResetVariableFromStatusEffect(appliedEffects[i]);
-                appliedEffects.RemoveAt(i);
-            }
             if (appliedEffects[i].repeatWhileLingering)
             {
                 appliedEffects[i].internalTimer += Time.deltaTime;
@@ -863,6 +860,12 @@ public class SelectableEntity : NetworkBehaviour
                     appliedEffects[i].internalTimer = 0;
                     ApplyEffect(appliedEffects[i]);
                 }
+            }
+            appliedEffects[i].expirationTime -= Time.deltaTime;
+            if (appliedEffects[i].expirationTime <= 0)
+            {
+                ResetVariableFromStatusEffect(appliedEffects[i]);
+                appliedEffects.RemoveAt(i);
             }
         }
     }
@@ -942,7 +945,7 @@ public class SelectableEntity : NetworkBehaviour
             case StatusEffect.HP:
                 variableToChange = Mathf.Clamp(variableToChange, 0, target.maxHP);
                 target.currentHP.Value = (short)variableToChange;
-                Debug.Log("setting hitpoints to: " + variableToChange);
+                //Debug.Log("setting hitpoints to: " + variableToChange);
                 break;
             case StatusEffect.CancelInProgress:
                 //if target is ghost, full refund
@@ -1191,6 +1194,9 @@ public class SelectableEntity : NetworkBehaviour
     public void PrepareForEntityDestruction()
     {
         if (IsLoot()) lootComponent.LootForLocalPlayer();
+
+        if (selectIndicator != null) Destroy(selectIndicator.gameObject);
+
         ClearObstacle();
         RemoveFromEnemyLists(); 
         if (healthBar != null) healthBar.Delete();
@@ -1331,7 +1337,11 @@ public class SelectableEntity : NetworkBehaviour
             }
         }*/
     }
-    public bool IsEnemyOf(SelectableEntity target)
+    public bool IsEnemyOfPlayer(Player player)
+    {
+        return controllerOfThis.allegianceTeamID != player.allegianceTeamID;
+    }
+    public bool IsEnemyOfTarget(SelectableEntity target)
     {
         if (target != null)
         {

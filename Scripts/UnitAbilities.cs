@@ -33,8 +33,10 @@ public class UnitAbilities : EntityAddon
     }
     public void StartUsingAbility(FactionAbility ability)
     {
+        //Debug.Log("Starting ability as minion");
         queuedAbility = ability;
         Global.Instance.PlayMinionAbilitySound(ent);
+        ActivateAbility(GetQueuedAbility());
         if (sm != null)
         {
             sm.SwitchState(StateMachineController.EntityStates.UsingAbility);
@@ -44,14 +46,14 @@ public class UnitAbilities : EntityAddon
     {
         for (int i = 0; i < usedAbilities.Count; i++)
         {
-            Debug.Log("Checking ability:" + ability.abilityName + "against: " + usedAbilities[i].abilityName);
+            //Debug.Log("Checking ability:" + ability.abilityName + "against: " + usedAbilities[i].abilityName);
             if (usedAbilities[i].abilityName == ability.abilityName) return false; //if ability is in the used abilities list, then we still need to wait  
         }
         return true;
     }
     public void ActivateAbility(FactionAbility ability)
     {
-        Debug.Log("Activating ability: " + ability.name);
+        //Debug.Log("Activating ability: " + ability.name);
         List<SelectableEntity> targetedEntities = new();
         foreach (TargetedEffects effect in ability.effectsToApply)
         {
@@ -78,7 +80,7 @@ public class UnitAbilities : EntityAddon
             foreach (SelectableEntity target in targetedEntities)
             {
                 //on use particles
-                Instantiate(ability.particles, target.transform);
+                if (ability.particles != null) Instantiate(ability.particles, target.transform);
 
                 target.ApplyEffect(newEffect);
 

@@ -73,7 +73,14 @@ public class Pathfinder : EntityAddon
             setter.target = pathfindingTarget;
         }
         defaultMoveSpeed = ai.maxSpeed;
+        defaultEndReachedDistance = ai.endReachedDistance;
     }
+
+    public override void UpdateAddon()
+    {
+        UpdatePathStatus();
+    }
+
     [HideInInspector] public float defaultMoveSpeed = 0;
 
     /// <summary>
@@ -331,6 +338,16 @@ public class Pathfinder : EntityAddon
             }
         }
     }
+
+    public void ResetEndReachedDistance()
+    {
+        ai.endReachedDistance = defaultEndReachedDistance;
+    }
+
+    /// <summary>
+    /// Returns a valid result when path status is validated.
+    /// </summary>
+    /// <returns></returns>
     public bool PathBlocked()
     {
         return pathStatusValid && pathReachesDestination == PathStatus.Blocked;
@@ -365,8 +382,8 @@ public class Pathfinder : EntityAddon
         if (Vector3.SqrMagnitude(offset) > threshold * threshold)
         {
             //Debug.Log("Setting destination bc diff");
-            SetDestination(target);
         }
+        SetDestination(target);
     }
     /// <summary>
     /// Tells server this minion's destination so it can pathfind there on other clients
@@ -427,11 +444,11 @@ public class Pathfinder : EntityAddon
     }
     public void UpdateIdleCount()
     {
-        if (change <= walkAnimThreshold && effectivelyIdleInstances <= idleThreshold)
+        if (change < walkAnimThreshold)
         {
             effectivelyIdleInstances += Time.deltaTime;
         }
-        if (change > walkAnimThreshold)
+        else
         {
             effectivelyIdleInstances = 0;
         }
@@ -452,12 +469,12 @@ public class Pathfinder : EntityAddon
             SwitchState(EntityStates.Idle);
         }
     }
-    private bool IsEffectivelyIdle(float forXSeconds)
+    public bool IsEffectivelyIdle(float forXSeconds)
     {
         return effectivelyIdleInstances > forXSeconds;
     }
     private float moveTimer = 0;
-    private readonly float moveTimerMax = .5f;
+    private readonly float moveTimerMax = .01f;
     public Vector3 oldPosition;
     public void GetActualPositionChange()
     {
@@ -475,12 +492,18 @@ public class Pathfinder : EntityAddon
         }
     }
     public float change;
-    public void UpdateStopDistance()
+    readonly public float changeThreshold = 0.00001f;
+    float defaultEndReachedDistance = 0.1f;
+    public void UpdateStopDistance()    
     {
-        float limit = 0.1f;
-        if (change < limit * limit && walkStartTimer <= 0)
+        float limit = changeThreshold * changeThreshold; 
+        if (change < limit && walkStartTimer <= 0)
         {
             ai.endReachedDistance += Time.deltaTime;
+        }
+        if (change >= limit)
+        {
+            ai.endReachedDistance = Mathf.Clamp(ai.endReachedDistance -= Time.deltaTime, defaultEndReachedDistance, 50);
         }
     }
     public void UpdateMinionTimers()
@@ -517,6 +540,6 @@ public class Pathfinder : EntityAddon
         effectivelyIdleInstances = 0; //we're not idle anymore
     }
     public readonly float walkAnimThreshold = 0.0001f;
-    private float effectivelyIdleInstances = 0;
+    public float effectivelyIdleInstances = 0;
     private readonly float idleThreshold = 3f;//3; //seconds of being stuck
 }

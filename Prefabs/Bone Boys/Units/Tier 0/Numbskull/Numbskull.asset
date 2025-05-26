@@ -17,35 +17,19 @@ MonoBehaviour:
   prefabToSpawn: {fileID: 2545681379473208697, guid: c3824196b058c8e478af507efde0a492, type: 3}
   goldCost: 10
   maxHP: 6
-  isKeystone: 0
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
   shouldHideInFog: 1
   visionRange: 7
   soundProfile: {fileID: 11400000, guid: e98d0a54573c90c45b60a981325e5ab6, type: 2}
   teamType: 0
-  constructableBuildings: []
-  usableAbilities: []
   deathEffect: {fileID: 1596140512904530975, guid: 69aadaea41d3f1a4ca6fc402ec2fb2ac, type: 3}
-  depositType: 0
-  selfHarvestableType: 1
-  attackType: 1
-  damage: 1
-  directionalAttack: 0
-  attackRange: 0.75
-  attackDuration: 1
-  impactTime: 0.5
-  areaOfEffectRadius: 1
-  shouldAggressivelySeekEnemies: 1
-  spawnableUnits: []
-  spawnableAtOnce: 1
   isHarvester: 0
   harvestCapacity: 5
   depositRange: 1
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  attackProjectilePrefab: {fileID: 0}
   hideModelOnDeath: 1
   maxSpawnTimeCost: 5
   spawnTimer: 0
