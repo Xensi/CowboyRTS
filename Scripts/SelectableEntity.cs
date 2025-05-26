@@ -844,7 +844,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         return HasAbilities() && unitAbilities.CanUseAbility(ability);
     } 
-    [HideInInspector] public List<TargetedEffects> appliedEffects = new();
+    [HideInInspector] public List<AppliedEffect> appliedEffects = new();
     private void UpdateAppliedEffects() //handle expiration of these effects; this implementation may be somewhat slow
     {
         for (int i = appliedEffects.Count - 1; i >= 0; i--)
@@ -855,13 +855,121 @@ public class SelectableEntity : NetworkBehaviour
                 ResetVariableFromStatusEffect(appliedEffects[i]);
                 appliedEffects.RemoveAt(i);
             }
+            if (appliedEffects[i].repeatWhileLingering)
+            {
+                appliedEffects[i].internalTimer += Time.deltaTime;
+                if (appliedEffects[i].internalTimer >= appliedEffects[i].repeatTime)
+                {
+                    appliedEffects[i].internalTimer = 0;
+                    ApplyEffect(appliedEffects[i]);
+                }
+            }
+        }
+    }
+    public void ApplyEffect(AppliedEffect effect)
+    {
+        SelectableEntity target = this;
+
+        if (effect.particles != null)
+        {
+            GameObject particles = Instantiate(effect.particles, transform);
+        }
+
+        float variableToChange = 0;
+        float secondVariable = 0;
+        switch (effect.status) //set variable to change;
+        {
+            case StatusEffect.MoveSpeed:
+                /*if (target.sm != null && target.sm.ai != null)
+                {
+                    variableToChange = target.sm.ai.maxSpeed;
+                }*/
+                break;
+            case StatusEffect.AttackDuration:
+                if (target.sm != null)
+                {
+                    //variableToChange = target.sm.attackDuration;
+                    //secondVariable = target.sm.impactTime;
+                }
+                break;
+            case StatusEffect.HP:
+                variableToChange = target.currentHP.Value;
+                break;
+        }
+        float attackAnimMultiplier = 1;
+        float moveSpeedMultiplier = 1;
+        switch (effect.operation) //apply change to variable
+        {
+            case TargetedEffects.Operation.Set:
+                variableToChange = effect.statusNumber;
+                secondVariable = effect.statusNumber;
+                break;
+            case TargetedEffects.Operation.Add:
+                variableToChange += effect.statusNumber;
+                secondVariable += effect.statusNumber;
+                break;
+            case TargetedEffects.Operation.Multiply:
+                variableToChange *= effect.statusNumber;
+                secondVariable *= effect.statusNumber;
+                attackAnimMultiplier /= effect.statusNumber;
+                moveSpeedMultiplier *= effect.statusNumber;
+                break;
+            case Operation.Divide: //use to halve attackDuration
+                variableToChange /= effect.statusNumber;
+                secondVariable /= effect.statusNumber;
+                attackAnimMultiplier *= effect.statusNumber;
+                moveSpeedMultiplier /= effect.statusNumber;
+                break;
+        }
+        //apply effect
+        switch (effect.status) //set actual variable to new variable
+        {
+            case TargetedEffects.StatusEffect.MoveSpeed:
+                /*if (target.sm != null && target.sm.ai != null)
+                {
+                    target.sm.ai.maxSpeed = variableToChange;
+                    target.sm.animator.SetFloat("moveSpeedMultiplier", moveSpeedMultiplier); //if we are halving, double animation speed
+                }*/
+                break;
+            case TargetedEffects.StatusEffect.AttackDuration:
+                if (target.sm != null)
+                {
+                    //target.sm.attackDuration = variableToChange;
+                    //target.sm.impactTime = secondVariable;
+                    //target.sm.animator.SetFloat("attackMultiplier", attackAnimMultiplier); //if we are halving, double animation speed
+                }
+                break;
+            case StatusEffect.HP:
+                variableToChange = Mathf.Clamp(variableToChange, 0, target.maxHP);
+                target.currentHP.Value = (short)variableToChange;
+                Debug.Log("setting hitpoints to: " + variableToChange);
+                break;
+            case StatusEffect.CancelInProgress:
+                //if target is ghost, full refund
+                //if construction in progress, half refund
+                if (target.constructionBegun)
+                {
+                    Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost / 2);
+                }
+                else
+                {
+                    Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost);
+                }
+                target.DestroyThis();
+                break;
+            case StatusEffect.DestroyThis:
+                target.DestroyThis();
+                break;
+            case StatusEffect.ToggleGate:
+                target.ToggleGate();
+                break;
         }
     }
     private bool HasUnitAnimator()
     {
         return anim != null;
     }
-    private void ResetVariableFromStatusEffect(TargetedEffects effect) //this will work for now but will not work if multiple buffs are stacked
+    private void ResetVariableFromStatusEffect(AppliedEffect effect) //this will work for now but will not work if multiple buffs are stacked
     {
         switch (effect.status)
         {

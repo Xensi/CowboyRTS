@@ -246,7 +246,7 @@ public class Attacker : SwingEntityAddon
     public bool IsValidTarget(SelectableEntity target)
     {
         if (target == null || !target.isAttackable || !target.alive || !target.isTargetable.Value
-            || (IsPlayerControlled() && !target.isVisibleInFog)
+            || (IsPlayerControlled() && !target.isVisibleInFog || !target.IsEnemyOf(ent))
             )
         //reject if target is null, or target is dead, or target is untargetable, or this unit is player controlled and target is hidden,
         //or this unit can't attack structures and target is structure

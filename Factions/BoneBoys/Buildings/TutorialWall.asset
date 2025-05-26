@@ -12,43 +12,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5040608eb03c21941b0df73233e2ec94, type: 3}
   m_Name: TutorialWall
   m_EditorClassIdentifier: 
-  productionName: Wall
+  productionName: Sturdy Wall
   description: 
   prefabToSpawn: {fileID: 3798861697192735719, guid: 0469ba43681a07247aef51cf6ccb8ef9, type: 3}
   goldCost: 2
   maxHP: 10
-  isKeystone: 0
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0
   shouldHideInFog: 0
   visionRange: 7
   soundProfile: {fileID: 0}
   teamType: 0
-  constructableBuildings: []
-  usableAbilities:
-  - {fileID: 11400000, guid: 03392326ce6a40f4b875c34b554fc626, type: 2}
   deathEffect: {fileID: 1596140512904530975, guid: 67836dd37cc44c24eaf1ccca6de50459, type: 3}
-  depositType: 0
-  selfHarvestableType: 1
-  attackType: 0
-  damage: 1
-  directionalAttack: 0
-  attackRange: 1
-  attackDuration: 1
-  impactTime: 0.5
-  areaOfEffectRadius: 1
-  shouldAggressivelySeekEnemies: 0
-  spawnableUnits: []
-  spawnableAtOnce: 1
   isHarvester: 0
   harvestCapacity: 5
   depositRange: 1
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  attackProjectilePrefab: {fileID: 0}
   hideModelOnDeath: 0
   needsConstructing: 1
   buildOffset: {x: 0.25, y: 0, z: 0.25}
   extendable: 1
   rotatable: 0
+  isSpawner: 0
+  isPopAdder: 0

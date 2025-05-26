@@ -410,11 +410,11 @@ public class Pathfinder : EntityAddon
         {
             if (ent.IsAttacker()) ent.attacker.ResetGoal();
             sm.ClearTargets();
-            pf.ClearIdleness();
+            ClearIdleness();
             SwitchState(EntityStates.WalkToTarget);
             ent.interactionTarget = target;
-            pf.SetOrderedDestination(ent.interactionTarget.transform.position);
-            pf.walkStartTimer = ent.pf.walkStartTimerSet;
+            SetOrderedDestination(ent.interactionTarget.transform.position);
+            walkStartTimer = walkStartTimerSet;
 
             SelectableEntity justLeftGarrison = null;
             if (ent.occupiedGarrison != null) //we are currently garrisoned

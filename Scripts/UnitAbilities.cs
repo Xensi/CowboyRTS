@@ -55,6 +55,17 @@ public class UnitAbilities : EntityAddon
         List<SelectableEntity> targetedEntities = new();
         foreach (TargetedEffects effect in ability.effectsToApply)
         {
+            AppliedEffect newEffect = new() //NECESSARY to prevent modifying original class
+            {
+                status = effect.status,
+                expirationTime = effect.expirationTime,
+                operation = effect.operation,
+                statusNumber = effect.statusNumber,
+                repeatTime = effect.repeatTime,
+                repeatWhileLingering = effect.repeatWhileLingering,
+                particles = effect.particles,
+            };
+            //get targets
             switch (effect.targets)
             {
                 case TargetedEffects.Targets.Self:
@@ -66,107 +77,16 @@ public class UnitAbilities : EntityAddon
             }
             foreach (SelectableEntity target in targetedEntities)
             {
-                //get current variable
-                float variableToChange = 0;
-                float secondVariable = 0;
-                switch (effect.status) //set variable to change;
-                {
-                    case StatusEffect.MoveSpeed:
-                        /*if (target.sm != null && target.sm.ai != null)
-                        {
-                            variableToChange = target.sm.ai.maxSpeed;
-                        }*/
-                        break;
-                    case StatusEffect.AttackDuration:
-                        if (target.sm != null)
-                        {
-                            //variableToChange = target.sm.attackDuration;
-                            //secondVariable = target.sm.impactTime;
-                        }
-                        break;
-                    case StatusEffect.HP:
-                        variableToChange = target.currentHP.Value;
-                        break;
-                }
-                float attackAnimMultiplier = 1;
-                float moveSpeedMultiplier = 1;
-                switch (effect.operation) //apply change to variable
-                {
-                    case TargetedEffects.Operation.Set:
-                        variableToChange = effect.statusNumber;
-                        secondVariable = effect.statusNumber;
-                        break;
-                    case TargetedEffects.Operation.Add:
-                        variableToChange += effect.statusNumber;
-                        secondVariable += effect.statusNumber;
-                        break;
-                    case TargetedEffects.Operation.Multiply:
-                        variableToChange *= effect.statusNumber;
-                        secondVariable *= effect.statusNumber;
-                        attackAnimMultiplier /= effect.statusNumber;
-                        moveSpeedMultiplier *= effect.statusNumber;
-                        break;
-                    case Operation.Divide: //use to halve attackDuration
-                        variableToChange /= effect.statusNumber;
-                        secondVariable /= effect.statusNumber;
-                        attackAnimMultiplier *= effect.statusNumber;
-                        moveSpeedMultiplier /= effect.statusNumber;
-                        break;
-                }
-                switch (effect.status) //set actual variable to new variable
-                {
-                    case TargetedEffects.StatusEffect.MoveSpeed:
-                        /*if (target.sm != null && target.sm.ai != null)
-                        {
-                            target.sm.ai.maxSpeed = variableToChange;
-                            target.sm.animator.SetFloat("moveSpeedMultiplier", moveSpeedMultiplier); //if we are halving, double animation speed
-                        }*/
-                        break;
-                    case TargetedEffects.StatusEffect.AttackDuration:
-                        if (target.sm != null)
-                        {
-                            //target.sm.attackDuration = variableToChange;
-                            //target.sm.impactTime = secondVariable;
-                            //target.sm.animator.SetFloat("attackMultiplier", attackAnimMultiplier); //if we are halving, double animation speed
-                        }
-                        break;
-                    case StatusEffect.HP:
-                        variableToChange = Mathf.Clamp(variableToChange, 0, ent.maxHP);
-                        ent.currentHP.Value = (short)variableToChange;
-                        Debug.Log("setting hitpoints to: " + variableToChange);
-                        break;
-                    case StatusEffect.CancelInProgress:
-                        //if target is ghost, full refund
-                        //if construction in progress, half refund
-                        if (ent.constructionBegun)
-                        {
-                            Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost / 2);
-                        }
-                        else
-                        {
-                            Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost);
-                        }
-                        target.DestroyThis();
-                        break;
-                    case StatusEffect.DestroyThis:
-                        target.DestroyThis();
-                        break;
-                    case StatusEffect.ToggleGate:
-                        ent.ToggleGate();
-                        break;
-                }
+                //on use particles
+                Instantiate(ability.particles, target.transform);
+
+                target.ApplyEffect(newEffect);
+
                 if (effect.applyAsLingeringEffect)
                 {
-                    TargetedEffects newEffect = new() //NECESSARY to prevent modifying original class
-                    {
-                        targets = effect.targets,
-                        status = effect.status,
-                        expirationTime = effect.expirationTime,
-                        operation = effect.operation,
-                        statusNumber = effect.statusNumber
-                    };
+                    //if effect is already applied to entity, extend it
                     bool foundMatch = false;
-                    foreach (TargetedEffects item in ent.appliedEffects) //extend matching effects
+                    foreach (AppliedEffect item in ent.appliedEffects) //extend matching effects
                     {
                         if (item != null && item.status == newEffect.status && item.operation == newEffect.operation
                             && item.statusNumber == effect.statusNumber && item.expirationTime < newEffect.expirationTime)
@@ -176,6 +96,7 @@ public class UnitAbilities : EntityAddon
                             break;
                         }
                     }
+                    //otherwise add it
                     if (!foundMatch)
                     {
                         ent.appliedEffects.Add(newEffect);
@@ -219,6 +140,7 @@ public class UnitAbilities : EntityAddon
                     usedAbilities.RemoveAt(i);
                 }
             }
+
         }
     }
 }
