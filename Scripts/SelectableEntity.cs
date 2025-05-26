@@ -1193,6 +1193,7 @@ public class SelectableEntity : NetworkBehaviour
     bool deathEffectPlayed = false;
     public void PrepareForEntityDestruction()
     {
+        if (attacker != null) attacker.RemoveFromEntitySearcher();
         if (IsLoot()) lootComponent.LootForLocalPlayer();
 
         if (selectIndicator != null) Destroy(selectIndicator.gameObject);

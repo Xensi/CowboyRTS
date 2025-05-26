@@ -52,7 +52,7 @@ public class Attacker : SwingEntityAddon
     {
         return attackSettings;
     }
-    private void RemoveFromEntitySearcher()
+    public void RemoveFromEntitySearcher()
     {
         if (assignedEntitySearcher != null)
         {

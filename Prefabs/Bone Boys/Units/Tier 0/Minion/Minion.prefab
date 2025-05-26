@@ -515,7 +515,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4126868118260038068, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1942736719
+      value: 1967153614
       objectReference: {fileID: 0}
     - target: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Name
@@ -620,7 +620,7 @@ MonoBehaviour:
   readyTimer: 0
   range: 1
   impactTime: 1
-  delta: 1
+  swingDelta: 1
   duration: 1
   harvesterSettings: {fileID: 11400000, guid: fc2bdd5806e54e246a4bc17e68ebe8e6, type: 2}
   harvesterBag: 
@@ -644,7 +644,7 @@ MonoBehaviour:
   readyTimer: 0
   range: 1
   impactTime: 1
-  delta: 1
+  swingDelta: 1
   duration: 1
   buildableOptions: {fileID: 11400000, guid: 42a2e6976a859d343ab4e32c30dd20ed, type: 2}
 --- !u!4 &3734019601761256262 stripped

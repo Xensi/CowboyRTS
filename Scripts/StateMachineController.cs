@@ -693,6 +693,18 @@ public class StateMachineController : NetworkBehaviour
         lastOrderType = order.action;
         switch (order.action)
         {
+            case ActionType.Move:
+            case ActionType.AttackTarget:
+            case ActionType.Harvest:
+            case ActionType.Deposit:
+            case ActionType.Garrison:
+            case ActionType.BuildTarget:
+            case ActionType.MoveToTarget:
+                if (attacker != null && attacker.assignedEntitySearcher != null) attacker.RemoveFromEntitySearcher();
+                break;
+        }
+        switch (order.action)
+        {
             case ActionType.MoveToTarget:
                 if (pf != null) pf.MoveToTarget(target);
                 break;

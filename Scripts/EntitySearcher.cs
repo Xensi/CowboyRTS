@@ -16,7 +16,7 @@ public class EntitySearcher : MonoBehaviour
     public int allCount = 0;
     public int minionCount = 0;
     public int creatorAllegianceID = 0; //by default 0 is player, 1 is AI
-
+    public DisplayRadius dr;
     private void Start()
     { 
         searchedStructures = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
@@ -26,8 +26,6 @@ public class EntitySearcher : MonoBehaviour
     }
     void Update()
     {
-        //update entity searcher timer
-
         //when timer elapses perform a search
         timer += Time.deltaTime;
         if (timer >= searchTime)
@@ -36,6 +34,15 @@ public class EntitySearcher : MonoBehaviour
             Search();
         }
         DeleteIfNoAssignedUnits();
+        if (dr != null)
+        {
+            //Debug.Log("TEST");
+            dr.UpdateLR();
+        }
+    }
+    public float SearchRadius()
+    {
+        return searchRadius;
     }
     private async void Search()
     {

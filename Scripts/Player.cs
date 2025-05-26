@@ -105,12 +105,10 @@ public class Player : NetworkBehaviour
     }
     public EntitySearcher CreateEntitySearcherAtPosition(Vector3 position, int allegiance = 0)
     {
-        GameObject obj = new GameObject();
-        obj.name = "EntitySearcher";
-        EntitySearcher searcher = obj.AddComponent<EntitySearcher>();
+        EntitySearcher searcher = Instantiate(Global.Instance.entitySearcher, position, Quaternion.identity);
+        searcher.dr.radius = searcher.SearchRadius();
+        searcher.dr.SetColor(Color.red);
         searcher.creatorAllegianceID = allegiance;
-
-        obj.transform.position = position;
         return searcher;
     }
 

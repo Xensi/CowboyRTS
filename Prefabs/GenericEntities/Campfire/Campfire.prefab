@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8749510402027029744}
   - component: {fileID: 1641096006511223955}
+  - component: {fileID: 3246765168052613908}
   - component: {fileID: 1505933371409362948}
   m_Layer: 7
   m_Name: HealingAura
@@ -46,15 +47,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b04e2bc69fbcfa459ed3c1db1cb188b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  subDivs: 64
-  radius: 2
   effectNumber: 1
   timeToApply: 1
   effect: 1
   team: 0
   particleAura: {fileID: 1611872149997915891}
+  radius: 2
+--- !u!114 &3246765168052613908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 244072717373640234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dacbd20f1e6338540a073ac2f834ef08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  subDivs: 64
+  radius: 1
   lr: {fileID: 1505933371409362948}
-  color: {r: 0.46244836, g: 1, b: 0, a: 1}
+  drColor: {r: 0, g: 0, b: 0, a: 0}
 --- !u!120 &1505933371409362948
 LineRenderer:
   serializedVersion: 2
@@ -143,7 +157,7 @@ LineRenderer:
       atime6: 0
       atime7: 0
       m_Mode: 0
-      m_ColorSpace: 0
+      m_ColorSpace: -1
       m_NumColorKeys: 2
       m_NumAlphaKeys: 2
     numCornerVertices: 0
@@ -167,7 +181,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9025540378966740329}
   m_Layer: 7
-  m_Name: GameObject
+  m_Name: Particles
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -453,7 +467,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3728683629940428650, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 987123583
+      value: 357746165
       objectReference: {fileID: 0}
     - target: {fileID: 3728683629940428650, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash

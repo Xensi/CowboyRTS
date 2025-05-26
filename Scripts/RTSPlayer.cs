@@ -189,7 +189,7 @@ public class RTSPlayer : Player
     }
     private void SelectedAttackMove()
     {
-        Debug.Log("trying to attack move");
+        //Debug.Log("trying to attack move");
         Vector3 clickedPosition;
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
@@ -256,7 +256,7 @@ public class RTSPlayer : Player
                 clickedPosition = raycastHits[i].point;
             }
         }
-        EntitySearcher searcher = CreateEntitySearcherAtPosition(clickedPosition);
+        //EntitySearcher searcher = CreateEntitySearcherAtPosition(clickedPosition);
 
         if (hits > 0) 
         {
@@ -342,7 +342,6 @@ public class RTSPlayer : Player
                             item.sm.assignedEntitySearcher = null;
                         }
                     }*/
-
                     UnitOrder order = new();
                     order.unit = item.sm;
                     order.targetPosition = clickedPosition;

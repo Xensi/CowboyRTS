@@ -4,11 +4,7 @@ using UnityEngine;
 using static StateMachineController;
 public class AreaEffector : MonoBehaviour
 {
-    private readonly float lrWidth = 0.05f;
-    [SerializeField] private int subDivs = 64; //how detailed the circle should be
-    public float radius = 1;
     public int effectNumber = 1;
-
     public float timeToApply = 1;
     private float timer = 0;
     public enum EffectToApply
@@ -24,13 +20,19 @@ public class AreaEffector : MonoBehaviour
     public EffectToApply effect = EffectToApply.None;
     public TeamToApplyEffectTo team = TeamToApplyEffectTo.AlliedTeams;
     public ParticleSystem particleAura;
-    public LineRenderer lr;
-    public UnityEngine.Color color;
     private ParticleSystem[] particleSystems;
+    private DisplayRadius dr;
+    public float radius = 1;
     private void Start()
     { 
         particleAura = GetComponent<ParticleSystem>();
         particleSystems = GetComponentsInChildren<ParticleSystem>();
+        dr = GetComponent<DisplayRadius>();
+        if (dr != null)
+        {
+            dr.radius = radius;
+            dr.SetColor(UnityEngine.Color.green);
+        }
     }
     private void Update()
     {
@@ -66,44 +68,16 @@ public class AreaEffector : MonoBehaviour
                 emission.enabled = val;*/
             } 
         }
-        lr.enabled = val;
+        if (dr != null) dr.SetLREnable(val);
     }
     private void UpdateAura()
     {
-        if (lr != null)
-        {
-            lr.startWidth = lrWidth;
-            lr.startColor = color;
-            lr.endColor = color;
-        }
+        if (dr != null) dr.UpdateLR();
+
         if (particleAura != null)
         {
             var shape = particleAura.shape;
             shape.radius = radius;
-        }
-        Vector3 point = transform.position + new Vector3(0, 0.01f, 0);
-        int numPoints = subDivs + 1;
-        Vector3[] positions = new Vector3[numPoints]; 
-        for (int i = 0; i < numPoints; i++)
-        { 
-            /* Distance around the circle */
-            var radians = 2 * MathF.PI / subDivs * i;
-
-            /* Get the vector direction */
-            var vertical = MathF.Sin(radians);
-            var horizontal = MathF.Cos(radians);
-
-            var spawnDir = new Vector3(horizontal, 0, vertical);
-
-            /* Get the spawn position */
-            var spawnPos = point + spawnDir * radius; // Radius is just the distance away from the point 
-            positions[i] = spawnPos;
-            Debug.DrawRay(spawnPos, Vector3.up, UnityEngine.Color.red, 1); 
-        }  
-        if (lr != null)
-        {
-            lr.positionCount = numPoints;
-            lr.SetPositions(positions);
         }
     }
     private void ApplyEffect()
@@ -160,10 +134,5 @@ public class AreaEffector : MonoBehaviour
                     break;
             }
         }
-    }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.DrawWireSphere(transform.position, radius); 
     }
 }

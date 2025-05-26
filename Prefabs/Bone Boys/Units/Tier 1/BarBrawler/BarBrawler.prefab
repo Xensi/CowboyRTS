@@ -647,7 +647,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4126868118260038068, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 3573445975
+      value: 2871041929
       objectReference: {fileID: 0}
     - target: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Name
@@ -747,6 +747,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ent: {fileID: 0}
   sm: {fileID: 0}
+  anim: {fileID: 0}
+  pf: {fileID: 0}
   abilityOptions: {fileID: 11400000, guid: a85a5cddd78dfed4e8a750cb2c8d51a8, type: 2}
 --- !u!4 &3734019601761256262 stripped
 Transform:

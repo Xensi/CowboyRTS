@@ -86,6 +86,8 @@ public class Global : NetworkBehaviour
     public TMP_Text reinforcementText;
     public ArbitraryUnitSpawner unitSpawnerToTrackReinforcements;
     public TMP_Text levelObjective;
+
+    public EntitySearcher entitySearcher;
     //Minion sound profile mapping:
     // 0: spawn
     // 1: damage
