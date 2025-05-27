@@ -421,6 +421,7 @@ public class RTSPlayer : Player
     /// <param name="entity"></param>
     private bool TrySelectEntity(SelectableEntity entity)
     {
+        if (entity == null) return false;
         if (!PositionFullyVisible(entity.transform.position)) return false;
         if (!entity.alive) return false;
         bool val = false;

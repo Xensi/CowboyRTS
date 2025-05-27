@@ -2,30 +2,6 @@ using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
 
-public enum Condition
-{
-    AutoComplete,
-    LevelEntitiesDestroyed,
-    SelectedTypeOfFactionEntity,
-    ControlsTypeOfFactionEntity,
-    MouseInputDetected,
-    None
-
-}
-
-[CreateAssetMenu(fileName = "NewMessage", menuName = "Message", order = 0)]
-[System.Serializable]
-public class Message : ScriptableObject
-{
-    [TextArea(3, 20)]
-    public string messageContents = ""; //string to display as message 
-    public Condition[] conditions;
-    public int mouseInput = 0;
-    public FactionEntity entityToCheck;
-    public int numEntitiesToCheck = 1;
-    public bool playerNeedsToClickToContinue = false;
-}
-
 [CustomEditor(typeof(Message), true)]
 [CanEditMultipleObjects]
 public class MessageEditor : Editor
@@ -46,7 +22,7 @@ public class MessageEditor : Editor
         entityToCheck = serializedObject.FindProperty("entityToCheck");
         numEntitiesToCheck = serializedObject.FindProperty(nameof(numEntitiesToCheck));
         playerNeedsToClickToContinue = serializedObject.FindProperty("playerNeedsToClickToContinue");
-    } 
+    }
     public override void OnInspectorGUI()
     {
         // add this to render base
@@ -72,7 +48,7 @@ public class MessageEditor : Editor
                     break;
             }
         }
-        
+
 
         EditorGUILayout.PropertyField(playerNeedsToClickToContinue);
         // must be on the end.

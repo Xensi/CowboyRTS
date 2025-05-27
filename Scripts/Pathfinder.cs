@@ -382,8 +382,8 @@ public class Pathfinder : EntityAddon
         if (Vector3.SqrMagnitude(offset) > threshold * threshold)
         {
             //Debug.Log("Setting destination bc diff");
+            SetDestination(target);
         }
-        SetDestination(target);
     }
     /// <summary>
     /// Tells server this minion's destination so it can pathfind there on other clients
@@ -458,14 +458,9 @@ public class Pathfinder : EntityAddon
     private AIDestinationSetter setter;
     public void DetectIfShouldReturnToIdle()
     {
-        if (IsEffectivelyIdle(idleThreshold))
+        if (IsEffectivelyIdle(idleThreshold) || walkStartTimer <= 0 && ai.reachedDestination)
         {
             //Debug.Log("Effectively Idle");
-            SwitchState(EntityStates.Idle);
-        }
-        else if (walkStartTimer <= 0 && ai.reachedDestination)
-        {
-            //Debug.Log("AI reached");
             SwitchState(EntityStates.Idle);
         }
     }
@@ -492,18 +487,20 @@ public class Pathfinder : EntityAddon
         }
     }
     public float change;
-    readonly public float changeThreshold = 0.00001f;
+    readonly public float changeThreshold = 0.001f;
     float defaultEndReachedDistance = 0.1f;
     public void UpdateStopDistance()    
     {
-        float limit = changeThreshold * changeThreshold; 
+        float limit = changeThreshold;
+        float reduceEndReachedDistanceScale = 0.1f;
         if (change < limit && walkStartTimer <= 0)
         {
             ai.endReachedDistance += Time.deltaTime;
         }
         if (change >= limit)
         {
-            ai.endReachedDistance = Mathf.Clamp(ai.endReachedDistance -= Time.deltaTime, defaultEndReachedDistance, 50);
+            ai.endReachedDistance = Mathf.Clamp(ai.endReachedDistance -= Time.deltaTime * reduceEndReachedDistanceScale, 
+                defaultEndReachedDistance, 50);
         }
     }
     public void UpdateMinionTimers()

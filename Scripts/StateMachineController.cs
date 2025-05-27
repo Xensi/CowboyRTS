@@ -67,8 +67,7 @@ public class StateMachineController : NetworkBehaviour
     //50 fps fixed update
     //private readonly int delay = 0; 
     public EntityStates currentState = EntityStates.Spawn;
-    [HideInInspector] public SelectableEntity.RallyMission givenMission = SelectableEntity.RallyMission.None;
-    [HideInInspector] public Vector3 rallyPosition; //deprecated
+    public SelectableEntity.RallyMission givenMission = SelectableEntity.RallyMission.None;
     #endregion
     #region NetworkVariables 
     public bool canReceiveNewCommands = true;
@@ -447,8 +446,9 @@ public class StateMachineController : NetworkBehaviour
             SwitchState(EntityStates.Idle);
         }
     }*/
-    private void FollowGivenMission()
+    private bool FollowGivenMission()
     {
+        bool valid = false;
         switch (givenMission)
         {
             case SelectableEntity.RallyMission.None:
@@ -472,10 +472,12 @@ public class StateMachineController : NetworkBehaviour
                 break;
             case SelectableEntity.RallyMission.Move:
                 SwitchState(EntityStates.WalkToRally);
+                valid = true;
                 break;
             case SelectableEntity.RallyMission.Harvest:
                 SwitchState(EntityStates.WalkToInteractable);
                 lastMajorState = EntityStates.Harvesting;
+                valid = true;
                 break;
             case SelectableEntity.RallyMission.Build:
                 /*if (entity.CanConstruct())
@@ -490,10 +492,12 @@ public class StateMachineController : NetworkBehaviour
                         lastState = MinionStates.Building;
                     }
                 }*/
+                valid = true;
                 break;
             case SelectableEntity.RallyMission.Garrison:
                 SwitchState(EntityStates.WalkToInteractable);
                 lastMajorState = EntityStates.Garrisoning;
+                valid = true;
                 break;
             case SelectableEntity.RallyMission.Attack:
                 /*if (TargetIsValidEnemy(targetEnemy))
@@ -506,10 +510,12 @@ public class StateMachineController : NetworkBehaviour
                     targetEnemy = FindEnemyToWalkTowards(attackRange);
                 }*/
                 //Debug.LogWarning("attack rally mission not implemented");
+                valid = true;
                 break;
             default:
                 break;
         }
+        return valid;
     }
     private void AutoSeekEnemies()
     {
@@ -817,14 +823,16 @@ public class StateMachineController : NetworkBehaviour
                 if (pf != null) pf.ResetEndReachedDistance();
                 if (ent.occupiedGarrison == null) //if not in garrison
                 {
-                    FollowGivenMission(); //if we have a rally mission, attempt to do it
-                    //AutoSeekEnemies();
+                    /* bool missionFollowing = FollowGivenMission(); //if we have a rally mission, attempt to do it
+                    if (!missionFollowing)
+                    {
+                    }*/
+                    if (ent.IsAttacker()) ent.attacker.IdleState();
                 }
                 else
                 {
                     //GarrisonedSeekEnemies();
                 }
-                if (ent.IsAttacker()) ent.attacker.IdleState();
                 break;
             case EntityStates.UsingAbility:
                 if (skipFirstFrame) //neccesary to give animator a chance to catch up
@@ -876,9 +884,26 @@ public class StateMachineController : NetworkBehaviour
                         }
                     }
                 }*/
-                break;
             case EntityStates.WalkToRally:
-                //IdleOrWalkContextuallyAnimationOnly();
+                switch (givenMission)
+                {
+                    case SelectableEntity.RallyMission.None:
+                        break;
+                    case SelectableEntity.RallyMission.Move:
+                        if (pf != null) pf.SetDestinationIfHighDiff(ent.spawnerThatSpawnedThis.rallyPoint);
+                        break;
+                    case SelectableEntity.RallyMission.Harvest:
+                        break;
+                    case SelectableEntity.RallyMission.Build:
+                        break;
+                    case SelectableEntity.RallyMission.Garrison:
+                        break;
+                    case SelectableEntity.RallyMission.Attack:
+                        break;
+                    default:
+                        break;
+                }
+                SwitchState(EntityStates.Walk);
                 break;
             case EntityStates.AttackMoving: //walk forwards while searching for enemies to attack
                 if (ent.IsAttacker()) ent.attacker.AttackMovingState();

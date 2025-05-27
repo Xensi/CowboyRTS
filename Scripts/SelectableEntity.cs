@@ -674,7 +674,11 @@ public class SelectableEntity : NetworkBehaviour
                     break;
                 case RallyMission.Move:
                 case RallyMission.Attack: 
-                    if (pf != null) pf.SetDestination(rallyPoint);
+                    if (pf != null)
+                    {
+                        pf.SetDestination(rallyPoint);
+                        Debug.Log("set dest" + rallyPoint);
+                    }
                     sm.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Harvest:
@@ -1617,7 +1621,10 @@ public class SelectableEntity : NetworkBehaviour
         if (IsOwner && teamType == TeamBehavior.OwnerTeam)
         {
             //Global.Instance.localPlayer.population += change;
-            if (controllerOfThis != null) controllerOfThis.population += change;
+            if (controllerOfThis != null)
+            {
+                controllerOfThis.population = Mathf.Clamp(controllerOfThis.population + change, 0, 999);
+            }
         }
     }
     private readonly float deathDuration = 10;
@@ -1660,7 +1667,6 @@ public class SelectableEntity : NetworkBehaviour
     } 
     public void SetRally() //later have this take in a vector3?
     {
-        Debug.Log("Setting rally");
         rallyMission = RallyMission.Move;
         rallyTarget = null;
         //determine if spawned units should be given a mission
@@ -1669,6 +1675,7 @@ public class SelectableEntity : NetworkBehaviour
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
         {
             rallyPoint = hit.point;
+            Debug.Log("Setting rally" + rallyPoint);
             if (rallyVisual != null)
             {
                 rallyVisual.transform.position = rallyPoint;

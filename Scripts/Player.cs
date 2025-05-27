@@ -7,8 +7,6 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using static RTSPlayer;
 using System.Threading.Tasks;
-using static UnityEditor.Progress;
-using UnityEditor.Searcher;
 
 [RequireComponent(typeof(NetworkObject))]
 public class Player : NetworkBehaviour
