@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bed587974d8ce26488166d15dd758416, type: 3}
   m_Name: Chug
   m_EditorClassIdentifier: 
-  abilityName: Drink
+  abilityName: Chug
   usableOnlyWhenBuilt: 1
   cooldownTime: 999
   shouldCooldown: 0

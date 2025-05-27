@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using static TargetedEffects;
+using static Effect;
 
 public class UnitAbilities : EntityAddon
 {
@@ -53,11 +53,9 @@ public class UnitAbilities : EntityAddon
     }
     public void ActivateAbility(FactionAbility ability)
     {
-        //Debug.Log("Activating ability: " + ability.name);
-        List<SelectableEntity> targetedEntities = new();
-        foreach (TargetedEffects effect in ability.effectsToApply)
+        foreach (Effect effect in ability.effectsToApply)
         {
-            AppliedEffect newEffect = new() //NECESSARY to prevent modifying original class
+            Effect newEffect = new() //NECESSARY to prevent modifying original class
             {
                 status = effect.status,
                 expirationTime = effect.expirationTime,
@@ -67,55 +65,43 @@ public class UnitAbilities : EntityAddon
                 repeatWhileLingering = effect.repeatWhileLingering,
                 particles = effect.particles,
             };
-            //get targets
-            switch (effect.targets)
+            SelectableEntity target = ent;
+            if (target == null) return;
+            //on activate, play particles
+            if (ability.onActivateParticles != null) Instantiate(ability.onActivateParticles, target.transform);
+            target.ApplyEffect(newEffect);
+
+            if (effect.applyAsLingeringEffect)
             {
-                case TargetedEffects.Targets.Self:
-                    if (!targetedEntities.Contains(ent))
+                //if effect is already applied to entity, extend it
+                bool foundMatch = false;
+                foreach (Effect item in ent.appliedEffects) //extend matching effects
+                {
+                    if (item != null && item.status == newEffect.status && item.operation == newEffect.operation
+                        && item.statusNumber == effect.statusNumber && item.expirationTime < newEffect.expirationTime)
                     {
-                        targetedEntities.Add(ent);
+                        foundMatch = true;
+                        item.expirationTime = newEffect.expirationTime;
+                        break;
                     }
-                    break;
+                }
+                //otherwise add it
+                if (!foundMatch)
+                {
+                    ent.appliedEffects.Add(newEffect);
+                }
             }
-            foreach (SelectableEntity target in targetedEntities)
+
+            if (!UsedSameNameAbility(ability)) //if this unit has not used this ability already, mark it as used
             {
-                //on use particles
-                if (ability.particles != null) Instantiate(ability.particles, target.transform);
-
-                target.ApplyEffect(newEffect);
-
-                if (effect.applyAsLingeringEffect)
+                AbilityOnCooldown newAbility = new()
                 {
-                    //if effect is already applied to entity, extend it
-                    bool foundMatch = false;
-                    foreach (AppliedEffect item in ent.appliedEffects) //extend matching effects
-                    {
-                        if (item != null && item.status == newEffect.status && item.operation == newEffect.operation
-                            && item.statusNumber == effect.statusNumber && item.expirationTime < newEffect.expirationTime)
-                        {
-                            foundMatch = true;
-                            item.expirationTime = newEffect.expirationTime;
-                            break;
-                        }
-                    }
-                    //otherwise add it
-                    if (!foundMatch)
-                    {
-                        ent.appliedEffects.Add(newEffect);
-                    }
-                }
-
-                if (!UsedSameNameAbility(ability)) //if this unit has not used this ability already, mark it as used
-                {
-                    AbilityOnCooldown newAbility = new()
-                    {
-                        abilityName = ability.abilityName,
-                        cooldownTime = ability.cooldownTime,
-                        shouldCooldown = ability.shouldCooldown,
-                        visitBuildingToRefresh = ability.visitBuildingToRefresh,
-                    };
-                    usedAbilities.Add(newAbility);
-                }
+                    abilityName = ability.abilityName,
+                    cooldownTime = ability.cooldownTime,
+                    shouldCooldown = ability.shouldCooldown,
+                    visitBuildingToRefresh = ability.visitBuildingToRefresh,
+                };
+                usedAbilities.Add(newAbility);
             }
         }
     }

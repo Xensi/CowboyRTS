@@ -4,7 +4,7 @@ using Unity.Netcode;
 using Pathfinding;
 using Pathfinding.RVO;
 using FoW;
-using static TargetedEffects;
+using static Effect;
 using static StateMachineController;
 using static UnitAnimator;
 
@@ -851,7 +851,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         return HasAbilities() && unitAbilities.CanUseAbility(ability);
     } 
-    [HideInInspector] public List<AppliedEffect> appliedEffects = new();
+    [HideInInspector] public List<Effect> appliedEffects = new();
     private void UpdateAppliedEffects() //handle expiration of these effects; this implementation may be somewhat slow
     {
         for (int i = appliedEffects.Count - 1; i >= 0; i--)
@@ -873,14 +873,10 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-    public void ApplyEffect(AppliedEffect effect)
+    public void ApplyEffect(Effect effect)
     {
+        bool validApply = true;
         SelectableEntity target = this;
-
-        if (effect.particles != null)
-        {
-            GameObject particles = Instantiate(effect.particles, transform);
-        }
 
         float variableToChange = 0;
         float secondVariable = 0;
@@ -903,19 +899,20 @@ public class SelectableEntity : NetworkBehaviour
                 variableToChange = target.currentHP.Value;
                 break;
         }
+        float originalValue = variableToChange;
         float attackAnimMultiplier = 1;
         float moveSpeedMultiplier = 1;
         switch (effect.operation) //apply change to variable
         {
-            case TargetedEffects.Operation.Set:
+            case Effect.Operation.Set:
                 variableToChange = effect.statusNumber;
                 secondVariable = effect.statusNumber;
                 break;
-            case TargetedEffects.Operation.Add:
+            case Effect.Operation.Add:
                 variableToChange += effect.statusNumber;
                 secondVariable += effect.statusNumber;
                 break;
-            case TargetedEffects.Operation.Multiply:
+            case Effect.Operation.Multiply:
                 variableToChange *= effect.statusNumber;
                 secondVariable *= effect.statusNumber;
                 attackAnimMultiplier /= effect.statusNumber;
@@ -931,14 +928,14 @@ public class SelectableEntity : NetworkBehaviour
         //apply effect
         switch (effect.status) //set actual variable to new variable
         {
-            case TargetedEffects.StatusEffect.MoveSpeed:
+            case Effect.StatusEffect.MoveSpeed:
                 /*if (target.sm != null && target.sm.ai != null)
                 {
                     target.sm.ai.maxSpeed = variableToChange;
                     target.sm.animator.SetFloat("moveSpeedMultiplier", moveSpeedMultiplier); //if we are halving, double animation speed
                 }*/
                 break;
-            case TargetedEffects.StatusEffect.AttackDuration:
+            case Effect.StatusEffect.AttackDuration:
                 if (target.sm != null)
                 {
                     //target.sm.attackDuration = variableToChange;
@@ -950,6 +947,7 @@ public class SelectableEntity : NetworkBehaviour
                 variableToChange = Mathf.Clamp(variableToChange, 0, target.maxHP);
                 target.currentHP.Value = (short)variableToChange;
                 //Debug.Log("setting hitpoints to: " + variableToChange);
+                if (originalValue == variableToChange) validApply = false; //if no change, apply was not valid
                 break;
             case StatusEffect.CancelInProgress:
                 //if target is ghost, full refund
@@ -964,30 +962,29 @@ public class SelectableEntity : NetworkBehaviour
                 }
                 target.DestroyThis();
                 break;
-            case StatusEffect.DestroyThis:
-                target.DestroyThis();
-                break;
             case StatusEffect.ToggleGate:
                 target.ToggleGate();
                 break;
         }
+
+        if (validApply && effect.particles != null) Instantiate(effect.particles, transform);
     }
     private bool HasUnitAnimator()
     {
         return anim != null;
     }
-    private void ResetVariableFromStatusEffect(AppliedEffect effect) //this will work for now but will not work if multiple buffs are stacked
+    private void ResetVariableFromStatusEffect(Effect effect) //this will work for now but will not work if multiple buffs are stacked
     {
         switch (effect.status)
         {
-            case TargetedEffects.StatusEffect.MoveSpeed:
+            case Effect.StatusEffect.MoveSpeed:
                 if (sm != null && pf.ai != null)
                 {
                     pf.ai.maxSpeed = pf.defaultMoveSpeed; 
                     if (HasUnitAnimator()) anim.ResetMultiplier(MOVE_SPEED);
                 }
                 break;
-            case TargetedEffects.StatusEffect.AttackDuration:
+            case Effect.StatusEffect.AttackDuration:
                 if (IsAttacker())
                 {
                     attacker.duration = attacker.defaultAttackDuration;
@@ -1898,7 +1895,11 @@ public class SelectableEntity : NetworkBehaviour
             targetIndicator.SetActive(false);
             lineIndicator.enabled = false;
         }
-    }  
+    }
+    public int GetAllegiance()
+    {
+        return controllerOfThis.allegianceTeamID;
+    }
     public void CaptureForLocalPlayer() //switch team of entity
     {
         //Debug.Log("capturing");

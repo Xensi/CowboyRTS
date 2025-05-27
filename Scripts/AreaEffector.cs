@@ -1,28 +1,31 @@
-using System; 
-using System.Drawing;
+using System.Collections.Generic;
 using UnityEngine;
 using static StateMachineController;
 public class AreaEffector : MonoBehaviour
 {
-    public int effectNumber = 1;
+    //public int effectNumber = 1;
     public float timeToApply = 1;
     private float timer = 0;
-    public enum EffectToApply
-    {
-        None, HealNonAttackers
-    }
-
     public enum TeamToApplyEffectTo
     {
         AlliedTeams, EnemyTeams
     }
 
-    public EffectToApply effect = EffectToApply.None;
+    public List<Effect> effects;
     public TeamToApplyEffectTo team = TeamToApplyEffectTo.AlliedTeams;
+    
+    public enum ApplyTypes
+    {
+        All, Minions, Structures
+    }
+    public ApplyTypes typesToApplyEffectTo = ApplyTypes.All;
+
     public ParticleSystem particleAura;
     private ParticleSystem[] particleSystems;
     private DisplayRadius dr;
     public float radius = 1;
+    [SerializeField] private SelectableEntity ent;
+    [SerializeField] private bool applyToSelf = false;
     private void Start()
     { 
         particleAura = GetComponent<ParticleSystem>();
@@ -83,55 +86,69 @@ public class AreaEffector : MonoBehaviour
     private void ApplyEffect()
     {
         Collider[] array = new Collider[maxArraySize];
-        LayerMask mask = Global.Instance.friendlyEntityLayer;
+        LayerMask searchMask = Global.Instance.friendlyEntityLayer;
         switch (team)
         {
-            case TeamToApplyEffectTo.AlliedTeams: 
-                if (gameObject.layer == LayerMask.NameToLayer("Entity"))
-                { 
-                    mask = Global.Instance.friendlyEntityLayer;
+            case TeamToApplyEffectTo.AlliedTeams:
+                if (ent.GetAllegiance() == 0)
+                {
+                    searchMask = Global.Instance.friendlyEntityLayer;
                 }
                 else
-                { 
-                    mask = Global.Instance.enemyLayer;
+                {
+                    searchMask = Global.Instance.enemyLayer;
                 }
                 break;
             case TeamToApplyEffectTo.EnemyTeams:
-                if (gameObject.layer == LayerMask.NameToLayer("Entity"))
+                if (ent.GetAllegiance() == 0)
                 {
-                    mask = Global.Instance.enemyLayer;
+                    searchMask = Global.Instance.enemyLayer;
                 }
                 else
                 {
-                    mask = Global.Instance.friendlyEntityLayer;
+                    searchMask = Global.Instance.friendlyEntityLayer;
                 }
                 break;
             default:
                 break;
         }
-        int searchedCount = Physics.OverlapSphereNonAlloc(transform.position, radius, array, mask);
+        int searchedCount = Physics.OverlapSphereNonAlloc(transform.position, radius, array, searchMask);
 
         for (int i = 0; i < searchedCount; i++)
         {
             if (array[i] == null) continue;
             SelectableEntity select = array[i].GetComponent<SelectableEntity>();
-            if (select == null) continue;
-            if (!select.alive || !select.isTargetable.Value)
+            if (select == null || !select.alive || !select.isTargetable.Value) continue;
+            if (ent != null && !applyToSelf && select == ent)
             {
                 continue;
             }
-            switch (effect)
+            switch (typesToApplyEffectTo)
             {
-                case EffectToApply.None:
+                case ApplyTypes.All:
                     break;
-                case EffectToApply.HealNonAttackers:
-                    if (select.sm != null && !select.sm.InState(EntityStates.Attacking))
-                    {
-                        select.RaiseHP((sbyte)effectNumber);
-                    }
+                case ApplyTypes.Minions:
+                    if (!select.IsMinion()) continue;
+                    break;
+                case ApplyTypes.Structures:
+                    if (!select.IsStructure()) continue;
                     break;
                 default:
                     break;
+            }
+            foreach (Effect effect in effects)
+            {
+                Effect newEffect = new() //NECESSARY to prevent modifying original class
+                {
+                    status = effect.status,
+                    expirationTime = effect.expirationTime,
+                    operation = effect.operation,
+                    statusNumber = effect.statusNumber,
+                    repeatTime = effect.repeatTime,
+                    repeatWhileLingering = effect.repeatWhileLingering,
+                    particles = effect.particles,
+                };
+                select.ApplyEffect(newEffect);
             }
         }
     }

@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 8749510402027029744}
   - component: {fileID: 1641096006511223955}
-  - component: {fileID: 3246765168052613908}
   - component: {fileID: 1505933371409362948}
   m_Layer: 7
   m_Name: HealingAura
@@ -47,28 +46,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b04e2bc69fbcfa459ed3c1db1cb188b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  effectNumber: 1
   timeToApply: 1
-  effect: 1
+  effects:
+  - status: 2
+    operation: 1
+    statusNumber: 1
+    particles: {fileID: 175590, guid: a47190c48569c7647894cbe2a4ed26fb, type: 3}
+    internalTimer: 0
+    applyAsLingeringEffect: 0
+    expirationTime: 0
+    repeatWhileLingering: 0
+    repeatTime: 0
   team: 0
+  typesToApplyEffectTo: 1
   particleAura: {fileID: 1611872149997915891}
   radius: 2
---- !u!114 &3246765168052613908
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 244072717373640234}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dacbd20f1e6338540a073ac2f834ef08, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  subDivs: 64
-  radius: 1
-  lr: {fileID: 1505933371409362948}
-  drColor: {r: 0, g: 0, b: 0, a: 0}
+  ent: {fileID: 776634543507809315}
 --- !u!120 &1505933371409362948
 LineRenderer:
   serializedVersion: 2
@@ -607,6 +600,17 @@ PrefabInstance:
       addedObject: {fileID: 6296417276259239037}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+--- !u!114 &776634543507809315 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+  m_PrefabInstance: {fileID: 1399902402876465225}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ef37b2b8ba8e084dae003beb732c07c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &1805336923726039038 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 747786157894182839, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
