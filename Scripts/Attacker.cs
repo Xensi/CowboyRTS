@@ -899,7 +899,7 @@ public class Attacker : SwingEntityAddon
         alternateAttackTarget = null;
     }
     public int attackMoveDestinationEnemyCount = 0;
-    private readonly float defaultMeleeDetectionRange = 4;
+    private readonly float defaultMeleeDetectionRange = 3;
     private readonly float rangedUnitRangeExtension = 2;
 
     /// <summary>

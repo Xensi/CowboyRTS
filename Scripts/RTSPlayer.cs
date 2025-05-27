@@ -319,29 +319,6 @@ public class RTSPlayer : Player
             {
                 if (item.sm != null)
                 {
-                    //TODO
-                    /*if (actionType == ActionType.AttackTarget) //if attacking a specific target, we need an entity searcher
-                    { //for when it's dead
-                        if (item.sm.IsValidAttacker()) //minion
-                        {
-                            //if this unit is already assigned to an entity searcher, unassign it
-                            if (item.sm.assignedEntitySearcher != null)
-                            {
-                                item.sm.assignedEntitySearcher.UnassignUnit(item.sm);
-                            }
-                            item.sm.assignedEntitySearcher = searcher;
-                            item.sm.assignedEntitySearcher.AssignUnit(item.sm);
-                        }
-                    }
-                    else //default to unassigning from any assigned entity searcher
-                    {
-                        //if we are assigned an entity
-                        if (item.sm.assignedEntitySearcher != null)
-                        {
-                            item.sm.assignedEntitySearcher.UnassignUnit(item.sm);
-                            item.sm.assignedEntitySearcher = null;
-                        }
-                    }*/
                     UnitOrder order = new();
                     order.unit = item.sm;
                     order.targetPosition = clickedPosition;
@@ -1569,7 +1546,7 @@ public class RTSPlayer : Player
         {
             _doubleSelect = true;
             Invoke(nameof(DoNotDoubleSelect), .2f);
-            SingleSelect();
+            bool valid = SingleSelect();
         }
         else
         {
@@ -1949,8 +1926,9 @@ public class RTSPlayer : Player
             colliders[i].isTrigger = true;
         }
     }
-    private void SingleSelect()
+    private bool SingleSelect()
     {
+        bool successful = false;
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         if (!Input.GetKey(KeyCode.LeftShift)) //deselect all if not pressing shift
         {
@@ -1963,9 +1941,10 @@ public class RTSPlayer : Player
             SelectableEntity entity = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
             if (entity != null && PositionFullyVisible(entity.transform.position))
             {
-                TrySelectEntity(entity);
+                successful = TrySelectEntity(entity);
             }
         }
+        return successful;
     }
     private void DoubleSelectDetected() //double click
     {

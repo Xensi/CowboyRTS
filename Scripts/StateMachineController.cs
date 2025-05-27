@@ -610,7 +610,10 @@ public class StateMachineController : NetworkBehaviour
 
     public async void SwitchState(EntityStates stateToSwitchTo)
     {
-        //Debug.Log(name + " is switching state to: " + stateToSwitchTo);
+        /*if (ent.GetAllegiance() == 0)
+        {
+            Debug.Log(name + " is switching state to: " + stateToSwitchTo);
+        }*/
         switch (stateToSwitchTo)
         {
             case EntityStates.Attacking:
