@@ -21,7 +21,7 @@ public class UnitAnimator : EntityAddon
     public static string ATTACK_SPEED = "attackSpeedMultiplier";
     public static string MOVE_SPEED = "moveSpeedMultiplier";
     private Animator animator;
-    
+    string currentAnim = "";
     public void ResetMultiplier(string str)
     {
         animator.SetFloat(str, 1);
@@ -32,9 +32,17 @@ public class UnitAnimator : EntityAddon
         base.Awake();
         animator = GetComponentInChildren<Animator>();
     }
-    public void Play(string str)
+    public void Play(string str, float fadeLength = 0)
     {
-        if (animator != null) animator.Play(str);
+        if (animator != null)
+        {
+            if (currentAnim != str)
+            {
+                //animator.CrossFadeInFixedTime(str, fadeLength);
+                animator.Play(str);
+                currentAnim = str;
+            }
+        }
     }
     public bool InState(string str)
     {
