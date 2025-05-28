@@ -16,39 +16,22 @@ MonoBehaviour:
   description: 'Harvests resources, builds, and repairs. '
   prefabToSpawn: {fileID: 2545681379473208697, guid: dd8c1e8bc7ef8ac4bac17cfcc5864d6e, type: 3}
   goldCost: 40
-  maxHP: 20
-  isKeystone: 0
+  maxHP: 6
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
   shouldHideInFog: 1
+  visionRange: 7
   soundProfile: {fileID: 11400000, guid: 308c891582e140c449c3ad8db4ebba40, type: 2}
   teamType: 0
-  constructableBuildings:
-  - {fileID: 11400000, guid: c0ef745a8df8be4478d8040e4830b3d3, type: 2}
-  - {fileID: 11400000, guid: 485e05449a61a6e4886ef481caae3584, type: 2}
-  - {fileID: 11400000, guid: fdac55644c8edd44b95e22406f27474f, type: 2}
-  - {fileID: 11400000, guid: 9272fcf1d648ea143823dcd20788f7fa, type: 2}
-  - {fileID: 11400000, guid: caa5c448d3a92e04e8c3b58c5fa5488c, type: 2}
-  - {fileID: 11400000, guid: c2cb3d675f019b04bb3edd7dd7731243, type: 2}
-  usableAbilities: []
-  depositType: 0
-  selfHarvestableType: 1
-  attackType: 0
-  damage: 0
-  directionalAttack: 0
-  attackRange: 1
-  attackDuration: 1
-  impactTime: 0.5
-  areaOfEffectRadius: 1
-  shouldAggressivelySeekEnemies: 0
-  spawnableUnits: []
-  spawnableAtOnce: 1
+  deathEffect: {fileID: 0}
   isHarvester: 1
   harvestCapacity: 5
   depositRange: 1
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  spawnTimeCost: 10
+  hideModelOnDeath: 0
+  maxSpawnTimeCost: 5
+  spawnTimer: 0
   isHeavy: 0
-  canAttackWhileMoving: 0
+  maxSpeed: 2

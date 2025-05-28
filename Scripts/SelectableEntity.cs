@@ -1097,6 +1097,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void FixPopulationOnDeath()
     {
+        Debug.Log("Adjusting pop " + consumePopulationAmount + name);
         ChangePopulation(-consumePopulationAmount);
         ChangeMaxPopulation(-raisePopulationLimitBy);
     }
@@ -1192,8 +1193,11 @@ public class SelectableEntity : NetworkBehaviour
         PrepareForEntityDestruction();
     }
     bool deathEffectPlayed = false;
+    bool entityDestructionPrepped = false;
     public void PrepareForEntityDestruction()
     {
+        if (entityDestructionPrepped) return;
+        entityDestructionPrepped = true;
         if (attacker != null) attacker.RemoveFromEntitySearcher();
         if (IsLoot()) lootComponent.LootForLocalPlayer();
 

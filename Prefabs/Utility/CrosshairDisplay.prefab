@@ -47,7 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lrWidth: 0.05
   subDivs: 64
-  radius: 0.5
+  radius: 0.35
   color: {r: 1, g: 0, b: 0, a: 1}
   numLines: 4
 --- !u!1 &8972212028285374252

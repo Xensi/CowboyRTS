@@ -345,7 +345,7 @@ public class Pathfinder : EntityAddon
     }
 
     /// <summary>
-    /// Returns a valid result when path status is validated.
+    /// Returns a valid result when path status is validated. Current issue: reports path blocked even if path actually does reach enemy.
     /// </summary>
     /// <returns></returns>
     public bool PathBlocked()

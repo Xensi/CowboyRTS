@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Threading.Tasks;
+using Unity.Netcode;
 /// <summary>
 /// Used to asynchronously put enemies into arrays so units can attack them.
 /// </summary>
@@ -21,6 +22,7 @@ public class EntitySearcher : MonoBehaviour
     public int creatorAllegianceID = 0; //by default 0 is player, 1 is AI
     public DisplayRadius dr;
     public CrosshairDisplay crosshairPrefab;
+    private bool visible = true;
     private void Start()
     { 
         searchedStructures = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
@@ -36,15 +38,32 @@ public class EntitySearcher : MonoBehaviour
         {
             timer = 0;
             Search();
-            HighlightRelevantEnemies();
         }
         DeleteIfNoAssignedUnits();
+        CheckIfShouldBeVisible();
         if (dr != null)
         {
             //Debug.Log("TEST");
             dr.UpdateLR();
+            dr.SetLREnable(visible);
         }
+        HighlightRelevantEnemies();
     }
+    private bool CheckIfShouldBeVisible()
+    {
+        bool atLeastOneUnitSelected = false;
+        foreach (StateMachineController item in assignedUnits)
+        {
+            if (item != null && item.ent != null && item.ent.selected) atLeastOneUnitSelected = true;
+            break;
+        }
+        visible = atLeastOneUnitSelected;
+        return atLeastOneUnitSelected;
+    }
+    /// <summary>
+    /// Returns search radius.
+    /// </summary>
+    /// <returns></returns>
     public float SearchRadius()
     {
         return searchRadius;
@@ -71,12 +90,11 @@ public class EntitySearcher : MonoBehaviour
             if (enemyArray[i] == null) continue; //if invalid do not increment slotToWriteTo
             SelectableEntity select = enemyArray[i].GetComponent<SelectableEntity>();
             
-            
             if (select == null) continue;
             if (!select.alive || !select.isTargetable.Value || !select.isAttackable) //overwrite these slots
             {
                 continue;
-            } 
+            }
 
             if (select.IsMinion())
             {
@@ -113,6 +131,17 @@ public class EntitySearcher : MonoBehaviour
     {
         assignedUnits.Remove(unit);
     }
+    private void OnDestroy()
+    {
+        ClearCrosshairs();
+    }
+    private void ClearCrosshairs()
+    {
+        foreach (CrosshairDisplay crosshair in crosshairs)
+        {
+            if (crosshair != null) Destroy(crosshair.gameObject);
+        }
+    }
     public void DeleteIfNoAssignedUnits()
     {
         if (assignedUnits.Count <= 0)
@@ -124,7 +153,7 @@ public class EntitySearcher : MonoBehaviour
     {
         Gizmos.DrawWireSphere(transform.position, searchRadius);
     }
-    private List<CrosshairDisplay> crosshairs = new();
+    [SerializeField] private List<CrosshairDisplay> crosshairs = new();
     int neededCrosshairs = 0;
     private void HighlightRelevantEnemies()
     {
@@ -145,25 +174,37 @@ public class EntitySearcher : MonoBehaviour
             CrosshairDisplay cd = Instantiate(crosshairPrefab, Vector3.zero, Quaternion.identity);
             crosshairs.Add(cd);
         }
-        
-        for (int i = 0; i < crosshairs.Count; i++)
+        if (visible)
         {
-            if (i < neededCrosshairs)
+            for (int i = 0; i < crosshairs.Count; i++)
             {
-                SelectableEntity ent = null;
-                if (checkMinions)
+                if (crosshairs[i] == null) return;
+                if (i < neededCrosshairs)
                 {
-                    ent = searchedMinions[i];
+                    SelectableEntity ent = null;
+                    if (checkMinions)
+                    {
+                        ent = searchedMinions[i];
+                    }
+                    else
+                    {
+                        ent = searchedStructures[i];
+                    }
+                    if (ent == null) return;
+                    crosshairs[i].transform.SetParent(ent.transform, false);
+                    crosshairs[i].UpdateVisibility(true);
                 }
-                else
+                else //disable
                 {
-                    ent = searchedStructures[i];
+                    crosshairs[i].UpdateVisibility(false);
                 }
-                crosshairs[i].transform.SetParent(ent.transform, false);
-                crosshairs[i].UpdateVisibility(true);
             }
-            else //disable
+        }
+        else
+        {
+            for (int i = 0; i < crosshairs.Count; i++)
             {
+                if (crosshairs[i] == null) return;
                 crosshairs[i].UpdateVisibility(false);
             }
         }

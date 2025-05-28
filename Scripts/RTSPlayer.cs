@@ -195,11 +195,16 @@ public class RTSPlayer : Player
         if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
         {
             clickedPosition = hit.point;
-            //create an entity searcher at the clicked position
-            EntitySearcher searcher = CreateEntitySearcherAtPosition(clickedPosition, 0);
+            EntitySearcher searcher = null;
+            if (selectedEntities.Count > 0)
+            {
+                //create an entity searcher at the clicked position
+                searcher = CreateEntitySearcherAtPosition(clickedPosition, 0);
+            }
 
             UnitOrdersQueue.Clear();
 
+            if (searcher == null) return;
             foreach (SelectableEntity item in selectedEntities)
             {
                 if (item.sm != null && item.IsAttacker()) //minion
