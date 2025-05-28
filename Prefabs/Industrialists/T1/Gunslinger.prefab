@@ -132,7 +132,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4126868118260038068, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 3055209113
+      value: 1082460594
       objectReference: {fileID: 0}
     - target: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Name
@@ -223,6 +223,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5607550459712407707}
     m_Modifications:
+    - target: {fileID: 4869539649684391251, guid: 11989e8f04d884d48a1579af34473ed2, type: 3}
+      propertyPath: m_Layer
+      value: 12
+      objectReference: {fileID: 0}
     - target: {fileID: 6185537813497689982, guid: 11989e8f04d884d48a1579af34473ed2, type: 3}
       propertyPath: m_Enabled
       value: 1

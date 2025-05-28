@@ -316,7 +316,7 @@ LineRenderer:
     shadowBias: 0.5
     generateLightingData: 0
   m_MaskInteraction: 0
-  m_UseWorldSpace: 1
+  m_UseWorldSpace: 0
   m_Loop: 0
   m_ApplyActiveColorSpace: 1
 --- !u!1 &5353858407141398554
@@ -382,7 +382,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2641155720
+  GlobalObjectIdHash: 56881033
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -503,7 +503,6 @@ MonoBehaviour:
   stateTimer: 0
   currentState: 10
   givenMission: 0
-  rallyPosition: {x: 0, y: 0, z: 0}
   canReceiveNewCommands: 1
   attackTrails: []
   lastCommand:

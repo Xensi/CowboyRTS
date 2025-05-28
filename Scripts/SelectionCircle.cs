@@ -1,7 +1,5 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Drawing;
 using UnityEngine;
 
 public class SelectionCircle : MonoBehaviour
@@ -10,24 +8,33 @@ public class SelectionCircle : MonoBehaviour
     [SerializeField] private int subDivs = 64; //how detailed the circle should be
     [SerializeField] private float radius = 1;
     private LineRenderer lr;
-    private UnityEngine.Color color;
+    private Color color;
     void Awake()
     {
         lr = GetComponent<LineRenderer>(); 
-    } 
+    }
+    private void Start()
+    {
+        UpdateSelectionCirclePositions();
+    }
     public void UpdateVisibility(bool val)
     {
         lr.enabled = val;
     }
-    public void SetColor(UnityEngine.Color newColor)
+    public void SetColor(Color newColor)
     {
         color = newColor;
+        if (lr != null)
+        {
+            lr.startColor = color;
+            lr.endColor = color;
+        }
     }
     public void UpdateRadius(float newRad)
     {
         radius = newRad;
     }
-    public void UpdateSelectionCirclePosition()
+    public void UpdateSelectionCirclePositions()
     {
         if (lr != null)
         {
@@ -35,19 +42,19 @@ public class SelectionCircle : MonoBehaviour
             lr.startColor = color;
             lr.endColor = color;
         } 
-        Vector3 point = transform.position + new Vector3(0, 0.01f, 0);
+        Vector3 point = transform.localPosition + new Vector3(0, 0, -0.01f);
         int numPoints = subDivs + 1;
         Vector3[] positions = new Vector3[numPoints];
         for (int i = 0; i < numPoints; i++)
         {
             /* Distance around the circle */
-            var radians = 2 * MathF.PI / subDivs * i;
+            var radians = 2 * Mathf.PI / subDivs * i;
 
             /* Get the vector direction */
-            var vertical = MathF.Sin(radians);
-            var horizontal = MathF.Cos(radians);
+            var vertical = Mathf.Sin(radians);
+            var horizontal = Mathf.Cos(radians);
 
-            var spawnDir = new Vector3(horizontal, 0, vertical);
+            var spawnDir = new Vector3(horizontal, vertical, 0);
 
             /* Get the spawn position */
             var spawnPos = point + spawnDir * radius; // Radius is just the distance away from the point 

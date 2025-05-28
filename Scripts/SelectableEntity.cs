@@ -559,10 +559,10 @@ public class SelectableEntity : NetworkBehaviour
         {
             //selectIndicator.gameObject.SetActive(true);
             selectIndicator.UpdateVisibility(val);
-            UnityEngine.Color selectColor = Color.green;
+            Color selectColor = Color.green;
             if (Global.Instance.localPlayer != controllerOfThis)
             {
-                selectColor = UnityEngine.Color.red;
+                selectColor = Color.red;
             }
             selectIndicator.SetColor(selectColor); 
         }
@@ -822,7 +822,7 @@ public class SelectableEntity : NetworkBehaviour
             DetectIfShouldUnghost();
             DetectIfBuilt();
             UpdateInteractors();
-            UpdateSelectionCirclePosition();
+            //UpdateSelectionCirclePosition();
             if (fullyBuilt)
             {
                 UpdateRallyVariables();
@@ -1000,7 +1000,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (VisuallySelected())
         {
-            if (selectIndicator != null) selectIndicator.UpdateSelectionCirclePosition();
+            if (selectIndicator != null) selectIndicator.UpdateSelectionCirclePositions();
         }
     }
     public bool VisuallySelected()

@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Threading.Tasks;
+/// <summary>
+/// Used to asynchronously put enemies into arrays so units can attack them.
+/// </summary>
 public class EntitySearcher : MonoBehaviour
 {
     [SerializeField] private List<StateMachineController> assignedUnits = new();
@@ -17,6 +20,7 @@ public class EntitySearcher : MonoBehaviour
     public int minionCount = 0;
     public int creatorAllegianceID = 0; //by default 0 is player, 1 is AI
     public DisplayRadius dr;
+    public CrosshairDisplay crosshairPrefab;
     private void Start()
     { 
         searchedStructures = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
@@ -118,5 +122,17 @@ public class EntitySearcher : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.DrawWireSphere(transform.position, searchRadius);
+    }
+    private List<CrosshairDisplay> crosshairs = new();
+    private void HighlightRelevantEnemies()
+    {
+        if (minionCount > 0)
+        {
+
+        }
+        else if (structureCount > 0)
+        {
+
+        }
     }
 }
