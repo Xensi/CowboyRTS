@@ -32,7 +32,7 @@ public class UnitAnimator : EntityAddon
         base.Awake();
         animator = GetComponentInChildren<Animator>();
     }
-    public void Play(string str, float fadeLength = 0)
+    public void Play(string str) //, float fadeLength = 3f
     {
         if (animator != null)
         {

@@ -36,6 +36,7 @@ public class EntitySearcher : MonoBehaviour
         {
             timer = 0;
             Search();
+            HighlightRelevantEnemies();
         }
         DeleteIfNoAssignedUnits();
         if (dr != null)
@@ -124,15 +125,47 @@ public class EntitySearcher : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, searchRadius);
     }
     private List<CrosshairDisplay> crosshairs = new();
+    int neededCrosshairs = 0;
     private void HighlightRelevantEnemies()
     {
+        bool checkMinions = true;
         if (minionCount > 0)
         {
-
+            neededCrosshairs = minionCount;
+            checkMinions = true;
         }
         else if (structureCount > 0)
         {
-
+            neededCrosshairs = structureCount;
+            checkMinions = false;
+        }
+        //if we lack crosshairs, create some
+        while (crosshairs.Count < neededCrosshairs)
+        {
+            CrosshairDisplay cd = Instantiate(crosshairPrefab, Vector3.zero, Quaternion.identity);
+            crosshairs.Add(cd);
+        }
+        
+        for (int i = 0; i < crosshairs.Count; i++)
+        {
+            if (i < neededCrosshairs)
+            {
+                SelectableEntity ent = null;
+                if (checkMinions)
+                {
+                    ent = searchedMinions[i];
+                }
+                else
+                {
+                    ent = searchedStructures[i];
+                }
+                crosshairs[i].transform.SetParent(ent.transform, false);
+                crosshairs[i].UpdateVisibility(true);
+            }
+            else //disable
+            {
+                crosshairs[i].UpdateVisibility(false);
+            }
         }
     }
 }

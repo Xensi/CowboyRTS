@@ -8,11 +8,15 @@ public class CrosshairDisplay : MonoBehaviour
     [SerializeField] private int subDivs = 64; //how detailed the circle should be
     [SerializeField] private float radius = 1;
     private LineRenderer lr;
-    private Color color;
+    [SerializeField] private Color color;
     [SerializeField] private int numLines = 4;
     void Awake()
     {
-        lr = GetComponent<LineRenderer>();
+        lr = GetComponentInChildren<LineRenderer>();
+    }
+    private void Start()
+    {
+        UpdatePositions();
     }
     public void UpdateVisibility(bool val)
     {
@@ -21,12 +25,17 @@ public class CrosshairDisplay : MonoBehaviour
     public void SetColor(Color newColor)
     {
         color = newColor;
+        if (lr != null)
+        {
+            lr.startColor = color;
+            lr.endColor = color;
+        }
     }
     public void UpdateRadius(float newRad)
     {
         radius = newRad;
     }
-    public void UpdateSelectionCirclePosition()
+    public void UpdatePositions()
     {
         if (lr != null)
         {
@@ -35,24 +44,25 @@ public class CrosshairDisplay : MonoBehaviour
             lr.endColor = color;
         }
         //create 4 lines from center
-        Vector3 center = transform.position + new Vector3(0, 0.01f, 0);
-        Vector3[] positions = new Vector3[10];
+        Vector3 center = transform.localPosition + new Vector3(0, 0, -0.01f);
+        Vector3[] positions = new Vector3[numLines*2];
         int posHead = 0;
         for (int i = 0; i < numLines; i++)
         {
             var radians = 2 * Mathf.PI / numLines * i;
             var vertical = Mathf.Sin(radians);
             var horizontal = Mathf.Cos(radians);
-            var spawnDir = new Vector3(horizontal, 0, vertical);
+            var spawnDir = new Vector3(horizontal, vertical, 0);
             Vector3 start = center;
-            positions[posHead] = start;
             Vector3 end = center + spawnDir * radius; // Radius is just the distance away from the point
-            posHead++;
             positions[posHead] = end;
+            posHead++;
+            positions[posHead] = start;
+            posHead++;
         }
         if (lr != null)
         {
-            lr.positionCount = posHead + 1;
+            lr.positionCount = posHead;
             lr.SetPositions(positions);
         }
     }
