@@ -1794,42 +1794,34 @@ public class SelectableEntity : NetworkBehaviour
         {
             // todo add ability to build multiple from one structure
             FactionUnit fac = buildQueue[0];
-            fac.spawnTimer++; 
-            if (fac.spawnTimer > fac.maxSpawnTimeCost - 1) //ready to spawn
-            {   
-                if (fac.consumePopulationAmount <= controllerOfThis.maxPopulation - controllerOfThis.population) //allowed to spawn
-                { 
-                    //spawn the unit 
-                    //Debug.Log("Population check on spawn:" + fac.consumePopulationAmount + ", " + controllerOfThis.maxPopulation + ", " + controllerOfThis.population);
-                    //first check if the position is blocked;
-                    if (Physics.Raycast(positionToSpawnMinions.position + (new Vector3(0, 100, 0)), Vector3.down,
-                        out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
-                    {
-                        SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
-                        if (target != null) //something blocking
-                        {
-                            if (target.sm != null && target.controllerOfThis == controllerOfThis)
-                            {
-                                //tell blocker to get out of the way.
-                                float randRadius = 1;
-                                Vector2 randCircle = UnityEngine.Random.insideUnitCircle * randRadius;
-                                Vector3 rand = target.transform.position + new Vector3(randCircle.x, 0, randCircle.y);
-                                target.pf.MoveTo(rand);
-                                //Debug.Log("trying to move blocking unit to: " + rand);
-                                productionBlocked = true;
-                            }
-                        }
-                        else
-                        {
-                            BuildQueueSpawn(fac);
-                            productionBlocked = false;
-                        }
-                    } 
-                }
-                else
+            fac.spawnTimer++;
+            //check if the position is blocked;
+            if (Physics.Raycast(positionToSpawnMinions.position + (new Vector3(0, 100, 0)), Vector3.down,
+                out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
+            {
+                SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
+                if (target != null) //something blocking
                 {
-                    productionBlocked = true;
+                    if (target.sm != null && target.controllerOfThis == controllerOfThis)
+                    {
+                        //tell blocker to get out of the way.
+                        float randRadius = 1;
+                        Vector2 randCircle = UnityEngine.Random.insideUnitCircle * randRadius;
+                        Vector3 rand = target.transform.position + new Vector3(randCircle.x, 0, randCircle.y);
+                        target.pf.MoveTo(rand);
+                        //Debug.Log("trying to move blocking unit to: " + rand);
+                        productionBlocked = true;
+                    }
                 }
+                else if (fac.consumePopulationAmount <= controllerOfThis.maxPopulation - controllerOfThis.population)
+                {
+                    productionBlocked = false;
+                }
+            }
+            if (fac.spawnTimer > fac.maxSpawnTimeCost - 1 && !productionBlocked) //ready to spawn
+            {
+                BuildQueueSpawn(fac);
+                //spawn the unit 
             }
         }
         if (controllerOfThis is RTSPlayer)
