@@ -52,10 +52,14 @@ public class EntitySearcher : MonoBehaviour
         if (dr != null)
         {
             //Debug.Log("TEST");
-            dr.UpdateLR();
+            //dr.UpdateLR();
             dr.SetLREnable(visible);
         }
         HighlightRelevantEnemies();
+    }
+    public bool MinionsInSearch()
+    {
+        return tempMinionCount > 0 || minionCount > 0;
     }
     private bool CheckIfShouldBeVisible()
     {
@@ -202,8 +206,8 @@ public class EntitySearcher : MonoBehaviour
                         ent = searchedStructures[i];
                     }
                     if (ent == null) return;
-                    crosshairs[i].transform.SetParent(ent.transform, false);
                     crosshairs[i].UpdateVisibility(true);
+                    crosshairs[i].transform.SetParent(ent.transform, false);
                 }
                 else //disable
                 {

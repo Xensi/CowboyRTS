@@ -15,7 +15,7 @@ MonoBehaviour:
   productionName: Numbskull
   description: Early melee unit. Only useful in numbers.
   prefabToSpawn: {fileID: 2545681379473208697, guid: c3824196b058c8e478af507efde0a492, type: 3}
-  goldCost: 8
+  goldCost: 5
   maxHP: 6
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
@@ -31,7 +31,7 @@ MonoBehaviour:
   passengersAreTargetable: 0
   acceptsHeavy: 0
   hideModelOnDeath: 1
-  maxSpawnTimeCost: 5
+  maxSpawnTimeCost: 3
   spawnTimer: 0
   isHeavy: 0
   maxSpeed: 2

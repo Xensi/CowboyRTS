@@ -79,7 +79,7 @@ public class Attacker : SwingEntityAddon
                 if (alternateAttackTarget != null)
                 {
                     pf.SetDestinationIfHighDiff(alternateAttackTarget.transform.position);
-                    if (pf.PathReaches())
+                    if (ent.IsMelee() && pf.PathReaches() || !ent.IsMelee())
                     {
                         targetEnemy = alternateAttackTarget;
                         SwitchState(EntityStates.AttackMoving);
@@ -938,30 +938,18 @@ public class Attacker : SwingEntityAddon
         asyncSearchCancellationToken = new CancellationTokenSource();
         if (assignedEntitySearcher == null) return;
 
-        //Debug.Log("Running find closest attack target search");
-        /*if (ent.IsMelee())
-        {
-            attackMoveDetectRange = defaultMeleeDetectionRange;
-        }
-        else
-        {
-            attackMoveDetectRange += rangedUnitRangeExtension;
-        }*/
-
         SelectableEntity valid = null;
         SelectableEntity[] searchArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
         int searchCount = 0;
-        if (assignedEntitySearcher.minionCount > 0) //if there are minions, only search those
+        if (assignedEntitySearcher.MinionsInSearch()) //if there are minions, only search those
         {
             searchArray = assignedEntitySearcher.searchedMinions;
             searchCount = assignedEntitySearcher.minionCount;
-            //Debug.Log("Searching minions");
         }
         else //allow searching structures
         {
             searchArray = assignedEntitySearcher.searchedStructures;
             searchCount = assignedEntitySearcher.structureCount;
-            //Debug.Log("Searching structures"); 
         }
         //Debug.Log(searchCount);
         for (int i = 0; i < searchCount; i++) //run for each search result
@@ -969,9 +957,6 @@ public class Attacker : SwingEntityAddon
             SelectableEntity checkedEnt = searchArray[i];
             if (ent.IsEnemyOfTarget(checkedEnt) && checkedEnt.alive && checkedEnt.isTargetable.Value) //only check on enemies that are alive, targetable, visible
             {
-                //viability range is 4 unless attack range is higher
-                //viability range is how far targets can be from the attack move destination and still be a valid target
-                
                 //float viabilityRange = minAttackMoveDestinationViabilityRange;
                 //if (attackMoveDetectRange > minAttackMoveDestinationViabilityRange) viabilityRange = attackMoveDetectRange;
                 
@@ -980,13 +965,7 @@ public class Attacker : SwingEntityAddon
                     || Vector3.Distance(checkedEnt.transform.position, attackMoveDestination) <= assignedEntitySearcher.SearchRadius())
                 {//AI doesn't care about attack move range viability; otherwise must be in range of the attack move destination
                  //later add failsafe for if there's nobody in that range
-
-                    //Debug.Log("Setting target enemy to closest in search list");
                     valid = checkedEnt;
-                    /*if (InRangeOfEntity(checkedEnt, attackMoveDetectRange)) //is enemy in range and visible?
-                    {
-                        //Debug.DrawRay(valid.transform.position, Vector3.up, Color.red, 1);
-                    }*/
                 }
             }
             if (IsValidTarget(targetEnemy))
@@ -1000,7 +979,6 @@ public class Attacker : SwingEntityAddon
             }
             if (valid != null) //valid is a possibility, not definite
             {
-                //Debug.Log(valid);
                 Vector3 offset = valid.transform.position - transform.position;
                 float validDist = offset.sqrMagnitude;
                 //get sqr magnitude between this and valid 
@@ -1033,7 +1011,6 @@ public class Attacker : SwingEntityAddon
                 asyncSearchCancellationToken = null;
             }
         }
-        //if (targetEnemy != null) Debug.Log("found target to attack move towards: " + targetEnemy.name); 
     }
     /// <summary>
     /// While attacking, find a closer target in our search array we could attack. 

@@ -7,20 +7,41 @@ public class CrosshairDisplay : MonoBehaviour
     [SerializeField] private float lrWidth = 0.05f;
     [SerializeField] private int subDivs = 64; //how detailed the circle should be
     [SerializeField] private float radius = 1;
-    private LineRenderer lr;
+    [SerializeField] private LineRenderer lr;
     [SerializeField] private Color color;
     [SerializeField] private int numLines = 4;
-    void Awake()
-    {
-        lr = GetComponentInChildren<LineRenderer>();
-    }
+    [SerializeField] private float rotateSpeed = 100f;
+    [SerializeField] private float scaleSpeed = 100f;
+    [SerializeField] private float scaleMax = 0.25f;
+    [SerializeField] private DisplayRadius dr;
+    private float offset = 0;
+    private bool visible = true;
     private void Start()
     {
         UpdatePositions();
     }
+    private void Update()
+    {
+        transform.RotateAround(transform.position, Vector3.up, rotateSpeed * Time.deltaTime);
+        float scale = Mathf.Sin(offset + Time.time * scaleSpeed) * scaleMax + (1 - scaleMax);
+        transform.localScale = new Vector3(scale, 1, scale);
+    }
+    public void UpdateOffset()
+    {
+        offset = Time.time;
+    }
+    public bool GetVisibile()
+    {
+        return visible;
+    }
     public void UpdateVisibility(bool val)
     {
-        lr.enabled = val;
+        if (visible != val)
+        {
+            visible = val;
+            if (lr != null) lr.enabled = val;
+            if (dr != null) dr.SetLREnable(val);
+        }
     }
     public void SetColor(Color newColor)
     {

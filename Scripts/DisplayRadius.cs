@@ -12,7 +12,11 @@ public class DisplayRadius : MonoBehaviour
     [SerializeField] private UnityEngine.Color drColor;
     void Start()
     {
-        lr = GetComponent<LineRenderer>();
+        UpdateLR();
+    }
+    private void Update()
+    {
+
         UpdateLR();
     }
     public void SetLREnable(bool val)
@@ -31,7 +35,7 @@ public class DisplayRadius : MonoBehaviour
             lr.startColor = drColor;
             lr.endColor = drColor;
 
-            Vector3 point = transform.position + new Vector3(0, 0.01f, 0);
+            Vector3 point = transform.localPosition + new Vector3(0, 0, -0.01f);
             int numPoints = subDivs + 1;
             Vector3[] positions = new Vector3[numPoints];
             for (int i = 0; i < numPoints; i++)
@@ -43,7 +47,7 @@ public class DisplayRadius : MonoBehaviour
                 var vertical = Mathf.Sin(radians);
                 var horizontal = Mathf.Cos(radians);
 
-                var spawnDir = new Vector3(horizontal, 0, vertical);
+                var spawnDir = new Vector3(horizontal, vertical, 0);
 
                 /* Get the spawn position */
                 var spawnPos = point + spawnDir * radius; // Radius is just the distance away from the point 
