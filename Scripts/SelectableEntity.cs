@@ -1097,7 +1097,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void FixPopulationOnDeath()
     {
-        Debug.Log("Adjusting pop " + consumePopulationAmount + name);
+        //Debug.Log("Adjusting pop " + consumePopulationAmount + name);
         ChangePopulation(-consumePopulationAmount);
         ChangeMaxPopulation(-raisePopulationLimitBy);
     }

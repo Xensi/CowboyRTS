@@ -23,6 +23,10 @@ public class EntitySearcher : MonoBehaviour
     public DisplayRadius dr;
     public CrosshairDisplay crosshairPrefab;
     private bool visible = true;
+    private bool searchingInProgress = false;
+    int tempAllCount = 0;
+    int tempMinionCount = 0;
+    int tempStructureCount = 0;
     private void Start()
     { 
         searchedStructures = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
@@ -36,9 +40,13 @@ public class EntitySearcher : MonoBehaviour
         timer += Time.deltaTime;
         if (timer >= searchTime)
         {
-            timer = 0;
-            Search();
+            if (!searchingInProgress)
+            {
+                timer = 0;
+                Search();
+            }
         }
+
         DeleteIfNoAssignedUnits();
         CheckIfShouldBeVisible();
         if (dr != null)
@@ -70,6 +78,8 @@ public class EntitySearcher : MonoBehaviour
     }
     private async void Search()
     {
+        //Debug.Log("Starting search");
+        searchingInProgress = true;
         //create a list of viable targets to attack   
         Collider[] enemyArray = new Collider[Global.Instance.fullEnemyArraySize];
         LayerMask searchMask;
@@ -82,9 +92,10 @@ public class EntitySearcher : MonoBehaviour
             searchMask = Global.Instance.friendlyEntityLayer;
         }
         searchedCount = Physics.OverlapSphereNonAlloc(transform.position, searchRadius, enemyArray, searchMask); //use fixed distance for now
-        int tempMinionCount = 0;
-        int tempStructureCount = 0;
-        int tempAllCount = 0;
+
+        tempAllCount = 0;
+        tempMinionCount = 0;
+        tempStructureCount = 0;
         for (int i = 0; i < searchedCount; i++) //place valid entities into array
         {
             if (enemyArray[i] == null) continue; //if invalid do not increment slotToWriteTo
@@ -95,7 +106,6 @@ public class EntitySearcher : MonoBehaviour
             {
                 continue;
             }
-
             if (select.IsMinion())
             {
                 if (tempMinionCount < searchedMinions.Length)
@@ -122,6 +132,7 @@ public class EntitySearcher : MonoBehaviour
         allCount = tempAllCount;
         minionCount = tempMinionCount;
         structureCount = tempStructureCount;
+        searchingInProgress = false;
     }
     public void AssignUnit(StateMachineController unit)
     {
@@ -158,14 +169,14 @@ public class EntitySearcher : MonoBehaviour
     private void HighlightRelevantEnemies()
     {
         bool checkMinions = true;
-        if (minionCount > 0)
+        if (tempMinionCount > 0 || minionCount > 0)
         {
-            neededCrosshairs = minionCount;
+            neededCrosshairs = minionCount > tempMinionCount ? minionCount : tempMinionCount;
             checkMinions = true;
         }
-        else if (structureCount > 0)
+        else if (tempStructureCount > 0 || structureCount > 0)
         {
-            neededCrosshairs = structureCount;
+            neededCrosshairs = structureCount > tempStructureCount ? structureCount : tempStructureCount;
             checkMinions = false;
         }
         //if we lack crosshairs, create some
