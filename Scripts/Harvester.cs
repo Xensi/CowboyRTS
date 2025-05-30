@@ -4,13 +4,6 @@ using Unity.Netcode;
 using UnityEngine;
 using static StateMachineController;
 using static UnitAnimator;
-public enum ResourceType
-{
-    None, All,
-    Gold,
-    Wood,
-    Cactus,
-}
 public enum HowToFilterResources
 {
     BanResources,

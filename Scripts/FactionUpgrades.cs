@@ -8,7 +8,10 @@ public class FactionUpgrades : ScriptableObject
 {
     public string upgradeName = "Upgrade Name";
     public float timeToUpgrade = 0;
-    public bool shouldCooldown = true; //should cooldown timer tick down?
-    public GameObject onActivateParticles = null;
-    public List<Effect> effectsToApply = new(); //effects to activate when this ability is used
+    public List<ResourceQuantity> costs;
+    public SpawnableOptions unlockedSpawnables; // new spawnables
+    public List<Stats> addStats; // stats to add
+    // transform into another unit
+    //public GameObject upgradingParticles = null;
+    //public GameObject upgradeFinishedParticles = null;
 }

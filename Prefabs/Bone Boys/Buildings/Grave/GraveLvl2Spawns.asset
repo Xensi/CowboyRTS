@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e85b7026d4623de48befc102d2dd30b9, type: 3}
-  m_Name: GraveSpawnables
+  m_Name: GraveLvl2Spawns
   m_EditorClassIdentifier: 
   spawnables:
-  - {fileID: 11400000, guid: 5482cede677f6c94299d9143b7094d12, type: 2}
+  - {fileID: 11400000, guid: 6ac2c4201fde5c94b98a1034aa483861, type: 2}
