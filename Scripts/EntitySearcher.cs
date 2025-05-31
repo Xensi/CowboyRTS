@@ -194,6 +194,7 @@ public class EntitySearcher : MonoBehaviour
             for (int i = 0; i < crosshairs.Count; i++)
             {
                 if (crosshairs[i] == null) return;
+                crosshairs[i].SetPulse(false);
                 if (i < neededCrosshairs)
                 {
                     SelectableEntity ent = null;
@@ -208,10 +209,23 @@ public class EntitySearcher : MonoBehaviour
                     if (ent == null) return;
                     crosshairs[i].UpdateVisibility(true);
                     crosshairs[i].transform.SetParent(ent.transform, false);
+                    crosshairs[i].assignedEntity = ent;
+
+                    //check if any assigned units are attacking the enemy the crosshair is assigned to
+                    foreach (StateMachineController item in assignedUnits)
+                    {
+                        if (!Exists(item)) continue;
+                        if (item.attacker != null && item.attacker.targetEnemy == ent)
+                        {
+                            crosshairs[i].SetPulse(true);
+                            break;
+                        }
+                    }
                 }
                 else //disable
                 {
                     crosshairs[i].UpdateVisibility(false);
+                    crosshairs[i].assignedEntity = null;
                 }
             }
         }
@@ -221,7 +235,27 @@ public class EntitySearcher : MonoBehaviour
             {
                 if (crosshairs[i] == null) return;
                 crosshairs[i].UpdateVisibility(false);
+                crosshairs[i].assignedEntity = null;
+                crosshairs[i].SetPulse(false);
             }
+        }
+        
+    }
+
+    /// <summary>
+    /// Does this exist or is it in the process of being deleted?
+    /// </summary>
+    /// <param name="target"></param>
+    /// <returns></returns>
+    public bool Exists(StateMachineController target)
+    {
+        if (target == null || target.ent == null || !target.ent.alive || target.ent.currentHP.Value <= 0)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
         }
     }
 }

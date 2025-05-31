@@ -232,7 +232,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 56881033
+  GlobalObjectIdHash: 2641155720
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -267,6 +267,8 @@ MonoBehaviour:
   aiControlled: 0
   productionBlocked: 0
   allPhysicalColliders: []
+  crosshairAssignedToEnemy: {fileID: 0}
+  createdCrosshair: {fileID: 0}
   healthBar: {fileID: 6900349819852542005}
   productionProgressBar: {fileID: 8509637767066359466}
   factionEntity: {fileID: 0}

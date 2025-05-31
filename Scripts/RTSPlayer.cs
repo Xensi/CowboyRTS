@@ -298,10 +298,14 @@ public class RTSPlayer : Player
                             actionType = ActionType.MoveToTarget;
                         }
                     }
-                    else //enemy
+                    else if (hitEntity.isAttackable) //enemy
                     { //try to target this enemy specifically
                         actionType = ActionType.AttackTarget;
                         //Debug.Log("Trying to attack " + hitEntity.name);
+                    }
+                    else
+                    {
+                        actionType = ActionType.Move;
                     }
                 }
                 else if (hitEntity.teamType == SelectableEntity.TeamBehavior.FriendlyNeutral) //for now resources are only neutral; this may change

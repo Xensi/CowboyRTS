@@ -14996,6 +14996,7 @@ MonoBehaviour:
   unitSpawnerToTrackReinforcements: {fileID: 0}
   levelObjective: {fileID: 1131607442}
   entitySearcher: {fileID: 2353444043544607824, guid: 377e6261b5e52ff4ca53f4ef20ee48de, type: 3}
+  crosshairPrefab: {fileID: 8138555312592417819, guid: 63591ec333626d742b25380f25fc2366, type: 3}
   changeBlockedDelayMs: 250
   maxExpectedUnits: 1
   maxFramesToFindTarget: 5

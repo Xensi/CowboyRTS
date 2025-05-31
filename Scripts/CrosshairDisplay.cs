@@ -16,15 +16,31 @@ public class CrosshairDisplay : MonoBehaviour
     [SerializeField] private DisplayRadius dr;
     private float offset = 0;
     private bool visible = true;
+    public SelectableEntity assignedEntity;
+    private bool shouldPulse = false;
+    [SerializeField] private float idlePulseScale = 0.5f;
     private void Start()
     {
         UpdatePositions();
     }
     private void Update()
     {
-        transform.RotateAround(transform.position, Vector3.up, rotateSpeed * Time.deltaTime);
-        float scale = Mathf.Sin(offset + Time.time * scaleSpeed) * scaleMax + (1 - scaleMax);
+        float scale = 0;
+        if (shouldPulse)
+        {
+            transform.RotateAround(transform.position, Vector3.up, rotateSpeed * Time.deltaTime);
+            scale = Mathf.Sin(offset + Time.time * scaleSpeed) * scaleMax + (1 - scaleMax);
+        }
+        else
+        {
+            transform.RotateAround(transform.position, Vector3.up, rotateSpeed * idlePulseScale * Time.deltaTime);
+            scale = Mathf.Sin(offset + Time.time * scaleSpeed) * scaleMax * idlePulseScale + (1 - scaleMax * idlePulseScale);
+        }
         transform.localScale = new Vector3(scale, 1, scale);
+    }
+    public void SetPulse(bool val)
+    {
+        shouldPulse = val;
     }
     public void UpdateOffset()
     {

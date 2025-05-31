@@ -53,10 +53,12 @@ MonoBehaviour:
   lr: {fileID: 8656696650096690339}
   color: {r: 1, g: 0, b: 0, a: 1}
   numLines: 4
-  rotateSpeed: 100
+  rotateSpeed: 150
   scaleSpeed: 5
   scaleMax: 0.1
   dr: {fileID: 8494523804021057998}
+  assignedEntity: {fileID: 0}
+  idlePulseScale: 0
 --- !u!114 &8494523804021057998
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -88,6 +88,7 @@ public class Global : NetworkBehaviour
     public TMP_Text levelObjective;
 
     public EntitySearcher entitySearcher;
+    public CrosshairDisplay crosshairPrefab;
     //Minion sound profile mapping:
     // 0: spawn
     // 1: damage

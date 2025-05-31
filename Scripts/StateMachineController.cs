@@ -29,16 +29,16 @@ public class StateMachineController : NetworkBehaviour
         Walk,
         AttackMoving,
         WalkToSpecificEnemy,
-        Attacking, 
+        Attacking,
         FindInteractable,
         WalkToInteractable,
-        Building, 
+        Building,
         Spawn,
         Die,
         Harvesting,
-        AttackCooldown, 
-        Depositing, 
-        Garrisoning, 
+        AttackCooldown,
+        Depositing,
+        Garrisoning,
         WalkToRally,
         WalkToTarget,
         UsingAbility,
@@ -52,7 +52,7 @@ public class StateMachineController : NetworkBehaviour
     private Camera cam;
     private RaycastModifier rayMod;
     private readonly float spawnDuration = .5f;
-    private readonly sbyte buildDelta = 5; 
+    private readonly sbyte buildDelta = 5;
     public float stateTimer = 0;
     private float rotationSpeed = 10f;
     //[HideInInspector] public bool followingMoveOrder = false;
@@ -90,7 +90,7 @@ public class StateMachineController : NetworkBehaviour
     private void Awake()
     {
         Initialize();
-        enemyMask = LayerMask.GetMask("Entity", "Obstacle"); 
+        enemyMask = LayerMask.GetMask("Entity", "Obstacle");
         nearbyIndexer = 0;
     }
     [HideInInspector] public SelectableEntity ent;
@@ -98,7 +98,7 @@ public class StateMachineController : NetworkBehaviour
     [HideInInspector] private Rigidbody rigid;
     public Attacker attacker;
     private void Initialize()
-    {  
+    {
         col = GetComponent<Collider>();
         ent = GetComponent<SelectableEntity>();
         rigid = GetComponent<Rigidbody>();
@@ -109,7 +109,7 @@ public class StateMachineController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         if (IsOwner)
-        { 
+        {
             SwitchState(EntityStates.Spawn);
             Invoke(nameof(FinishSpawning), spawnDuration); //jank 
             lastCommand.Value = CommandTypes.Move;
@@ -118,12 +118,12 @@ public class StateMachineController : NetworkBehaviour
         {
             rigid.isKinematic = true; //don't get knocked around
             //gameObject.layer = LayerMask.NameToLayer("OtherEntities"); //can pass through each other 
-        } 
+        }
     }
     #endregion
     #region Start Code 
     private void Start()
-    {  
+    {
         if (ent.IsAttacker())
         {
             if (IsMelee())
@@ -153,7 +153,7 @@ public class StateMachineController : NetworkBehaviour
     public bool IsAlive()
     {
         if (ent != null)
-        { 
+        {
             return ent.alive;
         }
         else
@@ -190,7 +190,7 @@ public class StateMachineController : NetworkBehaviour
         {
             pf.ai.autoRepath.mode = AutoRepathPolicy.Mode.Never;
         }
-    }  
+    }
     private void Update()
     {
         //update real location, or catch up
@@ -199,7 +199,7 @@ public class StateMachineController : NetworkBehaviour
             ent.pf.GetActualPositionChange();
             ent.pf.UpdateIdleCount();
             if (IsOwner)
-            {   
+            {
                 //EvaluateNearbyEntities();
                 UpdateRealLocation();
                 ent.pf.UpdateMinionTimers();
@@ -209,7 +209,7 @@ public class StateMachineController : NetworkBehaviour
                 UpdateRepathRate();
                 //UpdateSetterTargetPosition();
                 //FixGarrisonObstacle();
-                ent.attacker.UpdateTargetEnemyLastPosition(); 
+                ent.attacker.UpdateTargetEnemyLastPosition();
             }
             else // if (finishedInitializingRealLocation) //not owned by us
             {
@@ -435,7 +435,7 @@ public class StateMachineController : NetworkBehaviour
     private new void OnDestroy()
     {
         CancelAllAsyncTasks();
-    } 
+    }
     #endregion
     #region States 
     /*private void StopWalkingInGarrison()
@@ -590,7 +590,7 @@ public class StateMachineController : NetworkBehaviour
                 if (ent.IsAttacker()) ent.attacker.OnEnterState();
                 break;
         }
-    } 
+    }
     private void ChangeBlockedByMinionObstacleStatus(bool blocked)
     {
         GraphMask includingObstacles = GraphMask.FromGraphName("GraphIncludingMinionNavmeshCuts");
@@ -678,7 +678,7 @@ public class StateMachineController : NetworkBehaviour
         }
     }
     private bool skipFirstFrame = true;
-    private bool attackTrailActive = false; 
+    private bool attackTrailActive = false;
 
     public UnitOrder lastOrder = null;
     private bool OrderValid(UnitOrder order)
@@ -692,7 +692,7 @@ public class StateMachineController : NetworkBehaviour
             ProcessOrder(lastOrder);
         }
     }
-    public ActionType lastOrderType; 
+    public ActionType lastOrderType;
     public void ProcessOrder(UnitOrder order)
     {
         //Debug.Log("Processing order");
@@ -711,6 +711,24 @@ public class StateMachineController : NetworkBehaviour
             case ActionType.MoveToTarget:
                 if (attacker != null && attacker.assignedEntitySearcher != null) attacker.RemoveFromEntitySearcher();
                 break;
+        }
+        //if we made a crosshair
+        if (ent.createdCrosshair != null && ent.createdCrosshair.assignedEntity != null)
+        {
+            ent.createdCrosshair.assignedEntity.crosshairAssignedToEnemy = null;
+            Destroy(ent.createdCrosshair.gameObject);
+        }
+        if (order.action == ActionType.AttackTarget) //if given attack order
+        {
+            //if target doesn't have a crosshair, create it
+            if (target.crosshairAssignedToEnemy == null)
+            {
+                CrosshairDisplay cd = Instantiate(Global.Instance.crosshairPrefab, target.transform);
+                target.crosshairAssignedToEnemy = cd;
+                cd.assignedEntity = target;
+                cd.SetPulse(true);
+                ent.createdCrosshair = cd;
+            }
         }
         switch (order.action)
         {
@@ -763,12 +781,12 @@ public class StateMachineController : NetworkBehaviour
     private void AttackTarget(SelectableEntity select)
     {
         //Debug.Log("Received order to attack " + select.name);
-        if (ent.IsAttacker())
+        if (ent.IsAttacker() && ent.attacker.IsValidTarget(select))
         {
             lastCommand.Value = CommandTypes.Attack;
             if (pf != null) pf.ClearIdleness();
             if (select.IsStructure())
-            { 
+            {
                 pf.NudgeTargetEnemyStructureDestination(select);
                 //pf.nudgedTargetEnemyStructurePosition = select.transform.position;
             }
@@ -777,7 +795,7 @@ public class StateMachineController : NetworkBehaviour
     }
     [SerializeField] private float attackTrailBeginTime = 0.2f;
     private float timerUntilAttackTrailBegins = 0;
-    private bool attackTrailTriggered = false; 
+    private bool attackTrailTriggered = false;
     private void CheckIfAttackTrailIsActiveErroneously()
     {
         if (currentState != EntityStates.Attacking)
@@ -811,7 +829,7 @@ public class StateMachineController : NetworkBehaviour
     {
         return currentState == state;
     }
-    
+
     private void OwnerUpdateState()
     {
         CheckIfAttackTrailIsActiveErroneously();
@@ -820,7 +838,7 @@ public class StateMachineController : NetworkBehaviour
         {
             case EntityStates.Spawn: //play the spawn animation  
                 break;
-            case EntityStates.Die: 
+            case EntityStates.Die:
                 break;
             case EntityStates.Idle:
                 if (pf != null) pf.ResetEndReachedDistance();
@@ -842,7 +860,7 @@ public class StateMachineController : NetworkBehaviour
                 {
                     skipFirstFrame = false;
                 }
-                else if (!anim.InState(USE_ABILITY)) 
+                else if (!anim.InState(USE_ABILITY))
                 {
                     SwitchState(EntityStates.Idle);
                     ResumeLastOrder();
@@ -853,40 +871,40 @@ public class StateMachineController : NetworkBehaviour
                 ent.pf.DetectIfShouldReturnToIdle();
                 break;
             case EntityStates.WalkToTarget:
-                /*UpdateStopDistance();
-                IdleOrWalkContextuallyAnimationOnly();
-                if (ent.interactionTarget != null)
+            /*UpdateStopDistance();
+            IdleOrWalkContextuallyAnimationOnly();
+            if (ent.interactionTarget != null)
+            {
+                SetOrderedDestination(ent.interactionTarget.transform.position);
+            }
+            if (InRangeOfEntity(ent.interactionTarget, attackRange)) //if in range, check if this has an ability that can be satisfied
+            {
+                List<AbilityOnCooldown> usedAbilities = ent.unitAbilities.GetUsedAbilities();
+                if (usedAbilities.Count > 0)
                 {
-                    SetOrderedDestination(ent.interactionTarget.transform.position);
-                }
-                if (InRangeOfEntity(ent.interactionTarget, attackRange)) //if in range, check if this has an ability that can be satisfied
-                {
-                    List<AbilityOnCooldown> usedAbilities = ent.unitAbilities.GetUsedAbilities();
-                    if (usedAbilities.Count > 0)
+                    for (int i = usedAbilities.Count - 1; i >= 0; i--)
                     {
-                        for (int i = usedAbilities.Count - 1; i >= 0; i--)
+                        AbilityOnCooldown used = usedAbilities[i];
+                        if (used == null) continue;
+                        if (used.shouldCooldown) continue;
+                        if (used != null && used.visitBuildingToRefresh.Count > 0)
                         {
-                            AbilityOnCooldown used = usedAbilities[i];
-                            if (used == null) continue;
-                            if (used.shouldCooldown) continue;
-                            if (used != null && used.visitBuildingToRefresh.Count > 0)
+                            foreach (BuildingAndCost b in used.visitBuildingToRefresh)
                             {
-                                foreach (BuildingAndCost b in used.visitBuildingToRefresh)
+                                if (b == null) continue;
+                                if (b.building == ent.interactionTarget.factionEntity && b.cost <= ent.controllerOfThis.gold) //this works
                                 {
-                                    if (b == null) continue;
-                                    if (b.building == ent.interactionTarget.factionEntity && b.cost <= ent.controllerOfThis.gold) //this works
-                                    {
-                                        usedAbilities.Remove(used);
-                                        ent.controllerOfThis.gold -= b.cost;
+                                    usedAbilities.Remove(used);
+                                    ent.controllerOfThis.gold -= b.cost;
 
-                                        Global.Instance.PlayMinionRefreshSound(ent);
-                                        break;
-                                    }
+                                    Global.Instance.PlayMinionRefreshSound(ent);
+                                    break;
                                 }
                             }
                         }
                     }
-                }*/
+                }
+            }*/
             case EntityStates.WalkToRally:
                 switch (givenMission)
                 {
@@ -915,9 +933,9 @@ public class StateMachineController : NetworkBehaviour
                 if (ent.IsAttacker()) ent.attacker.WalkToSpecificEnemyState();
                 break;
             case EntityStates.Attacking:
-                if (ent.IsAttacker()) ent.attacker.AttackingState(); 
-                break; 
-            case EntityStates.FindInteractable: 
+                if (ent.IsAttacker()) ent.attacker.AttackingState();
+                break;
+            case EntityStates.FindInteractable:
                 //prioritize based on last state
                 switch (lastMajorState) //this may be broken by the recent lastState change to switchstate
                 {
@@ -985,14 +1003,14 @@ public class StateMachineController : NetworkBehaviour
                 break;
             case EntityStates.Building:
                 if (ent.IsBuilder()) ent.builder.BuildingState();
-                break;  
+                break;
             case EntityStates.Harvesting:
                 if (ent.harvester == null) return;
                 ent.harvester.HarvestingState();
-                break; 
+                break;
             case EntityStates.Depositing:
                 if (ent.IsHarvester()) ent.harvester.DepositingState();
-                break;  
+                break;
             #region Garrison
             case EntityStates.Garrisoning:
                 if (ent.interactionTarget == null)
@@ -1011,7 +1029,7 @@ public class StateMachineController : NetworkBehaviour
         }
         DrawPath();
         //UpdatePathStatus();
-         
+
     }
     /// <summary>
     /// Get the path and show it with lines.
@@ -1041,7 +1059,7 @@ public class StateMachineController : NetworkBehaviour
                 break;
         }
 
-    } 
+    }
     #endregion
     #region UpdaterFunctions 
     private void UpdateInteractors()
@@ -1102,7 +1120,7 @@ public class StateMachineController : NetworkBehaviour
         ent.Select(false);
         SwitchState(EntityStates.Die);
         pf.ai.enabled = false;
-        if (ent.pf.RVO != null) ent.pf.RVO.enabled = false; 
+        if (ent.pf.RVO != null) ent.pf.RVO.enabled = false;
         pf.seeker.enabled = false;
         Destroy(rigid);
         Destroy(col);
@@ -1139,7 +1157,7 @@ public class StateMachineController : NetworkBehaviour
                 SetDestination(orderedDestination);//destination.Value = orderedDestination;
             }
         }
-    }*/ 
+    }*/
     #endregion
     #region More Stuff
     private void HideMoveIndicator()
@@ -1179,7 +1197,7 @@ public class StateMachineController : NetworkBehaviour
     public void LookAtTarget(Transform target)
     {
         ent.LookAtTarget(target);
-    } 
+    }
 
     public bool InRangeOfEntity(SelectableEntity target, float range)
     {
@@ -1200,7 +1218,7 @@ public class StateMachineController : NetworkBehaviour
             return true;
         }
         return false;
-    } */ 
+    } */
     private void UpdateReadiness()
     {
         if (ent.IsAttacker()) ent.attacker.UpdateReadiness();
@@ -1211,7 +1229,7 @@ public class StateMachineController : NetworkBehaviour
     {
         float frames = seconds * 50;
         return frames;
-    } 
+    }
     private SelectableEntity FindClosestBuildable()
     {
         List<SelectableEntity> list = ent.controllerOfThis.ownedEntities;
