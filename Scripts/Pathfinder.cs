@@ -104,7 +104,10 @@ public class Pathfinder : EntityAddon
         }
         //Debug.DrawRay(position, Vector3.up, Color.yellow, 4);
         //Debug.DrawRay(buffer.Last(), Vector3.up, Color.blue, 4);
-        return dist < pathThreshold * pathThreshold;
+
+        float leeway = 0;
+        if (at != null) leeway = at.range;
+        return dist < pathThreshold * pathThreshold + leeway * leeway;
     }
 
 

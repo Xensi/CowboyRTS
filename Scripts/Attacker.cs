@@ -22,7 +22,14 @@ public class Attacker : SwingEntityAddon
     [SerializeField] private Transform attackEffectSpawnPosition; 
     [HideInInspector] public bool attackMoving = false;
 
+    /// <summary>
+    /// The target we're currently trying to attack.
+    /// </summary>
     public SelectableEntity targetEnemy;
+    /// <summary>
+    /// The target we were trying to attack previously, who we switched off of because we couldn't reach it.
+    /// </summary>
+    public SelectableEntity preferredAttackTarget;
     public SelectableEntity alternateAttackTarget;
     public enum Goal { None, AttackFromIdle, OrderedToAttackMove }
     public Goal longTermGoal = Goal.None; 
@@ -66,11 +73,21 @@ public class Attacker : SwingEntityAddon
             HandleLackOfValidTargetEnemy();
             return;
         }
+        MakeAsyncSearchAvailableAgain();
+        pf.ValidatePathStatus();
+        if (!sm.InState(EntityStates.Attacking)) return;
+        //if path is clear and we were previously trying to attack a different target
+        if (longTermGoal == Goal.OrderedToAttackMove && preferredAttackTarget != null && !pf.PathBlocked())
+        {
+            targetEnemy = preferredAttackTarget;
+            preferredAttackTarget = null;
+            SwitchState(EntityStates.AttackMoving);
+            return;
+        }
+
         //If attack moving a structure, check if there's a path to an enemy. If there is, attack move again
         if (sm.lastOrderType == ActionType.AttackMove && targetEnemy != null && targetEnemy.IsStructure())
         {
-            MakeAsyncSearchAvailableAgain();
-            pf.ValidatePathStatus();
             if (!hasCalledEnemySearchAsyncTask)
             {
                 hasCalledEnemySearchAsyncTask = true;
@@ -85,8 +102,7 @@ public class Attacker : SwingEntityAddon
                         SwitchState(EntityStates.AttackMoving);
                     }
                 }
-                //await Task.Delay(100); //right now this limits the ability of units to acquire new targets
-                if (alternateAttackTarget == null) hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
+                //if (alternateAttackTarget == null) hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
             }
         }
         //it is very possible for the state to not be equal to attacking by this point because of our task.delay usage
@@ -384,7 +400,6 @@ public class Attacker : SwingEntityAddon
         }
         else //enemy is not valid target
         {
-            AttackStructuresIfBlocked();
             //Search for an enemy to target in attack move zone
             if (!hasCalledEnemySearchAsyncTask) //searcher could sort results into minions and structures 
             {  //if there is at least 1 minion we can just search through the minions and ignore structures 
@@ -396,43 +411,35 @@ public class Attacker : SwingEntityAddon
                 if (targetEnemy == null)
                 {
                     //Debug.Log("Did not find an enemy");
-                    pf.SetDestinationIfHighDiff(attackMoveDestination);
+                    pf.SetDestinationIfHighDiff(attackMoveDestination); //can't find any enemies, so let's just go to center of a-move
                 }
             }
         }
 
+        if (pf.PathBlocked()) //if we cannot reach the target destination, we should attack structures on our way
         {
             SelectableEntity enemy = null;
+            if (pf.IsEffectivelyIdle(.05f) && ent.IsMelee())
+            {
+                enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.MinionPreferred, false);
+            }
             //if we can't get where we're trying to go, then we can fall back on attacking the structure we're stuck on
-            if (pf.PathBlocked() && pf.IsEffectivelyIdle(.1f)) //blocked for short time? find enemies in search list
+            if (pf.IsEffectivelyIdle(.1f)) //blocked for short time? find enemies in search list
             {
-                enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Any, true);
+                enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.MinionPreferred, true);
             }
-            if (pf.PathBlocked() && pf.IsEffectivelyIdle(1)) //blocked for long time, attack anything
+            else if (pf.IsEffectivelyIdle(1)) //blocked for long time, attack anything
             {
-                enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Any, false);
+                enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.MinionPreferred, false);
             }
             if (enemy != null)
             {
+                preferredAttackTarget = targetEnemy;
                 targetEnemy = enemy;
                 SwitchState(EntityStates.Attacking);
             }
         }
-        //currrently, this will prioritize minions. however, if a wall is in the way, then the unit will just walk into the wall
         #endregion
-    }
-    private void AttackStructuresIfBlocked()
-    {
-        if (pf.PathBlocked() && ent.IsMelee()) //if we cannot reach the target destination, we should attack structures on our way
-        {
-            SelectableEntity enemy = null;
-            enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Structure, false);
-            if (enemy != null)
-            {
-                targetEnemy = enemy;
-                SwitchState(EntityStates.Attacking);
-            }
-        }
     }
     public void SetTargetEnemyAsDestination()
     {
@@ -684,12 +691,12 @@ public class Attacker : SwingEntityAddon
         {   
             if (valid != null)
             {
-                Debug.Log(name + " returning valid" + valid.name);
+                //Debug.Log(name + " returning valid" + valid.name);
             }
             if (backup != null)
             {
 
-                Debug.Log(name + " returning backup" + backup.name);
+                //Debug.Log(name + " returning backup" + backup.name);
             }
         }
         return valid;

@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+/// <summary>
+/// Used to define entity addons that require the entity to swing at something (attacking, harvesting, building)
+/// </summary>
 public class SwingEntityAddon : EntityAddon
 { 
     [HideInInspector] public bool ready = true;

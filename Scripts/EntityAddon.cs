@@ -9,7 +9,8 @@ public class EntityAddon : NetworkBehaviour
     [HideInInspector] public SelectableEntity ent;
     [HideInInspector] public StateMachineController sm;
     [HideInInspector] public UnitAnimator anim;
-    [HideInInspector] public Pathfinder pf; 
+    [HideInInspector] public Pathfinder pf;
+    [HideInInspector] public Attacker at;
 
     public virtual void Awake()
     {
@@ -20,6 +21,7 @@ public class EntityAddon : NetworkBehaviour
     { 
         anim = ent.anim;
         pf = ent.pf;
+        at = ent.attacker;
         InitAddon();
     }
     public virtual void InitAddon() { }
