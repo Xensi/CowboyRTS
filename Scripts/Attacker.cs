@@ -187,7 +187,14 @@ public class Attacker : SwingEntityAddon
         }
         else if (!sm.InRangeOfEntity(targetEnemy, range)) //walk to enemy if out of range
         {
-            SwitchState(EntityStates.WalkToSpecificEnemy);
+            if (longTermGoal == Goal.OrderedToAttackMove)
+            {
+                SwitchState(EntityStates.AttackMoving);
+            }
+            else
+            {
+                SwitchState(EntityStates.WalkToSpecificEnemy);
+            }
         }
     }
 
