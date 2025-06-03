@@ -156,6 +156,7 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public Rigidbody rigid; 
     private LootOnDestruction lootComponent;
     [HideInInspector] public UnitAbilities unitAbilities;
+    [HideInInspector] public UnitUpgrades unitUpgrades;
     [HideInInspector] public UnitAnimator anim; //Entities that can be deposited to.
     [HideInInspector] public Depot depot; //Entities that can be deposited to.
     [HideInInspector] public Ore ore; //Entities that are harvestable for resources
@@ -206,6 +207,7 @@ public class SelectableEntity : NetworkBehaviour
         builder = GetComponent<Builder>();
         spawner = GetComponent<Spawner>();
         unitAbilities = GetComponent<UnitAbilities>();
+        unitUpgrades = GetComponent<UnitUpgrades>();
         attacker = GetComponent<Attacker>();
         pf = GetComponent<Pathfinder>();
         garrison = GetComponent<Garrison>();
@@ -849,10 +851,43 @@ public class SelectableEntity : NetworkBehaviour
     {
         return unitAbilities != null;
     }
+    public bool HasUpgrades()
+    {
+        return unitUpgrades != null;
+    }
     public bool CanUseAbility(FactionAbility ability)
     {
         return HasAbilities() && unitAbilities.CanUseAbility(ability);
-    } 
+    }
+    public bool CanUseUpgrade(FactionUpgrade upgrade)
+    {
+        return HasUpgrades() && unitUpgrades.CanUseUpgrade(upgrade);
+    }
+
+    public void UpdateStats(Stats stats)
+    {
+        switch (stats.stat)
+        {
+            case Stat.ArmySize:
+                raisePopulationLimitBy += stats.add;
+                ChangeMaxPopulation(raisePopulationLimitBy);
+                break;
+            case Stat.MaxHP:
+                maxHP += (short)stats.add;
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void UpdateSpawnables(SpawnableOptions options)
+    {
+        if (IsSpawner())
+        {
+            spawner.UpdateSpawnables(options);
+        }
+    }
+
     [HideInInspector] public List<Effect> appliedEffects = new();
     private void UpdateAppliedEffects() //handle expiration of these effects; this implementation may be somewhat slow
     {

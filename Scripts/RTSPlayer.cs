@@ -77,6 +77,7 @@ public class RTSPlayer : Player
     private List<ushort> fakeSpawnsReadyForReplacement = new();
     private List<FactionBuilding> availableConstructionOptions = new();
     [SerializeField] private List<FactionAbility> availableAbilities = new();
+    [SerializeField] private List<FactionUpgrade> availableUpgrades = new();
     private List<FactionUnit> availableUnitSpawns = new();
     private Vector3 buildOffset = Vector3.zero;
     public bool placingPortal = false;
@@ -1647,6 +1648,7 @@ public class RTSPlayer : Player
         availableConstructionOptions.Clear();
         availableAbilities.Clear();
         availableUnitSpawns.Clear();
+        availableUpgrades.Clear();
         Global.Instance.ChangeRallyPointButton(false);
         if (selectedEntities.Count > 0) //at least one unit selected
         {
@@ -1666,6 +1668,13 @@ public class RTSPlayer : Player
                         {
                             if (!availableAbilities.Contains(abilityOption)) availableAbilities.Add(abilityOption);
                         }
+                    }
+                }
+                if (entity.HasUpgrades())
+                {
+                    foreach (FactionUpgrade upgradeOption in entity.unitUpgrades.GetUpgrades())
+                    {
+                        if (!availableUpgrades.Contains(upgradeOption)) availableUpgrades.Add(upgradeOption);
                     }
                 }
 
@@ -1715,7 +1724,7 @@ public class RTSPlayer : Player
                         List<AbilityOnCooldown> usedAbilities = entity.unitAbilities.GetUsedAbilities();
                         for (int j = 0; j < usedAbilities.Count; j++) //find the ability and set the cooldown
                         {
-                            if (usedAbilities[j].abilityName == ability.abilityName) //does the ability match?
+                            if (usedAbilities[j].abilityName == ability.name) //does the ability match?
                             {
                                 foundAbility = true;
                                 if (usedAbilities[j].cooldownTime < cooldown) //is the cooldown lower than the current cooldown?
@@ -1733,11 +1742,11 @@ public class RTSPlayer : Player
                 }
                 if (cooldown <= 0)
                 {
-                    text.text = ability.abilityName;
+                    text.text = ability.name;
                 }
                 else
                 {
-                    text.text = ability.abilityName + ": " + Mathf.RoundToInt(cooldown);
+                    text.text = ability.name + ": " + Mathf.RoundToInt(cooldown);
                 }
                 button.interactable = cooldown <= 0;
             }
@@ -1748,12 +1757,23 @@ public class RTSPlayer : Player
                 text.text = fac.productionName + ": " + fac.goldCost + "g";
                 button.onClick.AddListener(delegate { QueueBuildingSpawn(fac); });
             }
-            else if (i < availableAbilities.Count + availableConstructionOptions.Count + availableUnitSpawns.Count) //buildings
+            else if (i < availableAbilities.Count + availableUnitSpawns.Count + availableConstructionOptions.Count) //buildings
             {
                 FactionBuilding fac = availableConstructionOptions[i - availableAbilities.Count - availableUnitSpawns.Count];
                 button.interactable = gold >= fac.goldCost;
                 text.text = fac.productionName + ": " + fac.goldCost + "g";
                 button.onClick.AddListener(delegate { HoverBuild(fac); });
+            }
+            else if (i < availableAbilities.Count + availableUnitSpawns.Count + availableConstructionOptions.Count + availableUpgrades.Count)
+            {
+                FactionUpgrade fac = availableUpgrades[i - availableAbilities.Count 
+                    - availableUnitSpawns.Count - availableConstructionOptions.Count];
+                button.onClick.AddListener(delegate { UseUpgrade(fac); });
+
+                int cost = fac.costs[0].quantity;
+                text.text = fac.name + ": " + cost + "g";
+                button.interactable = gold >= cost;
+                //also should make it uninteractable if it's already been used.
             }
             else
             {
@@ -1785,6 +1805,28 @@ public class RTSPlayer : Player
                 }
             }
         }
+    }
+    private void UseUpgrade(FactionUpgrade upgrade)
+    {
+        Debug.Log("Using upgrade");
+        if (selectedEntities.Count > 0) //at least one unit selected
+        {
+            foreach (SelectableEntity entity in selectedEntities)
+            {
+                int cost = upgrade.costs[0].quantity;
+                if (EntityCanUseUpgrade(entity, upgrade) && gold >= cost)
+                {
+                    Debug.Log("Using upgrade");
+                    gold -= cost;
+                    entity.unitUpgrades.ActivateUpgrade(upgrade);
+                }
+            }
+        }
+    }
+    private bool EntityCanUseUpgrade(SelectableEntity entity, FactionUpgrade upgrade)
+    {
+        return entity != null && upgrade != null && entity.fullyBuilt && entity.net.IsSpawned
+            && entity.alive && entity.CanUseUpgrade(upgrade);
     }
     private bool EntityCanUseAbility(SelectableEntity entity, FactionAbility ability)
     {
@@ -1891,7 +1933,7 @@ public class RTSPlayer : Player
     }
     private bool TargetCanSpawnThisEntity(SelectableEntity target, FactionEntity entity)
     {
-        for (int i = 0; i < target.spawner.GetSpawnables().Length; i++)
+        for (int i = 0; i < target.spawner.GetSpawnables().Count; i++)
         {
             if (target.spawner.GetSpawnables()[i].productionName == entity.productionName) return true;
         }

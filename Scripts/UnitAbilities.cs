@@ -27,7 +27,8 @@ public class UnitAbilities : EntityAddon
         if (abilityOptions == null) return false;
         for (int i = 0; i < abilityOptions.abilities.Length; i++)
         {
-            if (abilityOptions.abilities[i].abilityName == ability.abilityName) return true; //if ability is in the used abilities list, then we still need to wait  
+            if (abilityOptions.abilities[i].name == ability.name) return true;
+            //if ability is in the used abilities list, then we still need to wait  
         }
         return false;
     }
@@ -47,7 +48,7 @@ public class UnitAbilities : EntityAddon
         for (int i = 0; i < usedAbilities.Count; i++)
         {
             //Debug.Log("Checking ability:" + ability.abilityName + "against: " + usedAbilities[i].abilityName);
-            if (usedAbilities[i].abilityName == ability.abilityName) return false; //if ability is in the used abilities list, then we still need to wait  
+            if (usedAbilities[i].abilityName == ability.name) return false; //if ability is in the used abilities list, then we still need to wait  
         }
         return true;
     }
@@ -96,7 +97,7 @@ public class UnitAbilities : EntityAddon
             {
                 AbilityOnCooldown newAbility = new()
                 {
-                    abilityName = ability.abilityName,
+                    abilityName = ability.name,
                     cooldownTime = ability.cooldownTime,
                     shouldCooldown = ability.shouldCooldown,
                     visitBuildingToRefresh = ability.visitBuildingToRefresh,
@@ -109,7 +110,7 @@ public class UnitAbilities : EntityAddon
     {
         for (int i = 0; i < usedAbilities.Count; i++) //find the ability and set the cooldown
         {
-            if (usedAbilities[i].abilityName == ability.abilityName)
+            if (usedAbilities[i].abilityName == ability.name)
             {
                 return true;
             }

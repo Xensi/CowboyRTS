@@ -22,5 +22,5 @@ public class ResourceQuantity
 public class Stats
 {
     public Stat stat;
-    public int newValue = 0;
+    public int add = 0;
 }

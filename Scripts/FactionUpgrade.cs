@@ -4,9 +4,9 @@ using UnityEngine;
 
 [CreateAssetMenu(fileName = "NewUpgrade", menuName = "Faction/Upgrade", order = 0)]
 [System.Serializable]
-public class FactionUpgrades : ScriptableObject
+public class FactionUpgrade : ScriptableObject
 {
-    public string upgradeName = "Upgrade Name";
+    public new string name = "Upgrade Name";
     public float timeToUpgrade = 0;
     public List<ResourceQuantity> costs;
     public SpawnableOptions unlockedSpawnables; // new spawnables

@@ -1,21 +1,28 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Spawner : EntityAddon
 {
     [SerializeField] private SpawnableOptions spawnableOptions;
 
-    FactionUnit[] spawnables;
+    List<FactionUnit> spawnables = new();
     public override void InitAddon()
     {
-        spawnables = new FactionUnit[0];
         if (spawnableOptions != null)
         {
-            spawnables = spawnableOptions.spawnables; 
+            spawnables = spawnableOptions.spawnables.ToList();
         }
     }
-    public FactionUnit[] GetSpawnables()
+    public void UpdateSpawnables(SpawnableOptions options)
+    {
+        foreach (FactionUnit item in options.spawnables)
+        {
+            if (!spawnables.Contains(item)) spawnables.Add(item);
+        }
+    }
+    public List<FactionUnit> GetSpawnables()
     {
         return spawnables;
     }

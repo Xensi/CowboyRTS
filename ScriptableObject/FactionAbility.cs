@@ -6,7 +6,7 @@ using System.Collections.Generic;
 [System.Serializable]
 public class FactionAbility : ScriptableObject
 {
-    public string abilityName = "Ability Name";
+    public new string name = "Ability Name";
     public bool usableOnlyWhenBuilt = true;
     public float cooldownTime = 60; //used only if needsConstructing is false
     public bool shouldCooldown = true; //should cooldown timer tick down?
