@@ -350,8 +350,6 @@ public class Attacker : SwingEntityAddon
         //reminder: assigned entity searcher updates enemy lists; which are then searched by asyncFindClosestEnemyToAttackMoveTowards
         if (IsValidTarget(targetEnemy))
         {
-            //Debug.Log("Valid target");
-            hasCalledEnemySearchAsyncTask = false; //allows new async search 
             SetTargetEnemyAsDestination();
             //setting destination needs to be called once (or at least not constantly to the same position)
 
@@ -385,6 +383,14 @@ public class Attacker : SwingEntityAddon
                     SwitchState(EntityStates.Attacking);
                 }
             }
+
+            //Periodically recalculate which enemy in search is closest
+            if (!hasCalledEnemySearchAsyncTask)
+            {
+                hasCalledEnemySearchAsyncTask = true;
+                await AsyncSetTargetEnemyToClosestInSearchList(range); //sets target enemy 
+                if (!sm.InState(EntityStates.AttackMoving)) return;
+            }
         }
         else //enemy is not valid target
         {
@@ -392,14 +398,16 @@ public class Attacker : SwingEntityAddon
             if (!hasCalledEnemySearchAsyncTask) //searcher could sort results into minions and structures 
             {  //if there is at least 1 minion we can just search through the minions and ignore structures 
                 hasCalledEnemySearchAsyncTask = true;
-                //Debug.Log("Entity searching");
                 await AsyncSetTargetEnemyToClosestInSearchList(range); //sets target enemy 
                 if (!sm.InState(EntityStates.AttackMoving)) return;
-                SetTargetEnemyAsDestination();
                 if (targetEnemy == null)
                 {
                     //Debug.Log("Did not find an enemy");
                     pf.SetDestinationIfHighDiff(attackMoveDestination); //can't find any enemies, so let's just go to center of a-move
+                }
+                else
+                {
+                    SetTargetEnemyAsDestination();
                 }
             }
         }
@@ -418,7 +426,7 @@ public class Attacker : SwingEntityAddon
                 enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.MinionPreferred, true);
             }
             else */
-            if (pf.IsEffectivelyIdle(.05f)) //blocked for a very short time; melee can attack nearby enemies  && ent.IsMelee()
+            if (pf.IsEffectivelyIdle(.1f)) //blocked for a very short time; melee can attack nearby enemies  && ent.IsMelee()
             {
                 enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.MinionPreferred, false);
             }
