@@ -399,7 +399,6 @@ public class Pathfinder : EntityAddon
         //Debug.Log("Setting destination to " + destination);
         UpdateSetterTargetPosition(); //move pathfinding target
         pathStatusValid = false;
-        //ai.SearchPath();
     }
     /// <summary>
     /// Update pathfinding target to match actual destination
@@ -456,6 +455,9 @@ public class Pathfinder : EntityAddon
             effectivelyIdleInstances = 0;
         }
     }
+    /// <summary>
+    /// Timer that prevents unit from becoming idle while walking temporarily.
+    /// </summary>
     public float walkStartTimer = 0;
     public readonly float walkStartTimerSet = 1.5f; 
     private AIDestinationSetter setter;

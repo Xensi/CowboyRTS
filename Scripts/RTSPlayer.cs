@@ -312,7 +312,7 @@ public class RTSPlayer : Player
                 { 
                     if (hitEntity.IsOre())
                     {
-                        //Debug.Log("trying to harvest");
+                        Debug.Log("trying to harvest");
                         actionType = ActionType.Harvest;
                     }
                 }
@@ -331,8 +331,16 @@ public class RTSPlayer : Player
                     UnitOrder order = new();
                     order.unit = item.sm;
                     order.targetPosition = clickedPosition;
-                    order.action = actionType;
                     order.target = hitEntity;
+
+                    if (!item.IsBuilder() && actionType == ActionType.BuildTarget 
+                        || !item.IsHarvester() && actionType == ActionType.Harvest)
+                    {
+                        Debug.Log("invalid action, defaulting to moving to target");
+                        actionType = ActionType.MoveToTarget;
+                    }
+                    order.action = actionType;
+
                     UnitOrdersQueue.Add(order);
                 }
             }

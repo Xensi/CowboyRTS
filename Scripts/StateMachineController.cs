@@ -176,7 +176,7 @@ public class StateMachineController : NetworkBehaviour
     /// </summary>
     private void UpdateRepathRate()
     {
-        float defaultPathRate = 2;
+        float defaultPathRate = 2f;
         float attackMovePathRate = 0.5f;
         pf.ai.autoRepath.maximumPeriod = defaultPathRate;
         pf.ai.autoRepath.mode = AutoRepathPolicy.Mode.Dynamic;
