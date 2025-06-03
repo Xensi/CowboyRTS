@@ -76,36 +76,7 @@ public class Attacker : SwingEntityAddon
         MakeAsyncSearchAvailableAgain();
         pf.ValidatePathStatus();
         if (!sm.InState(EntityStates.Attacking)) return;
-        //if path is clear and we were previously trying to attack a different target
-        if (longTermGoal == Goal.OrderedToAttackMove && preferredAttackTarget != null && !pf.PathBlocked())
-        {
-            targetEnemy = preferredAttackTarget;
-            preferredAttackTarget = null;
-            SwitchState(EntityStates.AttackMoving);
-            return;
-        }
-
-        //If attack moving a structure, check if there's a path to an enemy. If there is, attack move again
-        if (sm.lastOrderType == ActionType.AttackMove && targetEnemy != null && targetEnemy.IsStructure())
-        {
-            if (!hasCalledEnemySearchAsyncTask)
-            {
-                hasCalledEnemySearchAsyncTask = true;
-                await AsyncFindAlternateMinionInSearchArray(range); //sets target enemy 
-                if (!sm.InState(EntityStates.Attacking)) return;
-                if (alternateAttackTarget != null)
-                {
-                    pf.SetDestinationIfHighDiff(alternateAttackTarget.transform.position);
-                    if (ent.IsMelee() && pf.PathReaches() || !ent.IsMelee())
-                    {
-                        targetEnemy = alternateAttackTarget;
-                        SwitchState(EntityStates.AttackMoving);
-                    }
-                }
-                //if (alternateAttackTarget == null) hasCalledEnemySearchAsyncTask = false; //if we couldn't find anything, try again
-            }
-        }
-        //it is very possible for the state to not be equal to attacking by this point because of our task.delay usage
+        await Task.Yield();
 
         if (!sm.InState(EntityStates.Attacking)) return;
 
@@ -260,7 +231,17 @@ public class Attacker : SwingEntityAddon
         }
         else //if target enemy is alive
         {
-            SwitchState(EntityStates.Attacking);
+            //if path is clear and we were previously trying to attack a different target
+            if (longTermGoal == Goal.OrderedToAttackMove && preferredAttackTarget != null && !pf.PathBlocked())
+            {
+                targetEnemy = preferredAttackTarget;
+                preferredAttackTarget = null;
+                SwitchState(EntityStates.AttackMoving);
+            }
+            else
+            {
+                SwitchState(EntityStates.Attacking);
+            }
         }
     }
     /// <summary>
@@ -426,16 +407,18 @@ public class Attacker : SwingEntityAddon
         if (pf.PathBlocked()) //if we cannot reach the target destination, we should attack structures on our way
         {
             SelectableEntity enemy = null;
-            if (pf.IsEffectivelyIdle(.05f) && ent.IsMelee())
+            
+            //if we can't get where we're trying to go, then we can fall back on attacking the structure we're stuck on
+            /*if (pf.IsEffectivelyIdle(1)) //blocked for long time, attack anything
             {
                 enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.MinionPreferred, false);
             }
-            //if we can't get where we're trying to go, then we can fall back on attacking the structure we're stuck on
-            if (pf.IsEffectivelyIdle(.1f)) //blocked for short time? find enemies in search list
+            else if (pf.IsEffectivelyIdle(0.1f)) //blocked for a short time; find enemies in search list
             {
                 enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.MinionPreferred, true);
             }
-            else if (pf.IsEffectivelyIdle(1)) //blocked for long time, attack anything
+            else */
+            if (pf.IsEffectivelyIdle(.05f)) //blocked for a very short time; melee can attack nearby enemies  && ent.IsMelee()
             {
                 enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.MinionPreferred, false);
             }
@@ -684,11 +667,11 @@ public class Attacker : SwingEntityAddon
                 default:
                     break;
             }
-            if (!matchesRequiredType)
+            if (!matchesRequiredType) //go to next item if doesn't match
             {
                 continue;
             }
-            else
+            else //if it matches, stop looking
             {
                 break;
             }
