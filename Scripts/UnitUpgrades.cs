@@ -4,17 +4,32 @@ using UnityEngine;
 
 public class UnitUpgrades : EntityAddon
 {
-    [SerializeField] private UpgradeOptions upgradeOptions;
-    public FactionUpgrade[] GetUpgrades()
+    [SerializeField] private UpgradeOptions staticUpgradeOptions;
+    [SerializeField] private List<FactionUpgrade> upgrades;
+
+    private void Start()
     {
-        return upgradeOptions.upgrades;
+        //populate upgrades with copies so we don't modify original object
+        if (staticUpgradeOptions.upgrades.Length > 0)
+        {
+            foreach (FactionUpgrade item in staticUpgradeOptions.upgrades)
+            {
+                if (item == null) continue;
+                FactionUpgrade newUpgrade = Instantiate(item);
+                upgrades.Add(newUpgrade);
+            }
+        }
+    }
+    public List<FactionUpgrade> GetUpgrades()
+    {
+        return upgrades;
     }
     public bool CanUseUpgrade(FactionUpgrade upgrade)
     {
-        if (upgradeOptions == null) return false;
-        for (int i = 0; i < upgradeOptions.upgrades.Length; i++)
+        if (upgrades == null) return false;
+        for (int i = 0; i < upgrades.Count; i++)
         {
-            if (upgradeOptions.upgrades[i].name == upgrade.name) return true; 
+            if (upgrades[i].name == upgrade.name && upgrades[i].uses > 0) return true;
             //if ability is in the used abilities list, then we still need to wait  
         }
         return false;
@@ -22,7 +37,11 @@ public class UnitUpgrades : EntityAddon
 
     public void ActivateUpgrade(FactionUpgrade upgrade)
     {
+        
         Debug.Log("Activating upgrade");
+        Debug.Log(upgrade.uses);
+        upgrade.uses--;
+        Debug.Log(upgrade.uses);
         SelectableEntity target = ent;
         foreach (Stats stats in upgrade.addStats)
         {

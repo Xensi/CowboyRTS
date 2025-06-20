@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39a234cf61763f048ad616577040c0b5, type: 3}
   m_Name: GraveLvl2
   m_EditorClassIdentifier: 
-  upgradeName: Level 2 Graveyard
+  name: Upgrade Name
   timeToUpgrade: 0
   costs:
   - resource: 2
@@ -20,6 +20,7 @@ MonoBehaviour:
   unlockedSpawnables: {fileID: 11400000, guid: 8931e1da95f9a2c4e863109cfa408138, type: 2}
   addStats:
   - stat: 0
-    newValue: 5
+    add: 5
   - stat: 1
-    newValue: 25
+    add: 25
+  uses: 1

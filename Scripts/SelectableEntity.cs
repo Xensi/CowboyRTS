@@ -870,10 +870,11 @@ public class SelectableEntity : NetworkBehaviour
         {
             case Stat.ArmySize:
                 raisePopulationLimitBy += stats.add;
-                ChangeMaxPopulation(raisePopulationLimitBy);
+                ChangeMaxPopulation(stats.add);
                 break;
             case Stat.MaxHP:
                 maxHP += (short)stats.add;
+                currentHP.Value += (short)stats.add;
                 break;
             default:
                 break;
@@ -1236,10 +1237,10 @@ public class SelectableEntity : NetworkBehaviour
         if (entityDestructionPrepped) return;
         entityDestructionPrepped = true;
 
-        if (crosshairAssignedToEnemy != null)
+        /*if (crosshairAssignedToEnemy != null)
         {
             Destroy(crosshairAssignedToEnemy.gameObject);
-        }
+        }*/
 
 
         if (attacker != null) attacker.RemoveFromEntitySearcher();
@@ -1658,6 +1659,7 @@ public class SelectableEntity : NetworkBehaviour
         if (IsOwner && teamType == TeamBehavior.OwnerTeam)
         {
             if (controllerOfThis != null) controllerOfThis.maxPopulation += change;
+            Debug.Log(controllerOfThis.maxPopulation);
             //Global.Instance.localPlayer.maxPopulation += change;
         }
     }

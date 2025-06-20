@@ -55,7 +55,7 @@ public class EntitySearcher : MonoBehaviour
             //dr.UpdateLR();
             dr.SetLREnable(visible);
         }
-        HighlightRelevantEnemies();
+        //HighlightRelevantEnemies();
     }
     public bool MinionsInSearch()
     {

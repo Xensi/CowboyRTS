@@ -1672,9 +1672,11 @@ public class RTSPlayer : Player
                 }
                 if (entity.HasUpgrades())
                 {
+                    //only add the upgrade button if it's actually usable
                     foreach (FactionUpgrade upgradeOption in entity.unitUpgrades.GetUpgrades())
                     {
-                        if (!availableUpgrades.Contains(upgradeOption)) availableUpgrades.Add(upgradeOption);
+                        if (entity.CanUseUpgrade(upgradeOption) && !availableUpgrades.Contains(upgradeOption)) 
+                            availableUpgrades.Add(upgradeOption);
                     }
                 }
 

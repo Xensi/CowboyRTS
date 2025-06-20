@@ -1014,6 +1014,7 @@ MonoBehaviour:
   sm: {fileID: 0}
   anim: {fileID: 0}
   pf: {fileID: 0}
+  at: {fileID: 0}
   spawnableOptions: {fileID: 11400000, guid: 48debf79f79da5f4daa085bd0351846c, type: 2}
 --- !u!114 &4814407606350601154
 MonoBehaviour:
@@ -1031,7 +1032,9 @@ MonoBehaviour:
   sm: {fileID: 0}
   anim: {fileID: 0}
   pf: {fileID: 0}
-  upgradeOptions: {fileID: 11400000, guid: 7c2a6df52315f3d4cb53495b79094c3f, type: 2}
+  at: {fileID: 0}
+  staticUpgradeOptions: {fileID: 11400000, guid: 7c2a6df52315f3d4cb53495b79094c3f, type: 2}
+  upgrades: []
 --- !u!4 &7886967681984913929 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 747786157894182839, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
