@@ -72,6 +72,13 @@ public class CrosshairDisplay : MonoBehaviour
     {
         radius = newRad;
     }
+    public void CheckIfShouldBeDestroyed(SelectableEntity asker)
+    {
+        if (assignedEntity == asker)
+        {
+            Destroy(gameObject);
+        }
+    }
     public void UpdatePositions()
     {
         if (lr != null)

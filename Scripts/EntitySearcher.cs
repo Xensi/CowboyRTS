@@ -27,6 +27,8 @@ public class EntitySearcher : MonoBehaviour
     int tempAllCount = 0;
     int tempMinionCount = 0;
     int tempStructureCount = 0;
+    [SerializeField] private List<CrosshairDisplay> crosshairs = new();
+    int neededCrosshairs = 0;
     private void Start()
     { 
         searchedStructures = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
@@ -55,7 +57,7 @@ public class EntitySearcher : MonoBehaviour
             //dr.UpdateLR();
             dr.SetLREnable(visible);
         }
-        //HighlightRelevantEnemies();
+        HighlightRelevantEnemies();
     }
     public bool MinionsInSearch()
     {
@@ -168,8 +170,6 @@ public class EntitySearcher : MonoBehaviour
     {
         Gizmos.DrawWireSphere(transform.position, searchRadius);
     }
-    [SerializeField] private List<CrosshairDisplay> crosshairs = new();
-    int neededCrosshairs = 0;
     private void HighlightRelevantEnemies()
     {
         bool checkMinions = true;
@@ -182,6 +182,10 @@ public class EntitySearcher : MonoBehaviour
         {
             neededCrosshairs = structureCount > tempStructureCount ? structureCount : tempStructureCount;
             checkMinions = false;
+        }
+        else
+        {
+            neededCrosshairs = 0;
         }
         //if we lack crosshairs, create some
         while (crosshairs.Count < neededCrosshairs)
@@ -210,6 +214,7 @@ public class EntitySearcher : MonoBehaviour
                     crosshairs[i].UpdateVisibility(true);
                     crosshairs[i].transform.SetParent(ent.transform, false);
                     crosshairs[i].assignedEntity = ent;
+                    ent.crosshairTargetingThis = crosshairs[i]; //assign the crosshair to the entity
 
                     //check if any assigned units are attacking the enemy the crosshair is assigned to
                     foreach (StateMachineController item in assignedUnits)

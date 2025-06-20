@@ -60,8 +60,10 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public bool aiControlled = false;
     [HideInInspector] public bool productionBlocked = false;
     [HideInInspector] public Collider[] allPhysicalColliders;
-    public CrosshairDisplay crosshairAssignedToEnemy;
+    //public CrosshairDisplay crosshairAssignedToEnemy;
     public CrosshairDisplay createdCrosshair;
+
+    public CrosshairDisplay crosshairTargetingThis; //Crosshair assigned to this by entity searcher
 
     [Header("Must Be Manually Set")]
     public EntityHealthBar healthBar;
@@ -1241,7 +1243,10 @@ public class SelectableEntity : NetworkBehaviour
         {
             Destroy(crosshairAssignedToEnemy.gameObject);
         }*/
-
+        if (crosshairTargetingThis != null)
+        {
+            crosshairTargetingThis.CheckIfShouldBeDestroyed(this);
+        }
 
         if (attacker != null) attacker.RemoveFromEntitySearcher();
         if (IsLoot()) lootComponent.LootForLocalPlayer();
