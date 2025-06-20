@@ -19,6 +19,8 @@ public class CrosshairDisplay : MonoBehaviour
     public SelectableEntity assignedEntity;
     private bool shouldPulse = false;
     [SerializeField] private float idlePulseScale = 0.5f;
+    private EntitySearcher entitySearcher;
+    private bool entitySearcherVisible = false;
     private void Start()
     {
         UpdatePositions();
@@ -37,6 +39,33 @@ public class CrosshairDisplay : MonoBehaviour
             scale = Mathf.Sin(offset + Time.time * scaleSpeed) * scaleMax * idlePulseScale + (1 - scaleMax * idlePulseScale);
         }
         transform.localScale = new Vector3(scale, 1, scale);
+        CheckIfShouldBeVisible();
+    }
+    public void AssignEntitySearcher(EntitySearcher searcher)
+    {
+        entitySearcher = searcher;
+    }
+    public void SetEntitySearcherVisible(bool val)
+    {
+        entitySearcherVisible = val;
+    }
+    private void CheckIfShouldBeVisible()
+    {
+        bool visible = false;
+        if (assignedEntity != null)
+        {
+            bool visibleInFog = assignedEntity.IsVisibleInFog();
+
+            if (entitySearcher != null)
+            {
+                visible = visibleInFog && entitySearcherVisible;
+            }
+            else
+            {
+                visible = visibleInFog;
+            }
+        }
+        UpdateVisibility(visible);
     }
     public void SetPulse(bool val)
     {

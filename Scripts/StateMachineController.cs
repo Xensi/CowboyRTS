@@ -715,20 +715,20 @@ public class StateMachineController : NetworkBehaviour
         //if we made a crosshair
         if (ent.createdCrosshair != null && ent.createdCrosshair.assignedEntity != null)
         {
-            /*ent.createdCrosshair.assignedEntity.crosshairAssignedToEnemy = null;
-            Destroy(ent.createdCrosshair.gameObject);*/
+            ent.createdCrosshair.assignedEntity.manualCrosshairTargetingThis = null;
+            Destroy(ent.createdCrosshair.gameObject);
         }
         if (order.action == ActionType.AttackTarget) //if given attack order
         {
             //if target doesn't have a crosshair, create it
-            /*if (target.crosshairAssignedToEnemy == null)
+            if (target.manualCrosshairTargetingThis == null)
             {
                 CrosshairDisplay cd = Instantiate(Global.Instance.crosshairPrefab, target.transform);
-                target.crosshairAssignedToEnemy = cd;
+                target.manualCrosshairTargetingThis = cd;
                 cd.assignedEntity = target;
                 cd.SetPulse(true);
                 ent.createdCrosshair = cd;
-            }*/
+            }
         }
         switch (order.action)
         {

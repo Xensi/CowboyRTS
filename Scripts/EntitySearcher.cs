@@ -21,6 +21,7 @@ public class EntitySearcher : MonoBehaviour
     public int minionCount = 0;
     public int creatorAllegianceID = 0; //by default 0 is player, 1 is AI
     public DisplayRadius dr;
+    public DisplayRadius defaultDR;
     public CrosshairDisplay crosshairPrefab;
     private bool visible = true;
     private bool searchingInProgress = false;
@@ -35,6 +36,10 @@ public class EntitySearcher : MonoBehaviour
         searchedMinions = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
         searchedAll = new SelectableEntity[Global.Instance.fullEnemyArraySize];
         Search();
+        if (defaultDR != null)
+        {
+            defaultDR.SetLREnable(false);
+        }
     }
     void Update()
     {
@@ -187,10 +192,15 @@ public class EntitySearcher : MonoBehaviour
         {
             neededCrosshairs = 0;
         }
+        if (defaultDR != null)
+        {
+            defaultDR.SetLREnable(neededCrosshairs <= 0);
+        }
         //if we lack crosshairs, create some
         while (crosshairs.Count < neededCrosshairs)
         {
             CrosshairDisplay cd = Instantiate(crosshairPrefab, Vector3.zero, Quaternion.identity);
+            cd.AssignEntitySearcher(this);
             crosshairs.Add(cd);
         }
         if (visible)
@@ -211,10 +221,11 @@ public class EntitySearcher : MonoBehaviour
                         ent = searchedStructures[i];
                     }
                     if (ent == null) return;
-                    crosshairs[i].UpdateVisibility(true);
+                    //crosshairs[i].UpdateVisibility(true);
+                    crosshairs[i].SetEntitySearcherVisible(true);
                     crosshairs[i].transform.SetParent(ent.transform, false);
                     crosshairs[i].assignedEntity = ent;
-                    ent.crosshairTargetingThis = crosshairs[i]; //assign the crosshair to the entity
+                    ent.entitySearcherCrosshairTargetingThis = crosshairs[i]; //assign the crosshair to the entity
 
                     //check if any assigned units are attacking the enemy the crosshair is assigned to
                     foreach (StateMachineController item in assignedUnits)
@@ -229,7 +240,8 @@ public class EntitySearcher : MonoBehaviour
                 }
                 else //disable
                 {
-                    crosshairs[i].UpdateVisibility(false);
+                    crosshairs[i].SetEntitySearcherVisible(false);
+                    //crosshairs[i].UpdateVisibility(false);
                     crosshairs[i].assignedEntity = null;
                 }
             }
@@ -239,7 +251,8 @@ public class EntitySearcher : MonoBehaviour
             for (int i = 0; i < crosshairs.Count; i++)
             {
                 if (crosshairs[i] == null) return;
-                crosshairs[i].UpdateVisibility(false);
+                crosshairs[i].SetEntitySearcherVisible(false);
+                //crosshairs[i].UpdateVisibility(false);
                 crosshairs[i].assignedEntity = null;
                 crosshairs[i].SetPulse(false);
             }

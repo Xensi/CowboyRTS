@@ -159,7 +159,7 @@ public class Player : NetworkBehaviour
                     }
                     else
                     { //use MP visibility check
-                        bool visible = enemy.isVisibleInFog;
+                        bool visible = enemy.IsVisibleInFog();
                         if (visible)
                         {
                             if (!visibleEnemies.Contains(enemy))

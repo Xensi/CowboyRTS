@@ -49,7 +49,7 @@ public class SelectableEntity : NetworkBehaviour
     #endregion
 
     //Hidden variables 
-    [HideInInspector] public bool isVisibleInFog = false;
+    private bool isVisibleInFog = false;
     [HideInInspector] public bool oldVisibleInFog = false;
     [HideInInspector] public int hideFogTeam = 0; //set equal to the team whose fog will hide this. in mp this should be set equal to the localplayer's team
     [HideInInspector] public bool shouldHideInFog = true; // gold should not be hidden 
@@ -62,8 +62,8 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public Collider[] allPhysicalColliders;
     //public CrosshairDisplay crosshairAssignedToEnemy;
     public CrosshairDisplay createdCrosshair;
-
-    public CrosshairDisplay crosshairTargetingThis; //Crosshair assigned to this by entity searcher
+    public CrosshairDisplay manualCrosshairTargetingThis;
+    public CrosshairDisplay entitySearcherCrosshairTargetingThis; //Crosshair assigned to this by entity searcher
 
     [Header("Must Be Manually Set")]
     public EntityHealthBar healthBar;
@@ -1239,13 +1239,14 @@ public class SelectableEntity : NetworkBehaviour
         if (entityDestructionPrepped) return;
         entityDestructionPrepped = true;
 
-        /*if (crosshairAssignedToEnemy != null)
+        if (manualCrosshairTargetingThis != null)
         {
-            Destroy(crosshairAssignedToEnemy.gameObject);
-        }*/
-        if (crosshairTargetingThis != null)
+            Destroy(manualCrosshairTargetingThis.gameObject);
+        }
+
+        if (entitySearcherCrosshairTargetingThis != null)
         {
-            crosshairTargetingThis.CheckIfShouldBeDestroyed(this);
+            entitySearcherCrosshairTargetingThis.CheckIfShouldBeDestroyed(this);
         }
 
         if (attacker != null) attacker.RemoveFromEntitySearcher();
@@ -1543,6 +1544,10 @@ public class SelectableEntity : NetworkBehaviour
         if (interactorIndex >= workersInteracting.Count) interactorIndex = 0;
         if (othersInteractorIndex >= othersInteracting.Count) othersInteractorIndex = 0;
     }
+    public bool IsVisibleInFog()
+    {
+        return isVisibleInFog;
+    }
     private void UpdateVisibilityFromFogOfWar() //hide in fog
     {
         if (fow == null) fow = FogOfWarTeam.GetTeam(hideFogTeam);
@@ -1664,7 +1669,7 @@ public class SelectableEntity : NetworkBehaviour
         if (IsOwner && teamType == TeamBehavior.OwnerTeam)
         {
             if (controllerOfThis != null) controllerOfThis.maxPopulation += change;
-            Debug.Log(controllerOfThis.maxPopulation);
+            //Debug.Log(controllerOfThis.maxPopulation);
             //Global.Instance.localPlayer.maxPopulation += change;
         }
     }
