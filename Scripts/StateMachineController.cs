@@ -181,7 +181,7 @@ public class StateMachineController : NetworkBehaviour
         pf.ai.autoRepath.maximumPeriod = defaultPathRate;
         pf.ai.autoRepath.mode = AutoRepathPolicy.Mode.Dynamic;
 
-        if (lastOrderType == ActionType.AttackMove)
+        if (lastOrderType == ActionType.AttackMove || currentState == EntityStates.WalkToSpecificEnemy)
         {
             pf.ai.autoRepath.maximumPeriod = attackMovePathRate;
         }
@@ -610,10 +610,10 @@ public class StateMachineController : NetworkBehaviour
 
     public async void SwitchState(EntityStates stateToSwitchTo)
     {
-        /*if (ent.GetAllegiance() == 0)
+        if (ent.IsAlliedTo(ent.controllerOfThis))
         {
             Debug.Log(name + " is switching state to: " + stateToSwitchTo);
-        }*/
+        }
         switch (stateToSwitchTo)
         {
             case EntityStates.Attacking:
@@ -654,7 +654,12 @@ public class StateMachineController : NetworkBehaviour
             case EntityStates.Depositing:
             case EntityStates.WalkToTarget:
                 //ClearObstacle();
-                if (pf != null) pf.FreezeRigid(false, false);
+                if (pf != null)
+                {
+                    pf.ClearIdleness();
+                    pf.SetWalkStartTimer();
+                    pf.FreezeRigid(false, false);
+                }
                 canReceiveNewCommands = true;
                 break;
         }
@@ -829,7 +834,7 @@ public class StateMachineController : NetworkBehaviour
     {
         return currentState == state;
     }
-
+    bool missionFollowed = false;
     private void OwnerUpdateState()
     {
         CheckIfAttackTrailIsActiveErroneously();
@@ -844,10 +849,10 @@ public class StateMachineController : NetworkBehaviour
                 if (pf != null) pf.ResetEndReachedDistance();
                 if (ent.occupiedGarrison == null) //if not in garrison
                 {
-                    /* bool missionFollowing = FollowGivenMission(); //if we have a rally mission, attempt to do it
-                    if (!missionFollowing)
+                    if (!missionFollowed)
                     {
-                    }*/
+                        missionFollowed = FollowGivenMission();
+                    }
                     if (ent.IsAttacker()) ent.attacker.IdleState();
                 }
                 else
@@ -911,7 +916,7 @@ public class StateMachineController : NetworkBehaviour
                     case SelectableEntity.RallyMission.None:
                         break;
                     case SelectableEntity.RallyMission.Move:
-                        if (pf != null) pf.SetDestinationIfHighDiff(ent.spawnerThatSpawnedThis.rallyPoint);
+                        if (pf != null) pf.SetDestinationIfHighDiff(ent.GetRallyDest());
                         break;
                     case SelectableEntity.RallyMission.Harvest:
                         break;
@@ -924,7 +929,8 @@ public class StateMachineController : NetworkBehaviour
                     default:
                         break;
                 }
-                SwitchState(EntityStates.Walk);
+                ent.pf.UpdateStopDistance();
+                ent.pf.DetectIfShouldReturnToIdle();
                 break;
             case EntityStates.AttackMoving: //walk forwards while searching for enemies to attack
                 if (ent.IsAttacker()) ent.attacker.AttackMovingState();
@@ -1056,6 +1062,19 @@ public class StateMachineController : NetworkBehaviour
                 {
                     if (ent.lineIndicator != null) ent.lineIndicator.enabled = false;
                 }
+                break;
+            case EntityStates.Idle:
+            case EntityStates.Attacking:
+            case EntityStates.FindInteractable:
+            case EntityStates.Building:
+            case EntityStates.Spawn:
+            case EntityStates.Die:
+            case EntityStates.Harvesting:
+            case EntityStates.AttackCooldown:
+            case EntityStates.Depositing:
+            case EntityStates.Garrisoning:
+            case EntityStates.UsingAbility:
+                if (ent.lineIndicator != null) ent.lineIndicator.enabled = false;
                 break;
         }
 

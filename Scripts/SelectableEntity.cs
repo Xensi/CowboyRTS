@@ -358,8 +358,8 @@ public class SelectableEntity : NetworkBehaviour
     { 
         RTSPlayer playerController = Global.Instance.localPlayer;
         playerController.lastSpawnedEntity = this;
-        controllerOfThis = playerController;
-        AddToPlayerOwnedLists(controllerOfThis);
+        this.controllerOfThis = playerController;
+        AddToPlayerOwnedLists(this.controllerOfThis);
         if (!fullyBuilt)
         {
             RequestBuilders();
@@ -663,6 +663,11 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (sounds.Length > 0) Global.Instance.PlayClipAtPoint(sounds[0], transform.position, .5f); //play spawning sound
     }
+    [SerializeField] private Vector3 setRallyDest;
+    public Vector3 GetRallyDest()
+    {
+        return setRallyDest;
+    }
     private void TryToRegisterRallyMission()
     {
         if (spawnerThatSpawnedThis != null && sm != null)
@@ -670,21 +675,21 @@ public class SelectableEntity : NetworkBehaviour
             //Debug.Log("mission registered");
             RallyMission spawnerRallyMission = spawnerThatSpawnedThis.rallyMission;
             SelectableEntity rallyTarget = spawnerThatSpawnedThis.rallyTarget;
-            Vector3 rallyPoint = spawnerThatSpawnedThis.rallyPoint;
+            setRallyDest = spawnerThatSpawnedThis.rallyPoint;
             //assign mission to last
             switch (spawnerRallyMission)
             {
                 case RallyMission.None:
-                    if (pf != null) pf.SetDestination(transform.position);
+                    //if (pf != null) pf.SetDestination(transform.position);
                     sm.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Move:
                 case RallyMission.Attack: 
-                    if (pf != null)
+                    /*if (pf != null)
                     {
                         pf.SetDestination(rallyPoint);
                         Debug.Log("set dest" + rallyPoint);
-                    }
+                    }*/
                     sm.givenMission = spawnerRallyMission;
                     break;
                 case RallyMission.Harvest:
@@ -693,10 +698,10 @@ public class SelectableEntity : NetworkBehaviour
                         interactionTarget = rallyTarget;
                         sm.givenMission = spawnerRallyMission;
                     }
-                    else
+                    /*else
                     {
                         if (pf != null) pf.SetDestination(transform.position);
-                    }
+                    }*/
                     break;
                 case RallyMission.Build:
                     interactionTarget = rallyTarget;
@@ -1952,15 +1957,23 @@ public class SelectableEntity : NetworkBehaviour
     {
         return controllerOfThis.allegianceTeamID;
     }
+    /// <summary>
+    /// Has the same allegiance; Not necessarily controlled by us.
+    /// </summary>
+    /// <returns></returns>
+    public bool IsAlliedTo(Player player)
+    {
+        return GetAllegiance() == player.allegianceTeamID;
+    }
     public void CaptureForLocalPlayer() //switch team of entity
     {
         //Debug.Log("capturing");
-        controllerOfThis = Global.Instance.localPlayer;
-        if (controllerOfThis != null)
+        this.controllerOfThis = Global.Instance.localPlayer;
+        if (this.controllerOfThis != null)
         {
-            teamNumber.Value = (sbyte)controllerOfThis.playerTeamID;
+            teamNumber.Value = (sbyte)this.controllerOfThis.playerTeamID;
 
-            if (fogUnit != null) fogUnit.team = controllerOfThis.playerTeamID;
+            if (fogUnit != null) fogUnit.team = this.controllerOfThis.playerTeamID;
         }
         UpdateTeamRenderers();
 

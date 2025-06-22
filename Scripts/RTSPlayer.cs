@@ -803,7 +803,7 @@ public class RTSPlayer : Player
     {
         foreach (SelectableEntity item in selectedEntities)
         {
-            if (!item.IsMinion())
+            if (item != null && item.IsStructure() && item.IsSpawner())
             {
                 item.SetRally();
             }

@@ -12,19 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bed587974d8ce26488166d15dd758416, type: 3}
   m_Name: TearDown
   m_EditorClassIdentifier: 
-  abilityName: Tear Down
+  name: Burn Down
   usableOnlyWhenBuilt: 1
   cooldownTime: 0
   shouldCooldown: 0
-  particles: {fileID: 100000, guid: c1f3b7a2cb39b2b4f8e166a43c5b5fec, type: 3}
+  onActivateParticles: {fileID: 100000, guid: c1f3b7a2cb39b2b4f8e166a43c5b5fec, type: 3}
   visitBuildingToRefresh: []
   effectsToApply:
-  - targets: 0
-    status: 2
-    applyAsLingeringEffect: 1
-    expirationTime: 999
+  - status: 2
     operation: 1
     statusNumber: -1
+    particles: {fileID: 0}
+    internalTimer: 0
+    applyAsLingeringEffect: 1
+    expirationTime: 999
     repeatWhileLingering: 1
     repeatTime: 0.1
-    particles: {fileID: 0}

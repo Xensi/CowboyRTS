@@ -433,7 +433,6 @@ public class Pathfinder : EntityAddon
             SwitchState(EntityStates.WalkToTarget);
             ent.interactionTarget = target;
             SetOrderedDestination(ent.interactionTarget.transform.position);
-            walkStartTimer = walkStartTimerSet;
 
             SelectableEntity justLeftGarrison = null;
             if (ent.occupiedGarrison != null) //we are currently garrisoned
@@ -446,11 +445,11 @@ public class Pathfinder : EntityAddon
     }
     public void UpdateIdleCount()
     {
-        if (change < walkAnimThreshold)
+        if (change < walkAnimThreshold && effectivelyIdleInstances < idleThreshold)
         {
             effectivelyIdleInstances += Time.deltaTime;
         }
-        else
+        else if (change >= walkAnimThreshold)
         {
             effectivelyIdleInstances = 0;
         }
@@ -461,11 +460,28 @@ public class Pathfinder : EntityAddon
     public float walkStartTimer = 0;
     public readonly float walkStartTimerSet = 1.5f; 
     private AIDestinationSetter setter;
+    
     public void DetectIfShouldReturnToIdle()
     {
-        if (IsEffectivelyIdle(idleThreshold) || walkStartTimer <= 0 && ai.reachedDestination)
+        Vector3 offset = destination - transform.position;
+        float sqrLen = offset.sqrMagnitude;
+        float closeDist = 0.1f;
+        bool close = false;
+
+        // square the distance we compare with
+        if (sqrLen < Mathf.Pow(closeDist, 2))
         {
-            //Debug.Log("Effectively Idle");
+            close = true;
+        }
+
+        if (IsEffectivelyIdle(idleThreshold))
+        {
+            Debug.Log("Effectively Idle");
+            SwitchState(EntityStates.Idle);
+        }
+        else if (close && ai.reachedDestination)
+        {
+            Debug.Log("Idle bc reached dest");
             SwitchState(EntityStates.Idle);
         }
     }
@@ -515,13 +531,16 @@ public class Pathfinder : EntityAddon
             walkStartTimer -= Time.deltaTime;
         }
     }
+    public void SetWalkStartTimer()
+    {
+        walkStartTimer = walkStartTimerSet;
+    }
     private void BasicWalkTo(Vector3 target)
     {
         sm.ClearTargets();
         ClearIdleness();
         SwitchState(EntityStates.Walk);
         SetOrderedDestination(target);
-        walkStartTimer = walkStartTimerSet;
 
         /*SelectableEntity justLeftGarrison = null;
         if (ent.occupiedGarrison != null) //we are currently garrisoned
@@ -544,4 +563,16 @@ public class Pathfinder : EntityAddon
     public readonly float walkAnimThreshold = 0.0001f;
     public float effectivelyIdleInstances = 0;
     private readonly float idleThreshold = 3f;//3; //seconds of being stuck
+    private void OnDrawGizmos()
+    {
+        if (effectivelyIdleInstances / idleThreshold >= 1)
+        {
+            Gizmos.color = Color.green;
+        }
+        else
+        {
+            Gizmos.color = Color.red;
+        }
+        Gizmos.DrawWireSphere(transform.position, effectivelyIdleInstances / idleThreshold);
+    }
 }
