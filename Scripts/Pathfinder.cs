@@ -92,7 +92,22 @@ public class Pathfinder : EntityAddon
     /// <returns></returns>
     private bool EndOfPathReachesPosition(Vector3 position)
     {
+        float dist = SquaredDistanceOfPathEndToPos(position);
+        //Debug.DrawRay(position, Vector3.up, Color.yellow, 4);
+        //Debug.DrawRay(buffer.Last(), Vector3.up, Color.blue, 4);
+
         float pathThreshold = 0.1f;
+        float leeway = 0;
+        if (at != null) leeway = at.range;
+        return dist < pathThreshold * pathThreshold + leeway * leeway;
+    }
+    /// <summary>
+    /// Returns squared length of the path to a position. Compare against a squared threshold.
+    /// </summary>
+    /// <param name="position"></param>
+    /// <returns></returns>
+    private float SquaredDistanceOfPathEndToPos(Vector3 position)
+    {
         var buffer = new List<Vector3>();
         ai.GetRemainingPath(buffer, out bool stale);
         float dist = (position - buffer.Last()).sqrMagnitude;
@@ -100,35 +115,47 @@ public class Pathfinder : EntityAddon
         Vector3 prePos = buffer[0];
         for (int i = 1; i < buffer.Count; i++)
         {
-            Debug.DrawLine(prePos, buffer[i], Color.blue, 1);
+            Debug.DrawLine(prePos, buffer[i], Color.blue);
             prePos = buffer[i];
         }
-        //Debug.DrawRay(position, Vector3.up, Color.yellow, 4);
-        //Debug.DrawRay(buffer.Last(), Vector3.up, Color.blue, 4);
-
-        float leeway = 0;
-        if (at != null) leeway = at.range;
-        return dist < pathThreshold * pathThreshold + leeway * leeway;
+        return dist;
     }
+    private void CheckIfPathIsClear(Vector3 position)
+    {
+        var buffer = new List<Vector3>();
+        ai.GetRemainingPath(buffer, out bool stale);
+
+        Vector3 prePos = buffer[0];
+        for (int i = 1; i < buffer.Count; i++)
+        {
+            Debug.DrawLine(prePos, buffer[i], Color.blue);
+            Debug.DrawRay(prePos, Vector3.up, Color.red);
+            prePos = buffer[i];
+        }
+    }
+
     public async void PushNearbyOwnedIdlers()
     {
-        Debug.Log("Pushing idlers");
-        int maxSearched = 10;
-        Collider[] nearby = new Collider[maxSearched];
-        int searchedCount = 0;
-        float searchRange = ai.radius * 2;
-        searchedCount = Physics.OverlapSphereNonAlloc(ent.transform.position, searchRange, nearby, Global.Instance.friendlyEntityLayer);
-        for (int i = 0; i < searchedCount; i++)
+        if (IsEffectivelyIdle(0.25f))
         {
-            if (nearby[i] == null) continue;
-            SelectableEntity ent = nearby[i].GetComponent<SelectableEntity>();
-            if (ent == null) continue;
-            if (ent.sm == null) continue;
-            if (ent.sm.InState(EntityStates.Idle))
+            Debug.Log("Pushing idlers");
+            int maxSearched = 10;
+            Collider[] nearby = new Collider[maxSearched];
+            int searchedCount = 0;
+            float searchRange = ai.radius * 2;
+            searchedCount = Physics.OverlapSphereNonAlloc(ent.transform.position, searchRange, nearby, Global.Instance.friendlyEntityLayer);
+            for (int i = 0; i < searchedCount; i++)
             {
-                ent.sm.SwitchState(EntityStates.PushableIdle);
+                if (nearby[i] == null) continue;
+                SelectableEntity ent = nearby[i].GetComponent<SelectableEntity>();
+                if (ent == null) continue;
+                if (ent.sm == null) continue;
+                if (ent.sm.InState(EntityStates.Idle))
+                {
+                    ent.sm.SwitchState(EntityStates.PushableIdle);
+                }
+                await Task.Yield();
             }
-            await Task.Yield();
         }
     }
 
@@ -324,14 +351,31 @@ public class Pathfinder : EntityAddon
     {
         ValidatePathStatus();
         //path reaches and we're a distance away from the pathfinding target
-        if (PathReaches() && !Util.FastDistanceCheck(ent.transform.position, PFTargetPos(), 1))
+        if (!Util.FastDistanceCheck(ent.transform.position, PFTargetPos(), 0.75f))
         {
-            Debug.Log("We can resume moving");
-            SwitchState(EntityStates.Walk);
+            if (PathReaches())
+            {
+                Debug.Log("We can resume moving");
+                SwitchState(EntityStates.Walk);
+            }
         }
     }
     float pushableIdleTimer = 0;
     readonly float pushableIdleMaxTime = 2;
+
+    public void PushableIdleState()
+    {
+        // pushable means unit is not frozen and will automatically walk back to its destination
+        // stop walking back after some time
+        if (pushableIdleTimer < pushableIdleMaxTime)
+        {
+            pushableIdleTimer += Time.deltaTime;
+        }
+        else
+        {
+            SwitchState(EntityStates.Idle);
+        }
+    }
     public void WalkState()
     {
         UpdateStopDistance();
@@ -365,23 +409,6 @@ public class Pathfinder : EntityAddon
     public void ResetPushableIdleTimer()
     {
         pushableIdleTimer = 0;
-    }
-    public void PushableIdleState()
-    {
-        // pushable means unit is not frozen and will automatically walk back to its destination
-        // stop walking back after some time
-        if (pushableIdleTimer < pushableIdleMaxTime)
-        {
-            pushableIdleTimer += Time.deltaTime;
-        }
-        else
-        {
-            SwitchState(EntityStates.Idle);
-        }
-        /*if (PathBlocked() && Util.FastDistanceCheck(ent.transform.position, PFTargetPos(), ai.endReachedDistance))
-        {
-            SwitchState(EntityStates.Idle);
-        }*/
     }
     private void UpdatePathStatus()
     {
@@ -650,7 +677,7 @@ public class Pathfinder : EntityAddon
     }
     public readonly float walkAnimThreshold = 0.0001f;
     public float effectivelyIdleInstances = 0;
-    private readonly float idleThreshold = 0.5f;//3; //seconds of being stuck
+    private readonly float idleThreshold = .5f;//3; //seconds of being stuck
     private void OnDrawGizmos()
     {
         /*if (effectivelyIdleInstances / idleThreshold >= 1)
@@ -671,6 +698,6 @@ public class Pathfinder : EntityAddon
                 Gizmos.color = Color.red;
                 break;
         }
-        Gizmos.DrawWireSphere(transform.position, 0.5f);
+        //Gizmos.DrawWireSphere(transform.position, 0.5f);
     }
 }
