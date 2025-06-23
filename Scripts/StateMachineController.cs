@@ -26,6 +26,7 @@ public class StateMachineController : NetworkBehaviour
     public enum EntityStates
     {
         Idle,
+        PushableIdle,
         Walk,
         AttackMoving,
         WalkToSpecificEnemy,
@@ -177,16 +178,20 @@ public class StateMachineController : NetworkBehaviour
     private void UpdateRepathRate()
     {
         float defaultPathRate = 1f;
-        float attackMovePathRate = 0.5f;
+        float slowPathRate = 2f;
+        float fastPathRate = 0.5f;
         pf.ai.autoRepath.maximumPeriod = defaultPathRate;
         pf.ai.autoRepath.mode = AutoRepathPolicy.Mode.Dynamic;
 
-        if (lastOrderType == ActionType.AttackMove || currentState == EntityStates.WalkToSpecificEnemy)
+        if (lastOrderType == ActionType.AttackMove || currentState == EntityStates.WalkToSpecificEnemy || currentState == EntityStates.Walk)
         {
-            pf.ai.autoRepath.maximumPeriod = attackMovePathRate;
+            pf.ai.autoRepath.maximumPeriod = fastPathRate;
         }
-        else if (currentState == EntityStates.Idle || currentState == EntityStates.Harvesting
-            || currentState == EntityStates.Building)
+        else if (currentState == EntityStates.Idle)
+        {
+            pf.ai.autoRepath.maximumPeriod = slowPathRate;
+        }
+        else if (currentState == EntityStates.Harvesting || currentState == EntityStates.Building)
         {
             pf.ai.autoRepath.mode = AutoRepathPolicy.Mode.Never;
         }
@@ -583,8 +588,6 @@ public class StateMachineController : NetworkBehaviour
         //Debug.Log("Entering state" + state + "Currently in state " + currentState);
         switch (state)
         {
-            case EntityStates.Idle: //if we become idle, then create entity searcher on our position  
-                break;
             case EntityStates.Attacking:
             case EntityStates.AttackMoving:
                 if (ent.IsAttacker()) ent.attacker.OnEnterState();
@@ -636,7 +639,20 @@ public class StateMachineController : NetworkBehaviour
             case EntityStates.Die:
             case EntityStates.Spawn:
             case EntityStates.FindInteractable:
-                if (pf != null) pf.FreezeRigid(true, true);
+                if (pf != null)
+                {
+                    pf.FreezeRigid(true, true);
+                    pf.ResetEndReachedDistance();
+                }
+                canReceiveNewCommands = true;
+                break;
+            case EntityStates.PushableIdle:
+                if (pf != null)
+                {
+                    pf.FreezeRigid(false, false);
+                    pf.ResetEndReachedDistance();
+                    pf.ResetPushableIdleTimer();
+                }
                 canReceiveNewCommands = true;
                 break;
             case EntityStates.UsingAbility:
@@ -846,19 +862,27 @@ public class StateMachineController : NetworkBehaviour
             case EntityStates.Die:
                 break;
             case EntityStates.Idle:
-                if (pf != null) pf.ResetEndReachedDistance();
-                if (ent.occupiedGarrison == null) //if not in garrison
+                /*if (ent.occupiedGarrison == null) //if not in garrison
                 {
-                    if (!missionFollowed)
-                    {
-                        missionFollowed = FollowGivenMission();
-                    }
-                    if (ent.IsAttacker()) ent.attacker.IdleState();
                 }
                 else
                 {
                     //GarrisonedSeekEnemies();
+                }*/
+                if (!missionFollowed)
+                {
+                    missionFollowed = FollowGivenMission();
                 }
+                if (ent.IsAttacker()) ent.attacker.IdleState();
+                if (pf != null) pf.IdleState();
+                break;
+            case EntityStates.PushableIdle:
+                if (!missionFollowed)
+                {
+                    missionFollowed = FollowGivenMission();
+                }
+                if (ent.IsAttacker()) ent.attacker.IdleState();
+                if (pf != null) pf.PushableIdleState();
                 break;
             case EntityStates.UsingAbility:
                 if (skipFirstFrame) //neccesary to give animator a chance to catch up
@@ -872,8 +896,7 @@ public class StateMachineController : NetworkBehaviour
                 }
                 break;
             case EntityStates.Walk:
-                ent.pf.UpdateStopDistance();
-                ent.pf.DetectIfShouldReturnToIdle();
+                if (pf != null) pf.WalkState();
                 break;
             case EntityStates.WalkToTarget:
             /*UpdateStopDistance();
@@ -911,26 +934,7 @@ public class StateMachineController : NetworkBehaviour
                 }
             }*/
             case EntityStates.WalkToRally:
-                switch (givenMission)
-                {
-                    case SelectableEntity.RallyMission.None:
-                        break;
-                    case SelectableEntity.RallyMission.Move:
-                        if (pf != null) pf.SetDestinationIfHighDiff(ent.GetRallyDest());
-                        break;
-                    case SelectableEntity.RallyMission.Harvest:
-                        break;
-                    case SelectableEntity.RallyMission.Build:
-                        break;
-                    case SelectableEntity.RallyMission.Garrison:
-                        break;
-                    case SelectableEntity.RallyMission.Attack:
-                        break;
-                    default:
-                        break;
-                }
-                ent.pf.UpdateStopDistance();
-                ent.pf.DetectIfShouldReturnToIdle();
+                if (pf != null) pf.WalkToRallyState();
                 break;
             case EntityStates.AttackMoving: //walk forwards while searching for enemies to attack
                 if (ent.IsAttacker()) ent.attacker.AttackMovingState();

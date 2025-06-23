@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bed587974d8ce26488166d15dd758416, type: 3}
   m_Name: TearDown
   m_EditorClassIdentifier: 
-  name: Burn Down
+  name: Raze
   usableOnlyWhenBuilt: 1
   cooldownTime: 0
   shouldCooldown: 0

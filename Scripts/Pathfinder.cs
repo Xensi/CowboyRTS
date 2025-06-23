@@ -12,6 +12,7 @@ using Unity.Services.Relay.Models;
 using UnityEngine;
 using static StateMachineController;
 using static UnitAnimator;
+using UtilityMethods;
 
 public class Pathfinder : EntityAddon
 {
@@ -66,7 +67,7 @@ public class Pathfinder : EntityAddon
         }
         if (setter != null && setter.target == null)
         { //create a target that our setter will use to update our pathfinding
-            GameObject obj = new GameObject("target");
+            GameObject obj = new GameObject(ent.name + " pf target");
             obj.transform.parent = Global.Instance.transform;
             pathfindingTarget = obj.transform;
             pathfindingTarget.position = transform.position; //set to be on us
@@ -109,7 +110,27 @@ public class Pathfinder : EntityAddon
         if (at != null) leeway = at.range;
         return dist < pathThreshold * pathThreshold + leeway * leeway;
     }
-
+    public async void PushNearbyOwnedIdlers()
+    {
+        Debug.Log("Pushing idlers");
+        int maxSearched = 10;
+        Collider[] nearby = new Collider[maxSearched];
+        int searchedCount = 0;
+        float searchRange = ai.radius * 2;
+        searchedCount = Physics.OverlapSphereNonAlloc(ent.transform.position, searchRange, nearby, Global.Instance.friendlyEntityLayer);
+        for (int i = 0; i < searchedCount; i++)
+        {
+            if (nearby[i] == null) continue;
+            SelectableEntity ent = nearby[i].GetComponent<SelectableEntity>();
+            if (ent == null) continue;
+            if (ent.sm == null) continue;
+            if (ent.sm.InState(EntityStates.Idle))
+            {
+                ent.sm.SwitchState(EntityStates.PushableIdle);
+            }
+            await Task.Yield();
+        }
+    }
 
     private void BecomeObstacle()
     {
@@ -295,6 +316,73 @@ public class Pathfinder : EntityAddon
     private readonly float pathReachesThreshold = 0.25f;
     public Vector3 lastPathPosition;
     public Transform pathfindingTarget;
+    private Vector3 PFTargetPos()
+    {
+        return pathfindingTarget.transform.position;
+    }
+    public void IdleState()
+    {
+        ValidatePathStatus();
+        //path reaches and we're a distance away from the pathfinding target
+        if (PathReaches() && !Util.FastDistanceCheck(ent.transform.position, PFTargetPos(), 1))
+        {
+            Debug.Log("We can resume moving");
+            SwitchState(EntityStates.Walk);
+        }
+    }
+    float pushableIdleTimer = 0;
+    readonly float pushableIdleMaxTime = 2;
+    public void WalkState()
+    {
+        UpdateStopDistance();
+        DetectIfShouldReturnToIdle();
+        PushNearbyOwnedIdlers();
+    }
+    public void WalkToRallyState()
+    {
+        switch (sm.givenMission)
+        {
+            case SelectableEntity.RallyMission.None:
+                break;
+            case SelectableEntity.RallyMission.Move:
+                SetDestinationIfHighDiff(ent.GetRallyDest());
+                break;
+            case SelectableEntity.RallyMission.Harvest:
+                break;
+            case SelectableEntity.RallyMission.Build:
+                break;
+            case SelectableEntity.RallyMission.Garrison:
+                break;
+            case SelectableEntity.RallyMission.Attack:
+                break;
+            default:
+                break;
+        }
+        UpdateStopDistance();
+        DetectIfShouldReturnToIdle();
+        PushNearbyOwnedIdlers();
+    }
+    public void ResetPushableIdleTimer()
+    {
+        pushableIdleTimer = 0;
+    }
+    public void PushableIdleState()
+    {
+        // pushable means unit is not frozen and will automatically walk back to its destination
+        // stop walking back after some time
+        if (pushableIdleTimer < pushableIdleMaxTime)
+        {
+            pushableIdleTimer += Time.deltaTime;
+        }
+        else
+        {
+            SwitchState(EntityStates.Idle);
+        }
+        /*if (PathBlocked() && Util.FastDistanceCheck(ent.transform.position, PFTargetPos(), ai.endReachedDistance))
+        {
+            SwitchState(EntityStates.Idle);
+        }*/
+    }
     private void UpdatePathStatus()
     {
         bool pathReached = EndOfPathReachesPosition(pathfindingTarget.transform.position);
@@ -562,10 +650,10 @@ public class Pathfinder : EntityAddon
     }
     public readonly float walkAnimThreshold = 0.0001f;
     public float effectivelyIdleInstances = 0;
-    private readonly float idleThreshold = 3f;//3; //seconds of being stuck
+    private readonly float idleThreshold = 0.5f;//3; //seconds of being stuck
     private void OnDrawGizmos()
     {
-        if (effectivelyIdleInstances / idleThreshold >= 1)
+        /*if (effectivelyIdleInstances / idleThreshold >= 1)
         {
             Gizmos.color = Color.green;
         }
@@ -573,6 +661,16 @@ public class Pathfinder : EntityAddon
         {
             Gizmos.color = Color.red;
         }
-        Gizmos.DrawWireSphere(transform.position, effectivelyIdleInstances / idleThreshold);
+        Gizmos.DrawWireSphere(transform.position, effectivelyIdleInstances / idleThreshold);*/
+        switch (sm.GetState())
+        {
+            case EntityStates.Idle:
+                Gizmos.color = Color.green;
+                break;
+            case EntityStates.PushableIdle:
+                Gizmos.color = Color.red;
+                break;
+        }
+        Gizmos.DrawWireSphere(transform.position, 0.5f);
     }
 }

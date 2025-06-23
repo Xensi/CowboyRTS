@@ -343,6 +343,7 @@ public class Attacker : SwingEntityAddon
         #region Timers
         MakeAsyncSearchAvailableAgain();
         pf.ValidatePathStatus();
+        pf.PushNearbyOwnedIdlers();
         if (!sm.InState(EntityStates.AttackMoving)) return;
         #endregion
         #region Mechanics
