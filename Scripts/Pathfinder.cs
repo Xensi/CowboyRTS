@@ -138,7 +138,7 @@ public class Pathfinder : EntityAddon
     {
         if (IsEffectivelyIdle(0.25f))
         {
-            Debug.Log("Pushing idlers");
+            //Debug.Log("Pushing idlers");
             int maxSearched = 10;
             Collider[] nearby = new Collider[maxSearched];
             int searchedCount = 0;
@@ -355,7 +355,7 @@ public class Pathfinder : EntityAddon
         {
             if (PathReaches())
             {
-                Debug.Log("We can resume moving");
+                //Debug.Log("We can resume moving");
                 SwitchState(EntityStates.Walk);
             }
         }
@@ -404,6 +404,10 @@ public class Pathfinder : EntityAddon
         }
         UpdateStopDistance();
         DetectIfShouldReturnToIdle();
+        PushNearbyOwnedIdlers();
+    }
+    public void WalkToInteractableState()
+    {
         PushNearbyOwnedIdlers();
     }
     public void ResetPushableIdleTimer()
@@ -591,12 +595,12 @@ public class Pathfinder : EntityAddon
 
         if (IsEffectivelyIdle(idleThreshold))
         {
-            Debug.Log("Effectively Idle");
+            //Debug.Log("Effectively Idle");
             SwitchState(EntityStates.Idle);
         }
         else if (close && ai.reachedDestination)
         {
-            Debug.Log("Idle bc reached dest");
+            //Debug.Log("Idle bc reached dest");
             SwitchState(EntityStates.Idle);
         }
     }

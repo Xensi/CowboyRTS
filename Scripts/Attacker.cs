@@ -831,7 +831,7 @@ public class Attacker : SwingEntityAddon
         return Vector3.Distance(lastIdlePosition, target.transform.position) <= maximumChaseRange;
     }
     public void WalkToSpecificEnemyState()
-    { 
+    {
         /*if (IsEffectivelyIdle(.1f) && IsMelee()) //!pathReachesDestination && 
         //if we can't reach our specific target, find a new one
         {
@@ -847,6 +847,7 @@ public class Attacker : SwingEntityAddon
             }
             //UpdateAttackIndicator();
             pf.ValidatePathStatus();
+            pf.PushNearbyOwnedIdlers();
             if (ent.IsMelee()) // melee troops should detect when blocked by walls and attack them
             {
                 SelectableEntity enemy = null;

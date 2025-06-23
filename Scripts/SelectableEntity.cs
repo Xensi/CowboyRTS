@@ -2024,6 +2024,14 @@ public class SelectableEntity : NetworkBehaviour
             lineIndicator.enabled = val;
         }
     }
+    public bool GetSelected()
+    {
+        return selected;
+    }
+    public void SetSelected(bool val)
+    {
+        selected = val;
+    }
     public void Select(bool val)
     {
         if (alive)
@@ -2034,8 +2042,10 @@ public class SelectableEntity : NetworkBehaviour
         {
             selected = false;
         }
+        if (controllerOfThis != null) controllerOfThis.UpdateSelectedEntities(this, val);
         UpdateIndicator(selected);
     }
+
     [HideInInspector] public bool infoSelected = false;
     public void InfoSelect(bool val)
     {

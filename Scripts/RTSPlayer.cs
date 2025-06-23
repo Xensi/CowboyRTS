@@ -18,7 +18,6 @@ public class RTSPlayer : Player
     public List<SelectableEntity> keystoneUnits = new();
     [SerializeField] private Grid grid;
     private Vector3Int _gridPosition;
-    public List<SelectableEntity> selectedEntities; //selected and we can control them  
     public List<StateMachineController> selectedBuilders;
     private Vector3 _mousePosition;
     private Vector3 _offset;
@@ -82,6 +81,7 @@ public class RTSPlayer : Player
     private Vector3 buildOffset = Vector3.zero;
     public bool placingPortal = false;
     public List<byte> indices;
+    
     public void LoseGame()
     {
         inTheGame.Value = false;
@@ -364,47 +364,6 @@ public class RTSPlayer : Player
     {
         return entity.occupiedGarrison != null;
     }
-    private void SelectAllAttackers()
-    {
-        //Debug.Log("trying to select all attackers");
-        DeselectAll();
-        foreach (StateMachineController item in ownedMinions)
-        {
-            if (item != null && !IsEntityGarrrisoned(item.ent)
-                && !item.ent.IsSpawner() && !item.ent.IsHarvester())
-            {
-                TrySelectEntity(item.ent);
-            }
-        }
-    }
-    private void SelectAllProduction()
-    {
-        DeselectAll();
-        foreach (SelectableEntity item in ownedEntities)
-        {
-            if (item != null && item.IsSpawner())
-            {
-                TrySelectEntity(item);
-            }
-        }
-    }
-    private void SelectAllIdleBuilders()
-    {
-        DeselectAll();
-        foreach (SelectableEntity item in ownedEntities)
-        {
-            if (item != null && item.sm != null && (item.IsBuilder())) //&& item.canBuild
-            {
-                switch (item.sm.GetState())
-                {
-                    case StateMachineController.EntityStates.Idle:
-                    case StateMachineController.EntityStates.FindInteractable:
-                        TrySelectEntity(item);
-                        break;
-                }
-            }
-        }
-    }
     public bool IsTargetExplicitlyOnOurTeam(SelectableEntity target)
     {
         return target.teamType == SelectableEntity.TeamBehavior.OwnerTeam && ownedEntities.Contains(target);
@@ -414,7 +373,7 @@ public class RTSPlayer : Player
     /// Try to select an entity.
     /// </summary>
     /// <param name="entity"></param>
-    private bool TrySelectEntity(SelectableEntity entity)
+    private bool FormalSelectEntity(SelectableEntity entity, bool toggle = true)
     {
         if (entity == null) return false;
         if (!PositionFullyVisible(entity.transform.position)) return false;
@@ -422,15 +381,16 @@ public class RTSPlayer : Player
         bool val = false;
         if (IsTargetExplicitlyOnOurTeam(entity))
         {
-            selectedEntities.Add(entity);
+            bool opp = !entity.selected;
+            if (!toggle) opp = true;
+            entity.Select(opp);
 
             /*if (entity.factionEntity.constructableBuildings.Length > 0)
             {
                 selectedBuilders.Add(entity.stateMachineController);
             }*/
 
-            entity.Select(true);
-            val = true;
+            val = opp;
         }
         else
         {
@@ -873,7 +833,7 @@ public class RTSPlayer : Player
 
             foreach (SelectableEntity item in useList)
             {
-                TrySelectEntity(item);
+                FormalSelectEntity(item);
             }
             UpdateGUIFromSelections();
         }
@@ -1559,7 +1519,7 @@ public class RTSPlayer : Player
     }
     private void TryToSelectOne()
     {
-        DeselectAll();
+        //DeselectAll();
         if (!_doubleSelect)
         {
             _doubleSelect = true;
@@ -2002,7 +1962,7 @@ public class RTSPlayer : Player
             SelectableEntity entity = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
             if (entity != null && PositionFullyVisible(entity.transform.position))
             {
-                successful = TrySelectEntity(entity);
+                successful = FormalSelectEntity(entity);
             }
         }
         return successful;
@@ -2060,7 +2020,51 @@ public class RTSPlayer : Player
                     (entity.CannotConstructHarvestProduce() && potential.CannotConstructHarvestProduce() && !entity.IsMinion() && !potential.IsMinion()) ||
                     (entity.IsSpawner() && potential.IsSpawner()))
                 {
-                    TrySelectEntity(potential);
+                    FormalSelectEntity(potential);
+                }
+            }
+        }
+    }
+    private void SelectAllAttackers()
+    {
+        //Debug.Log("trying to select all attackers");
+        //DeselectAll();
+        int i = 0;
+        foreach (StateMachineController item in ownedMinions)
+        {
+            if (item != null && !IsEntityGarrrisoned(item.ent)
+                && !item.ent.IsSpawner() && !item.ent.IsHarvester() && !item.ent.GetSelected())
+            {
+                FormalSelectEntity(item.ent, false);
+                //Debug.Log(i);
+                i++;
+            }
+        }
+    }
+    private void SelectAllProduction()
+    {
+        DeselectAll();
+        foreach (SelectableEntity item in ownedEntities)
+        {
+            if (item != null && item.IsSpawner())
+            {
+                FormalSelectEntity(item, false);
+            }
+        }
+    }
+    private void SelectAllIdleBuilders()
+    {
+        DeselectAll();
+        foreach (SelectableEntity item in ownedEntities)
+        {
+            if (item != null && item.sm != null && (item.IsBuilder())) //&& item.canBuild
+            {
+                switch (item.sm.GetState())
+                {
+                    case StateMachineController.EntityStates.Idle:
+                    case StateMachineController.EntityStates.FindInteractable:
+                        FormalSelectEntity(item, false);
+                        break;
                 }
             }
         }
@@ -2073,9 +2077,11 @@ public class RTSPlayer : Player
     }
     private void DeselectAll()
     {
-        foreach (SelectableEntity item in selectedEntities)
+        for (int i = selectedEntities.Count - 1; i >= 0; i--)
         {
-            item.Select(false);
+            SelectableEntity ent = selectedEntities[i];
+            ent.SetSelected(false);
+            ent.UpdateIndicator(false);
         }
         selectedEntities.Clear();
         selectedBuilders.Clear();

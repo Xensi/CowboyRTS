@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 public class Player : NetworkBehaviour
 {
     public Faction playerFaction;
+    public List<SelectableEntity> selectedEntities; //selected and we can control them  
     public List<SelectableEntity> ownedEntities;
     public List<StateMachineController> ownedMinions;
     public List<SelectableEntity> unbuiltStructures;
@@ -33,6 +34,17 @@ public class Player : NetworkBehaviour
     public bool enable = true; //enabling in the middle of the game does not currently work
     public Color playerColor = Color.white;
 
+    public void UpdateSelectedEntities(SelectableEntity ent, bool val)
+    {
+        if (val)
+        {
+            selectedEntities.Add(ent);
+        }
+        else
+        {
+            selectedEntities.Remove(ent);
+        }
+    }
     public enum ActionType
     {
         Move, AttackTarget, Harvest, Deposit, Garrison, BuildTarget, AttackMove, MoveToTarget

@@ -972,6 +972,7 @@ public class StateMachineController : NetworkBehaviour
                 break;
             case EntityStates.WalkToInteractable:
                 //UpdateMoveIndicator();
+                if (pf != null) pf.WalkToInteractableState();
                 switch (lastMajorState)
                 {
                     case EntityStates.Building:
