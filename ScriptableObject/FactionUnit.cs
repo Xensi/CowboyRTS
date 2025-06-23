@@ -5,7 +5,7 @@ public class FactionUnit : FactionEntity
 {
     [Header("Unit Properties")]
     public int maxSpawnTimeCost = 5; //time it takes to spawn the unit + 1 second to finish the job
-    [HideInInspector] public int spawnTimer = 0;
+    [HideInInspector] public float spawnTimer = 0;
     public bool isHeavy = false;
     //public bool canAttackWhileMoving = false;
     public float maxSpeed = 2f;

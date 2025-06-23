@@ -194,7 +194,7 @@ public class EntitySearcher : MonoBehaviour
         }
         if (defaultDR != null)
         {
-            defaultDR.SetLREnable(neededCrosshairs <= 0);
+            defaultDR.SetLREnable(neededCrosshairs <= 0 && visible);
         }
         //if we lack crosshairs, create some
         while (crosshairs.Count < neededCrosshairs)

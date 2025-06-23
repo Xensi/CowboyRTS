@@ -45,10 +45,10 @@ public class EntityHealthBar : MonoBehaviour
 
         SetVisibleHPConditional(true); 
     }
-    public void SetRatioBasedOnProduction(int current, float max)
+    public void SetRatioBasedOnProduction(float current, float max)
     { 
         if (bar == null) return;
-        float ratio = current / (max-1);
+        float ratio = current / (max);
         bar.fillAmount = ratio;
         bar.color = gradient.Evaluate(ratio); 
     }

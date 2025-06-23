@@ -843,6 +843,11 @@ public class SelectableEntity : NetworkBehaviour
                 DetectChangeHarvestedResourceAmount();
                 //DetectIfDamaged();
                 UpdateEntityAddons();
+
+                if (IsOwner)
+                {
+                    OwnerUpdateBuildQueue();
+                }
             }
         }
     }
@@ -1074,39 +1079,24 @@ public class SelectableEntity : NetworkBehaviour
     private float attackEffectTimer = 0;
     private void FixedUpdate()
     {
-        if (IsSpawned && IsOwner)
+        if (IsSpawned && IsOwner && fullyBuilt)
         {
-            if (!fullyBuilt)
+            //walking sounds. client side only
+            if (sm != null)
             {
-            }
-            else
-            {
-                if (count < delay)
+                if (anim.InState(BEGIN_ATTACK_WALK)
+                    || anim.InState(CONTINUE_ATTACK_WALK)
+                    || anim.InState(WALK)
+                    )
                 {
-                    count++;
-                }
-                else
-                {
-                    count = 0;
-                    OwnerUpdateBuildQueue();
-                }
-                //walking sounds. client side only
-                if (sm != null)
-                {
-                    if (anim.InState(BEGIN_ATTACK_WALK)
-                        || anim.InState(CONTINUE_ATTACK_WALK)
-                        || anim.InState(WALK)
-                        )
+                    if (footstepCount < footstepThreshold)
                     {
-                        if (footstepCount < footstepThreshold)
-                        {
-                            footstepCount++;
-                        }
-                        else
-                        {
-                            footstepCount = 0;
-                            Global.Instance.PlayClipAtPoint(Global.Instance.footsteps[UnityEngine.Random.Range(0, Global.Instance.footsteps.Length)], transform.position, .01f);
-                        }
+                        footstepCount++;
+                    }
+                    else
+                    {
+                        footstepCount = 0;
+                        Global.Instance.PlayClipAtPoint(Global.Instance.footsteps[UnityEngine.Random.Range(0, Global.Instance.footsteps.Length)], transform.position, .01f);
                     }
                 }
             }
@@ -1855,7 +1845,7 @@ public class SelectableEntity : NetworkBehaviour
         {
             // todo add ability to build multiple from one structure
             FactionUnit fac = buildQueue[0];
-            fac.spawnTimer++;
+            fac.spawnTimer += Time.deltaTime;
             //check if the position is blocked;
             if (Physics.Raycast(positionToSpawnMinions.position + (new Vector3(0, 100, 0)), Vector3.down,
                 out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
@@ -1863,7 +1853,7 @@ public class SelectableEntity : NetworkBehaviour
                 SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
                 if (target != null) //something blocking
                 {
-                    if (target.sm != null && target.controllerOfThis == controllerOfThis)
+                    if (target.sm != null && target.controllerOfThis == controllerOfThis && !target.sm.InState(EntityStates.Walk))
                     {
                         //tell blocker to get out of the way.
                         float randRadius = 1;
@@ -1879,7 +1869,7 @@ public class SelectableEntity : NetworkBehaviour
                     productionBlocked = false;
                 }
             }
-            if (fac.spawnTimer > fac.maxSpawnTimeCost - 1 && !productionBlocked) //ready to spawn
+            if (fac.spawnTimer >= fac.maxSpawnTimeCost && !productionBlocked) //ready to spawn
             {
                 BuildQueueSpawn(fac);
                 //spawn the unit 

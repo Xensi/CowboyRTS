@@ -612,7 +612,7 @@ public class StateMachineController : NetworkBehaviour
     {
         if (ent.IsAlliedTo(ent.controllerOfThis))
         {
-            Debug.Log(name + " is switching state to: " + stateToSwitchTo);
+            //Debug.Log(name + " is switching state to: " + stateToSwitchTo);
         }
         switch (stateToSwitchTo)
         {
