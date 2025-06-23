@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 using Unity.Netcode;
 using Pathfinding;
@@ -1470,10 +1471,11 @@ public class SelectableEntity : NetworkBehaviour
     private void RequestBuilders()
     {
         //Debug.Log("request builders");
-        RTSPlayer local = Global.Instance.localPlayer;
-        foreach (SelectableEntity item in local.selectedEntities)
+        for (int i = 0; i < controllerOfThis.numSelectedEntities; i++)
         {
-            if (item.IsBuilder())
+            SelectableEntity item = controllerOfThis.selectedEntities[i];
+
+            if (item != null && item.IsBuilder())
             {
                 //Debug.Log("requesting builder");
                 StateMachineController minion = item.GetComponent<StateMachineController>();
@@ -1686,7 +1688,7 @@ public class SelectableEntity : NetworkBehaviour
         {
             if (sm != null && pf.pathfindingTarget != null) Destroy(pf.pathfindingTarget.gameObject);
             Global.Instance.localPlayer.ownedEntities.Remove(this);
-            Global.Instance.localPlayer.selectedEntities.Remove(this);
+            //Global.Instance.localPlayer.selectedEntities.Remove(this);
             if (IsServer) //only the server may destroy networkobjects
             {
                 net.Despawn(gameObject);

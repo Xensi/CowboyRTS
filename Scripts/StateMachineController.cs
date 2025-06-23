@@ -1139,7 +1139,7 @@ public class StateMachineController : NetworkBehaviour
         if (ent.controllerOfThis is RTSPlayer)
         {
             RTSPlayer rts = ent.controllerOfThis as RTSPlayer;
-            rts.selectedEntities.Remove(ent);
+            //rts.selectedEntities.Remove(ent);
         }
         ent.Select(false);
         SwitchState(EntityStates.Die);

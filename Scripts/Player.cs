@@ -12,7 +12,10 @@ using System.Threading.Tasks;
 public class Player : NetworkBehaviour
 {
     public Faction playerFaction;
-    public List<SelectableEntity> selectedEntities; //selected and we can control them  
+    //public List<SelectableEntity> selectedEntities; //selected and we can control them
+    private readonly int maxArmy = 300;
+    public SelectableEntity[] selectedEntities;
+    public int numSelectedEntities = 0;
     public List<SelectableEntity> ownedEntities;
     public List<StateMachineController> ownedMinions;
     public List<SelectableEntity> unbuiltStructures;
@@ -36,13 +39,18 @@ public class Player : NetworkBehaviour
 
     public void UpdateSelectedEntities(SelectableEntity ent, bool val)
     {
+        //Debug.Log(selectedEntities.Length);
         if (val)
         {
-            selectedEntities.Add(ent);
+            selectedEntities[numSelectedEntities] = ent;
+            numSelectedEntities++;
+            //selectedEntities.Add(ent);
         }
         else
         {
-            selectedEntities.Remove(ent);
+            selectedEntities[numSelectedEntities] = null;
+            numSelectedEntities = Mathf.Clamp(numSelectedEntities--, 0, maxArmy);
+            //selectedEntities.Remove(ent);
         }
     }
     public enum ActionType
@@ -66,6 +74,7 @@ public class Player : NetworkBehaviour
         if (!enable) return;
         Global.Instance.allPlayers.Add(this);
         //allegianceTeamID = playerTeamID; //by default
+        selectedEntities = new SelectableEntity[maxArmy];
     }
     public virtual void Start()
     {
@@ -84,7 +93,7 @@ public class Player : NetworkBehaviour
                 maxPopulation = playerFaction.startingMaxPopulation;
             }
         }
-         fow = FogOfWarTeam.GetTeam(playerTeamID);
+        fow = FogOfWarTeam.GetTeam(playerTeamID);
         if (fow == null) Debug.LogError("No fow found");
     }
 

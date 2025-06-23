@@ -232,7 +232,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2641155720
+  GlobalObjectIdHash: 56881033
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -256,7 +256,6 @@ MonoBehaviour:
   fakeSpawn: 0
   isTargetable:
     m_InternalValue: 0
-  isVisibleInFog: 0
   oldVisibleInFog: 0
   hideFogTeam: 0
   shouldHideInFog: 1
@@ -267,8 +266,9 @@ MonoBehaviour:
   aiControlled: 0
   productionBlocked: 0
   allPhysicalColliders: []
-  crosshairAssignedToEnemy: {fileID: 0}
   createdCrosshair: {fileID: 0}
+  manualCrosshairTargetingThis: {fileID: 0}
+  entitySearcherCrosshairTargetingThis: {fileID: 0}
   healthBar: {fileID: 6900349819852542005}
   productionProgressBar: {fileID: 8509637767066359466}
   factionEntity: {fileID: 0}
@@ -315,6 +315,7 @@ MonoBehaviour:
   isAttackable: 1
   rigid: {fileID: 0}
   unitAbilities: {fileID: 0}
+  unitUpgrades: {fileID: 0}
   anim: {fileID: 0}
   depot: {fileID: 0}
   ore: {fileID: 0}
@@ -334,6 +335,7 @@ MonoBehaviour:
   capFlag: {fileID: 0}
   fullyBuiltInScene: 0
   initialized: 0
+  setRallyDest: {x: 0, y: 0, z: 0}
   constructionBegun: 0
   appliedEffects: []
   fogUnit: {fileID: 0}
@@ -390,6 +392,7 @@ MonoBehaviour:
   sm: {fileID: 0}
   anim: {fileID: 0}
   pf: {fileID: 0}
+  at: {fileID: 0}
 --- !u!54 &7586105387906439370
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -468,6 +471,7 @@ MonoBehaviour:
   sm: {fileID: 0}
   anim: {fileID: 0}
   pf: {fileID: 0}
+  at: {fileID: 0}
   pathStatusValid: 0
   pathfindingValidationTimerActive: 0
   pathReachesDestination: 0
@@ -584,9 +588,9 @@ CapsuleCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.2
-  m_Height: 1
+  m_Height: 0.75
   m_Direction: 1
-  m_Center: {x: 0, y: 0.5, z: 0}
+  m_Center: {x: 0, y: 0.35, z: 0}
 --- !u!114 &4431963681803516662
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -676,6 +680,7 @@ MonoBehaviour:
   sm: {fileID: 0}
   anim: {fileID: 0}
   pf: {fileID: 0}
+  at: {fileID: 0}
   ready: 1
   readyTimer: 0
   range: 1
@@ -691,6 +696,7 @@ MonoBehaviour:
   attackEffectSpawnPosition: {fileID: 0}
   attackMoving: 0
   targetEnemy: {fileID: 0}
+  preferredAttackTarget: {fileID: 0}
   alternateAttackTarget: {fileID: 0}
   longTermGoal: 0
   lastIdlePosition: {x: 0, y: 0, z: 0}
