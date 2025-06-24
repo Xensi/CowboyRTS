@@ -1556,9 +1556,12 @@ public class RTSPlayer : Player
     public void UpdateGUIFromSelections()
     {
         //UpdateIndices();
-        UpdateGUIBasedOnSelectedUnitCount();
-        UpdateButtonsFromSelectedUnits();
-        UpdateBuildQueueGUI();
+
+
+        //This method is really laggy all of sudden!
+        //UpdateGUIBasedOnSelectedUnitCount();
+        //UpdateButtonsFromSelectedUnits();
+        //UpdateBuildQueueGUI();
     }
     private void UpdateGUIBasedOnSelectedUnitCount()
     {
