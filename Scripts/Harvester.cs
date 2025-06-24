@@ -320,11 +320,11 @@ public class Harvester : SwingEntityAddon
                 }
                 //entity.controllerOfThis.gold += entity.harvestedResourceAmount;
                 //entity.harvestedResourceAmount = 0; 
-                if (ent.controllerOfThis is RTSPlayer)
+                /*if (ent.controllerOfThis is RTSPlayer)
                 {
                     RTSPlayer rts = ent.controllerOfThis as RTSPlayer;
                     rts.UpdateGUIFromSelections();
-                }
+                }*/
             } 
             if (ent.harvester.ValidOreForHarvester(ent.interactionTarget))//double check this behavior
             {
@@ -365,11 +365,11 @@ public class Harvester : SwingEntityAddon
 
             //entity.harvestedResourceAmount += actualHarvested; //add to harvested resources
 
-            if (ent.controllerOfThis is RTSPlayer)
+            /*if (ent.controllerOfThis is RTSPlayer)
             {
                 RTSPlayer rts = ent.controllerOfThis as RTSPlayer;
                 rts.UpdateGUIFromSelections();
-            }
+            }*/
         }
         else if (target != null && !target.IsSpawned)
         {

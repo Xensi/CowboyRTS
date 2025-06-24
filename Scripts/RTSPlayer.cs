@@ -409,7 +409,7 @@ public class RTSPlayer : Player
         {
             Global.Instance.PlayStructureSelectSound(entity);
         }
-        UpdateGUIFromSelections();
+        //UpdateGUIFromSelections();
         return val;
     }
     private void UpdateGridVisual()
@@ -425,14 +425,17 @@ public class RTSPlayer : Player
         {
             //Debug.Log("Spacebar");
             SelectAllAttackers();
+            UpdateGUIFromSelections();
         }
         if (Input.GetKeyDown(KeyCode.E))
         {
             SelectAllProduction();
+            UpdateGUIFromSelections();
         }
         if (Input.GetKeyDown(KeyCode.B))
         {
             SelectAllIdleBuilders();
+            UpdateGUIFromSelections();
         }
         if (Input.GetKeyDown(KeyCode.Period))
         {
@@ -567,6 +570,7 @@ public class RTSPlayer : Player
                     default:
                         break;
                 }
+                UpdateGUIFromSelections();
             }
             switch (mouseState)
             {
@@ -660,6 +664,7 @@ public class RTSPlayer : Player
                     if (Input.GetMouseButtonUp(0))
                     {
                         SelectWithinBounds();
+                        UpdateGUIFromSelections();
                     }
                 }
                 break;
@@ -686,7 +691,7 @@ public class RTSPlayer : Player
             Global.Instance.popText.text = "Army Size: " + population + "/" + maxPopulation;
         }
         //TryReplaceFakeSpawn();
-        UpdateGUIFromSelections();// this might be expensive ...
+        //UpdateGUIFromSelections();// this might be expensive ...
     }
     private void FinishPlacingRotatedBuilding()
     {
@@ -844,7 +849,7 @@ public class RTSPlayer : Player
             {
                 FormalSelectEntity(item);
             }
-            UpdateGUIFromSelections();
+            //UpdateGUIFromSelections();
         }
         Global.Instance.selectionRect.gameObject.SetActive(false);
         finishedSelection = true;
@@ -1553,63 +1558,79 @@ public class RTSPlayer : Player
             button.interactable = gold >= fac.goldCost;
         }*/
     }
+    /// <summary>
+    /// Mass GUI update. Use carefully.
+    /// </summary>
     public void UpdateGUIFromSelections()
     {
+        UpdateGUIBasedOnSelectedUnitCount();
+        UpdateButtonsFromSelectedUnits();
+
         //UpdateIndices();
-
-
         //This method is really laggy all of sudden!
-        //UpdateGUIBasedOnSelectedUnitCount();
-        //UpdateButtonsFromSelectedUnits();
         //UpdateBuildQueueGUI();
     }
+    private void UpdateGUIText(SelectableEntity singleSelected)
+    {
+        TMP_Text nameText = Global.Instance.nameText;
+        TMP_Text descText = Global.Instance.descText;
+        TMP_Text hpText = Global.Instance.hpText;
+        TMP_Text resourceText = Global.Instance.resourceText;
+        nameText.SetText(singleSelected.displayName);
+        descText.SetText(singleSelected.desc);
+        string hpStr = "HP: " + singleSelected.currentHP.Value + "/" + singleSelected.maxHP;
+        hpText.SetText(hpStr);
+        //string resourceStr = "Stored gold: " + singleSelected.harvestedResourceAmount + "/" + selectedEntities[0].harvestCapacity;
+        //resourceText.SetText(resourceStr);
+    }
+    private void SmartSetActive(GameObject obj, bool val)
+    {
+        if (obj.activeInHierarchy != val)
+        {
+            obj.SetActive(val);
+        }
+    }
+    /// <summary>
+    /// Update GUI to reflect selected units.
+    /// </summary>
     private void UpdateGUIBasedOnSelectedUnitCount()
     {
-        if (Global.Instance.selectedParent != null && Global.Instance.resourcesParent != null && Global.Instance.resourceText != null
-            && Global.Instance.nameText != null && Global.Instance.descText != null && Global.Instance.singleUnitInfoParent != null)
+        if (Global.Instance.selectedParent == null || Global.Instance.resourcesParent == null || Global.Instance.resourceText == null
+            || Global.Instance.nameText == null || Global.Instance.descText == null || Global.Instance.singleUnitInfoParent == null) return;
+
+        GameObject selectedParent = Global.Instance.selectedParent;
+        GameObject resourcesParent = Global.Instance.resourcesParent;
+        GameObject rallyParent = Global.Instance.setRallyPointButton;
+        SelectableEntity singleSelected = selectedEntities[0];
+
+        if (infoSelectedEntity != null && numSelectedEntities == 0) //info selected
         {
-            if (infoSelectedEntity != null && selectedEntities.Length == 0)
-            {
-                Global.Instance.selectedParent.SetActive(true);
-                Global.Instance.singleUnitInfoParent.SetActive(true);
-                Global.Instance.nameText.text = infoSelectedEntity.displayName;
-                Global.Instance.descText.text = infoSelectedEntity.desc;
-                Global.Instance.hpText.text = "HP: " + infoSelectedEntity.currentHP.Value + "/" + infoSelectedEntity.maxHP;
-                if (infoSelectedEntity.IsHarvester())
-                {
-                    //Global.Instance.resourcesParent.SetActive(true);
-                    //.Instance.resourceText.text = "Stored gold: " + infoSelectedEntity.harvestedResourceAmount + "/" + infoSelectedEntity.harvestCapacity;
-                }
-            }
-            else if (GetNumSelected() <= 0)
-            {
-                Global.Instance.selectedParent.SetActive(false);
-                Global.Instance.resourcesParent.SetActive(false);
-            }
-            else if (GetNumSelected() == 1 && selectedEntities[0] != null)
-            {
-                Global.Instance.selectedParent.SetActive(true);
-                Global.Instance.singleUnitInfoParent.SetActive(true);
-                Global.Instance.nameText.text = selectedEntities[0].displayName;
-                Global.Instance.descText.text = selectedEntities[0].desc;
-                Global.Instance.hpText.text = "HP: " + selectedEntities[0].currentHP.Value + "/" + selectedEntities[0].maxHP;
-                if (selectedEntities[0].IsHarvester())
-                {
-                    //Global.Instance.resourcesParent.SetActive(true);
-                    //Global.Instance.resourceText.text = "Stored gold: " + selectedEntities[0].harvestedResourceAmount + "/" + selectedEntities[0].harvestCapacity;
-                }
-            }
-            else
-            {
-                Global.Instance.selectedParent.SetActive(true);
-                Global.Instance.singleUnitInfoParent.SetActive(false);
-                //Global.Instance.selectedParent.SetActive(false);
-                //Global.Instance.resourcesParent.SetActive(false);
-            }
+            SmartSetActive(selectedParent, true);
+            SmartSetActive(rallyParent, false);
+            UpdateGUIText(infoSelectedEntity);
+        }
+        else if (GetNumSelected() <= 0) //nothing selected
+        {
+            SmartSetActive(selectedParent, false);
+            SmartSetActive(rallyParent, false);
+        }
+        else if (GetNumSelected() == 1 && singleSelected != null) //select single
+        {
+            SmartSetActive(selectedParent, true);
+            SmartSetActive(rallyParent, singleSelected.IsSpawner());
+            //SmartSetActive(resourcesParent, singleSelected.IsHarvester());
+            UpdateGUIText(singleSelected);
+            /*
+            Global.Instance.singleUnitInfoParent.SetActive(true);
+            */
         }
         else
         {
-            Debug.LogError("a GUI element needs to be assigned.");
+            SmartSetActive(selectedParent, false);
+            /*Global.Instance.selectedParent.SetActive(true);
+            Global.Instance.singleUnitInfoParent.SetActive(false);
+            //Global.Instance.selectedParent.SetActive(false);
+            //Global.Instance.resourcesParent.SetActive(false);*/
         }
     }
     /// <summary>
@@ -1799,6 +1820,7 @@ public class RTSPlayer : Player
                     entity.unitUpgrades.ActivateUpgrade(upgrade);
                 }
             }
+            UpdateButtonsFromSelectedUnits();
         }
     }
     private bool EntityCanUseUpgrade(SelectableEntity entity, FactionUpgrade upgrade)
@@ -1880,7 +1902,7 @@ public class RTSPlayer : Player
             FactionUnit fac = select.buildQueue[index];
             gold += fac.goldCost;
             select.buildQueue.RemoveAt(index);
-            UpdateGUIFromSelections();
+            //UpdateGUIFromSelections();
         }
     }
     private void QueueBuildingSpawn(FactionUnit unit)
@@ -1909,7 +1931,8 @@ public class RTSPlayer : Player
             select.buildQueue.Add(newUnit);
             //Debug.Log("Added" + newUnit.name + " to queue");
         }
-        UpdateBuildQueueGUI();
+        //UpdateBuildQueueGUI();
+        UpdateButtonsFromSelectedUnits();
     }
     private bool TargetCanSpawnThisEntity(SelectableEntity target, FactionEntity entity)
     {
@@ -1964,6 +1987,7 @@ public class RTSPlayer : Player
         {
             colliders[i].isTrigger = true;
         }
+        UpdateButtonsFromSelectedUnits();
     }
     private bool SingleSelect()
     {
@@ -2010,7 +2034,7 @@ public class RTSPlayer : Player
             }
         }
 
-        UpdateGUIFromSelections();
+        //UpdateGUIFromSelections();
     }
     private void SelectAllInSameGarrison(SelectableEntity garrison)
     {
@@ -2091,7 +2115,7 @@ public class RTSPlayer : Player
     {
         //selectedEntities.Remove(entity);
         entity.Select(false);
-        UpdateGUIFromSelections();
+        //UpdateGUIFromSelections();
     }
     private void DeselectAll()
     {
@@ -2110,7 +2134,7 @@ public class RTSPlayer : Player
         selectedBuilders.Clear();
         if (infoSelectedEntity != null) infoSelectedEntity.InfoSelect(false);
         infoSelectedEntity = null;
-        UpdateGUIFromSelections();
+        //UpdateGUIFromSelections();
     }
     #endregion
 

@@ -1638,7 +1638,7 @@ public class SelectableEntity : NetworkBehaviour
         constructionBegun = true;
         fullyBuilt = true;
 
-        Global.Instance.localPlayer.UpdateGUIFromSelections();
+        //Global.Instance.localPlayer.UpdateGUIFromSelections();
         foreach (MeshRenderer item in unbuiltRenderers)
         {
             if (item != null)
@@ -1877,11 +1877,11 @@ public class SelectableEntity : NetworkBehaviour
                 //spawn the unit 
             }
         }
-        if (controllerOfThis is RTSPlayer)
+        /*if (controllerOfThis is RTSPlayer)
         {
             RTSPlayer rts = controllerOfThis as RTSPlayer;
             rts.UpdateBuildQueueGUI();
-        }
+        }*/
 
         if (productionProgressBar != null)
         {
