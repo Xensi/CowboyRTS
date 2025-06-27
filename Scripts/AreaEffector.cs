@@ -86,27 +86,27 @@ public class AreaEffector : MonoBehaviour
     private void ApplyEffect()
     {
         Collider[] array = new Collider[maxArraySize];
-        LayerMask searchMask = Global.Instance.friendlyEntityLayer;
+        LayerMask searchMask = Global.instance.friendlyEntityLayer;
         switch (team)
         {
             case TeamToApplyEffectTo.AlliedTeams:
                 if (ent.GetAllegiance() == 0)
                 {
-                    searchMask = Global.Instance.friendlyEntityLayer;
+                    searchMask = Global.instance.friendlyEntityLayer;
                 }
                 else
                 {
-                    searchMask = Global.Instance.enemyLayer;
+                    searchMask = Global.instance.enemyLayer;
                 }
                 break;
             case TeamToApplyEffectTo.EnemyTeams:
                 if (ent.GetAllegiance() == 0)
                 {
-                    searchMask = Global.Instance.enemyLayer;
+                    searchMask = Global.instance.enemyLayer;
                 }
                 else
                 {
-                    searchMask = Global.Instance.friendlyEntityLayer;
+                    searchMask = Global.instance.friendlyEntityLayer;
                 }
                 break;
             default:

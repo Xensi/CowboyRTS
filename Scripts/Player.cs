@@ -72,7 +72,7 @@ public class Player : NetworkBehaviour
     public void Awake()
     {
         if (!enable) return;
-        Global.Instance.allPlayers.Add(this);
+        Global.instance.allPlayers.Add(this);
         //allegianceTeamID = playerTeamID; //by default
         selectedEntities = new SelectableEntity[maxArmy];
     }
@@ -124,7 +124,7 @@ public class Player : NetworkBehaviour
     }
     public EntitySearcher CreateEntitySearcherAtPosition(Vector3 position, int allegiance = 0)
     {
-        EntitySearcher searcher = Instantiate(Global.Instance.entitySearcher, position, Quaternion.identity);
+        EntitySearcher searcher = Instantiate(Global.instance.entitySearcher, position, Quaternion.identity);
         searcher.dr.radius = searcher.SearchRadius();
         searcher.dr.SetColor(Color.red);
         searcher.creatorAllegianceID = allegiance;
@@ -165,7 +165,7 @@ public class Player : NetworkBehaviour
                         //check visibility of unit manually
                         if (fow == null) fow = FogOfWarTeam.GetTeam(playerTeamID);
                         byte fogValue = fow.GetFogValue(enemy.transform.position); //get the value of the fog at this position
-                        bool isVisibleInFog = fogValue < Global.Instance.minFogStrength * 255;
+                        bool isVisibleInFog = fogValue < Global.instance.minFogStrength * 255;
                         if (isVisibleInFog)
                         {
                             if (!visibleEnemies.Contains(enemy))
@@ -203,11 +203,11 @@ public class Player : NetworkBehaviour
     }  
     public bool PositionFullyVisible(Vector3 position)
     {
-        return fow.GetFogValue(position) < Global.Instance.minFogStrength * 255;
+        return fow.GetFogValue(position) < Global.instance.minFogStrength * 255;
     }
     public bool PositionExplored(Vector3 position)
     {
-        return fow.GetFogValue(position) <= Global.Instance.exploredFogStrength * 255;
+        return fow.GetFogValue(position) <= Global.instance.exploredFogStrength * 255;
     }
     public bool CheckIfPositionIsOnRamp(Vector3 position)
     {
@@ -225,7 +225,7 @@ public class Player : NetworkBehaviour
 
         float buffer = 0.5f;
         Vector3 testPosition = new Vector3(position.x, use + buffer, position.z);
-        if (Physics.Raycast(testPosition, Vector3.down, out RaycastHit rampHit, Mathf.Infinity, Global.Instance.groundLayer))
+        if (Physics.Raycast(testPosition, Vector3.down, out RaycastHit rampHit, Mathf.Infinity, Global.instance.groundLayer))
         {
             float distance = Mathf.Abs(testPosition.y - rampHit.point.y);
             return distance > 0.01f + buffer || distance < buffer - 0.01f;
@@ -262,7 +262,7 @@ public class Player : NetworkBehaviour
                 Vector3 worldCenter = box.transform.TransformPoint(box.center);
                 Vector3 worldHalfExtents = Vector3.Scale(box.size, box.transform.lossyScale) * 0.45f; 
                 placementBlocked = Physics.CheckBox(worldCenter, worldHalfExtents, entity.transform.rotation,
-                    Global.Instance.blockingLayer, QueryTriggerInteraction.Ignore);
+                    Global.instance.blockingLayer, QueryTriggerInteraction.Ignore);
 
                 debugPos = worldCenter;
                 debugSize = box.size;
@@ -301,7 +301,7 @@ public class Player : NetworkBehaviour
                 Vector3 halfExtents = new Vector3(sides, height, sides);
                 Vector3 center = new Vector3(position.x, position.y + height, position.z);
                 placementBlocked = Physics.CheckBox(center, halfExtents, Quaternion.identity, 
-                    Global.Instance.blockingLayer, QueryTriggerInteraction.Ignore);
+                    Global.instance.blockingLayer, QueryTriggerInteraction.Ignore);
             }
         }
         return placementBlocked;

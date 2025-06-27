@@ -86,10 +86,10 @@ public class Projectile : MonoBehaviour
         {
             if (entityToHomeOnto != null)
             {
-                Global.Instance.localPlayer.DamageEntity((sbyte)damage, entityToHomeOnto);
+                Global.instance.localPlayer.DamageEntity((sbyte)damage, entityToHomeOnto);
             }
         }
-        if (arrivalAudio != null) Global.Instance.PlayClipAtPoint(arrivalAudio, transform.position, 0.1f);
+        if (arrivalAudio != null) Global.instance.PlayClipAtPoint(arrivalAudio, transform.position, 0.1f);
         /*if (isLocal) //the player who fired the explosion will do this, for everyone else it is purely cosmetic.
         { // if other players did this, the damage would be multiplied erroneously
             Global.Instance.localPlayer.CreateExplosionAtPoint(transform.position, explosionRadius);

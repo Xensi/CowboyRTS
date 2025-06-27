@@ -116,7 +116,7 @@ public class ConditionalMessage : MonoBehaviour
         FactionEntity fac = currentMessageWithCondition.message.entityToCheck;
         int required = currentMessageWithCondition.message.numEntitiesToCheck;
         int matchedNum = 0;
-        foreach (SelectableEntity item in Global.Instance.localPlayer.ownedEntities)
+        foreach (SelectableEntity item in Global.instance.localPlayer.ownedEntities)
         {
             if (item != null)
             {
@@ -130,7 +130,7 @@ public class ConditionalMessage : MonoBehaviour
         FactionEntity fac = currentMessageWithCondition.message.entityToCheck;
         int required = currentMessageWithCondition.message.numEntitiesToCheck; 
         int matchedNum = 0;
-        foreach (SelectableEntity item in Global.Instance.localPlayer.ownedEntities)
+        foreach (SelectableEntity item in Global.instance.localPlayer.ownedEntities)
         {
             if (item != null)
             {

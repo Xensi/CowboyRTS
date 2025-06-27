@@ -32,9 +32,9 @@ public class EntitySearcher : MonoBehaviour
     int neededCrosshairs = 0;
     private void Start()
     { 
-        searchedStructures = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
-        searchedMinions = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
-        searchedAll = new SelectableEntity[Global.Instance.fullEnemyArraySize];
+        searchedStructures = new SelectableEntity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
+        searchedMinions = new SelectableEntity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
+        searchedAll = new SelectableEntity[Global.instance.fullEnemyArraySize];
         Search();
         if (defaultDR != null)
         {
@@ -92,15 +92,15 @@ public class EntitySearcher : MonoBehaviour
         //Debug.Log("Starting search");
         searchingInProgress = true;
         //create a list of viable targets to attack   
-        Collider[] enemyArray = new Collider[Global.Instance.fullEnemyArraySize];
+        Collider[] enemyArray = new Collider[Global.instance.fullEnemyArraySize];
         LayerMask searchMask;
         if (creatorAllegianceID == 0)
         {
-            searchMask = Global.Instance.enemyLayer;
+            searchMask = Global.instance.enemyLayer;
         }
         else
         {
-            searchMask = Global.Instance.friendlyEntityLayer;
+            searchMask = Global.instance.friendlyEntityLayer;
         }
         searchedCount = Physics.OverlapSphereNonAlloc(transform.position, searchRadius, enemyArray, searchMask); //use fixed distance for now
 

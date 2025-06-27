@@ -40,7 +40,7 @@ public class CaptureFlag : MonoBehaviour
             {
                 if (item != null && item.alive)
                 {
-                    if (item.capFlag != null && !item.capFlag.switched || item.IsEnemyOfPlayer(Global.Instance.localPlayer))
+                    if (item.capFlag != null && !item.capFlag.switched || item.IsEnemyOfPlayer(Global.instance.localPlayer))
                     {
                         numAlive++;
                     }
@@ -77,7 +77,7 @@ public class CaptureFlag : MonoBehaviour
                 }
 
                 //if item is not on our team, should switch = false
-                if (item.IsEnemyOfPlayer(Global.Instance.localPlayer))
+                if (item.IsEnemyOfPlayer(Global.instance.localPlayer))
                 {   
                     shouldSwitch = false;
                     break;
@@ -100,7 +100,7 @@ public class CaptureFlag : MonoBehaviour
     {
         foreach (SelectableEntity item in captureEntities)
         {
-            if (item != null && item.controllerOfThis != Global.Instance.localPlayer)
+            if (item != null && item.controllerOfThis != Global.instance.localPlayer)
             {
                 item.CaptureForLocalPlayer();
             }

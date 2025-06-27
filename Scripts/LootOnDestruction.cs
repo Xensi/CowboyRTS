@@ -8,6 +8,6 @@ public class LootOnDestruction : MonoBehaviour
 
     public void LootForLocalPlayer()
     { 
-        Global.Instance.localPlayer.AddGold(goldToLootOnDestruction);
+        Global.instance.localPlayer.AddGold(goldToLootOnDestruction);
     }
 }

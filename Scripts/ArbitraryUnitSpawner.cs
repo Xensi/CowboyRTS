@@ -55,9 +55,9 @@ public class ArbitraryUnitSpawner : NetworkBehaviour
             while (!foundPosition)
             {
                 if (Physics.Raycast(positionToSpawn + (new Vector3(0, 100, 0)), Vector3.down,
-                            out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
+                            out RaycastHit hit, Mathf.Infinity, Global.instance.gameLayer))
                 {
-                    SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
+                    SelectableEntity target = Global.instance.FindEntityFromObject(hit.collider.gameObject);
                     if (target != null) //blocked
                     {
                         positionToSpawn = positionToSpawn + new Vector3(step * dir.x, 0, step * dir.y);
@@ -92,7 +92,7 @@ public class ArbitraryUnitSpawner : NetworkBehaviour
         if (player == null)
         {
             Debug.Log("Spawning under local player");
-            RTSPlayer rts = Global.Instance.localPlayer;
+            RTSPlayer rts = Global.instance.localPlayer;
             rts.GenericSpawnMinion(position, unitToSpawn, this);
         }
         else if (player is RTSPlayer)
@@ -139,7 +139,7 @@ public class ArbitraryUnitSpawner : NetworkBehaviour
                         if (item.currentHP.Value < item.maxHP)
                         {
                             shouldSpawn = true;
-                            Global.Instance.unitSpawnerToTrackReinforcements = this;
+                            Global.instance.unitSpawnerToTrackReinforcements = this;
                             break;
                         }
                     } 

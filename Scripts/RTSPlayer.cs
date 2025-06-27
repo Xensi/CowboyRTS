@@ -95,12 +95,12 @@ public class RTSPlayer : Player
     {
         if (GetNumSelected() == 1)
         {
-            Global.Instance.hpText.text = "HP: " + selectedEntities[0].currentHP.Value + "/" + selectedEntities[0].maxHP;
+            Global.instance.hpText.text = "HP: " + selectedEntities[0].currentHP.Value + "/" + selectedEntities[0].maxHP;
         }
     }
     private void OnDisable()
     {
-        Global.Instance.uninitializedPlayers.Remove(this);
+        Global.instance.uninitializedPlayers.Remove(this);
     }
     public override void Start()
     {
@@ -112,7 +112,7 @@ public class RTSPlayer : Player
         //_offset = new Vector3(0.5f, 0, .5f);
         _offset = new Vector3(0.25f, 0, .25f);
         //_offset = new Vector3(0, 0, 0); 
-        cams = Global.Instance.cams;
+        cams = Global.instance.cams;
         mainCam = cams[0];
         camParent = cams[0].transform.parent.transform;
         meshes = new MeshRenderer[1];
@@ -130,12 +130,12 @@ public class RTSPlayer : Player
     public override void OnNetworkSpawn()
     {
         playerTeamID = System.Convert.ToInt32(OwnerClientId);
-        Global.Instance.uninitializedPlayers.Add(this);
+        Global.instance.uninitializedPlayers.Add(this);
         RetrieveSpawnPositionsList();
         if (IsOwner) //spawn initial minions/buildings  
         {
             inTheGame.Value = true;
-            Global.Instance.localPlayer = this;
+            Global.instance.localPlayer = this;
             /*Vector3 spawnPosition;
             if (playerTeamID < playerSpawns.spawnsList.Count)
             {
@@ -148,7 +148,7 @@ public class RTSPlayer : Player
 
             //GenericSpawnMinion(spawnPosition, playerFaction.spawnableEntities[0], this); 
 
-            VolumeProfile profile = Global.Instance.fogVolume.sharedProfile;
+            VolumeProfile profile = Global.instance.fogVolume.sharedProfile;
             if (profile != null && profile.TryGet(out FogOfWarURP fow))
             {
                 fow.team.value = playerTeamID;
@@ -197,7 +197,7 @@ public class RTSPlayer : Player
         //Debug.Log("trying to attack move");
         Vector3 clickedPosition;
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.instance.localPlayer.groundLayer))
         {
             clickedPosition = hit.point;
             EntitySearcher searcher = null;
@@ -249,12 +249,12 @@ public class RTSPlayer : Player
         Vector3 clickedPosition = Vector3.zero;
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         RaycastHit[] raycastHits = new RaycastHit[5];
-        int hits = Physics.RaycastNonAlloc(ray.origin, ray.direction, raycastHits, Mathf.Infinity, Global.Instance.gameLayer);
+        int hits = Physics.RaycastNonAlloc(ray.origin, ray.direction, raycastHits, Mathf.Infinity, Global.instance.gameLayer);
 
         SelectableEntity hitEntity = null;
         for (int i = 0; i < hits; i++)
         {
-            SelectableEntity checkEntity = Global.Instance.FindEntityFromObject(raycastHits[i].collider.gameObject);
+            SelectableEntity checkEntity = Global.instance.FindEntityFromObject(raycastHits[i].collider.gameObject);
             if (hitEntity == null || checkEntity.controllerOfThis != null && checkEntity.controllerOfThis.allegianceTeamID != allegianceTeamID)
             {
                 //enemy takes priority over allies 
@@ -407,16 +407,16 @@ public class RTSPlayer : Player
         }
         if (entity.IsStructure())
         {
-            Global.Instance.PlayStructureSelectSound(entity);
+            Global.instance.PlayStructureSelectSound(entity);
         }
         //UpdateGUIFromSelections();
         return val;
     }
     private void UpdateGridVisual()
     {
-        if (Global.Instance.gridVisual != null)
+        if (Global.instance.gridVisual != null)
         {
-            Global.Instance.gridVisual.SetActive(mouseState == MouseState.ReadyToPlace);
+            Global.instance.gridVisual.SetActive(mouseState == MouseState.ReadyToPlace);
         }
     }
     private void DetectHotkeys()
@@ -653,9 +653,9 @@ public class RTSPlayer : Player
                 if (Input.GetMouseButtonDown(0) && !MouseOverUI())
                 {
                     StartMousePosition = Input.mousePosition;
-                    Global.Instance.selectionRect.gameObject.SetActive(true);
+                    Global.instance.selectionRect.gameObject.SetActive(true);
                 }
-                if (Global.Instance.selectionRect.gameObject.activeSelf)
+                if (Global.instance.selectionRect.gameObject.activeSelf)
                 {
                     if (Input.GetMouseButton(0))
                     {
@@ -669,13 +669,13 @@ public class RTSPlayer : Player
                 }
                 break;
             case MouseState.ReadyToPlace:
-                Global.Instance.selectionRect.gameObject.SetActive(false);
+                Global.instance.selectionRect.gameObject.SetActive(false);
                 break;
             case MouseState.ReadyToSetRallyPoint:
-                Global.Instance.selectionRect.gameObject.SetActive(false);
+                Global.instance.selectionRect.gameObject.SetActive(false);
                 break;
             case MouseState.PlacingAndRotating:
-                Global.Instance.selectionRect.gameObject.SetActive(false);
+                Global.instance.selectionRect.gameObject.SetActive(false);
                 break;
             default:
                 break;
@@ -683,12 +683,12 @@ public class RTSPlayer : Player
 
         if (!Input.GetMouseButton(0) && finishedSelection)
         {
-            Global.Instance.selectionRect.gameObject.SetActive(false);
+            Global.instance.selectionRect.gameObject.SetActive(false);
         }
-        Global.Instance.goldText.text = "Gold: " + gold;
-        if (Global.Instance.popText != null)
+        Global.instance.goldText.text = "Gold: " + gold;
+        if (Global.instance.popText != null)
         {
-            Global.Instance.popText.text = "Army Size: " + population + "/" + maxPopulation;
+            Global.instance.popText.text = "Army Size: " + population + "/" + maxPopulation;
         }
         //TryReplaceFakeSpawn();
         //UpdateGUIFromSelections();// this might be expensive ...
@@ -705,7 +705,7 @@ public class RTSPlayer : Player
         if (gold < buildingToPlace.goldCost) return;
         gold -= buildingToPlace.goldCost;
         SpawnBuildingWithRotation(buildingToPlace, buildingGhost.transform.position, dir, quaternion);
-        SelectableEntity last = Global.Instance.localPlayer.ownedEntities.Last();
+        SelectableEntity last = Global.instance.localPlayer.ownedEntities.Last();
         TellSelectedToBuild(last);
         StopPlacingBuilding();
     }
@@ -785,7 +785,7 @@ public class RTSPlayer : Player
     }
     private void SelectWithinBounds() //rectangle select, finish drag select
     {
-        RectTransform SelectionBox = Global.Instance.selectionRect;
+        RectTransform SelectionBox = Global.instance.selectionRect;
         Bounds bounds = new(SelectionBox.anchoredPosition, SelectionBox.sizeDelta);
         //Debug.Log(bounds.size.magnitude);
         if (bounds.size.magnitude > 20f) //make sure the selection box is sufficiently large
@@ -851,7 +851,7 @@ public class RTSPlayer : Player
             }
             //UpdateGUIFromSelections();
         }
-        Global.Instance.selectionRect.gameObject.SetActive(false);
+        Global.instance.selectionRect.gameObject.SetActive(false);
         finishedSelection = true;
     }
     private bool UnitIsInSelectionBox(Vector2 Position, Bounds Bounds)
@@ -862,7 +862,7 @@ public class RTSPlayer : Player
     private void ResizeSelection() //drag selection
     {
         finishedSelection = false;
-        RectTransform SelectionBox = Global.Instance.selectionRect;
+        RectTransform SelectionBox = Global.instance.selectionRect;
         float width = Input.mousePosition.x - StartMousePosition.x;
         float height = Input.mousePosition.y - StartMousePosition.y;
 
@@ -936,7 +936,7 @@ public class RTSPlayer : Player
         gold -= building.goldCost;
         Debug.Log("Trying to place" + building.name);
         GenericSpawnMinion(position, building, this);
-        SelectableEntity spawnedBuilding = Global.Instance.localPlayer.ownedEntities.Last();
+        SelectableEntity spawnedBuilding = Global.instance.localPlayer.ownedEntities.Last();
         TellSelectedToBuild(spawnedBuilding);
 
         StopPlacingBuilding(); //temporary: later re-implement two-part buildings and holding shift to continue placing 
@@ -1020,7 +1020,7 @@ public class RTSPlayer : Player
                 Vector3 mod = AlignToQuarterGrid(spot);
                 //place on ground;
                 Vector3 ground = Vector3.zero;
-                if (Physics.Raycast(mod + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
+                if (Physics.Raycast(mod + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.instance.localPlayer.groundLayer))
                 {
                     ground = hit.point;
                 }
@@ -1047,7 +1047,7 @@ public class RTSPlayer : Player
         else //if distance is 0 
         {
             Vector3 ground = Vector3.zero;
-            if (Physics.Raycast(start + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
+            if (Physics.Raycast(start + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.instance.localPlayer.groundLayer))
             {
                 ground = hit.point;
             }
@@ -1102,11 +1102,11 @@ public class RTSPlayer : Player
             {
                 if (blocked)
                 {
-                    meshes[i].material = Global.Instance.blocked;
+                    meshes[i].material = Global.instance.blocked;
                 }
                 else
                 {
-                    meshes[i].material = Global.Instance.transparent;
+                    meshes[i].material = Global.instance.transparent;
                 }
             }
         }
@@ -1199,7 +1199,7 @@ public class RTSPlayer : Player
             {
                 if (meshes[i] != null)
                 {
-                    meshes[i].material = Global.Instance.blocked;
+                    meshes[i].material = Global.instance.blocked;
                 }
             }
         }
@@ -1209,7 +1209,7 @@ public class RTSPlayer : Player
             {
                 if (meshes[i] != null)
                 {
-                    meshes[i].material = Global.Instance.transparent;
+                    meshes[i].material = Global.instance.transparent;
                 }
             }
         }
@@ -1572,10 +1572,10 @@ public class RTSPlayer : Player
     }
     private void UpdateGUIText(SelectableEntity singleSelected)
     {
-        TMP_Text nameText = Global.Instance.nameText;
-        TMP_Text descText = Global.Instance.descText;
-        TMP_Text hpText = Global.Instance.hpText;
-        TMP_Text resourceText = Global.Instance.resourceText;
+        TMP_Text nameText = Global.instance.nameText;
+        TMP_Text descText = Global.instance.descText;
+        TMP_Text hpText = Global.instance.hpText;
+        TMP_Text resourceText = Global.instance.resourceText;
         nameText.SetText(singleSelected.displayName);
         descText.SetText(singleSelected.desc);
         string hpStr = "HP: " + singleSelected.currentHP.Value + "/" + singleSelected.maxHP;
@@ -1595,12 +1595,12 @@ public class RTSPlayer : Player
     /// </summary>
     private void UpdateGUIBasedOnSelectedUnitCount()
     {
-        if (Global.Instance.selectedParent == null || Global.Instance.resourcesParent == null || Global.Instance.resourceText == null
-            || Global.Instance.nameText == null || Global.Instance.descText == null || Global.Instance.singleUnitInfoParent == null) return;
+        if (Global.instance.selectedParent == null || Global.instance.resourcesParent == null || Global.instance.resourceText == null
+            || Global.instance.nameText == null || Global.instance.descText == null || Global.instance.singleUnitInfoParent == null) return;
 
-        GameObject selectedParent = Global.Instance.selectedParent;
-        GameObject resourcesParent = Global.Instance.resourcesParent;
-        GameObject rallyParent = Global.Instance.setRallyPointButton;
+        GameObject selectedParent = Global.instance.selectedParent;
+        GameObject resourcesParent = Global.instance.resourcesParent;
+        GameObject rallyParent = Global.instance.setRallyPointButton;
         SelectableEntity singleSelected = selectedEntities[0];
 
         if (infoSelectedEntity != null && numSelectedEntities == 0) //info selected
@@ -1636,13 +1636,13 @@ public class RTSPlayer : Player
     /// <summary>
     /// Update button abilities displayed based on selected units.
     /// </summary>
-    private void UpdateButtonsFromSelectedUnits()
+    private void UpdateButtonsFromSelectedUnits() //TODO: revise
     {
         availableConstructionOptions.Clear();
         availableAbilities.Clear();
         availableUnitSpawns.Clear();
         availableUpgrades.Clear();
-        Global.Instance.ChangeRallyPointButton(false);
+        Global.instance.ChangeRallyPointButton(false);
         if (GetNumSelected() > 0) //at least one unit selected
         {
             //show gui elements based on unit type selected
@@ -1683,7 +1683,7 @@ public class RTSPlayer : Player
                     {
                         if (!availableUnitSpawns.Contains(unitOption)) availableUnitSpawns.Add(unitOption);
                     }
-                    Global.Instance.ChangeRallyPointButton(true);
+                    Global.instance.ChangeRallyPointButton(true);
                 }
                 if (entity.IsBuilder())
                 {
@@ -1696,10 +1696,10 @@ public class RTSPlayer : Player
             }
         }
         //enable a button for each indices 
-        for (byte i = 0; i < Global.Instance.productionButtons.Count; i++)
+        for (byte i = 0; i < Global.instance.productionButtons.Count; i++)
         {
-            if (i >= Global.Instance.productionButtons.Count) break; //met limit
-            UnityEngine.UI.Button button = Global.Instance.productionButtons[i];
+            if (i >= Global.instance.productionButtons.Count) break; //met limit
+            UnityEngine.UI.Button button = Global.instance.productionButtons[i];
             button.gameObject.SetActive(true);
             TMP_Text text = button.GetComponentInChildren<TMP_Text>();
             button.onClick.RemoveAllListeners();
@@ -1774,7 +1774,7 @@ public class RTSPlayer : Player
             }
             else
             {
-                Global.Instance.productionButtons[i].gameObject.SetActive(false);
+                Global.instance.productionButtons[i].gameObject.SetActive(false);
             }
         }
     }
@@ -1837,20 +1837,20 @@ public class RTSPlayer : Player
     }
     public void UpdateBuildQueueGUI()
     {
-        Global.Instance.queueParent.gameObject.SetActive(false);
+        Global.instance.queueParent.gameObject.SetActive(false);
         if (GetNumSelected() != 1) return; //only works with a single unit for now
 
         SelectableEntity selectedProductionEntity = selectedEntities[0];
         //only works if is production structure, fully built, and spawned
         if (!selectedProductionEntity.IsSpawner() || !selectedProductionEntity.fullyBuilt || !selectedProductionEntity.net.IsSpawned) return;
 
-        Global.Instance.queueParent.gameObject.SetActive(true);
-        int num = Mathf.Clamp(selectedProductionEntity.buildQueue.Count, 0, Global.Instance.queueButtons.Count);
+        Global.instance.queueParent.gameObject.SetActive(true);
+        int num = Mathf.Clamp(selectedProductionEntity.buildQueue.Count, 0, Global.instance.queueButtons.Count);
 
         //enable a button for each indices
-        for (int i = 0; i < Global.Instance.queueButtons.Count; i++)
+        for (int i = 0; i < Global.instance.queueButtons.Count; i++)
         {
-            Global.Instance.queueButtons[i].gameObject.SetActive(false);
+            Global.instance.queueButtons[i].gameObject.SetActive(false);
             if (i < num)
             {
                 UpdateButton(selectedProductionEntity, i);
@@ -1862,27 +1862,27 @@ public class RTSPlayer : Player
         {
             beingProduced = selectedProductionEntity.buildQueue[0];
         }
-        if (beingProduced != null && Global.Instance.structureProgressBar != null)
+        if (beingProduced != null && Global.instance.structureProgressBar != null)
         {
-            Global.Instance.structureProgressBar.SetRatio(beingProduced.spawnTimer, beingProduced.maxSpawnTimeCost-1);
+            Global.instance.structureProgressBar.SetRatio(beingProduced.spawnTimer, beingProduced.maxSpawnTimeCost-1);
             //Debug.Log(beingProduced.spawnTimer + " / " + beingProduced.maxSpawnTimeCost);
         }
         else
         {
-            Global.Instance.structureProgressBar.SetRatio(0, 1);
+            Global.instance.structureProgressBar.SetRatio(0, 1);
         }
         if (selectedProductionEntity.productionBlocked)
         {
-            Global.Instance.structureProgressBar.SetColor(Color.red);
+            Global.instance.structureProgressBar.SetColor(Color.red);
         }
         else
         {
-            Global.Instance.structureProgressBar.SetColor(Color.white);
+            Global.instance.structureProgressBar.SetColor(Color.white);
         }
     }
     private void UpdateButton(SelectableEntity select, int i = 0)
     {
-        UnityEngine.UI.Button button = Global.Instance.queueButtons[i];
+        UnityEngine.UI.Button button = Global.instance.queueButtons[i];
         button.gameObject.SetActive(true);
         TMP_Text text = button.GetComponentInChildren<TMP_Text>();
         FactionUnit fac = select.buildQueue[i];
@@ -1925,7 +1925,7 @@ public class RTSPlayer : Player
             SelectableEntity select = selectedEntities[i];
             if (select == null) continue;
             if (gold < cost || !select.net.IsSpawned || !select.fullyBuilt || !TargetCanSpawnThisEntity(select, newUnit)
-                || select.buildQueue.Count >= Global.Instance.maxUnitsInProductionQueue) break;
+                || select.buildQueue.Count >= Global.instance.maxUnitsInProductionQueue) break;
             //if requirements fulfilled
             gold -= cost;
             select.buildQueue.Add(newUnit);
@@ -1980,7 +1980,7 @@ public class RTSPlayer : Player
         meshes = spawn.GetComponentsInChildren<MeshRenderer>();
         for (int i = 0; i < meshes.Length; i++)
         {
-            meshes[i].material = Global.Instance.transparent;
+            meshes[i].material = Global.instance.transparent;
         }
         Collider[] colliders = spawn.GetComponentsInChildren<Collider>();
         for (int i = 0; i < colliders.Length; i++)
@@ -1997,11 +1997,11 @@ public class RTSPlayer : Player
         {
             DeselectAll();
         }
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.allEntityLayer))
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.instance.allEntityLayer))
         {
             //SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
 
-            SelectableEntity entity = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
+            SelectableEntity entity = Global.instance.FindEntityFromObject(hit.collider.gameObject);
             if (entity != null && PositionFullyVisible(entity.transform.position))
             {
                 successful = FormalSelectEntity(entity);
@@ -2016,11 +2016,11 @@ public class RTSPlayer : Player
         {
             DeselectAll();
         }
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.allEntityLayer))
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.instance.allEntityLayer))
         {
             //SelectableEntity entity = hit.collider.GetComponent<SelectableEntity>();
 
-            SelectableEntity entity = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
+            SelectableEntity entity = Global.instance.FindEntityFromObject(hit.collider.gameObject);
             if (entity != null && ownedEntities.Contains(entity))
             {
                 if (entity.occupiedGarrison != null)
@@ -2147,13 +2147,13 @@ public class RTSPlayer : Player
     public void CreateExplosionAtPoint(Vector3 center, float explodeRadius, sbyte damage = 10)
     {
         Collider[] hitColliders = new Collider[40];
-        int numColliders = Physics.OverlapSphereNonAlloc(center, explodeRadius, hitColliders, Global.Instance.allEntityLayer);
+        int numColliders = Physics.OverlapSphereNonAlloc(center, explodeRadius, hitColliders, Global.instance.allEntityLayer);
         for (int i = 0; i < numColliders; i++)
         {
             if (hitColliders[i] == null) continue;
             SelectableEntity select = hitColliders[i].GetComponent<SelectableEntity>();
             if (select == null) continue;
-            if (Global.Instance.localPlayer.ownedEntities.Contains(select)) //skip teammates
+            if (Global.instance.localPlayer.ownedEntities.Contains(select)) //skip teammates
             {
                 continue;
             }
@@ -2192,7 +2192,7 @@ public class RTSPlayer : Player
             Debug.Log("can kill early" + enemy.currentHP.Value);
             enemy.PrepareForEntityDestruction();
         }
-        Global.Instance.localPlayer.RequestDamageServerRpc(damage, enemy);
+        Global.instance.localPlayer.RequestDamageServerRpc(damage, enemy);
     }
 
     [ServerRpc]
@@ -2206,7 +2206,7 @@ public class RTSPlayer : Player
     }
     public void SpawnExplosion(Vector3 pos)
     {
-        GameObject prefab = Global.Instance.explosionPrefab;
+        GameObject prefab = Global.instance.explosionPrefab;
         _ = Instantiate(prefab, pos, Quaternion.identity);
     }
 }

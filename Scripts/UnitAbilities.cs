@@ -36,7 +36,7 @@ public class UnitAbilities : EntityAddon
     {
         //Debug.Log("Starting ability as minion");
         queuedAbility = ability;
-        Global.Instance.PlayMinionAbilitySound(ent);
+        Global.instance.PlayMinionAbilitySound(ent);
         ActivateAbility(GetQueuedAbility());
         if (sm != null)
         {

@@ -124,7 +124,7 @@ public class LobbyManager : MonoBehaviour
             ChangeGameUIStatus(true);
             ChangeLobbyUIStatus(false);
         }
-        Global.Instance.UpdateLevelObjective();
+        Global.instance.UpdateLevelObjective();
         //Debug.Log("How many players?" + Global.Instance.allPlayers.Count);
     } 
     public void JoinLocalHost()

@@ -357,7 +357,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void SpawnedUnderPlayerControl()
     { 
-        RTSPlayer playerController = Global.Instance.localPlayer;
+        RTSPlayer playerController = Global.instance.localPlayer;
         playerController.lastSpawnedEntity = this;
         this.controllerOfThis = playerController;
         AddToPlayerOwnedLists(this.controllerOfThis);
@@ -371,7 +371,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (IsOre())
         { 
-            foreach (Player player in Global.Instance.allPlayers)
+            foreach (Player player in Global.instance.allPlayers)
             {
                 AddToPlayerOreList(player);
             }
@@ -382,7 +382,7 @@ public class SelectableEntity : NetworkBehaviour
         teamNumber.Value = desiredTeamNumber;
         if (teamType == TeamBehavior.OwnerTeam)
         {
-            AIPlayer AIController = Global.Instance.aiPlayers[Mathf.Abs(desiredTeamNumber) - 1];
+            AIPlayer AIController = Global.instance.aiPlayers[Mathf.Abs(desiredTeamNumber) - 1];
             controllerOfThis = AIController;
             AddToPlayerOwnedLists(controllerOfThis);
         }
@@ -408,15 +408,15 @@ public class SelectableEntity : NetworkBehaviour
         }
         if (targetIndicator != null)
         {
-            targetIndicator.transform.parent = Global.Instance.transform;
+            targetIndicator.transform.parent = Global.instance.transform;
         }
         SetStartingSelectionRadius();
         TryToRegisterRallyMission();
         SetInitialVisuals();
         aiControlled = desiredTeamNumber < 0 || controllerOfThis is AIPlayer;
-        if (isKeystone && Global.Instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
+        if (isKeystone && Global.instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
         {
-            Global.Instance.localPlayer.keystoneUnits.Add(this);
+            Global.instance.localPlayer.keystoneUnits.Add(this);
         }
         if (isBuildIndicator)
         {
@@ -440,12 +440,12 @@ public class SelectableEntity : NetworkBehaviour
                 if (unbuiltRenderers[i] != null)
                 {
                     savedMaterials.Add(unbuiltRenderers[i].material);
-                    unbuiltRenderers[i].material = Global.Instance.transparent;
+                    unbuiltRenderers[i].material = Global.instance.transparent;
                 }
             }
         }
         if (rallyVisual != null) rallyVisual.SetActive(false);
-        if (teamType == TeamBehavior.OwnerTeam) Global.Instance.allEntities.Add(this);
+        if (teamType == TeamBehavior.OwnerTeam) Global.instance.allEntities.Add(this);
 
         InitializeBars();
         DetermineLayerBasedOnAllegiance();
@@ -454,7 +454,7 @@ public class SelectableEntity : NetworkBehaviour
     #region Start() Code
     private void DetermineLayerBasedOnAllegiance()
     { 
-        if (controllerOfThis != null && controllerOfThis.allegianceTeamID != Global.Instance.localPlayer.allegianceTeamID)
+        if (controllerOfThis != null && controllerOfThis.allegianceTeamID != Global.instance.localPlayer.allegianceTeamID)
         {   //this should be counted as an enemy 
             gameObject.layer = LayerMask.NameToLayer("EnemyEntity");
         }
@@ -567,7 +567,7 @@ public class SelectableEntity : NetworkBehaviour
             //selectIndicator.gameObject.SetActive(true);
             selectIndicator.UpdateVisibility(val);
             Color selectColor = Color.green;
-            if (Global.Instance.localPlayer != controllerOfThis)
+            if (Global.instance.localPlayer != controllerOfThis)
             {
                 selectColor = Color.red;
             }
@@ -633,9 +633,9 @@ public class SelectableEntity : NetworkBehaviour
         /*if (FogHideable())
         {
         }*/
-        if (Global.Instance.localPlayer != null)
+        if (Global.instance.localPlayer != null)
         {
-            hideFogTeam = (int)Global.Instance.localPlayer.OwnerClientId;
+            hideFogTeam = (int)Global.instance.localPlayer.OwnerClientId;
         }
     }
     public bool HasResourcesToDeposit()
@@ -662,7 +662,7 @@ public class SelectableEntity : NetworkBehaviour
 
     private void PlaySpawnSound()
     {
-        if (sounds.Length > 0) Global.Instance.PlayClipAtPoint(sounds[0], transform.position, .5f); //play spawning sound
+        if (sounds.Length > 0) Global.instance.PlayClipAtPoint(sounds[0], transform.position, .5f); //play spawning sound
     }
     [SerializeField] private Vector3 setRallyDest;
     public Vector3 GetRallyDest()
@@ -1005,11 +1005,11 @@ public class SelectableEntity : NetworkBehaviour
                 //if construction in progress, half refund
                 if (target.constructionBegun)
                 {
-                    Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost / 2);
+                    Global.instance.localPlayer.AddGold(target.factionEntity.goldCost / 2);
                 }
                 else
                 {
-                    Global.Instance.localPlayer.AddGold(target.factionEntity.goldCost);
+                    Global.instance.localPlayer.AddGold(target.factionEntity.goldCost);
                 }
                 target.DestroyThis();
                 break;
@@ -1061,7 +1061,7 @@ public class SelectableEntity : NetworkBehaviour
     private Camera mainCam;
     private void UpdateHealthBarPosition()
     {
-        if (mainCam == null) mainCam = Global.Instance.localPlayer.mainCam;
+        if (mainCam == null) mainCam = Global.instance.localPlayer.mainCam;
         if (mainCam != null)
         {
             if (healthBar != null && healthBar.isActiveAndEnabled || productionProgressBar != null && productionProgressBar.isActiveAndEnabled)
@@ -1097,7 +1097,7 @@ public class SelectableEntity : NetworkBehaviour
                     else
                     {
                         footstepCount = 0;
-                        Global.Instance.PlayClipAtPoint(Global.Instance.footsteps[UnityEngine.Random.Range(0, Global.Instance.footsteps.Length)], transform.position, .01f);
+                        Global.instance.PlayClipAtPoint(Global.instance.footsteps[UnityEngine.Random.Range(0, Global.instance.footsteps.Length)], transform.position, .01f);
                     }
                 }
             }
@@ -1141,7 +1141,7 @@ public class SelectableEntity : NetworkBehaviour
     public void StartGameAddToEnemyLists()
     {
         //Debug.Log("num players " + Global.Instance.allPlayers.Count);
-        foreach (Player player in Global.Instance.allPlayers)
+        foreach (Player player in Global.instance.allPlayers)
         {
             if (controllerOfThis == null) break;
             if (player == null) continue;
@@ -1160,7 +1160,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void MidGameUpdateEnemyListsAfterCapture()
     {
-        foreach (Player player in Global.Instance.allPlayers)
+        foreach (Player player in Global.instance.allPlayers)
         {
             if (controllerOfThis == null) break;
             if (player == null) continue;
@@ -1177,7 +1177,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     private void RemoveFromEnemyLists()
     {
-        foreach (Player player in Global.Instance.allPlayers)
+        foreach (Player player in Global.instance.allPlayers)
         {
             if (controllerOfThis == null) break;
             if (player == null) continue;
@@ -1254,7 +1254,7 @@ public class SelectableEntity : NetworkBehaviour
         RemoveFromEnemyLists(); 
         if (healthBar != null) healthBar.Delete();
         if (productionProgressBar != null) productionProgressBar.Delete();
-        Global.Instance.allEntities.Remove(this);
+        Global.instance.allEntities.Remove(this);
 
         RemoveFromPlayerLists(controllerOfThis); 
 
@@ -1340,10 +1340,10 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (isKeystone)
         {
-            Global.Instance.localPlayer.keystoneUnits.Remove(this);
-            if (Global.Instance.localPlayer.keystoneUnits.Count <= 0)
+            Global.instance.localPlayer.keystoneUnits.Remove(this);
+            if (Global.instance.localPlayer.keystoneUnits.Count <= 0)
             {
-                Global.Instance.localPlayer.LoseGame();
+                Global.instance.localPlayer.LoseGame();
             }
         }
     }
@@ -1353,7 +1353,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         if (selected)
         {
-            Global.Instance.localPlayer.UpdateHPText();
+            Global.instance.localPlayer.UpdateHPText();
         }
         if (healthBar != null) healthBar.SetRatioBasedOnHP(current, maxHP);
     }
@@ -1442,7 +1442,7 @@ public class SelectableEntity : NetworkBehaviour
     }
     public void PlaceOnGround()
     {
-        if (Physics.Raycast(transform.position + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.localPlayer.groundLayer))
+        if (Physics.Raycast(transform.position + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.instance.localPlayer.groundLayer))
         {
             transform.position = hit.point;
             //Debug.Log(gameObject.name + "trying to place on ground");
@@ -1551,7 +1551,7 @@ public class SelectableEntity : NetworkBehaviour
         /* because "hidefogteam" is the local player id, a player's units will always be
         visible to themselves. */
         fogValue = fow.GetFogValue(transform.position); //get the value of the fog at this position
-        isVisibleInFog = fogValue < Global.Instance.minFogStrength * 255;
+        isVisibleInFog = fogValue < Global.instance.minFogStrength * 255;
         if (FogHideable())
         {
             //Debug.Log("running fog visibility for" + gameObject);
@@ -1687,7 +1687,7 @@ public class SelectableEntity : NetworkBehaviour
         if (IsOwner) //only the owner does this
         {
             if (sm != null && pf.pathfindingTarget != null) Destroy(pf.pathfindingTarget.gameObject);
-            Global.Instance.localPlayer.ownedEntities.Remove(this);
+            Global.instance.localPlayer.ownedEntities.Remove(this);
             //Global.Instance.localPlayer.selectedEntities.Remove(this);
             if (IsServer) //only the server may destroy networkobjects
             {
@@ -1725,8 +1725,8 @@ public class SelectableEntity : NetworkBehaviour
         rallyTarget = null;
         //determine if spawned units should be given a mission
 
-        Ray ray = Global.Instance.localPlayer.mainCam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
+        Ray ray = Global.instance.localPlayer.mainCam.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.instance.gameLayer))
         {
             rallyPoint = hit.point;
             Debug.Log("Setting rally" + rallyPoint);
@@ -1741,7 +1741,7 @@ public class SelectableEntity : NetworkBehaviour
                 lineIndicator.SetPosition(0, transform.position + offset);
                 lineIndicator.SetPosition(1, rallyPoint + offset);
             }
-            SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
+            SelectableEntity target = Global.instance.FindEntityFromObject(hit.collider.gameObject);
             //SelectableEntity target = hit.collider.GetComponent<SelectableEntity>();
             if (target != null)
             {
@@ -1817,7 +1817,7 @@ public class SelectableEntity : NetworkBehaviour
         if (sounds.Length > 0)
         {
             AudioClip clip = sounds[id];
-            Global.Instance.PlayClipAtPoint(clip, transform.position, 0.1f);
+            Global.instance.PlayClipAtPoint(clip, transform.position, 0.1f);
             //request server to send to other clients
             RequestSoundServerRpc(id);
         }
@@ -1834,7 +1834,7 @@ public class SelectableEntity : NetworkBehaviour
         if (!IsOwner)
         {
             AudioClip clip = sounds[id];
-            Global.Instance.PlayClipAtPoint(clip, transform.position, 0.25f);
+            Global.instance.PlayClipAtPoint(clip, transform.position, 0.25f);
         }
     }
     public bool IsStructure()
@@ -1850,9 +1850,9 @@ public class SelectableEntity : NetworkBehaviour
             fac.spawnTimer += Time.deltaTime;
             //check if the position is blocked;
             if (Physics.Raycast(positionToSpawnMinions.position + (new Vector3(0, 100, 0)), Vector3.down,
-                out RaycastHit hit, Mathf.Infinity, Global.Instance.gameLayer))
+                out RaycastHit hit, Mathf.Infinity, Global.instance.gameLayer))
             {
-                SelectableEntity target = Global.Instance.FindEntityFromObject(hit.collider.gameObject);
+                SelectableEntity target = Global.instance.FindEntityFromObject(hit.collider.gameObject);
                 if (target != null) //something blocking
                 {
                     if (target.sm != null && target.controllerOfThis == controllerOfThis && !target.sm.InState(EntityStates.Walk))
@@ -1960,7 +1960,7 @@ public class SelectableEntity : NetworkBehaviour
     public void CaptureForLocalPlayer() //switch team of entity
     {
         //Debug.Log("capturing");
-        this.controllerOfThis = Global.Instance.localPlayer;
+        this.controllerOfThis = Global.instance.localPlayer;
         if (this.controllerOfThis != null)
         {
             teamNumber.Value = (sbyte)this.controllerOfThis.playerTeamID;
@@ -1971,7 +1971,7 @@ public class SelectableEntity : NetworkBehaviour
 
         ChangePopulation(consumePopulationAmount);
         ChangeMaxPopulation(raisePopulationLimitBy);
-        RTSPlayer playerController = Global.Instance.localPlayer;
+        RTSPlayer playerController = Global.instance.localPlayer;
         if (!playerController.ownedEntities.Contains(this)) playerController.ownedEntities.Add(this);
         if (IsMinion() && !playerController.ownedMinions.Contains(sm)) playerController.ownedMinions.Add(sm);
 
@@ -1984,15 +1984,15 @@ public class SelectableEntity : NetworkBehaviour
             playerController.unbuiltStructures.Add(this);
         }
         //update layer
-        gameObject.layer = LayerMask.NameToLayer(Global.Instance.FRIENDLY_ENTITY);
+        gameObject.layer = LayerMask.NameToLayer(Global.instance.FRIENDLY_ENTITY);
         MidGameUpdateEnemyListsAfterCapture();
         PlayCaptureEffect();
     }
     private void PlayCaptureEffect()
     {
-        if (Global.Instance.defaultCaptureEffect != null)
+        if (Global.instance.defaultCaptureEffect != null)
         {
-            Instantiate(Global.Instance.defaultCaptureEffect, transform.position, Quaternion.identity);
+            Instantiate(Global.instance.defaultCaptureEffect, transform.position, Quaternion.identity);
         }
     } 
     private GameObject deathEffect = null;

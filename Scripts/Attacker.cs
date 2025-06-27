@@ -176,9 +176,9 @@ public class Attacker : SwingEntityAddon
         {
             Debug.Log("self destructing");
             hasSelfDestructed = true;
-            Global.Instance.localPlayer.CreateExplosionAtPoint(transform.position, explodeRadius, swingDelta);
+            Global.instance.localPlayer.CreateExplosionAtPoint(transform.position, explodeRadius, swingDelta);
             SimpleExplosionEffect(transform.position);
-            Global.Instance.localPlayer.DamageEntity(99, ent); //it is a self destruct, after all
+            Global.instance.localPlayer.DamageEntity(99, ent); //it is a self destruct, after all
             //selectableEntity.ProperDestroyEntity();
             //DamageSpecifiedEnemy(selectableEntity, damage);
         }
@@ -200,7 +200,7 @@ public class Attacker : SwingEntityAddon
     }
     private void SpawnExplosion(Vector3 pos)
     {
-        GameObject prefab = Global.Instance.explosionPrefab;
+        GameObject prefab = Global.instance.explosionPrefab;
         _ = Instantiate(prefab, pos, Quaternion.identity);
     }
     /// <summary>
@@ -289,7 +289,7 @@ public class Attacker : SwingEntityAddon
         float physSearchRange = range;
         if (ent.IsMelee())
         {
-            physSearchRange = Global.Instance.defaultMeleeSearchRange;
+            physSearchRange = Global.instance.defaultMeleeSearchRange;
         }
         SelectableEntity eligibleIdleEnemy = FindEnemyThroughPhysSearch(physSearchRange, RequiredEnemyType.Minion, false, true);
         return eligibleIdleEnemy;
@@ -514,7 +514,7 @@ public class Attacker : SwingEntityAddon
                 }
                 SimpleTrail(spawnPos, enemy.transform.position);
             }
-            Global.Instance.localPlayer.DamageEntity(damage, enemy);
+            Global.instance.localPlayer.DamageEntity(damage, enemy);
             //DamageUmbrella(damage, enemy);
         }
     }
@@ -558,7 +558,7 @@ public class Attacker : SwingEntityAddon
     }
     private void SpawnTrail(Vector3 start, Vector3 destination)
     {
-        TrailController tra = Instantiate(Global.Instance.gunTrailGlobal, start, Quaternion.identity);
+        TrailController tra = Instantiate(Global.instance.gunTrailGlobal, start, Quaternion.identity);
         tra.start = start;
         tra.destination = destination;
     }
@@ -609,15 +609,15 @@ public class Attacker : SwingEntityAddon
     private SelectableEntity FindEnemyThroughPhysSearch(float range, RequiredEnemyType requiredEnemyType, bool mustBeInSearchList,
         bool mustBeInChaseRange = false)
     {
-        Collider[] enemyArray = new Collider[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
+        Collider[] enemyArray = new Collider[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
         int searchedCount = 0;
         if (ent.GetAllegiance() == 0) //our units should search enemy layer
         {
-            searchedCount = Physics.OverlapSphereNonAlloc(transform.position, range, enemyArray, Global.Instance.enemyLayer);
+            searchedCount = Physics.OverlapSphereNonAlloc(transform.position, range, enemyArray, Global.instance.enemyLayer);
         }
         else //enemy units should search friendly layer
         {
-            searchedCount = Physics.OverlapSphereNonAlloc(transform.position, range, enemyArray, Global.Instance.friendlyEntityLayer);
+            searchedCount = Physics.OverlapSphereNonAlloc(transform.position, range, enemyArray, Global.instance.friendlyEntityLayer);
         }
         SelectableEntity enemy = null;
         SelectableEntity valid = null;
@@ -703,7 +703,7 @@ public class Attacker : SwingEntityAddon
     private SelectableEntity FindEnemyInSearchListInRange(float range, RequiredEnemyType enemyType)
     {
         if (assignedEntitySearcher == null) return null;
-        SelectableEntity[] searchArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
+        SelectableEntity[] searchArray = new SelectableEntity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
         int searchCount = 0;
         switch (enemyType)
         {
@@ -739,7 +739,7 @@ public class Attacker : SwingEntityAddon
     private SelectableEntity FindSpecificEnemyInSearchListInRange(float range, SelectableEntity enemy)
     {
         if (assignedEntitySearcher == null) return null;
-        SelectableEntity[] searchArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
+        SelectableEntity[] searchArray = new SelectableEntity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
         int searchCount = 0;
         RequiredEnemyType enemyType = RequiredEnemyType.Any;
 
@@ -946,7 +946,7 @@ public class Attacker : SwingEntityAddon
         if (assignedEntitySearcher == null) return;
 
         SelectableEntity valid = null;
-        SelectableEntity[] searchArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
+        SelectableEntity[] searchArray = new SelectableEntity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
         int searchCount = 0;
         if (assignedEntitySearcher.MinionsInSearch()) //if there are minions, only search those
         {
@@ -1038,7 +1038,7 @@ public class Attacker : SwingEntityAddon
             range += rangedUnitRangeExtension;
         }
 
-        SelectableEntity[] searchArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
+        SelectableEntity[] searchArray = new SelectableEntity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
         int searchCount = 0;
         if (assignedEntitySearcher.minionCount > 0) //if there are minions, only search those
         {

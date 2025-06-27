@@ -9,12 +9,10 @@ using Pathfinding;
 
 public class Global : NetworkBehaviour
 {
-    public static Global Instance { get; private set; }
+    public static Global instance { get; private set; }
     public readonly string FRIENDLY_ENTITY = "Entity";
     public readonly string ENEMY_ENTITY = "EnemyEntity";
-    public List<SelectableEntity> allEntities = new();
-
-
+    public HashSet<SelectableEntity> allEntities = new();
     public RectTransform selectionRect;
     public List<Material> colors;
     public List<Color> teamColors;
@@ -23,7 +21,7 @@ public class Global : NetworkBehaviour
     public List<Button> productionButtons;
     public Material transparent;
     public Material blocked;
-    public RTSPlayer localPlayer;
+    [HideInInspector] public RTSPlayer localPlayer;
     public TMP_Text goldText;
     public AudioClip[] footsteps;
     public List<Button> queueButtons;
@@ -59,17 +57,17 @@ public class Global : NetworkBehaviour
     //[SerializeField] public Camera mainCam;
     //[SerializeField] public Camera lineCam;
     public Camera[] cams;
-    public LayerMask groundLayer;
-    public LayerMask blockingLayer;
-    public LayerMask gameLayer;
-    public LayerMask allEntityLayer;
-    public LayerMask enemyLayer;
-    public LayerMask friendlyEntityLayer;
-    public List<RTSPlayer> uninitializedPlayers = new();
-    public List<RTSPlayer> initializedPlayers = new();
-    public AIPlayer[] aiPlayers;
+    [HideInInspector] public LayerMask groundLayer;
+    [HideInInspector] public LayerMask blockingLayer;
+    [HideInInspector] public LayerMask gameLayer;
+    [HideInInspector] public LayerMask allEntityLayer;
+    [HideInInspector] public LayerMask enemyLayer;
+    [HideInInspector] public LayerMask friendlyEntityLayer;
+    [HideInInspector] public List<RTSPlayer> uninitializedPlayers = new();
+    [HideInInspector] public List<RTSPlayer> initializedPlayers = new();
+    [HideInInspector] public AIPlayer[] aiPlayers;
     private readonly int maxAIPlayers = 10;
-    public List<Player> allPlayers = new();
+    [HideInInspector] public List<Player> allPlayers = new();
     public Grid grid;
 
     //
@@ -84,11 +82,19 @@ public class Global : NetworkBehaviour
     public GameObject popFullWarning;
 
     public TMP_Text reinforcementText;
-    public ArbitraryUnitSpawner unitSpawnerToTrackReinforcements;
+    [HideInInspector] public ArbitraryUnitSpawner unitSpawnerToTrackReinforcements;
     public TMP_Text levelObjective;
 
     public EntitySearcher entitySearcher;
     public CrosshairDisplay crosshairPrefab;
+
+    public int maxExpectedUnits = 100;
+    public int maxFramesToFindTarget = 30;
+    public bool playerHasWon = false;
+    private bool finishedInitializingNewPlayers = false;
+    public readonly int attackMoveDestinationEnemyArrayBufferSize = 50;
+    public readonly int fullEnemyArraySize = 50;
+
     //Minion sound profile mapping:
     // 0: spawn
     // 1: damage
@@ -135,13 +141,13 @@ public class Global : NetworkBehaviour
         friendlyEntityLayer = LayerMask.GetMask(FRIENDLY_ENTITY);
 
         // If there is an instance, and it's not me, delete myself.
-        if (Instance != null && Instance != this)
+        if (instance != null && instance != this)
         {
             Destroy(this);
         }
         else
         {
-            Instance = this;
+            instance = this;
         }
 
         aiPlayers = new AIPlayer[maxAIPlayers];
@@ -211,10 +217,6 @@ public class Global : NetworkBehaviour
         } 
     }
 
-    public int maxExpectedUnits = 100;
-    public int maxFramesToFindTarget = 30;
-    public bool playerHasWon = false;
-    private bool finishedInitializingNewPlayers = false;
     private void InitializePlayers()
     {
         if (uninitializedPlayers.Count > 0)
@@ -240,14 +242,12 @@ public class Global : NetworkBehaviour
             }
         }
     }
-    public readonly int attackMoveDestinationEnemyArrayBufferSize = 50;
-    public readonly int fullEnemyArraySize = 50;
     public void UpdateEnemyLists()
     {
         //Debug.Log("Updating Enemy Lists");
         foreach (SelectableEntity entity in allEntities)
         {
-            entity.StartGameAddToEnemyLists();
+            if (entity != null) entity.StartGameAddToEnemyLists();
         }
     }
     public void CheckIfAPlayerHasWon()

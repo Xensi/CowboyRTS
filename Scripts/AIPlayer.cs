@@ -44,7 +44,7 @@ public class AIPlayer : Player
     {
         if (!enable) return;
         base.Start();
-        Global.Instance.aiPlayers[Mathf.Abs(playerTeamID) - 1] = this;
+        Global.instance.aiPlayers[Mathf.Abs(playerTeamID) - 1] = this;
     }
 
     /// <summary>
@@ -213,7 +213,7 @@ public class AIPlayer : Player
     {
         FogOfWarTeam fow = FogOfWarTeam.GetTeam(playerTeamID);
         //run through initialized players and AI team controllers (check their allegiance)
-        foreach (Player player in Global.Instance.allPlayers)
+        foreach (Player player in Global.instance.allPlayers)
         {
             if (player != null && player != this && player.allegianceTeamID != allegianceTeamID) //player exists and is enemy
             {
@@ -222,7 +222,7 @@ public class AIPlayer : Player
                     SelectableEntity entity = player.ownedEntities[i];
                     if (entity != null)
                     {
-                        bool visible = fow.GetFogValue(entity.transform.position) < Global.Instance.minFogStrength * Global.Instance.maxFogValue;
+                        bool visible = fow.GetFogValue(entity.transform.position) < Global.instance.minFogStrength * Global.instance.maxFogValue;
                         if (visible)
                         {
                             if (entity.IsMinion() && !knownEnemyUnits.Contains(entity))
@@ -488,10 +488,10 @@ public class AIPlayer : Player
                 Vector3 randCircle3D = new Vector3(randomCircle.x, verticalOffset, randomCircle.y);
                 Vector3 randomPosition = ownedEntities[0].transform.position + randCircle3D;
                 //ray cast down
-                bool rayHit = Physics.Raycast(randomPosition, Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.groundLayer);
+                bool rayHit = Physics.Raycast(randomPosition, Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.instance.groundLayer);
                 if (rayHit)
                 {
-                    Grid grid = Global.Instance.grid;
+                    Grid grid = Global.instance.grid;
                     if (grid != null)
                     {
                         Vector3 buildOffset = building.buildOffset;

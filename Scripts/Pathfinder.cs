@@ -68,7 +68,7 @@ public class Pathfinder : EntityAddon
         if (setter != null && setter.target == null)
         { //create a target that our setter will use to update our pathfinding
             GameObject obj = new GameObject(ent.name + " pf target");
-            obj.transform.parent = Global.Instance.transform;
+            obj.transform.parent = Global.instance.transform;
             pathfindingTarget = obj.transform;
             pathfindingTarget.position = transform.position; //set to be on us
             setter.target = pathfindingTarget;
@@ -143,7 +143,7 @@ public class Pathfinder : EntityAddon
             Collider[] nearby = new Collider[maxSearched];
             int searchedCount = 0;
             float searchRange = ai.radius * 2;
-            searchedCount = Physics.OverlapSphereNonAlloc(ent.transform.position, searchRange, nearby, Global.Instance.friendlyEntityLayer);
+            searchedCount = Physics.OverlapSphereNonAlloc(ent.transform.position, searchRange, nearby, Global.instance.friendlyEntityLayer);
             for (int i = 0; i < searchedCount; i++)
             {
                 if (nearby[i] == null) continue;
@@ -210,12 +210,12 @@ public class Pathfinder : EntityAddon
     {
         if (nonOwnerRealLocationList.Count > 0)
         {
-            if (nonOwnerRealLocationList.Count >= Global.Instance.maximumQueuedRealLocations)
+            if (nonOwnerRealLocationList.Count >= Global.instance.maximumQueuedRealLocations)
             {
                 nonOwnerRealLocationList.RemoveAt(0); //remove oldest 
 
             }
-            if (Vector3.Distance(nonOwnerRealLocationList[0], transform.position) > Global.Instance.allowedNonOwnerError)
+            if (Vector3.Distance(nonOwnerRealLocationList[0], transform.position) > Global.instance.allowedNonOwnerError)
             {
                 transform.position = LerpPosition(transform.position, nonOwnerRealLocationList[0]);
                 if (pf.ai != null) pf.ai.enabled = false;
@@ -231,11 +231,11 @@ public class Pathfinder : EntityAddon
                 Vector3 offset = transform.position - ent.pf.pathfindingTarget.position;
                 float dist = offset.sqrMagnitude;
                 //for best results, make this higher than unit's slow down distance. at time of writing slowdown dist is .2
-                if (dist < Global.Instance.closeEnoughDist * Global.Instance.closeEnoughDist) //square the distance to compare against
+                if (dist < Global.instance.closeEnoughDist * Global.instance.closeEnoughDist) //square the distance to compare against
                 {
                     nonOwnerRealLocationList.RemoveAt(0); //remove oldest 
                 }
-                pf.ai.maxSpeed = pf.defaultMoveSpeed * (1 + (nonOwnerRealLocationList.Count - 1) / Global.Instance.maximumQueuedRealLocations);
+                pf.ai.maxSpeed = pf.defaultMoveSpeed * (1 + (nonOwnerRealLocationList.Count - 1) / Global.instance.maximumQueuedRealLocations);
             }
         }
         else //make sure we have at least one position
@@ -250,7 +250,7 @@ public class Pathfinder : EntityAddon
         {
             //may have to ray cast down to retrieve height data
             Vector3 deq = DequantizePosition(realLocation.Value);
-            if (Physics.Raycast(deq + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.Instance.groundLayer))
+            if (Physics.Raycast(deq + (new Vector3(0, 100, 0)), Vector3.down, out RaycastHit hit, Mathf.Infinity, Global.instance.groundLayer))
             {
                 deq.y = hit.point.y;
             }
@@ -275,7 +275,7 @@ public class Pathfinder : EntityAddon
             m_CurrentLerpTime = 0f;
         }
 
-        m_CurrentLerpTime += Time.deltaTime * Global.Instance.lerpScale;
+        m_CurrentLerpTime += Time.deltaTime * Global.instance.lerpScale;
 
         /*// gentler lerp for shorter distances
         float dist = Vector3.Distance(current, target);

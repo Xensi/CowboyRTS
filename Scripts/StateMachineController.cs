@@ -129,14 +129,14 @@ public class StateMachineController : NetworkBehaviour
         {
             if (IsMelee())
             {
-                ent.attacker.maximumChaseRange = Global.Instance.defaultMeleeSearchRange;
+                ent.attacker.maximumChaseRange = Global.instance.defaultMeleeSearchRange;
             }
             else
             {
                 ent.attacker.maximumChaseRange = ent.attacker.range * 2f;
             }
         }
-        attackMoveDestinationEnemyArray = new SelectableEntity[Global.Instance.attackMoveDestinationEnemyArrayBufferSize];
+        attackMoveDestinationEnemyArray = new SelectableEntity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
         ChangeAttackTrailState(false);
     }
     #endregion
@@ -398,13 +398,13 @@ public class StateMachineController : NetworkBehaviour
         }*/
     }
 
-    private void ClientSeekBuildable()
+    /*private void ClientSeekBuildable()
     {
-        if (nearbyIndexer >= Global.Instance.allEntities.Count)
+        if (nearbyIndexer >= Global.instance.allEntities.Count)
         {
-            nearbyIndexer = Global.Instance.allEntities.Count - 1;
+            nearbyIndexer = Global.instance.allEntities.Count - 1;
         }
-        SelectableEntity check = Global.Instance.allEntities[nearbyIndexer]; //fix this so we don't get out of range 
+        SelectableEntity check = Global.instance.allEntities[nearbyIndexer]; //fix this so we don't get out of range 
         if (clientSideTargetInRange == null)
         {
             if (check != null && check.alive && check.teamNumber == ent.teamNumber &&
@@ -414,13 +414,13 @@ public class StateMachineController : NetworkBehaviour
             }
         }
         nearbyIndexer++;
-        if (nearbyIndexer >= Global.Instance.allEntities.Count) nearbyIndexer = 0;
+        if (nearbyIndexer >= Global.instance.allEntities.Count) nearbyIndexer = 0;
 
         if (clientSideTargetInRange != null)
         {
             pf.FreezeRigid();
         }
-    }
+    }*/
     private SelectableEntity clientSideTargetInRange = null;
     private void UpdateRealLocation()
     {
@@ -428,7 +428,7 @@ public class StateMachineController : NetworkBehaviour
         Vector3 offset = transform.position - pf.oldRealLocation;
         float dist = offset.sqrMagnitude;//Vector3.Distance(transform.position, realLocation.Value);
 
-        if (dist > Global.Instance.updateRealLocThreshold * Global.Instance.updateRealLocThreshold) //square the distance to compare against
+        if (dist > Global.instance.updateRealLocThreshold * Global.instance.updateRealLocThreshold) //square the distance to compare against
         {
             //realLocationReached = false;
             pf.SetRealLocation();
@@ -694,7 +694,7 @@ public class StateMachineController : NetworkBehaviour
         else //at first pathfind freely, and then become blocked by obstacles. by then our own obstacle should not be a worry
         {
             ChangeBlockedByMinionObstacleStatus(false);
-            await Task.Delay(Global.Instance.changeBlockedDelayMs);
+            await Task.Delay(Global.instance.changeBlockedDelayMs);
             ChangeBlockedByMinionObstacleStatus(true);
         }
     }
@@ -744,7 +744,7 @@ public class StateMachineController : NetworkBehaviour
             //if target doesn't have a crosshair, create it
             if (target.manualCrosshairTargetingThis == null)
             {
-                CrosshairDisplay cd = Instantiate(Global.Instance.crosshairPrefab, target.transform);
+                CrosshairDisplay cd = Instantiate(Global.instance.crosshairPrefab, target.transform);
                 target.manualCrosshairTargetingThis = cd;
                 cd.assignedEntity = target;
                 cd.SetPulse(true);

@@ -12,7 +12,7 @@ public class EntityHealthBar : MonoBehaviour
 
     private void Start()
     {
-        if (barParent != null) barParent.SetParent(Global.Instance.gameCanvas.transform);
+        if (barParent != null) barParent.SetParent(Global.instance.gameCanvas.transform);
         if (bar != null) bar.color = gradient.Evaluate(1);
     }
     public void Delete()
