@@ -24,7 +24,7 @@ public class AreaEffector : MonoBehaviour
     private ParticleSystem[] particleSystems;
     private DisplayRadius dr;
     public float radius = 1;
-    [SerializeField] private SelectableEntity ent;
+    [SerializeField] private Entity ent;
     [SerializeField] private bool applyToSelf = false;
     private void Start()
     { 
@@ -117,7 +117,7 @@ public class AreaEffector : MonoBehaviour
         for (int i = 0; i < searchedCount; i++)
         {
             if (array[i] == null) continue;
-            SelectableEntity select = array[i].GetComponent<SelectableEntity>();
+            Entity select = array[i].GetComponent<Entity>();
             if (select == null || !select.alive || !select.isTargetable.Value) continue;
             if (ent != null && !applyToSelf && select == ent)
             {

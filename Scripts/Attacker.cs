@@ -25,12 +25,12 @@ public class Attacker : SwingEntityAddon
     /// <summary>
     /// The target we're currently trying to attack.
     /// </summary>
-    public SelectableEntity targetEnemy;
+    public Entity targetEnemy;
     /// <summary>
     /// The target we were trying to attack previously, who we switched off of because we couldn't reach it.
     /// </summary>
-    public SelectableEntity preferredAttackTarget;
-    public SelectableEntity alternateAttackTarget;
+    public Entity preferredAttackTarget;
+    public Entity alternateAttackTarget;
     public enum Goal { None, AttackFromIdle, OrderedToAttackMove }
     public Goal longTermGoal = Goal.None; 
     public Vector3 lastIdlePosition;
@@ -249,7 +249,7 @@ public class Attacker : SwingEntityAddon
     /// </summary>
     /// <param name="target"></param>
     /// <returns></returns>
-    public bool IsValidTarget(SelectableEntity target)
+    public bool IsValidTarget(Entity target)
     {
         if (target == null || !target.isAttackable || !target.alive || !target.isTargetable.Value
             || (IsPlayerControlled() && !target.IsVisibleInFog() || !target.IsEnemyOfTarget(ent)) || target.currentHP.Value <= 0
@@ -274,7 +274,7 @@ public class Attacker : SwingEntityAddon
     public void IdleState()
     {
         lastIdlePosition = transform.position;
-        SelectableEntity found = IdleDetectEnemies();
+        Entity found = IdleDetectEnemies();
 
         if (found != null)
         {
@@ -284,14 +284,14 @@ public class Attacker : SwingEntityAddon
             //Debug.Log("trying to target enemy idle");
         }
     }
-    private SelectableEntity IdleDetectEnemies()
+    private Entity IdleDetectEnemies()
     {
         float physSearchRange = range;
         if (ent.IsMelee())
         {
             physSearchRange = Global.instance.defaultMeleeSearchRange;
         }
-        SelectableEntity eligibleIdleEnemy = FindEnemyThroughPhysSearch(physSearchRange, RequiredEnemyType.Minion, false, true);
+        Entity eligibleIdleEnemy = FindEnemyThroughPhysSearch(physSearchRange, RequiredEnemyType.Minion, false, true);
         return eligibleIdleEnemy;
     }
 
@@ -356,7 +356,7 @@ public class Attacker : SwingEntityAddon
 
             if (ent.IsMelee())
             {
-                SelectableEntity enemy = null;
+                Entity enemy = null;
                 if (targetEnemy.IsMinion()) //target the first minion that enters our range
                 {
                     enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Minion, false);
@@ -415,7 +415,7 @@ public class Attacker : SwingEntityAddon
 
         if (pf.PathBlocked()) //if we cannot reach the target destination, we should attack structures on our way
         {
-            SelectableEntity enemy = null;
+            Entity enemy = null;
             
             //if we can't get where we're trying to go, then we can fall back on attacking the structure we're stuck on
             /*if (pf.IsEffectivelyIdle(1)) //blocked for long time, attack anything
@@ -470,7 +470,7 @@ public class Attacker : SwingEntityAddon
                 break;
             case Goal.AttackFromIdle:
                 //check if there's more enemies within our idle attack range
-                SelectableEntity found = IdleDetectEnemies();
+                Entity found = IdleDetectEnemies();
                 if (found != null && InChaseRange(found))
                 {
                     targetEnemy = found;
@@ -492,7 +492,7 @@ public class Attacker : SwingEntityAddon
         }
     }
 
-    public void DamageSpecifiedEnemy(SelectableEntity enemy, sbyte damage) //since hp is a network variable, changing it on the server will propagate changes to clients as well
+    public void DamageSpecifiedEnemy(Entity enemy, sbyte damage) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         if (enemy != null)
         { //fire locally
@@ -606,7 +606,7 @@ public class Attacker : SwingEntityAddon
     /// <param name="requiredEnemyType"></param>
     /// <param name="mustBeInSearchList"></param>
     /// <returns></returns>
-    private SelectableEntity FindEnemyThroughPhysSearch(float range, RequiredEnemyType requiredEnemyType, bool mustBeInSearchList,
+    private Entity FindEnemyThroughPhysSearch(float range, RequiredEnemyType requiredEnemyType, bool mustBeInSearchList,
         bool mustBeInChaseRange = false)
     {
         Collider[] enemyArray = new Collider[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
@@ -619,13 +619,13 @@ public class Attacker : SwingEntityAddon
         {
             searchedCount = Physics.OverlapSphereNonAlloc(transform.position, range, enemyArray, Global.instance.friendlyEntityLayer);
         }
-        SelectableEntity enemy = null;
-        SelectableEntity valid = null;
-        SelectableEntity backup = null;
+        Entity enemy = null;
+        Entity valid = null;
+        Entity backup = null;
         for (int i = 0; i < searchedCount; i++) //place valid entities into array
         {
             if (enemyArray[i] == null) continue; //if invalid do not increment slotToWriteTo 
-            enemy = enemyArray[i].GetComponent<SelectableEntity>();
+            enemy = enemyArray[i].GetComponent<Entity>();
             if (!IsValidTarget(enemy)) continue;
             if (mustBeInChaseRange && !InChaseRange(enemy)) continue;
             bool inList = !mustBeInSearchList; //if must be in search list, this bool is false; otherwise it's true
@@ -700,10 +700,10 @@ public class Attacker : SwingEntityAddon
         }
         return valid;
     }
-    private SelectableEntity FindEnemyInSearchListInRange(float range, RequiredEnemyType enemyType)
+    private Entity FindEnemyInSearchListInRange(float range, RequiredEnemyType enemyType)
     {
         if (assignedEntitySearcher == null) return null;
-        SelectableEntity[] searchArray = new SelectableEntity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
+        Entity[] searchArray = new Entity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
         int searchCount = 0;
         switch (enemyType)
         {
@@ -724,7 +724,7 @@ public class Attacker : SwingEntityAddon
         }
         for (int i = 0; i < searchCount; i++)
         {
-            SelectableEntity check = searchArray[i];
+            Entity check = searchArray[i];
             if (ent.IsEnemyOfTarget(check) && check.alive && check.isTargetable.Value) //only check on enemies that are alive, targetable, visible
             {
                 Vector3 offset = check.transform.position - transform.position;
@@ -736,10 +736,10 @@ public class Attacker : SwingEntityAddon
         }
         return null;
     }
-    private SelectableEntity FindSpecificEnemyInSearchListInRange(float range, SelectableEntity enemy)
+    private Entity FindSpecificEnemyInSearchListInRange(float range, Entity enemy)
     {
         if (assignedEntitySearcher == null) return null;
-        SelectableEntity[] searchArray = new SelectableEntity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
+        Entity[] searchArray = new Entity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
         int searchCount = 0;
         RequiredEnemyType enemyType = RequiredEnemyType.Any;
 
@@ -771,7 +771,7 @@ public class Attacker : SwingEntityAddon
         }
         for (int i = 0; i < searchCount; i++)
         {
-            SelectableEntity check = searchArray[i];
+            Entity check = searchArray[i];
             if (ent.IsEnemyOfTarget(check) && check.alive && check.isTargetable.Value && check == enemy) //only check on enemies that are alive, targetable, visible
             {
                 Vector3 offset = check.transform.position - transform.position;
@@ -786,7 +786,7 @@ public class Attacker : SwingEntityAddon
 
     CancellationTokenSource asyncSearchCancellationToken;
 
-    private async Task<SelectableEntity> FindEnemyMinionToAttack(float range)
+    private async Task<Entity> FindEnemyMinionToAttack(float range)
     {
         Debug.Log("Running idle find enemy minion to attack search");
 
@@ -799,12 +799,12 @@ public class Attacker : SwingEntityAddon
             range += 1;
         }
 
-        List<SelectableEntity> enemyList = ent.controllerOfThis.visibleEnemies;
-        SelectableEntity valid = null;
+        List<Entity> enemyList = ent.controllerOfThis.visibleEnemies;
+        Entity valid = null;
 
         for (int i = 0; i < enemyList.Count; i++)
         {
-            SelectableEntity check = enemyList[i];
+            Entity check = enemyList[i];
             if (ent.IsEnemyOfTarget(check) && check.alive && check.isTargetable.Value && check.IsMinion())
             //only check on enemies that are alive, targetable, visible, and in range. also only care about enemy minions
             {
@@ -826,7 +826,7 @@ public class Attacker : SwingEntityAddon
     {
         asyncSearchCancellationToken?.Cancel();
     }
-    private bool InChaseRange(SelectableEntity target)
+    private bool InChaseRange(Entity target)
     {
         return Vector3.Distance(lastIdlePosition, target.transform.position) <= maximumChaseRange;
     }
@@ -850,7 +850,7 @@ public class Attacker : SwingEntityAddon
             pf.PushNearbyOwnedIdlers();
             if (ent.IsMelee()) // melee troops should detect when blocked by walls and attack them
             {
-                SelectableEntity enemy = null;
+                Entity enemy = null;
                 if (pf.PathBlocked() && pf.IsEffectivelyIdle(.1f)) //no path to enemy, attack structures in our way
                 {
                     //periodically perform mini physics searches around us and if we get anything attack it 
@@ -918,11 +918,11 @@ public class Attacker : SwingEntityAddon
             }
         }
     }
-    public SelectableEntity GetTargetEnemy()
+    public Entity GetTargetEnemy()
     {
         return targetEnemy;
     }
-    public void AttackTarget(SelectableEntity select)
+    public void AttackTarget(Entity select)
     {
         targetEnemy = select;
         SwitchState(EntityStates.WalkToSpecificEnemy);
@@ -945,8 +945,8 @@ public class Attacker : SwingEntityAddon
         asyncSearchCancellationToken = new CancellationTokenSource();
         if (assignedEntitySearcher == null) return;
 
-        SelectableEntity valid = null;
-        SelectableEntity[] searchArray = new SelectableEntity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
+        Entity valid = null;
+        Entity[] searchArray = new Entity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
         int searchCount = 0;
         if (assignedEntitySearcher.MinionsInSearch()) //if there are minions, only search those
         {
@@ -961,7 +961,7 @@ public class Attacker : SwingEntityAddon
         //Debug.Log(searchCount);
         for (int i = 0; i < searchCount; i++) //run for each search result
         {
-            SelectableEntity checkedEnt = searchArray[i];
+            Entity checkedEnt = searchArray[i];
             if (ent.IsEnemyOfTarget(checkedEnt) && checkedEnt.alive && checkedEnt.isTargetable.Value) //only check on enemies that are alive, targetable, visible
             {
                 //float viabilityRange = minAttackMoveDestinationViabilityRange;
@@ -1038,7 +1038,7 @@ public class Attacker : SwingEntityAddon
             range += rangedUnitRangeExtension;
         }
 
-        SelectableEntity[] searchArray = new SelectableEntity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
+        Entity[] searchArray = new Entity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
         int searchCount = 0;
         if (assignedEntitySearcher.minionCount > 0) //if there are minions, only search those
         {
@@ -1046,10 +1046,10 @@ public class Attacker : SwingEntityAddon
             searchCount = assignedEntitySearcher.minionCount;
         }
 
-        SelectableEntity valid = null;
+        Entity valid = null;
         for (int i = 0; i < searchCount; i++)
         {
-            SelectableEntity check = searchArray[i];
+            Entity check = searchArray[i];
             if (ent.IsEnemyOfTarget(check) && check.alive && check.isTargetable.Value && check.IsMinion())
             //only check on enemies that are alive, targetable, visible, and in range, and are minions
             {

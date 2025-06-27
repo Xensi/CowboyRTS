@@ -116,7 +116,7 @@ public class ConditionalMessage : MonoBehaviour
         FactionEntity fac = currentMessageWithCondition.message.entityToCheck;
         int required = currentMessageWithCondition.message.numEntitiesToCheck;
         int matchedNum = 0;
-        foreach (SelectableEntity item in Global.instance.localPlayer.ownedEntities)
+        foreach (Entity item in Global.instance.localPlayer.ownedEntities)
         {
             if (item != null)
             {
@@ -130,7 +130,7 @@ public class ConditionalMessage : MonoBehaviour
         FactionEntity fac = currentMessageWithCondition.message.entityToCheck;
         int required = currentMessageWithCondition.message.numEntitiesToCheck; 
         int matchedNum = 0;
-        foreach (SelectableEntity item in Global.instance.localPlayer.ownedEntities)
+        foreach (Entity item in Global.instance.localPlayer.ownedEntities)
         {
             if (item != null)
             {
@@ -142,7 +142,7 @@ public class ConditionalMessage : MonoBehaviour
     }
     private bool CheckLevelEntitiesDestroyed()
     {  
-        foreach (SelectableEntity item in currentMessageWithCondition.levelEntities)
+        foreach (Entity item in currentMessageWithCondition.levelEntities)
         {
             if (item != null && item.alive)
             {
@@ -156,5 +156,5 @@ public class ConditionalMessage : MonoBehaviour
 public class MessageWithCondition
 {
     public Message message;
-    public List<SelectableEntity> levelEntities;
+    public List<Entity> levelEntities;
 } 

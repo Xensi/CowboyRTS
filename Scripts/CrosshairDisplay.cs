@@ -16,7 +16,7 @@ public class CrosshairDisplay : MonoBehaviour
     [SerializeField] private DisplayRadius dr;
     private float offset = 0;
     private bool visible = true;
-    public SelectableEntity assignedEntity;
+    public Entity assignedEntity;
     private bool shouldPulse = false;
     [SerializeField] private float idlePulseScale = 0.5f;
     private EntitySearcher entitySearcher;
@@ -101,7 +101,7 @@ public class CrosshairDisplay : MonoBehaviour
     {
         radius = newRad;
     }
-    public void CheckIfShouldBeDestroyed(SelectableEntity asker)
+    public void CheckIfShouldBeDestroyed(Entity asker)
     {
         if (assignedEntity == asker)
         {

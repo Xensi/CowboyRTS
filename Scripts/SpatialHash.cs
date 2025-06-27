@@ -1,0 +1,130 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UtilityMethods;
+using UnityEngine.Profiling;
+public class SpatialHash : MonoBehaviour
+{
+    private const int hashX = 73856093;
+    private const int hashY = 19349663;
+
+    Global global;
+    private int tableSize;
+    [SerializeField] private int[] table;
+    [SerializeField] private Entity[] denseEntityArray;
+    private float spacing = 1;
+    private void Start()
+    {
+        global = Global.instance;
+        tableSize = global.GetMaxEntities();
+        table = new int[tableSize];
+        denseEntityArray = new Entity[tableSize];
+    }
+    private void Update()
+    {
+        ParseParticles();
+    }
+
+    private int HashCoordinates(int xi, int yi)
+    {
+        int h = (xi * hashX) ^ (yi * hashY); //^ is XOR
+        return Mathf.Abs(h) % tableSize;
+    }
+    private int IntCoord(float f)
+    {
+        float offset = 0.5f;
+        return Mathf.FloorToInt(f + offset / spacing);
+    }
+    private void ParseParticles() //minute physics solution
+    {
+        Profiler.BeginSample("Parsing particles");
+        int[] tempTable = new int[tableSize];
+        Entity[] tempEntityArray = new Entity[global.GetNumEntities()];
+        foreach (Entity ent in global.GetEntityList())
+        {
+            int x = IntCoord(ent.transform.position.x);
+            int y = IntCoord(ent.transform.position.z);
+            int h = HashCoordinates(x, y); //compute hash value of the cell
+            ent.SetHash(h);
+            tempTable[h]++; //this shows us how many particles are in each cell using hash coords
+        }
+        int lastVal = 0;
+        for (int i = 0; i < tableSize; i++) //run through this array and compute partial sums
+        {
+            tempTable[i] += lastVal;
+            lastVal = tempTable[i];
+        }
+        //now the hash table has the last cell entry + 1 instead of the first cell entry
+        //fill in the particle array
+        foreach (Entity ent in global.GetEntityList())
+        {
+            int tableIndex = ent.GetHash();
+            tempTable[tableIndex]--; //decrease it by one
+            int particleIndex = tempTable[tableIndex];
+            tempEntityArray[particleIndex] = ent; //assign to particle array
+        }
+        denseEntityArray = tempEntityArray;
+        table = tempTable;
+        Profiler.EndSample();
+    }
+    private int[] GetHashesToCheck(Vector3 pos, float rangeRadius)
+    {
+        int startX = IntCoord(pos.x);
+        int startY = IntCoord(pos.z);
+        //get surrounding cells and calculate hash coordinates
+        int maxDist = Mathf.CeilToInt(rangeRadius);
+        int x0 = IntCoord(startX - maxDist);
+        int x1 = IntCoord(startX + maxDist + 1);
+        int y0 = IntCoord(startY - maxDist);
+        int y1 = IntCoord(startY + maxDist + 1);
+        int width = Mathf.Abs(x0 - x1);
+        int height = Mathf.Abs(y0 - y1);
+        int numHashes = width * height;
+        int[] hashesToCheck = new int[numHashes]; //if dist is 1, then 9 spaces needed;
+        //build set of cells to check
+        int hashIndex = 0;
+        for (int xi = x0; xi < x1; xi++)
+        {
+            for (int yi = y0; yi < y1; yi++)
+            {
+                //Debug.DrawRay(new Vector3(xi, 0, yi), Vector3.up, Color.white);
+                int h = HashCoordinates(xi, yi); //remember that this can result in hash collisions
+                hashesToCheck[hashIndex] = h;
+                hashIndex++;
+            }
+        }
+        return hashesToCheck;
+    }
+    public Entity[] GetEntitiesInRange(Vector3 pos, Entity queryingEntity, float rangeRadius)
+    {
+        Profiler.BeginSample("Checking particles");
+        int[] hashesToCheck = GetHashesToCheck(pos, rangeRadius);
+        List<Entity> tempList = new();
+        //check through cells
+        foreach (int h in hashesToCheck)
+        {
+            int denseStart = table[h]; //start of dense
+            int denseEnd = table[Mathf.Clamp(h + 1, 0, tableSize - 1)]; //check where the next cell starts to get the number of particles to check in the dense array
+
+            for (int i = denseStart; i <= denseEnd; i++)
+            {
+                int clampedIndex = Mathf.Clamp(i, 0, global.GetNumEntities() - 1);
+                Entity targetEnt = denseEntityArray[clampedIndex];
+                if (targetEnt == null) continue;
+                if (targetEnt == queryingEntity) continue;
+
+                float combined = targetEnt.GetRadius() + rangeRadius;
+                bool inRange = Util.FastDistanceCheck(pos, targetEnt.transform.position, combined);
+                if (inRange) // square the distance we compare with
+                {
+                    //ent.cc.UpdateColor(2);
+                    Debug.DrawRay(targetEnt.transform.position, Vector3.up * 2, Color.red);
+                    //add in range target to list of valid targets
+                    if (!tempList.Contains(targetEnt)) tempList.Add(targetEnt);
+                }
+            }
+        }
+        Profiler.EndSample();
+        return tempList.ToArray();
+    }
+}

@@ -12,7 +12,7 @@ using static UnitAnimator;
 /// <summary>
 /// Handles core behavior, like selection, HP, destruction, etc.
 /// </summary>
-public class SelectableEntity : NetworkBehaviour
+public class Entity : NetworkBehaviour
 {
     [HideInInspector] public bool fakeSpawn = false;
     #region Enums 
@@ -84,12 +84,12 @@ public class SelectableEntity : NetworkBehaviour
     [HideInInspector] public Vector3 rallyPoint;
     [HideInInspector] public bool alive = true;
 
-    [HideInInspector] public SelectableEntity occupiedGarrison;
+    [HideInInspector] public Entity occupiedGarrison;
     [HideInInspector] public bool isBuildIndicator = false;
     //[HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
 
     [Header("Debug")]
-    public SelectableEntity interactionTarget;
+    public Entity interactionTarget;
 
     [HideInInspector] public List<FactionUnit> buildQueue;
     [SerializeField] private MeshRenderer[] unbuiltRenderers;
@@ -118,8 +118,8 @@ public class SelectableEntity : NetworkBehaviour
     public bool isKeystone = false;
     public int allowedWorkers = 1; //how many can build/repair/harvest at a time
     public int allowedInteractors = 10; //how many can interact (not build/repair)
-    public List<SelectableEntity> workersInteracting;
-    public List<SelectableEntity> othersInteracting;
+    public List<Entity> workersInteracting;
+    public List<Entity> othersInteracting;
 
     [Header("Building Only")]
     [HideInInspector]
@@ -173,7 +173,7 @@ public class SelectableEntity : NetworkBehaviour
     private MeshRenderer[] finishedMeshRenderers;
     [HideInInspector] public Collider physicalCollider; 
     [HideInInspector] public RallyMission rallyMission;
-    [HideInInspector] public SelectableEntity rallyTarget;
+    [HideInInspector] public Entity rallyTarget;
     [HideInInspector]
     public int consumePopulationAmount = 1;
     [HideInInspector]
@@ -445,7 +445,7 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
         if (rallyVisual != null) rallyVisual.SetActive(false);
-        if (teamType == TeamBehavior.OwnerTeam) Global.instance.allEntities.Add(this);
+        if (teamType == TeamBehavior.OwnerTeam) Global.instance.AddEntityToMainList(this);
 
         InitializeBars();
         DetermineLayerBasedOnAllegiance();
@@ -482,6 +482,9 @@ public class SelectableEntity : NetworkBehaviour
             Gizmos.color = Color.cyan;
             Gizmos.DrawSphere(transform.position, .1f);
         }
+        Gizmos.DrawWireSphere(transform.position, 1);
+        Gizmos.color = Color.blue;
+        Gizmos.DrawWireSphere(transform.position, GetRadius());
     }
     private int oldHarvestedResourceAmount = 0;
     private void DetectChangeHarvestedResourceAmount()
@@ -522,6 +525,16 @@ public class SelectableEntity : NetworkBehaviour
 
 
     [HideInInspector] public bool initialized = false;
+
+    private int hash;
+    public void SetHash(int h)
+    {
+        hash = h;
+    }
+    public int GetHash()
+    {
+        return hash;
+    }
 
     public bool IsNotYetBuilt()
     {
@@ -675,7 +688,7 @@ public class SelectableEntity : NetworkBehaviour
         {
             //Debug.Log("mission registered");
             RallyMission spawnerRallyMission = spawnerThatSpawnedThis.rallyMission;
-            SelectableEntity rallyTarget = spawnerThatSpawnedThis.rallyTarget;
+            Entity rallyTarget = spawnerThatSpawnedThis.rallyTarget;
             setRallyDest = spawnerThatSpawnedThis.rallyPoint;
             //assign mission to last
             switch (spawnerRallyMission)
@@ -715,7 +728,7 @@ public class SelectableEntity : NetworkBehaviour
             }
         }
     }
-    public bool InRangeOfEntity(SelectableEntity target, float range)
+    public bool InRangeOfEntity(Entity target, float range)
     {
         if (target == null) return false;
         if (target.physicalCollider != null) //get closest point on collider; //this has an issue
@@ -850,7 +863,13 @@ public class SelectableEntity : NetworkBehaviour
                     OwnerUpdateBuildQueue();
                 }
             }
+            QuerySpatialHash();
         }
+    }
+    private void QuerySpatialHash()
+    {
+        int radius = 1;
+        Global.instance.spatialHash.GetEntitiesInRange(transform.position, this, radius);
     }
     private void UpdateEntityAddons()
     {
@@ -927,7 +946,7 @@ public class SelectableEntity : NetworkBehaviour
     public void ApplyEffect(Effect effect)
     {
         bool validApply = true;
-        SelectableEntity target = this;
+        Entity target = this;
 
         float variableToChange = 0;
         float secondVariable = 0;
@@ -1254,7 +1273,7 @@ public class SelectableEntity : NetworkBehaviour
         RemoveFromEnemyLists(); 
         if (healthBar != null) healthBar.Delete();
         if (productionProgressBar != null) productionProgressBar.Delete();
-        Global.instance.allEntities.Remove(this);
+        Global.instance.RemoveEntityFromMainList(this);
 
         RemoveFromPlayerLists(controllerOfThis); 
 
@@ -1394,7 +1413,7 @@ public class SelectableEntity : NetworkBehaviour
     {
         return controllerOfThis.allegianceTeamID != player.allegianceTeamID;
     }
-    public bool IsEnemyOfTarget(SelectableEntity target)
+    public bool IsEnemyOfTarget(Entity target)
     {
         if (target != null)
         {
@@ -1473,7 +1492,7 @@ public class SelectableEntity : NetworkBehaviour
         //Debug.Log("request builders");
         for (int i = 0; i < controllerOfThis.numSelectedEntities; i++)
         {
-            SelectableEntity item = controllerOfThis.selectedEntities[i];
+            Entity item = controllerOfThis.selectedEntities[i];
 
             if (item != null && item.IsBuilder())
             {
@@ -1741,7 +1760,7 @@ public class SelectableEntity : NetworkBehaviour
                 lineIndicator.SetPosition(0, transform.position + offset);
                 lineIndicator.SetPosition(1, rallyPoint + offset);
             }
-            SelectableEntity target = Global.instance.FindEntityFromObject(hit.collider.gameObject);
+            Entity target = Global.instance.FindEntityFromObject(hit.collider.gameObject);
             //SelectableEntity target = hit.collider.GetComponent<SelectableEntity>();
             if (target != null)
             {
@@ -1837,6 +1856,18 @@ public class SelectableEntity : NetworkBehaviour
             Global.instance.PlayClipAtPoint(clip, transform.position, 0.25f);
         }
     }
+    public float GetRadius()
+    {
+        if (pf != null)
+        {
+            return pf.ai.radius;
+        }
+        else
+        {
+            return ((physicalCollider.bounds.size.x * 0.5f) + (physicalCollider.bounds.size.z * 0.5f))/2;
+        }
+
+    }
     public bool IsStructure()
     {
         return sm == null;
@@ -1852,7 +1883,7 @@ public class SelectableEntity : NetworkBehaviour
             if (Physics.Raycast(positionToSpawnMinions.position + (new Vector3(0, 100, 0)), Vector3.down,
                 out RaycastHit hit, Mathf.Infinity, Global.instance.gameLayer))
             {
-                SelectableEntity target = Global.instance.FindEntityFromObject(hit.collider.gameObject);
+                Entity target = Global.instance.FindEntityFromObject(hit.collider.gameObject);
                 if (target != null) //something blocking
                 {
                     if (target.sm != null && target.controllerOfThis == controllerOfThis && !target.sm.InState(EntityStates.Walk))
@@ -1905,8 +1936,8 @@ public class SelectableEntity : NetworkBehaviour
         buildQueue.RemoveAt(0);
         SpawnFromSpawner(this, rallyPoint, unit);
     }
-    [HideInInspector] public SelectableEntity spawnerThatSpawnedThis;
-    public void SpawnFromSpawner(SelectableEntity select, Vector3 rally, FactionUnit unit)
+    [HideInInspector] public Entity spawnerThatSpawnedThis;
+    public void SpawnFromSpawner(Entity select, Vector3 rally, FactionUnit unit)
     {
         //spawner is this
         Vector3 pos;

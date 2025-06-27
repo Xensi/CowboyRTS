@@ -6,7 +6,7 @@ using UnityEngine;
 using static StateMachineController;
 public class EntityAddon : NetworkBehaviour
 {
-    [HideInInspector] public SelectableEntity ent;
+    [HideInInspector] public Entity ent;
     [HideInInspector] public StateMachineController sm;
     [HideInInspector] public UnitAnimator anim;
     [HideInInspector] public Pathfinder pf;
@@ -14,7 +14,7 @@ public class EntityAddon : NetworkBehaviour
 
     public virtual void Awake()
     {
-        ent = GetComponent<SelectableEntity>();
+        ent = GetComponent<Entity>();
         sm = GetComponent<StateMachineController>();
     }
     private void Start()
@@ -26,7 +26,7 @@ public class EntityAddon : NetworkBehaviour
     }
     public virtual void InitAddon() { }
     public virtual void UpdateAddon() { }
-    public SelectableEntity GetEntity()
+    public Entity GetEntity()
     {
         return ent;
     } 
@@ -43,7 +43,7 @@ public class EntityAddon : NetworkBehaviour
     {
         if (sm != null) sm.SetLastMajorState(state);
     }
-    public bool InRangeOfEntity(SelectableEntity target, float range)
+    public bool InRangeOfEntity(Entity target, float range)
     {
         return ent.InRangeOfEntity(target, range);
     }

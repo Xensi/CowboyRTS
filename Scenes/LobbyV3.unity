@@ -14863,6 +14863,7 @@ GameObject:
   - component: {fileID: 2114043657}
   - component: {fileID: 2114043656}
   - component: {fileID: 2114043659}
+  - component: {fileID: 2114043660}
   m_Layer: 0
   m_Name: 'GlobalReference '
   m_TagString: Untagged
@@ -14882,7 +14883,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82e73b3aac0ef464aa40db3496d90676, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  allEntities: []
   selectionRect: {fileID: 736966070}
   colors:
   - {fileID: 2100000, guid: f6e72cb4d0f2f0a47895a02988eaae88, type: 2}
@@ -14997,10 +14997,9 @@ MonoBehaviour:
   levelObjective: {fileID: 1131607442}
   entitySearcher: {fileID: 2353444043544607824, guid: 377e6261b5e52ff4ca53f4ef20ee48de, type: 3}
   crosshairPrefab: {fileID: 8138555312592417819, guid: 63591ec333626d742b25380f25fc2366, type: 3}
-  changeBlockedDelayMs: 250
-  maxExpectedUnits: 1
   maxFramesToFindTarget: 5
   playerHasWon: 0
+  changeBlockedDelayMs: 250
 --- !u!114 &2114043657
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15055,6 +15054,18 @@ MonoBehaviour:
   - Debug
   - Level1
   - Level2
+--- !u!114 &2114043660
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2114043655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9927d46dafc58e548a8138e9c619218f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2120837475
 GameObject:
   m_ObjectHideFlags: 0

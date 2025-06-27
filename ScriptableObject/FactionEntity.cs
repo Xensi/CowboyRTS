@@ -17,7 +17,7 @@ public class FactionEntity : ScriptableObject
     public float visionRange = 7;
     //public AudioClip[] sounds;
     public UnitSoundsProfile soundProfile;
-    public SelectableEntity.TeamBehavior teamType = SelectableEntity.TeamBehavior.OwnerTeam;
+    public Entity.TeamBehavior teamType = Entity.TeamBehavior.OwnerTeam;
     //public SelectableEntity.EntityTypes entityType = SelectableEntity.EntityTypes.Generic; 
 
     public GameObject deathEffect;  

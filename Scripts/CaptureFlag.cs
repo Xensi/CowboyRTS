@@ -14,13 +14,13 @@ public class CaptureFlag : MonoBehaviour
 
     [SerializeField] private GameObject endFlag;
 
-    [SerializeField] private List<SelectableEntity> watchedEntities = new();
+    [SerializeField] private List<Entity> watchedEntities = new();
     private int initialWatchedEntities = 0;
-    [SerializeField] private List<SelectableEntity> captureEntities = new();
-    [SerializeField] private List<SelectableEntity> destroyEntities = new();
+    [SerializeField] private List<Entity> captureEntities = new();
+    [SerializeField] private List<Entity> destroyEntities = new();
     private bool switched = false;
     [SerializeField] private int numAlive = 0;
-    [HideInInspector] public SelectableEntity ent;
+    [HideInInspector] public Entity ent;
     private void Start()
     {
         initialWatchedEntities = watchedEntities.Count;
@@ -36,7 +36,7 @@ public class CaptureFlag : MonoBehaviour
         {
             //get new flag position based on ratio of number of alive watched entities versus initial 
             numAlive = 0;
-            foreach (SelectableEntity item in watchedEntities)
+            foreach (Entity item in watchedEntities)
             {
                 if (item != null && item.alive)
                 {
@@ -65,7 +65,7 @@ public class CaptureFlag : MonoBehaviour
         if (switched) return;
         bool shouldSwitch = true;
 
-        foreach (SelectableEntity item in watchedEntities)
+        foreach (Entity item in watchedEntities)
         {
             if (item != null && item.alive)
             {   
@@ -98,7 +98,7 @@ public class CaptureFlag : MonoBehaviour
     }
     private void EffectEntities()
     {
-        foreach (SelectableEntity item in captureEntities)
+        foreach (Entity item in captureEntities)
         {
             if (item != null && item.controllerOfThis != Global.instance.localPlayer)
             {
@@ -106,7 +106,7 @@ public class CaptureFlag : MonoBehaviour
             }
         }
 
-        foreach (SelectableEntity item in destroyEntities)
+        foreach (Entity item in destroyEntities)
         {
             if (item != null)
             {

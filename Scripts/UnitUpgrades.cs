@@ -42,7 +42,7 @@ public class UnitUpgrades : EntityAddon
         Debug.Log(upgrade.uses);
         upgrade.uses--;
         Debug.Log(upgrade.uses);
-        SelectableEntity target = ent;
+        Entity target = ent;
         foreach (Stats stats in upgrade.addStats)
         {
             if (target == null) return;

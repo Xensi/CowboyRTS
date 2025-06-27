@@ -88,7 +88,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 174441591
+  GlobalObjectIdHash: 1827683345
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -112,7 +112,6 @@ MonoBehaviour:
   fakeSpawn: 0
   isTargetable:
     m_InternalValue: 0
-  isVisibleInFog: 0
   oldVisibleInFog: 0
   hideFogTeam: 0
   shouldHideInFog: 1
@@ -123,8 +122,9 @@ MonoBehaviour:
   aiControlled: 0
   productionBlocked: 0
   allPhysicalColliders: []
-  crosshairAssignedToEnemy: {fileID: 0}
   createdCrosshair: {fileID: 0}
+  manualCrosshairTargetingThis: {fileID: 0}
+  entitySearcherCrosshairTargetingThis: {fileID: 0}
   healthBar: {fileID: 8822708283478656167}
   productionProgressBar: {fileID: 5096031060808274819}
   factionEntity: {fileID: 0}
@@ -170,6 +170,7 @@ MonoBehaviour:
   isAttackable: 1
   rigid: {fileID: 0}
   unitAbilities: {fileID: 0}
+  unitUpgrades: {fileID: 0}
   anim: {fileID: 0}
   depot: {fileID: 0}
   ore: {fileID: 0}
@@ -189,6 +190,7 @@ MonoBehaviour:
   capFlag: {fileID: 0}
   fullyBuiltInScene: 0
   initialized: 0
+  setRallyDest: {x: 0, y: 0, z: 0}
   constructionBegun: 0
   appliedEffects: []
   fogUnit: {fileID: 0}

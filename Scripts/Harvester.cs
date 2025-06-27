@@ -69,7 +69,7 @@ public class Harvester : SwingEntityAddon
     /// </summary>
     /// <param name="target"></param>
     /// <returns></returns>
-    public bool ValidOreForHarvester(SelectableEntity target)
+    public bool ValidOreForHarvester(Entity target)
     { 
         if (target != null && target.ore != null && target.alive)
         {
@@ -78,7 +78,7 @@ public class Harvester : SwingEntityAddon
         }
         return false;
     }
-    public bool ValidDepositForHarvester(SelectableEntity targetDepot)
+    public bool ValidDepositForHarvester(Entity targetDepot)
     {
         bool val = false;
         List<ResourceType> presentTypes = new();
@@ -141,17 +141,17 @@ public class Harvester : SwingEntityAddon
     /// Returns closest harvestable resource with space for new harvesters.
     /// </summary>
     /// <returns></returns>
-    private SelectableEntity FindClosestHarvestable()
+    private Entity FindClosestHarvestable()
     {
         //Debug.Log("Finding closest harvestable");
         FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)ent.controllerOfThis.playerTeamID);
         List<Ore> oreList = ent.controllerOfThis.friendlyOres;
 
-        SelectableEntity closest = null;
+        Entity closest = null;
         float distance = Mathf.Infinity;
         foreach (Ore ore in oreList)
         {
-            SelectableEntity item = ore.GetEntity();
+            Entity item = ore.GetEntity();
             if (item != null && item.alive && fow.GetFogValue(item.transform.position) <= 0.5 * 255) //item is visible to some degree
             {
                 if (item.workersInteracting.Count < item.allowedWorkers) //there is space for a new harvester
@@ -167,15 +167,15 @@ public class Harvester : SwingEntityAddon
         }
         return closest;
     }
-    private SelectableEntity FindClosestDeposit() //right now resource agnostic
+    private Entity FindClosestDeposit() //right now resource agnostic
     {
         List<Depot> list = ent.controllerOfThis.ownedDepots;
 
-        SelectableEntity closest = null;
+        Entity closest = null;
         float distance = Mathf.Infinity;
         foreach (Depot depot in list)
         {
-            SelectableEntity item = depot.GetEntity();
+            Entity item = depot.GetEntity();
             if (item != null && item.fullyBuilt && item.alive && ValidDepositForHarvester(item))
             { 
                 float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position); //faster than .distance
@@ -338,7 +338,7 @@ public class Harvester : SwingEntityAddon
             }
         }
     }
-    public void HarvestTargetOnce(SelectableEntity target)
+    public void HarvestTargetOnce(Entity target)
     {
         //Debug.Log("Harvesting Target Once");
         ent.SimplePlaySound(1); //play impact sound 
@@ -381,7 +381,7 @@ public class Harvester : SwingEntityAddon
     private void RequestHarvestServerRpc(sbyte amount, NetworkBehaviourReference target)
     {
         //server must handle damage! 
-        if (target.TryGet(out SelectableEntity select))
+        if (target.TryGet(out Entity select))
         {
             select.Harvest(amount);
         }

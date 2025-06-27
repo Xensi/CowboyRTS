@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static SelectableEntity;
+using static Entity;
 
 public class Depot : EntityAddon
 { 

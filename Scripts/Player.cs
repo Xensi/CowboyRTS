@@ -14,11 +14,11 @@ public class Player : NetworkBehaviour
     public Faction playerFaction;
     //public List<SelectableEntity> selectedEntities; //selected and we can control them
     private readonly int maxArmy = 300;
-    public SelectableEntity[] selectedEntities;
+    public Entity[] selectedEntities;
     public int numSelectedEntities = 0;
-    public List<SelectableEntity> ownedEntities;
+    public List<Entity> ownedEntities;
     public List<StateMachineController> ownedMinions;
-    public List<SelectableEntity> unbuiltStructures;
+    public List<Entity> unbuiltStructures;
     public List<StateMachineController> ownedBuilders;
     public List<Harvester> ownedHarvesters = new();
     public List<Depot> ownedDepots = new();
@@ -31,13 +31,13 @@ public class Player : NetworkBehaviour
     public int playerTeamID = 0; //used for a player's fog of war
     public int allegianceTeamID = 0; //used to determine who is friendly and who is enemy. by default: 0 is player, 1 is AI
     [HideInInspector] public FogOfWarTeam fow;
-    public List<SelectableEntity> enemyEntities = new();
-    public List<SelectableEntity> visibleEnemies = new();
+    public List<Entity> enemyEntities = new();
+    public List<Entity> visibleEnemies = new();
     private int visibleIndexer = 0;
     public bool enable = true; //enabling in the middle of the game does not currently work
     public Color playerColor = Color.white;
 
-    public void UpdateSelectedEntities(SelectableEntity ent, bool val)
+    public void UpdateSelectedEntities(Entity ent, bool val)
     {
         //Debug.Log(selectedEntities.Length);
         if (val)
@@ -65,7 +65,7 @@ public class Player : NetworkBehaviour
     {
         public StateMachineController unit;
         public ActionType action;
-        public SelectableEntity target;
+        public Entity target;
         public Vector3 targetPosition;
     }
 
@@ -74,7 +74,7 @@ public class Player : NetworkBehaviour
         if (!enable) return;
         Global.instance.allPlayers.Add(this);
         //allegianceTeamID = playerTeamID; //by default
-        selectedEntities = new SelectableEntity[maxArmy];
+        selectedEntities = new Entity[maxArmy];
     }
     public virtual void Start()
     {
@@ -157,7 +157,7 @@ public class Player : NetworkBehaviour
             {
                 if (visibleIndexer >= enemyEntities.Count) visibleIndexer = enemyEntities.Count - 1;
 
-                SelectableEntity enemy = enemyEntities[visibleIndexer];
+                Entity enemy = enemyEntities[visibleIndexer];
                 if (enemy != null)
                 {
                     if (this is AIPlayer)
@@ -232,7 +232,7 @@ public class Player : NetworkBehaviour
         }
         return false;
     }
-    public bool IsPositionBlockedByEntity(SelectableEntity entity)
+    public bool IsPositionBlockedByEntity(Entity entity)
     {
         BoxCollider box = entity.physicalCollider as BoxCollider;
         if (box == null) return false;

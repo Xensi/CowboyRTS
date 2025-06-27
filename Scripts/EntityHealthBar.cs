@@ -8,7 +8,7 @@ public class EntityHealthBar : MonoBehaviour
     public Image bar;
     [SerializeField] private Gradient gradient;
     public Transform barParent;
-    [HideInInspector] public SelectableEntity entity; 
+    [HideInInspector] public Entity entity; 
 
     private void Start()
     {

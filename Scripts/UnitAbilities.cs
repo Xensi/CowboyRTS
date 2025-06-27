@@ -66,7 +66,7 @@ public class UnitAbilities : EntityAddon
                 repeatWhileLingering = effect.repeatWhileLingering,
                 particles = effect.particles,
             };
-            SelectableEntity target = ent;
+            Entity target = ent;
             if (target == null) return;
             //on activate, play particles
             if (ability.onActivateParticles != null) Instantiate(ability.onActivateParticles, target.transform);

@@ -14,9 +14,9 @@ public class EntitySearcher : MonoBehaviour
     private int searchedCount = 0; //up to where in array search results are valid
     [SerializeField] private float searchRadius = 4;
     public int structureCount = 0;
-    public SelectableEntity[] searchedStructures = new SelectableEntity[0];
-    public SelectableEntity[] searchedMinions = new SelectableEntity[0];
-    public SelectableEntity[] searchedAll = new SelectableEntity[0];
+    public Entity[] searchedStructures = new Entity[0];
+    public Entity[] searchedMinions = new Entity[0];
+    public Entity[] searchedAll = new Entity[0];
     public int allCount = 0;
     public int minionCount = 0;
     public int creatorAllegianceID = 0; //by default 0 is player, 1 is AI
@@ -32,9 +32,9 @@ public class EntitySearcher : MonoBehaviour
     int neededCrosshairs = 0;
     private void Start()
     { 
-        searchedStructures = new SelectableEntity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
-        searchedMinions = new SelectableEntity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
-        searchedAll = new SelectableEntity[Global.instance.fullEnemyArraySize];
+        searchedStructures = new Entity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
+        searchedMinions = new Entity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
+        searchedAll = new Entity[Global.instance.fullEnemyArraySize];
         Search();
         if (defaultDR != null)
         {
@@ -110,7 +110,7 @@ public class EntitySearcher : MonoBehaviour
         for (int i = 0; i < searchedCount; i++) //place valid entities into array
         {
             if (enemyArray[i] == null) continue; //if invalid do not increment slotToWriteTo
-            SelectableEntity select = enemyArray[i].GetComponent<SelectableEntity>();
+            Entity select = enemyArray[i].GetComponent<Entity>();
             
             if (select == null) continue;
             if (!select.alive || !select.isTargetable.Value || !select.isAttackable) //overwrite these slots
@@ -211,7 +211,7 @@ public class EntitySearcher : MonoBehaviour
                 crosshairs[i].SetPulse(false);
                 if (i < neededCrosshairs)
                 {
-                    SelectableEntity ent = null;
+                    Entity ent = null;
                     if (checkMinions)
                     {
                         ent = searchedMinions[i];

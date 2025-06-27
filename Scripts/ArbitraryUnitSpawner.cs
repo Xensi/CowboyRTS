@@ -23,7 +23,7 @@ public class ArbitraryUnitSpawner : NetworkBehaviour
 
     [SerializeField] private FactionEntity unitToSpawn;
 
-    [SerializeField] private List<SelectableEntity> watchEntities = new();
+    [SerializeField] private List<Entity> watchEntities = new();
 
     [SerializeField] private Player playerToGrantControlOverSpawnedUnits;
     [SerializeField] private VictoryManager victoryManagerToGrantUnitsTo;
@@ -57,7 +57,7 @@ public class ArbitraryUnitSpawner : NetworkBehaviour
                 if (Physics.Raycast(positionToSpawn + (new Vector3(0, 100, 0)), Vector3.down,
                             out RaycastHit hit, Mathf.Infinity, Global.instance.gameLayer))
                 {
-                    SelectableEntity target = Global.instance.FindEntityFromObject(hit.collider.gameObject);
+                    Entity target = Global.instance.FindEntityFromObject(hit.collider.gameObject);
                     if (target != null) //blocked
                     {
                         positionToSpawn = positionToSpawn + new Vector3(step * dir.x, 0, step * dir.y);
@@ -132,7 +132,7 @@ public class ArbitraryUnitSpawner : NetworkBehaviour
             case StartSpawningCondition.None:
                 break;
             case StartSpawningCondition.WatchEntitiesDamaged: 
-                foreach (SelectableEntity item in watchEntities)
+                foreach (Entity item in watchEntities)
                 {
                     if (item != null)
                     {

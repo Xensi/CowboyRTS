@@ -21,9 +21,9 @@ public class AIPlayer : Player
     public float timer = 0;
     private float attackTimer = 0;
     public Transform spawnPosition;
-    public List<SelectableEntity> knownEnemyStructures = new();
-    public List<SelectableEntity> knownEnemyUnits = new();
-    public List<SelectableEntity> watchedEntities = new();
+    public List<Entity> knownEnemyStructures = new();
+    public List<Entity> knownEnemyUnits = new();
+    public List<Entity> watchedEntities = new();
     public enum AIBehavior
     {
         Default, 
@@ -84,7 +84,7 @@ public class AIPlayer : Player
             case AIBehavior.HuntDownMinions:
                 break;
             case AIBehavior.SwitchToHDMWhenWatchedEntityDestroyed:
-                foreach (SelectableEntity item in watchedEntities)
+                foreach (Entity item in watchedEntities)
                 {
                     if (item != null && item.alive == false)
                     {
@@ -139,9 +139,9 @@ public class AIPlayer : Player
         StateMachineController compareUnit = null;
         if (ownedMinions.Count > 0) compareUnit = ownedMinions[0];
         if (compareUnit == null) return;
-        SelectableEntity closestEnemy = null;
+        Entity closestEnemy = null;
         float closestDist = Mathf.Infinity;
-        foreach (SelectableEntity enemy in knownEnemyUnits)
+        foreach (Entity enemy in knownEnemyUnits)
         {
             if (Vector3.Distance(compareUnit.transform.position, enemy.transform.position) < closestDist)
             {
@@ -182,7 +182,7 @@ public class AIPlayer : Player
         int spawners = 0;
         int fighters = 0;
         int popadders = 0;
-        foreach (SelectableEntity item in ownedEntities)
+        foreach (Entity item in ownedEntities)
         {
             if (item.IsHarvester())
             {
@@ -219,7 +219,7 @@ public class AIPlayer : Player
             {
                 for (int i = 0; i < player.ownedEntities.Count; i++)
                 {
-                    SelectableEntity entity = player.ownedEntities[i];
+                    Entity entity = player.ownedEntities[i];
                     if (entity != null)
                     {
                         bool visible = fow.GetFogValue(entity.transform.position) < Global.instance.minFogStrength * Global.instance.maxFogValue;
@@ -253,7 +253,7 @@ public class AIPlayer : Player
             for (int i = knownEnemyUnits.Count - 1; i >= 0; i--)
             {
 
-                SelectableEntity current = knownEnemyUnits[i];
+                Entity current = knownEnemyUnits[i];
                 if (current == null || !current.alive) knownEnemyUnits.RemoveAt(i); 
             }
         }
@@ -261,7 +261,7 @@ public class AIPlayer : Player
         { 
             for (int i = knownEnemyStructures.Count - 1; i >= 0; i--)
             {
-                SelectableEntity current = knownEnemyStructures[i];
+                Entity current = knownEnemyStructures[i];
                 if (current == null || !current.alive) knownEnemyStructures.RemoveAt(i); 
             }
         }
@@ -438,12 +438,12 @@ public class AIPlayer : Player
     private void TryToConstructType(BuildingDesire desire)
     {  
         //pick a unit/building that can spawn units. try to queue up a unit
-        SelectableEntity chosenEntity = null;
+        Entity chosenEntity = null;
         FactionBuilding building = null;
         foreach (StateMachineController minion in ownedMinions)
         {
             if (minion == null) continue;
-            SelectableEntity minionEntity = minion.ent;
+            Entity minionEntity = minion.ent;
             if (minionEntity == null) continue;
             if (minionEntity.IsBuilder() && !minion.IsCurrentlyBuilding())
             {
@@ -516,7 +516,7 @@ public class AIPlayer : Player
             if (foundValidPosition)
             {
                 gold -= building.goldCost;
-                SelectableEntity last = SpawnMinion(validPosition, building);
+                Entity last = SpawnMinion(validPosition, building);
                 chosenEntity.sm.ForceBuildTarget(last);
             }
         } 
@@ -571,7 +571,7 @@ public class AIPlayer : Player
         }*/
     }
      
-    public List<SelectableEntity> visibleResources = new();
+    public List<Entity> visibleResources = new();
     private void EvaluateVisibleResources()
     {
         //Debug.Log("Evaluating visible resources");
@@ -589,7 +589,7 @@ public class AIPlayer : Player
     }
     private void UpdateUnbuilt()
     {
-        foreach (SelectableEntity building in unbuiltStructures) //get an unbuilt structure
+        foreach (Entity building in unbuiltStructures) //get an unbuilt structure
         {
             if (building != null && building.IsFullyBuilt())
             {
@@ -600,11 +600,11 @@ public class AIPlayer : Player
     }
     private void TellInactiveBuildersToBuild()
     { 
-        foreach (SelectableEntity building in unbuiltStructures) //get an unbuilt structure
+        foreach (Entity building in unbuiltStructures) //get an unbuilt structure
         {
             if (building != null && building.IsNotYetBuilt())
             {
-                foreach (SelectableEntity builder in ownedEntities) //get a builder
+                foreach (Entity builder in ownedEntities) //get a builder
                 {
                     if (builder.sm != null && builder.IsBuilder() && !builder.sm.IsCurrentlyBuilding()) //minion
                     {
@@ -618,7 +618,7 @@ public class AIPlayer : Player
     private void TellInactiveMinersToHarvest()
     {
         //Debug.Log("Telling miners to harvest");
-        foreach (SelectableEntity item in ownedEntities)
+        foreach (Entity item in ownedEntities)
         {
             if (item.sm != null && item.IsHarvester() && !item.sm.IsCurrentlyBuilding()) //minion
             {
@@ -643,7 +643,7 @@ public class AIPlayer : Player
     /// <summary>
     /// The server will spawn in a minion at a position.
     /// </summary> 
-    public SelectableEntity SpawnMinion(Vector3 spawnPosition, FactionEntity unit)
+    public Entity SpawnMinion(Vector3 spawnPosition, FactionEntity unit)
     {
         if (playerFaction == null)
         {
@@ -655,10 +655,10 @@ public class AIPlayer : Player
             if (unit != null && unit.prefabToSpawn != null)
             {
                 GameObject minion = Instantiate(unit.prefabToSpawn.gameObject, spawnPosition, Quaternion.identity); //spawn the minion
-                SelectableEntity select = null;
+                Entity select = null;
                 if (minion != null)
                 {
-                    select = minion.GetComponent<SelectableEntity>(); //get select
+                    select = minion.GetComponent<Entity>(); //get select
                 }
                 if (select != null)
                 {

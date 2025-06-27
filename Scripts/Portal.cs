@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Portal : MonoBehaviour
 {
-    private SelectableEntity entity;
+    private Entity entity;
     // teleports minions to destination
     public Vector3 destination;
     public bool hasLinkedPortal = false;
@@ -12,7 +12,7 @@ public class Portal : MonoBehaviour
 
     private void Start()
     {
-        entity = GetComponent<SelectableEntity>();
+        entity = GetComponent<Entity>();
     }
     private void OnTriggerEnter(Collider other)
     {

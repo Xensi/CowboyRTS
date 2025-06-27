@@ -4,7 +4,7 @@ public class Projectile : MonoBehaviour
     public float speed = 1;
     [HideInInspector] public Vector3 groundTarget;
     public bool shouldHomeOnEntity = false;
-    [HideInInspector] public SelectableEntity entityToHomeOnto;
+    [HideInInspector] public Entity entityToHomeOnto;
     public float maxArcHeight = 10;
     [HideInInspector] public float actualArcHeight;
     [HideInInspector] public float firingUnitAttackRange = 4;

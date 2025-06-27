@@ -6,13 +6,13 @@ using TMPro;
 using Unity.Netcode;
 using UnityEngine.Rendering;
 using Pathfinding;
+using System.Linq;
 
 public class Global : NetworkBehaviour
 {
     public static Global instance { get; private set; }
     public readonly string FRIENDLY_ENTITY = "Entity";
     public readonly string ENEMY_ENTITY = "EnemyEntity";
-    public HashSet<SelectableEntity> allEntities = new();
     public RectTransform selectionRect;
     public List<Material> colors;
     public List<Color> teamColors;
@@ -88,7 +88,7 @@ public class Global : NetworkBehaviour
     public EntitySearcher entitySearcher;
     public CrosshairDisplay crosshairPrefab;
 
-    public int maxExpectedUnits = 100;
+    private const int maxEntities = 1000;
     public int maxFramesToFindTarget = 30;
     public bool playerHasWon = false;
     private bool finishedInitializingNewPlayers = false;
@@ -107,6 +107,36 @@ public class Global : NetworkBehaviour
     //1: selection
     //
     //
+
+    public HashSet<Entity> allEntities = new();
+    public SpatialHash spatialHash;
+
+
+    public void AddEntityToMainList(Entity ent)
+    {
+        allEntities.Add(ent);
+    }
+    public void RemoveEntityFromMainList(Entity ent)
+    {
+        allEntities.Remove(ent);
+    }
+    public int GetMaxEntities()
+    {
+        return maxEntities;
+    }
+    public int GetNumEntities()
+    {
+        return allEntities.Count;
+    }
+    /// <summary>
+    /// Passes all entity list by reference.
+    /// </summary>
+    /// <returns></returns>
+    public ref HashSet<Entity> GetEntityList()
+    {
+        return ref allEntities;
+    }
+
     public void UpdatePopFullWarning()
     {
         if (localPlayer == null) return;
@@ -117,15 +147,15 @@ public class Global : NetworkBehaviour
     {
         if (setRallyPointButton != null) setRallyPointButton.SetActive(val);
     }
-    public void PlayStructureSelectSound(SelectableEntity entity)
+    public void PlayStructureSelectSound(Entity entity)
     {
         if (entity.sounds.Length > 1) PlayClipAtPoint(entity.sounds[1], entity.transform.position, .75f);
     }
-    public void PlayMinionRefreshSound(SelectableEntity entity)
+    public void PlayMinionRefreshSound(Entity entity)
     {
         if (entity.sounds.Length > 4) PlayClipAtPoint(entity.sounds[4], entity.transform.position, 1f, 1, true);
     }
-    public void PlayMinionAbilitySound(SelectableEntity entity)
+    public void PlayMinionAbilitySound(Entity entity)
     {
         if (entity.sounds.Length > 3) PlayClipAtPoint(entity.sounds[3], entity.transform.position, .5f, 1, true);
     }
@@ -140,7 +170,6 @@ public class Global : NetworkBehaviour
         enemyLayer = LayerMask.GetMask(ENEMY_ENTITY);
         friendlyEntityLayer = LayerMask.GetMask(FRIENDLY_ENTITY);
 
-        // If there is an instance, and it's not me, delete myself.
         if (instance != null && instance != this)
         {
             Destroy(this);
@@ -169,21 +198,22 @@ public class Global : NetworkBehaviour
         }*/
         selectedParent.SetActive(false);
         resourcesParent.SetActive(false);
+        spatialHash = GetComponent<SpatialHash>();
     }
     public void UpdateLevelObjective()
     {
         if (levelObjective != null) levelObjective.text = VictoryManager.Instance.levelGoal;
     }
-    public SelectableEntity FindEntityFromObject(GameObject obj)
+    public Entity FindEntityFromObject(GameObject obj)
     {
-        SelectableEntity entity = obj.GetComponent<SelectableEntity>();
+        Entity entity = obj.GetComponent<Entity>();
         if (entity == null)
         {
-            entity = obj.GetComponentInParent<SelectableEntity>();
+            entity = obj.GetComponentInParent<Entity>();
         }
         if (entity == null)
         {
-            entity = obj.GetComponentInChildren<SelectableEntity>();
+            entity = obj.GetComponentInChildren<Entity>();
         }
         return entity;
     }
@@ -245,7 +275,7 @@ public class Global : NetworkBehaviour
     public void UpdateEnemyLists()
     {
         //Debug.Log("Updating Enemy Lists");
-        foreach (SelectableEntity entity in allEntities)
+        foreach (Entity entity in allEntities)
         {
             if (entity != null) entity.StartGameAddToEnemyLists();
         }

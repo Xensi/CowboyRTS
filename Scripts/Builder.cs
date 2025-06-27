@@ -25,7 +25,7 @@ public class Builder : SwingEntityAddon
     {
         return buildables;
     }
-    private bool InvalidBuildable(SelectableEntity target)
+    private bool InvalidBuildable(Entity target)
     {
         return target == null || target.initialized && target.fullyBuilt && !target.IsDamaged() || target.alive == false;
     }
@@ -64,7 +64,7 @@ public class Builder : SwingEntityAddon
         }
     }
 
-    public void BuildTarget(SelectableEntity target) //since hp is a network variable, changing it on the server will propagate changes to clients as well
+    public void BuildTarget(Entity target) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         //fire locally
         ent.SimplePlaySound(1);
@@ -85,7 +85,7 @@ public class Builder : SwingEntityAddon
     private void RequestBuildServerRpc(sbyte buildDelta, NetworkBehaviourReference target)
     {
         //server must handle damage! 
-        if (target.TryGet(out SelectableEntity select))
+        if (target.TryGet(out Entity select))
         {
             select.RaiseHP(buildDelta);
         }

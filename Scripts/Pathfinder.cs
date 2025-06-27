@@ -147,7 +147,7 @@ public class Pathfinder : EntityAddon
             for (int i = 0; i < searchedCount; i++)
             {
                 if (nearby[i] == null) continue;
-                SelectableEntity ent = nearby[i].GetComponent<SelectableEntity>();
+                Entity ent = nearby[i].GetComponent<Entity>();
                 if (ent == null) continue;
                 if (ent.sm == null) continue;
                 if (ent.sm.InState(EntityStates.Idle))
@@ -386,18 +386,18 @@ public class Pathfinder : EntityAddon
     {
         switch (sm.givenMission)
         {
-            case SelectableEntity.RallyMission.None:
+            case Entity.RallyMission.None:
                 break;
-            case SelectableEntity.RallyMission.Move:
+            case Entity.RallyMission.Move:
                 SetDestinationIfHighDiff(ent.GetRallyDest());
                 break;
-            case SelectableEntity.RallyMission.Harvest:
+            case Entity.RallyMission.Harvest:
                 break;
-            case SelectableEntity.RallyMission.Build:
+            case Entity.RallyMission.Build:
                 break;
-            case SelectableEntity.RallyMission.Garrison:
+            case Entity.RallyMission.Garrison:
                 break;
-            case SelectableEntity.RallyMission.Attack:
+            case Entity.RallyMission.Attack:
                 break;
             default:
                 break;
@@ -479,7 +479,7 @@ public class Pathfinder : EntityAddon
     /// Slight nudge
     /// </summary>
     /// <param name="entity"></param>
-    public void NudgeTargetEnemyStructureDestination(SelectableEntity entity)
+    public void NudgeTargetEnemyStructureDestination(Entity entity)
     {
         nudgedTargetEnemyStructurePosition = entity.transform.position;
         float step = 10 * Time.deltaTime;
@@ -539,7 +539,7 @@ public class Pathfinder : EntityAddon
             BasicWalkTo(target);
         }
     }
-    public void MoveToTarget(SelectableEntity target)
+    public void MoveToTarget(Entity target)
     {
         if (target == null) return;
         //Debug.Log("Moving to target");
@@ -553,7 +553,7 @@ public class Pathfinder : EntityAddon
             ent.interactionTarget = target;
             SetOrderedDestination(ent.interactionTarget.transform.position);
 
-            SelectableEntity justLeftGarrison = null;
+            Entity justLeftGarrison = null;
             if (ent.occupiedGarrison != null) //we are currently garrisoned
             {
                 justLeftGarrison = ent.occupiedGarrison;
