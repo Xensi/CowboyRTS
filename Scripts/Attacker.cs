@@ -37,7 +37,7 @@ public class Attacker : SwingEntityAddon
     public EntitySearcher assignedEntitySearcher;
     private bool attackOver = false;
 
-    enum RequiredEnemyType { Any, Minion, Structure, MinionPreferred }
+    public enum RequiredEnemyType { Any, Minion, Structure, MinionPreferred }
     public bool hasCalledEnemySearchAsyncTask = false;
     public Vector3 attackMoveDestination;
     public float sqrDistToTargetEnemy = Mathf.Infinity;
@@ -291,7 +291,8 @@ public class Attacker : SwingEntityAddon
         {
             physSearchRange = Global.instance.defaultMeleeSearchRange;
         }
-        Entity eligibleIdleEnemy = FindEnemyThroughPhysSearch(physSearchRange, RequiredEnemyType.Minion, false, true);
+        Entity eligibleIdleEnemy = GetFirstEnemyHashSearch(physSearchRange, RequiredEnemyType.Minion);
+        //Entity eligibleIdleEnemy = FindEnemyThroughPhysSearch(physSearchRange, RequiredEnemyType.Minion, false, true);
         return eligibleIdleEnemy;
     }
 
@@ -676,29 +677,14 @@ public class Attacker : SwingEntityAddon
                 default:
                     break;
             }
-            if (!matchesRequiredType) //go to next item if doesn't match
-            {
-                continue;
-            }
-            else //if it matches, stop looking
-            {
-                break;
-            }
+            if (matchesRequiredType) break;
         }
         if (backup != null && valid == null) valid = backup;
-        if (ent.GetAllegiance() == 0)
-        {   
-            if (valid != null)
-            {
-                //Debug.Log(name + " returning valid" + valid.name);
-            }
-            if (backup != null)
-            {
-
-                //Debug.Log(name + " returning backup" + backup.name);
-            }
-        }
         return valid;
+    }
+    private Entity GetFirstEnemyHashSearch(float range, RequiredEnemyType requiredEnemyType)
+    {
+        return Global.instance.spatialHash.GetFirstEnemyHashSearch(ent, range, requiredEnemyType);
     }
     private Entity FindEnemyInSearchListInRange(float range, RequiredEnemyType enemyType)
     {
@@ -841,7 +827,7 @@ public class Attacker : SwingEntityAddon
         {
             if (longTermGoal == Goal.AttackFromIdle && !InChaseRange(targetEnemy))
             {
-                Debug.Log("Outside chase range"); 
+                //Debug.Log("Outside chase range"); 
                 HandleLackOfValidTargetEnemy();
                 return;
             }

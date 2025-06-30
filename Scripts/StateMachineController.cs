@@ -347,8 +347,30 @@ public class StateMachineController : NetworkBehaviour
             canReceiveNewCommands = true;
         }
     }
-    public void SwitchState(EntityStates stateToSwitchTo)
+    public async void SwitchState(EntityStates stateToSwitchTo)
     {
+        if (pf == null) return;
+        switch (stateToSwitchTo)
+        {
+            case EntityStates.Walk:
+            case EntityStates.AttackMoving:
+            case EntityStates.WalkToSpecificEnemy:
+            case EntityStates.WalkToInteractable:
+            case EntityStates.WalkToRally:
+            case EntityStates.Garrisoning:
+            case EntityStates.Depositing:
+            case EntityStates.WalkToTarget:
+                pf.ClearObstacle();
+                pf.ChangeBlockedByMinionObstacleStatus(false);
+                await Task.Delay(1); //give time for obstacle clearing to register
+                pf.ChangeBlockedByMinionObstacleStatus(true);
+                break;
+            case EntityStates.PushableIdle:
+                pf.ClearObstacle();
+                await Task.Delay(1);
+                break;
+        }
+
         if (ent.IsAlliedTo(ent.controllerOfThis))
         {
             //Debug.Log(name + " is switching state to: " + stateToSwitchTo);

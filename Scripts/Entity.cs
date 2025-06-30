@@ -451,6 +451,35 @@ public class Entity : NetworkBehaviour
         DetermineLayerBasedOnAllegiance();
         PlaySpawnSound();
     }
+
+    private void Update()
+    {
+        if (IsSpawned)
+        {
+            DetectIfShouldDie();
+            if (HasStateMachine() && sm.InState(EntityStates.Die)) return;
+            UpdateVisibilityFromFogOfWar();
+            DetectIfShouldUnghost();
+            DetectIfBuilt();
+            UpdateInteractors();
+            //UpdateSelectionCirclePosition();
+            if (fullyBuilt)
+            {
+                UpdateRallyVariables();
+                UpdateTimers();
+                UpdateAppliedEffects();
+                UpdateUsedAbilities();
+                DetectChangeHarvestedResourceAmount();
+                //DetectIfDamaged();
+                UpdateEntityAddons();
+
+                if (IsOwner)
+                {
+                    OwnerUpdateBuildQueue();
+                }
+            }
+        }
+    }
     #region Start() Code
     private void DetermineLayerBasedOnAllegiance()
     { 
@@ -836,40 +865,6 @@ public class Entity : NetworkBehaviour
     private bool HasStateMachine()
     {
         return sm != null;
-    }
-    private void Update()
-    {
-        if (IsSpawned)
-        {
-            DetectIfShouldDie();
-            if (HasStateMachine() && sm.InState(EntityStates.Die)) return;
-            UpdateVisibilityFromFogOfWar();
-            DetectIfShouldUnghost();
-            DetectIfBuilt();
-            UpdateInteractors();
-            //UpdateSelectionCirclePosition();
-            if (fullyBuilt)
-            {
-                UpdateRallyVariables();
-                UpdateTimers();
-                UpdateAppliedEffects();
-                UpdateUsedAbilities();
-                DetectChangeHarvestedResourceAmount();
-                //DetectIfDamaged();
-                UpdateEntityAddons();
-
-                if (IsOwner)
-                {
-                    OwnerUpdateBuildQueue();
-                }
-            }
-            QuerySpatialHash();
-        }
-    }
-    private void QuerySpatialHash()
-    {
-        int radius = 1;
-        Global.instance.spatialHash.GetEntitiesInRange(transform.position, this, radius);
     }
     private void UpdateEntityAddons()
     {

@@ -134,18 +134,9 @@ public class Pathfinder : EntityAddon
             prePos = buffer[i];
         }
     }
-    public async void GetPushedIfIdle()
+    public void GetPushedIfIdle()
     {
         if (!InState(EntityStates.Idle)) return;
-
-        ClearObstacle();
-        //ChangeBlockedByMinionObstacleStatus(false);
-
-        await Task.Delay(changeBlockedDelayMs); //give time for obstacle clearing to register
-        if (!InState(EntityStates.Idle)) return;
-
-        //ChangeBlockedByMinionObstacleStatus(true);
-
         SwitchState(EntityStates.PushableIdle);
     }
     public async void PushNearbyOwnedIdlers()
@@ -576,17 +567,11 @@ public class Pathfinder : EntityAddon
             BasicWalkTo(target);
         }
     }
-    private int changeBlockedDelayMs = 1;
-    private async void BasicWalkTo(Vector3 target)
+    private void BasicWalkTo(Vector3 target)
     {
         sm.ClearTargets();
-        ClearObstacle();
-        ChangeBlockedByMinionObstacleStatus(false);
         SetOrderedDestination(target);
 
-        await Task.Delay(changeBlockedDelayMs); //give time for obstacle clearing to register
-
-        ChangeBlockedByMinionObstacleStatus(true);
         SwitchState(EntityStates.Walk); //will clear obstacle and idleness
 
 
@@ -721,7 +706,7 @@ public class Pathfinder : EntityAddon
     /// <param name="blocked"></param>
     public void ChangeBlockedByMinionObstacleStatus(bool blocked)
     {
-        Debug.Log("setting blocked to " + blocked);
+        //Debug.Log("setting blocked to " + blocked);
         GraphMask includingObstacles = GraphMask.FromGraphName("GraphIncludingMinionNavmeshCuts");
         GraphMask excludingObstacles = GraphMask.FromGraphName("GraphExcludingMinionNavmeshCuts");
         if (seeker != null)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UtilityMethods;
 using UnityEngine.Profiling;
+using static Attacker;
 public class SpatialHash : MonoBehaviour
 {
     private const int hashX = 73856093;
@@ -97,7 +98,6 @@ public class SpatialHash : MonoBehaviour
     }
     public Entity[] GetEntitiesInRange(Vector3 pos, Entity queryingEntity, float rangeRadius)
     {
-        Profiler.BeginSample("Checking particles");
         int[] hashesToCheck = GetHashesToCheck(pos, rangeRadius);
         List<Entity> tempList = new();
         //check through cells
@@ -117,14 +117,69 @@ public class SpatialHash : MonoBehaviour
                 bool inRange = Util.FastDistanceCheck(pos, targetEnt.transform.position, combined);
                 if (inRange) // square the distance we compare with
                 {
-                    //ent.cc.UpdateColor(2);
-                    //Debug.DrawRay(targetEnt.transform.position, Vector3.up * 2, Color.red);
-                    //add in range target to list of valid targets
                     if (!tempList.Contains(targetEnt)) tempList.Add(targetEnt);
                 }
             }
         }
-        Profiler.EndSample();
         return tempList.ToArray();
+    }
+    private int GetDenseStart(int h)
+    {
+        return table[h];
+    }
+    private int GetDenseEnd(int h)
+    {
+        return table[Mathf.Clamp(h + 1, 0, tableSize - 1)];
+    }
+    private int GetIndexClampedByNumEntities(int i)
+    {
+        return Mathf.Clamp(i, 0, global.GetNumEntities() - 1);
+    }
+    private float GetCombinedRadii(Entity target, float range)
+    {
+        return target.GetRadius() + range;
+    }
+    public Entity GetFirstEnemyHashSearch(Entity queryingEntity, float rangeRadius, RequiredEnemyType requiredEnemyType)
+    {
+        Vector3 pos = queryingEntity.transform.position;
+        Entity valid = null;
+        Entity backup = null;
+        foreach (int h in GetHashesToCheck(pos, rangeRadius)) //check through cells
+        {
+            for (int i = GetDenseStart(h); i <= GetDenseEnd(h); i++)
+            {
+                Entity targetEnt = denseEntityArray[GetIndexClampedByNumEntities(i)];
+                if (targetEnt == null || targetEnt == queryingEntity || !targetEnt.IsEnemyOfTarget(queryingEntity)) continue;
+                bool inRange = Util.FastDistanceCheck(pos, targetEnt.transform.position, GetCombinedRadii(targetEnt, rangeRadius));
+                if (!inRange) continue; //we filter out all options that are out of range
+                Debug.DrawRay(targetEnt.transform.position, Vector3.up, Color.white, 1);
+                switch (requiredEnemyType)
+                {
+                    case RequiredEnemyType.Any:
+                        valid = targetEnt;
+                        break;
+                    case RequiredEnemyType.Minion:
+                        if (targetEnt.IsMinion()) valid = targetEnt;
+                        break;
+                    case RequiredEnemyType.Structure:
+                        if (targetEnt.IsStructure()) valid = targetEnt;
+                        break;
+                    case RequiredEnemyType.MinionPreferred:
+                        if (targetEnt.IsMinion()) //if it's a structure, we'll continue, but leave this open as an option if we can't find any minions
+                        {
+                            valid = targetEnt;
+                        }
+                        else
+                        {
+                            backup = targetEnt;
+                        }
+                        break;
+                }
+                if (valid != null) break;
+            }
+        }
+        if (backup != null && valid == null) valid = backup; //if we search all and minion preferred, we can target structure
+        if (valid != null) Debug.DrawRay(valid.transform.position, Vector3.up, Color.red, 1);
+        return valid;
     }
 }
