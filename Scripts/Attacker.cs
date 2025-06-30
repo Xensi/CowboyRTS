@@ -66,7 +66,7 @@ public class Attacker : SwingEntityAddon
             assignedEntitySearcher.UnassignUnit(sm);
         }
     }
-    public async void AttackingState()
+    public void AttackingState()
     {
         if (!IsValidTarget(targetEnemy))
         {
@@ -75,10 +75,6 @@ public class Attacker : SwingEntityAddon
         }
         MakeAsyncSearchAvailableAgain();
         pf.ValidatePathStatus();
-        if (!sm.InState(EntityStates.Attacking)) return;
-        await Task.Yield();
-
-        if (!sm.InState(EntityStates.Attacking)) return;
 
         if (sm.InRangeOfEntity(targetEnemy, range))
         {
@@ -251,13 +247,24 @@ public class Attacker : SwingEntityAddon
     /// <returns></returns>
     public bool IsValidTarget(Entity target)
     {
+
         if (target == null || !target.isAttackable || !target.alive || !target.isTargetable.Value
-            || (IsPlayerControlled() && !target.IsVisibleInFog() || !target.IsEnemyOfTarget(ent)) || target.currentHP.Value <= 0
+            || IsPlayerControlled() && !target.IsVisibleInFog() || !target.IsEnemyOfTarget(ent) || target.currentHP.Value <= 0
             )
         //reject if target is null, or target is dead, or target is untargetable, or this unit is player controlled and target is hidden,
         //or this unit can't attack structures and target is structure
         {
             //if enemy is not valid, remove them
+            /*Debug.Log("invalid target" + target);
+            if (target != null)
+            {
+                if (!target.isAttackable) Debug.Log(1);
+                if (!target.alive) Debug.Log(2);
+                if (!target.isTargetable.Value) Debug.Log(3);
+                if (IsPlayerControlled() && !target.IsVisibleInFog()) Debug.Log(4);
+                if (!target.IsEnemyOfTarget(ent)) Debug.Log(5);
+                if (target.currentHP.Value <= 0) Debug.Log(6);
+            }*/
             if (targetEnemy == target) targetEnemy = null;
             return false;
         }
@@ -280,6 +287,7 @@ public class Attacker : SwingEntityAddon
         {
             targetEnemy = found;
             longTermGoal = Goal.AttackFromIdle;
+            SetTargetEnemyAsDestination();
             SwitchState(EntityStates.WalkToSpecificEnemy);
             //Debug.Log("trying to target enemy idle");
         }
@@ -360,7 +368,8 @@ public class Attacker : SwingEntityAddon
                 Entity enemy = null;
                 if (targetEnemy.IsMinion()) //target the first minion that enters our range
                 {
-                    enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Minion, false);
+                    enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Minion);
+                    //enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Minion, false);
                     if (enemy != null)
                     {
                         targetEnemy = enemy;
@@ -417,20 +426,10 @@ public class Attacker : SwingEntityAddon
         if (pf.PathBlocked()) //if we cannot reach the target destination, we should attack structures on our way
         {
             Entity enemy = null;
-            
-            //if we can't get where we're trying to go, then we can fall back on attacking the structure we're stuck on
-            /*if (pf.IsEffectivelyIdle(1)) //blocked for long time, attack anything
-            {
-                enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.MinionPreferred, false);
-            }
-            else if (pf.IsEffectivelyIdle(0.1f)) //blocked for a short time; find enemies in search list
-            {
-                enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.MinionPreferred, true);
-            }
-            else */
             if (pf.IsEffectivelyIdle(.1f)) //blocked for a very short time; melee can attack nearby enemies  && ent.IsMelee()
             {
-                enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.MinionPreferred, false);
+                enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.MinionPreferred);
+                //enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.MinionPreferred, false);
             }
             if (enemy != null)
             {
@@ -600,127 +599,9 @@ public class Attacker : SwingEntityAddon
     {
         ProjectileClientRpc(star, dest);
     }
-    /// <summary>
-    /// Grab first enemy nearby through physics search.
-    /// </summary>
-    /// <param name="range"></param>
-    /// <param name="requiredEnemyType"></param>
-    /// <param name="mustBeInSearchList"></param>
-    /// <returns></returns>
-    private Entity FindEnemyThroughPhysSearch(float range, RequiredEnemyType requiredEnemyType, bool mustBeInSearchList,
-        bool mustBeInChaseRange = false)
-    {
-        Collider[] enemyArray = new Collider[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
-        int searchedCount = 0;
-        if (ent.GetAllegiance() == 0) //our units should search enemy layer
-        {
-            searchedCount = Physics.OverlapSphereNonAlloc(transform.position, range, enemyArray, Global.instance.enemyLayer);
-        }
-        else //enemy units should search friendly layer
-        {
-            searchedCount = Physics.OverlapSphereNonAlloc(transform.position, range, enemyArray, Global.instance.friendlyEntityLayer);
-        }
-        Entity enemy = null;
-        Entity valid = null;
-        Entity backup = null;
-        for (int i = 0; i < searchedCount; i++) //place valid entities into array
-        {
-            if (enemyArray[i] == null) continue; //if invalid do not increment slotToWriteTo 
-            enemy = enemyArray[i].GetComponent<Entity>();
-            if (!IsValidTarget(enemy)) continue;
-            if (mustBeInChaseRange && !InChaseRange(enemy)) continue;
-            bool inList = !mustBeInSearchList; //if must be in search list, this bool is false; otherwise it's true
-            if (mustBeInSearchList && assignedEntitySearcher != null)
-            {
-                if (enemy.IsMinion())
-                {
-                    inList = Array.Exists(assignedEntitySearcher.searchedMinions, element => element == enemy);
-                }
-                else
-                {
-                    inList = Array.Exists(assignedEntitySearcher.searchedStructures, element => element == enemy);
-                }
-            }
-            if (!inList) continue; //can only progress if in list
-            bool matchesRequiredType = false;
-            switch (requiredEnemyType)
-            {
-                case RequiredEnemyType.Any:
-                    matchesRequiredType = true;
-                    valid = enemy;
-                    break;
-                case RequiredEnemyType.Minion:
-                    matchesRequiredType = enemy.IsMinion();
-                    if (matchesRequiredType)
-                    {
-                        valid = enemy;
-                    }
-                    break;
-                case RequiredEnemyType.Structure:
-                    matchesRequiredType = enemy.IsStructure();
-                    if (matchesRequiredType)
-                    {
-                        valid = enemy;
-                    }
-                    break;
-                case RequiredEnemyType.MinionPreferred:
-                    matchesRequiredType = enemy.IsMinion();
-                    if (matchesRequiredType) //if it's a structure, we'll continue, but leave this open as an option if we can't find any minions
-                    {
-                        valid = enemy;
-                    }
-                    else
-                    {
-                        backup = enemy;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            if (matchesRequiredType) break;
-        }
-        if (backup != null && valid == null) valid = backup;
-        return valid;
-    }
     private Entity GetFirstEnemyHashSearch(float range, RequiredEnemyType requiredEnemyType)
     {
         return Global.instance.spatialHash.GetFirstEnemyHashSearch(ent, range, requiredEnemyType);
-    }
-    private Entity FindEnemyInSearchListInRange(float range, RequiredEnemyType enemyType)
-    {
-        if (assignedEntitySearcher == null) return null;
-        Entity[] searchArray = new Entity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
-        int searchCount = 0;
-        switch (enemyType)
-        {
-            case RequiredEnemyType.Any:
-                searchArray = assignedEntitySearcher.searchedAll;
-                searchCount = assignedEntitySearcher.allCount;
-                break;
-            case RequiredEnemyType.Minion:
-                searchArray = assignedEntitySearcher.searchedMinions;
-                searchCount = assignedEntitySearcher.minionCount;
-                break;
-            case RequiredEnemyType.Structure:
-                searchArray = assignedEntitySearcher.searchedStructures;
-                searchCount = assignedEntitySearcher.structureCount;
-                break;
-            default:
-                break;
-        }
-        for (int i = 0; i < searchCount; i++)
-        {
-            Entity check = searchArray[i];
-            if (ent.IsEnemyOfTarget(check) && check.alive && check.isTargetable.Value) //only check on enemies that are alive, targetable, visible
-            {
-                Vector3 offset = check.transform.position - transform.position;
-                if (offset.sqrMagnitude < range * range) //return first enemy that's in range
-                {
-                    return check;
-                }
-            }
-        }
-        return null;
     }
     private Entity FindSpecificEnemyInSearchListInRange(float range, Entity enemy)
     {
@@ -772,38 +653,6 @@ public class Attacker : SwingEntityAddon
 
     CancellationTokenSource asyncSearchCancellationToken;
 
-    private async Task<Entity> FindEnemyMinionToAttack(float range)
-    {
-        Debug.Log("Running idle find enemy minion to attack search");
-
-        if (ent.IsMelee())
-        {
-            range = defaultMeleeDetectionRange;
-        }
-        else
-        {
-            range += 1;
-        }
-
-        List<Entity> enemyList = ent.controllerOfThis.visibleEnemies;
-        Entity valid = null;
-
-        for (int i = 0; i < enemyList.Count; i++)
-        {
-            Entity check = enemyList[i];
-            if (ent.IsEnemyOfTarget(check) && check.alive && check.isTargetable.Value && check.IsMinion())
-            //only check on enemies that are alive, targetable, visible, and in range. also only care about enemy minions
-            {
-                if (InRangeOfEntity(check, range)) //ai controlled doesn't care about fog
-                {
-                    valid = check;
-                }
-            }
-            await Task.Yield();
-            if (valid != null) return valid;
-        }
-        return valid;
-    }
     public float maximumChaseRange = 5;
     /// <summary>
     /// Cancel an in-progress async search (searching through list of enemies for a target enemy).
@@ -840,7 +689,8 @@ public class Attacker : SwingEntityAddon
                 if (pf.PathBlocked() && pf.IsEffectivelyIdle(.1f)) //no path to enemy, attack structures in our way
                 {
                     //periodically perform mini physics searches around us and if we get anything attack it 
-                    enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Structure, false); 
+                    enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Structure);
+                    //enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Structure, false); 
                     if (enemy != null)
                     {
                         //Debug.Log("Found new enemy while blocked");
@@ -986,8 +836,6 @@ public class Attacker : SwingEntityAddon
                     {
                         pf.NudgeTargetEnemyStructureDestination(targetEnemy);
                     }
-                    Debug.DrawRay(valid.transform.position, Vector3.up, Color.green, 1);
-                    //  Debug.Log("Square distance to: " + targetEnemy.name + " is " + sqrDistToTargetEnemy);
                 }
             }
             try

@@ -30,12 +30,13 @@ public class EntitySearcher : MonoBehaviour
     int tempStructureCount = 0;
     [SerializeField] private List<CrosshairDisplay> crosshairs = new();
     int neededCrosshairs = 0;
+    public Player playerCreator;
     private void Start()
     { 
         searchedStructures = new Entity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
         searchedMinions = new Entity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
         searchedAll = new Entity[Global.instance.fullEnemyArraySize];
-        Search();
+        SearchHash();
         if (defaultDR != null)
         {
             defaultDR.SetLREnable(false);
@@ -50,7 +51,7 @@ public class EntitySearcher : MonoBehaviour
             if (!searchingInProgress)
             {
                 timer = 0;
-                Search();
+                SearchHash();
             }
         }
 
@@ -86,6 +87,12 @@ public class EntitySearcher : MonoBehaviour
     public float SearchRadius()
     {
         return searchRadius;
+    }
+    private void SearchHash()
+    {
+        Global.instance.spatialHash.SearchHash(transform.position, searchRadius, playerCreator,
+            ref searchedMinions, ref searchedStructures, ref searchedAll,
+            ref minionCount, ref structureCount, ref allCount);
     }
     private async void Search()
     {

@@ -139,6 +139,42 @@ public class SpatialHash : MonoBehaviour
     {
         return target.GetRadius() + range;
     }
+    public void SearchHash(Vector3 pos, float rangeRadius, Player player,
+        ref Entity[] searchedMinions, ref Entity[] searchedStructures, ref Entity[] searchedAll,
+        ref int minionCount, ref int structureCount, ref int allCount)
+    {
+        int tempAllCount = 0;
+        int tempMinionCount = 0;
+        int tempStructureCount = 0;
+        foreach (int h in GetHashesToCheck(pos, rangeRadius)) //check through cells
+        {
+            for (int i = GetDenseStart(h); i <= GetDenseEnd(h); i++)
+            {
+                Entity targetEnt = denseEntityArray[GetIndexClampedByNumEntities(i)];
+                if (!player.IsValidTarget(targetEnt)) continue;
+                bool inRange = Util.FastDistanceCheck(pos, targetEnt.transform.position, GetCombinedRadii(targetEnt, rangeRadius));
+                if (!inRange) continue; //we filter out all options that are out of range
+                if (targetEnt.IsMinion() && tempMinionCount < searchedMinions.Length)
+                {
+                    searchedMinions[tempMinionCount] = targetEnt;
+                    tempMinionCount++;
+                }
+                else if (tempStructureCount < searchedStructures.Length)
+                {
+                    searchedStructures[tempStructureCount] = targetEnt;
+                    tempStructureCount++;
+                }
+                if (tempAllCount < searchedAll.Length)
+                {
+                    searchedAll[tempAllCount] = targetEnt;
+                    tempAllCount++;
+                }
+            }
+        }
+        allCount = tempAllCount;
+        minionCount = tempMinionCount;
+        structureCount = tempStructureCount;
+    }
     public Entity GetFirstEnemyHashSearch(Entity queryingEntity, float rangeRadius, RequiredEnemyType requiredEnemyType)
     {
         Vector3 pos = queryingEntity.transform.position;
@@ -149,10 +185,10 @@ public class SpatialHash : MonoBehaviour
             for (int i = GetDenseStart(h); i <= GetDenseEnd(h); i++)
             {
                 Entity targetEnt = denseEntityArray[GetIndexClampedByNumEntities(i)];
-                if (targetEnt == null || targetEnt == queryingEntity || !targetEnt.IsEnemyOfTarget(queryingEntity)) continue;
+                if (targetEnt == null || targetEnt == queryingEntity) continue;
+                if (queryingEntity.attacker != null && !queryingEntity.attacker.IsValidTarget(targetEnt)) continue;
                 bool inRange = Util.FastDistanceCheck(pos, targetEnt.transform.position, GetCombinedRadii(targetEnt, rangeRadius));
                 if (!inRange) continue; //we filter out all options that are out of range
-                Debug.DrawRay(targetEnt.transform.position, Vector3.up, Color.white, 1);
                 switch (requiredEnemyType)
                 {
                     case RequiredEnemyType.Any:
@@ -179,7 +215,6 @@ public class SpatialHash : MonoBehaviour
             }
         }
         if (backup != null && valid == null) valid = backup; //if we search all and minion preferred, we can target structure
-        if (valid != null) Debug.DrawRay(valid.transform.position, Vector3.up, Color.red, 1);
         return valid;
     }
 }

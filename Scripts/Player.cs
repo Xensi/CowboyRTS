@@ -128,6 +128,7 @@ public class Player : NetworkBehaviour
         searcher.dr.radius = searcher.SearchRadius();
         searcher.dr.SetColor(Color.red);
         searcher.creatorAllegianceID = allegiance;
+        searcher.playerCreator = this;
         return searcher;
     }
 
@@ -272,7 +273,26 @@ public class Player : NetworkBehaviour
     }
     Vector3 debugPos;
     Vector3 debugSize;
+    private bool IsPlayer()
+    {
+        return allegianceTeamID == 0;
+    }
+    public bool IsValidTarget(Entity target)
+    {
 
+        if (target == null || !target.isAttackable || !target.alive || !target.isTargetable.Value
+            || IsPlayer() && !target.IsVisibleInFog() || !target.IsEnemyOfPlayer(this) || target.currentHP.Value <= 0
+            )
+        //reject if target is null, or target is dead, or target is untargetable, or this unit is player controlled and target is hidden,
+        //or this unit can't attack structures and target is structure
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
     private void OnDrawGizmos()
     { 
         //Gizmos.color = Color.yellow;
