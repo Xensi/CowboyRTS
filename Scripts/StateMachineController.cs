@@ -172,30 +172,7 @@ public class StateMachineController : NetworkBehaviour
     }
 
     //private bool finishedInitializingRealLocation = false;
-    /// <summary>
-    /// Update repath rate based on order or current state. Attack move has a faster repath rate.
-    /// </summary>
-    private void UpdateRepathRate()
-    {
-        float defaultPathRate = 1f;
-        float slowPathRate = 2f;
-        float fastPathRate = 0.5f;
-        pf.ai.autoRepath.maximumPeriod = defaultPathRate;
-        pf.ai.autoRepath.mode = AutoRepathPolicy.Mode.Dynamic;
-
-        if (lastOrderType == ActionType.AttackMove || currentState == EntityStates.WalkToSpecificEnemy || currentState == EntityStates.Walk)
-        {
-            pf.ai.autoRepath.maximumPeriod = fastPathRate;
-        }
-        else if (currentState == EntityStates.Idle)
-        {
-            pf.ai.autoRepath.maximumPeriod = slowPathRate;
-        }
-        else if (currentState == EntityStates.Harvesting || currentState == EntityStates.Building)
-        {
-            pf.ai.autoRepath.mode = AutoRepathPolicy.Mode.Never;
-        }
-    }
+    
     private void Update()
     {
         //update real location, or catch up
@@ -211,7 +188,7 @@ public class StateMachineController : NetworkBehaviour
                 UpdateReadiness();
                 UpdateInteractors();
                 OwnerUpdateState();
-                UpdateRepathRate();
+                if (pf != null) pf.UpdateRepathRate();
                 //UpdateSetterTargetPosition();
                 //FixGarrisonObstacle();
                 ent.attacker.UpdateTargetEnemyLastPosition();
@@ -594,29 +571,24 @@ public class StateMachineController : NetworkBehaviour
                 break;
         }
     }
-    private void ChangeBlockedByMinionObstacleStatus(bool blocked)
+    private void UpdateIfCanReceiveNewCommands(EntityStates state)
     {
-        GraphMask includingObstacles = GraphMask.FromGraphName("GraphIncludingMinionNavmeshCuts");
-        GraphMask excludingObstacles = GraphMask.FromGraphName("GraphExcludingMinionNavmeshCuts");
-        if (pf != null && pf.seeker != null)
+        if (state == EntityStates.UsingAbility)
         {
-            if (blocked)
-            {
-                pf.seeker.graphMask = includingObstacles;
-            }
-            else
-            {
-                pf.seeker.graphMask = excludingObstacles;
-            }
+            canReceiveNewCommands = false;
+        }
+        else
+        {
+            canReceiveNewCommands = true;
         }
     }
-
     public async void SwitchState(EntityStates stateToSwitchTo)
     {
         if (ent.IsAlliedTo(ent.controllerOfThis))
         {
-            //Debug.Log(name + " is switching state to: " + stateToSwitchTo);
+            Debug.Log(name + " is switching state to: " + stateToSwitchTo);
         }
+        UpdateIfCanReceiveNewCommands(stateToSwitchTo);
         switch (stateToSwitchTo)
         {
             case EntityStates.Attacking:
@@ -627,13 +599,11 @@ public class StateMachineController : NetworkBehaviour
                 attackTrailTriggered = false;
                 ChangeAttackTrailState(false);
                 if (pf != null) pf.FreezeRigid(true, false);
-                canReceiveNewCommands = true;
                 break;
             case EntityStates.Harvesting:
             case EntityStates.Building:
                 stateTimer = 0;
                 if (pf != null) pf.FreezeRigid(true, false);
-                canReceiveNewCommands = true;
                 break;
             case EntityStates.Idle:
             case EntityStates.Die:
@@ -644,7 +614,6 @@ public class StateMachineController : NetworkBehaviour
                     pf.FreezeRigid(true, true);
                     pf.ResetEndReachedDistance();
                 }
-                canReceiveNewCommands = true;
                 break;
             case EntityStates.PushableIdle:
                 if (pf != null)
@@ -653,12 +622,10 @@ public class StateMachineController : NetworkBehaviour
                     pf.ResetEndReachedDistance();
                     pf.ResetPushableIdleTimer();
                 }
-                canReceiveNewCommands = true;
                 break;
             case EntityStates.UsingAbility:
                 if (pf != null) pf.FreezeRigid(true, true);
                 //animator.Play("UseAbility");
-                canReceiveNewCommands = false;
                 skipFirstFrame = true;
                 break;
             case EntityStates.Walk:
@@ -669,14 +636,12 @@ public class StateMachineController : NetworkBehaviour
             case EntityStates.Garrisoning:
             case EntityStates.Depositing:
             case EntityStates.WalkToTarget:
-                //ClearObstacle();
                 if (pf != null)
                 {
                     pf.ClearIdleness();
                     pf.SetWalkStartTimer();
                     pf.FreezeRigid(false, false);
                 }
-                canReceiveNewCommands = true;
                 break;
         }
         if (currentState != stateToSwitchTo)
@@ -689,13 +654,7 @@ public class StateMachineController : NetworkBehaviour
 
         if (currentState == EntityStates.Attacking)
         {
-            ChangeBlockedByMinionObstacleStatus(false);
-        }
-        else //at first pathfind freely, and then become blocked by obstacles. by then our own obstacle should not be a worry
-        {
-            ChangeBlockedByMinionObstacleStatus(false);
-            await Task.Delay(Global.instance.changeBlockedDelayMs);
-            ChangeBlockedByMinionObstacleStatus(true);
+            if (pf != null) pf.ChangeBlockedByMinionObstacleStatus(false);
         }
     }
     private bool skipFirstFrame = true;

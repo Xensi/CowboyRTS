@@ -275,8 +275,8 @@ public class Player : NetworkBehaviour
 
     private void OnDrawGizmos()
     { 
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireCube(debugPos, debugSize);
+        //Gizmos.color = Color.yellow;
+        //Gizmos.DrawWireCube(debugPos, debugSize);
     }
     public bool IsPositionBlocked(Vector3 position)
     {

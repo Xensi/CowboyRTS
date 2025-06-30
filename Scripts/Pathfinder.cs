@@ -13,6 +13,7 @@ using UnityEngine;
 using static StateMachineController;
 using static UnitAnimator;
 using UtilityMethods;
+using static Player;
 
 public class Pathfinder : EntityAddon
 {
@@ -133,7 +134,20 @@ public class Pathfinder : EntityAddon
             prePos = buffer[i];
         }
     }
+    public async void GetPushedIfIdle()
+    {
+        if (!InState(EntityStates.Idle)) return;
 
+        ClearObstacle();
+        //ChangeBlockedByMinionObstacleStatus(false);
+
+        await Task.Delay(changeBlockedDelayMs); //give time for obstacle clearing to register
+        if (!InState(EntityStates.Idle)) return;
+
+        //ChangeBlockedByMinionObstacleStatus(true);
+
+        SwitchState(EntityStates.PushableIdle);
+    }
     public async void PushNearbyOwnedIdlers()
     {
         if (IsEffectivelyIdle(0.25f))
@@ -149,16 +163,38 @@ public class Pathfinder : EntityAddon
                 if (nearby[i] == null) continue;
                 Entity ent = nearby[i].GetComponent<Entity>();
                 if (ent == null) continue;
-                if (ent.sm == null) continue;
-                if (ent.sm.InState(EntityStates.Idle))
-                {
-                    ent.sm.SwitchState(EntityStates.PushableIdle);
-                }
+                if (ent.pf == null) continue;
+                ent.pf.GetPushedIfIdle();
                 await Task.Yield();
             }
         }
     }
+    /// <summary>
+    /// Update repath rate based on order or current state. Attack move has a faster repath rate.
+    /// </summary>
+    public void UpdateRepathRate()
+    {
+        float defaultPathRate = 1f;
+        float slowPathRate = 2f;
+        float fastPathRate = 0.5f;
+        pf.ai.autoRepath.maximumPeriod = defaultPathRate;
+        pf.ai.autoRepath.mode = AutoRepathPolicy.Mode.Dynamic;
 
+        if (sm.lastOrderType == ActionType.AttackMove 
+            || sm.currentState == EntityStates.WalkToSpecificEnemy || sm.currentState == EntityStates.Walk)
+        {
+            pf.ai.autoRepath.maximumPeriod = fastPathRate;
+        }
+        else if (sm.currentState == EntityStates.Idle)
+        {
+            //pf.ai.autoRepath.mode = AutoRepathPolicy.Mode.Never;
+            pf.ai.autoRepath.maximumPeriod = slowPathRate;
+        }
+        else if (sm.currentState == EntityStates.Harvesting || sm.currentState == EntityStates.Building)
+        {
+            pf.ai.autoRepath.mode = AutoRepathPolicy.Mode.Never;
+        }
+    }
     private void BecomeObstacle()
     {
         if (!ent.alive)
@@ -360,6 +396,12 @@ public class Pathfinder : EntityAddon
             }
         }
     }
+    public void WalkState()
+    {
+        UpdateStopDistance();
+        DetectIfShouldReturnToIdle();
+        PushNearbyOwnedIdlers();
+    }
     float pushableIdleTimer = 0;
     readonly float pushableIdleMaxTime = 2;
 
@@ -375,12 +417,6 @@ public class Pathfinder : EntityAddon
         {
             SwitchState(EntityStates.Idle);
         }
-    }
-    public void WalkState()
-    {
-        UpdateStopDistance();
-        DetectIfShouldReturnToIdle();
-        PushNearbyOwnedIdlers();
     }
     public void WalkToRallyState()
     {
@@ -532,12 +568,36 @@ public class Pathfinder : EntityAddon
     /// <param name="target"></param>
     public void MoveTo(Vector3 target)
     {
+        //Debug.Log("Moving to " + target);
         sm.lastCommand.Value = CommandTypes.Move;
         if (sm.currentState != EntityStates.Spawn)
         {
             if (ent.IsAttacker()) ent.attacker.ResetGoal();
             BasicWalkTo(target);
         }
+    }
+    private int changeBlockedDelayMs = 5;
+    private async void BasicWalkTo(Vector3 target)
+    {
+        sm.ClearTargets();
+        ClearObstacle();
+        ChangeBlockedByMinionObstacleStatus(false);
+        SetOrderedDestination(target);
+
+        await Task.Delay(changeBlockedDelayMs); //give time for obstacle clearing to register
+
+        ChangeBlockedByMinionObstacleStatus(true);
+        ai.SearchPath();
+        SwitchState(EntityStates.Walk); //will clear obstacle and idleness
+
+
+        /*SelectableEntity justLeftGarrison = null;
+        if (ent.occupiedGarrison != null) //we are currently garrisoned
+        {
+            justLeftGarrison = ent.occupiedGarrison;
+            RemovePassengerFrom(ent.occupiedGarrison);
+            PlaceOnGround(); //snap to ground
+        }*/
     }
     public void MoveToTarget(Entity target)
     {
@@ -654,20 +714,28 @@ public class Pathfinder : EntityAddon
     {
         walkStartTimer = walkStartTimerSet;
     }
-    private void BasicWalkTo(Vector3 target)
-    {
-        sm.ClearTargets();
-        ClearIdleness();
-        SwitchState(EntityStates.Walk);
-        SetOrderedDestination(target);
 
-        /*SelectableEntity justLeftGarrison = null;
-        if (ent.occupiedGarrison != null) //we are currently garrisoned
+
+    /// <summary>
+    /// Set whether the unit's pathfinding should take obstacles into account or not.
+    /// </summary>
+    /// <param name="blocked"></param>
+    public void ChangeBlockedByMinionObstacleStatus(bool blocked)
+    {
+        Debug.Log("setting blocked to " + blocked);
+        GraphMask includingObstacles = GraphMask.FromGraphName("GraphIncludingMinionNavmeshCuts");
+        GraphMask excludingObstacles = GraphMask.FromGraphName("GraphExcludingMinionNavmeshCuts");
+        if (seeker != null)
         {
-            justLeftGarrison = ent.occupiedGarrison;
-            RemovePassengerFrom(ent.occupiedGarrison);
-            PlaceOnGround(); //snap to ground
-        }*/
+            if (blocked)
+            {
+                seeker.graphMask = includingObstacles;
+            }
+            else
+            {
+                seeker.graphMask = excludingObstacles;
+            }
+        }
     }
     public void SetOrderedDestination(Vector3 target)
     {
@@ -681,7 +749,7 @@ public class Pathfinder : EntityAddon
     }
     public readonly float walkAnimThreshold = 0.0001f;
     public float effectivelyIdleInstances = 0;
-    private readonly float idleThreshold = .5f;//3; //seconds of being stuck
+    private float idleThreshold = .5f; //seconds of being stuck
     private void OnDrawGizmos()
     {
         /*if (effectivelyIdleInstances / idleThreshold >= 1)
@@ -693,7 +761,7 @@ public class Pathfinder : EntityAddon
             Gizmos.color = Color.red;
         }
         Gizmos.DrawWireSphere(transform.position, effectivelyIdleInstances / idleThreshold);*/
-        switch (sm.GetState())
+        /*switch (sm.GetState())
         {
             case EntityStates.Idle:
                 Gizmos.color = Color.green;
@@ -701,7 +769,7 @@ public class Pathfinder : EntityAddon
             case EntityStates.PushableIdle:
                 Gizmos.color = Color.red;
                 break;
-        }
+        }*/
         //Gizmos.DrawWireSphere(transform.position, 0.5f);
     }
 }

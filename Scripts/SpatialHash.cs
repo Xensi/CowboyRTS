@@ -118,7 +118,7 @@ public class SpatialHash : MonoBehaviour
                 if (inRange) // square the distance we compare with
                 {
                     //ent.cc.UpdateColor(2);
-                    Debug.DrawRay(targetEnt.transform.position, Vector3.up * 2, Color.red);
+                    //Debug.DrawRay(targetEnt.transform.position, Vector3.up * 2, Color.red);
                     //add in range target to list of valid targets
                     if (!tempList.Contains(targetEnt)) tempList.Add(targetEnt);
                 }

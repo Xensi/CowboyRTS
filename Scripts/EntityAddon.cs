@@ -16,11 +16,12 @@ public class EntityAddon : NetworkBehaviour
     {
         ent = GetComponent<Entity>();
         sm = GetComponent<StateMachineController>();
+        pf = GetComponent<Pathfinder>();
     }
     private void Start()
     { 
         anim = ent.anim;
-        pf = ent.pf;
+        if (pf == null) pf = ent.pf;
         at = ent.attacker;
         InitAddon();
     }
@@ -38,7 +39,16 @@ public class EntityAddon : NetworkBehaviour
     {
         if (sm != null) sm.SwitchState(state);
     }
-
+    public EntityStates GetState()
+    {
+        if (sm == null) return EntityStates.Idle;
+        return sm.GetState();
+    }
+    public bool InState(EntityStates state)
+    {
+        if (sm == null) return false;
+        return sm.InState(state);
+    }
     public void SetLastMajorState(EntityStates state)
     {
         if (sm != null) sm.SetLastMajorState(state);

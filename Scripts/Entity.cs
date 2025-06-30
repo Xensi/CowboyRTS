@@ -477,14 +477,14 @@ public class Entity : NetworkBehaviour
     #endregion
     private void OnDrawGizmos()
     {
-        if (fakeSpawn)
+        /*if (fakeSpawn)
         {
             Gizmos.color = Color.cyan;
             Gizmos.DrawSphere(transform.position, .1f);
         }
         Gizmos.DrawWireSphere(transform.position, 1);
         Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(transform.position, GetRadius());
+        Gizmos.DrawWireSphere(transform.position, GetRadius());*/
     }
     private int oldHarvestedResourceAmount = 0;
     private void DetectChangeHarvestedResourceAmount()
