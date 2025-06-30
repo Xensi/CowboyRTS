@@ -442,7 +442,7 @@ public class Attacker : SwingEntityAddon
     }
     public void SetTargetEnemyAsDestination()
     {
-        if (targetEnemy == null) return;
+        if (targetEnemy == null || pf == null) return;
         if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
         {
             pf.NudgeTargetEnemyStructureDestination(targetEnemy);
