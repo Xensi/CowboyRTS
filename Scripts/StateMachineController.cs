@@ -13,6 +13,7 @@ using System;
 using System.Threading;
 using TMPro;
 using static UnitAnimator;
+using System.Collections;
 
 //used for entities that can attack
 [RequireComponent(typeof(Entity))]
@@ -198,6 +199,11 @@ public class StateMachineController : NetworkBehaviour
                 pf.NonOwnerPathfindToOldestRealLocation();
             }
         }
+
+        if (frames < desiredFrames)
+        {
+            frames++;
+        }
     }
     
     private Entity clientSideTargetInRange = null;
@@ -347,7 +353,7 @@ public class StateMachineController : NetworkBehaviour
             canReceiveNewCommands = true;
         }
     }
-    public async void SwitchState(EntityStates stateToSwitchTo)
+    public void SwitchState(EntityStates stateToSwitchTo)
     {
         if (pf == null) return;
         switch (stateToSwitchTo)
@@ -362,15 +368,27 @@ public class StateMachineController : NetworkBehaviour
             case EntityStates.WalkToTarget:
                 pf.ClearObstacle();
                 pf.ChangeBlockedByMinionObstacleStatus(false);
-                await Task.Delay(1); //give time for obstacle clearing to register
-                pf.ChangeBlockedByMinionObstacleStatus(true);
+                StartCoroutine(WaitForFramesSwitchState(stateToSwitchTo));
                 break;
             case EntityStates.PushableIdle:
                 pf.ClearObstacle();
-                await Task.Delay(1);
+                StartCoroutine(WaitForFramesSwitchState(stateToSwitchTo));
+                break;
+            default:
+                FinishSwitchState(stateToSwitchTo);
                 break;
         }
-
+    }
+    int frames = 0;
+    int desiredFrames = 5;
+    private IEnumerator WaitForFramesSwitchState(EntityStates stateToSwitchTo)
+    {
+        yield return new WaitUntil(() => frames >= desiredFrames);
+        FinishSwitchState(stateToSwitchTo);
+    }
+    private void FinishSwitchState(EntityStates stateToSwitchTo)
+    {
+        pf.ChangeBlockedByMinionObstacleStatus(true);
         if (ent.IsAlliedTo(ent.controllerOfThis))
         {
             //Debug.Log(name + " is switching state to: " + stateToSwitchTo);

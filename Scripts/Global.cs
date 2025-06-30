@@ -95,6 +95,8 @@ public class Global : NetworkBehaviour
     public readonly int attackMoveDestinationEnemyArrayBufferSize = 50;
     public readonly int fullEnemyArraySize = 50;
 
+    public int waitForNavmeshUpdateMS = 2;
+
     //Minion sound profile mapping:
     // 0: spawn
     // 1: damage

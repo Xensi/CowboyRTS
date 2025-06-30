@@ -593,9 +593,9 @@ public class Pathfinder : EntityAddon
             if (ent.IsAttacker()) ent.attacker.ResetGoal();
             sm.ClearTargets();
             ClearIdleness();
-            SwitchState(EntityStates.WalkToTarget);
             ent.interactionTarget = target;
             SetOrderedDestination(ent.interactionTarget.transform.position);
+            SwitchState(EntityStates.WalkToTarget);
 
             Entity justLeftGarrison = null;
             if (ent.occupiedGarrison != null) //we are currently garrisoned
