@@ -946,50 +946,6 @@ public class RTSPlayer : Player
         /*if (Input.GetKey(KeyCode.LeftShift) && gold >= building.goldCost)
         {
             //continue placing buildings
-        }
-        else if (!Input.GetKey(KeyCode.LeftShift) || gold < building.goldCost) //if not holding shift or out of money for this building
-        {
-            if (building.linkedID == -1) //if no linked building, stop after placing building
-            {
-                StopPlacingBuilding();
-                if (placingPortal)
-                {
-                    foreach (SelectableEntity item in ownedEntities)
-                    {
-                            Portal portal = item.GetComponent<Portal>();
-                            if (portal != startPortal)
-                            {
-                                endPortal = portal;
-
-                                startPortal.destination = endPortal.transform.position;
-                                endPortal.destination = startPortal.transform.position;
-                                startPortal.hasLinkedPortal = true;
-                                endPortal.hasLinkedPortal = true;
-                                startPortal.linkedPortal = endPortal;
-                                endPortal.linkedPortal = startPortal;
-
-                                startPortal = null;
-                                endPortal = null;
-                                placingPortal = false;
-                                break;
-                            }
-                    }
-                }
-            }
-            else //if there's a linked building, we continue placing buildings so the player can place the next part of the building.
-            {
-                buildingPlacingID = (byte)building.linkedID;
-                placingLinkedBuilding = true;
-
-                if (placingPortal)
-                {
-                    foreach (SelectableEntity item in ownedEntities)
-                    {
-                            startPortal = item.GetComponent<Portal>();
-                            break;
-                    }
-                }
-            }
         }*/
     }
     private void ClearWallGhosts()
@@ -1231,40 +1187,7 @@ public class RTSPlayer : Player
     }
     #region SpawnMinion
 
-    private void FakeClientSideSpawn(Vector3 spawn, byte minionID)
-    {
-        /*Vector3 spawnPosition = spawn;//new(spawn.x, 0, spawn.y); //get spawn position 
-        FactionUnit fac = _faction.entities[minionID]; //get information about minion based on ID
-        if (fac.prefabToSpawn != null) // && fac.prefabToSpawn.fakeSpawnObject != null
-        {
-            SelectableEntity select = Instantiate(fac.prefabToSpawn, spawnPosition, Quaternion.Euler(0, 180, 0)); //spawn locally  
-            Animator anim = select.GetComponentInChildren<Animator>();
-            MeshRenderer[] renderers = select.GetComponentsInChildren<MeshRenderer>();
-            NetworkObject net = select.GetComponent<NetworkObject>();
-            Destroy(net);
-            select.fakeSpawn = true;
-            //select.fakeSpawnNetID.
-            foreach (MeshRenderer item in renderers)
-            {
-                if (item != null)
-                {
-                    item.material.color = Global.Instance.teamColors[(int)Global.Instance.localPlayer.OwnerClientId];
-                }
-            }
-            foreach (MeshRenderer item in select.teamRenderers)
-            {
-                if (item != null)
-                {
-                    item.material.color = Global.Instance.teamColors[(int)Global.Instance.localPlayer.OwnerClientId];
-                }
-            }
-            if (anim != null)
-            {
-                anim.SetBool("fakeSpawn", true);
-            }
-            fakeSpawns.Add(select);
-        }  */
-    }
+    
     private void SpawnBuildingWithRotation(FactionBuilding building, Vector3 spawnPosition, Direction dir, Quaternion quat)
     {
         if (playerFaction == null)
@@ -1484,47 +1407,7 @@ public class RTSPlayer : Player
         }
     }
     private List<Entity> newSpawnsSpawnerList = new();
-    /*private void TryReplaceFakeSpawn() //not being used yet
-    {
-        if (fakeSpawns.Count > 0 && fakeSpawnsReadyForReplacement.Count > 0) //fakeSpawnsReadyForReplacement.Count > 0 && 
-        {
-            ushort fakeSpawnNetID = fakeSpawnsReadyForReplacement[0];
-            //find newly spawned using netIDs
-            List<NetworkObject> spawnedList = NetworkManager.SpawnManager.GetClientOwnedObjects(OwnerClientId);
-            foreach (NetworkObject item in spawnedList)
-            {
-                if (item.NetworkObjectId == fakeSpawnNetID)
-                {
-                    Debug.Log("Replacing fake spawn with real spawned object: " + item.name); //later do rally 
-                    NetworkObject newSpawn = item;
-
-                    SelectableEntity select = newSpawn.GetComponent<SelectableEntity>();
-                    SelectableEntity fake = fakeSpawns[0].GetComponent<SelectableEntity>();
-                    StateMachineController fakeController = fakeSpawns[0].GetComponent<StateMachineController>();
-                    newSpawn.transform.SetPositionAndRotation(fakeSpawns[0].transform.position, fakeSpawns[0].transform.rotation);
-                    if (select != null && select.sm != null && fake != null && fakeController != null)
-                    {
-                        select.sm.currentState = fakeController.GetState();
-                        select.sm.currentState = StateMachineController.EntityStates.Idle;
-                    }
-                    if (select != null && fake != null)
-                    {
-                        select.selected = fake.selected;
-                        //select.ChangeHitPointsServerRpc(fake.hitPoints.Value);
-                    }
-                    if (select != null && newSpawnsSpawnerList.Count > 0)
-                    {
-                        select.spawnerThatSpawnedThis = newSpawnsSpawnerList[0];
-                        newSpawnsSpawnerList.RemoveAt(0);
-                    }
-                    Destroy(fakeSpawns[0].gameObject);
-                    fakeSpawns.RemoveAt(0);
-                    fakeSpawnsReadyForReplacement.RemoveAt(0);
-                    break;
-                }
-            }
-        }
-    }*/
+    
     #endregion
     #region Selection
     private void DoNotDoubleSelect()

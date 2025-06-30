@@ -1112,33 +1112,4 @@ public class Attacker : SwingEntityAddon
             }
         }
     }
-    /// <summary>
-    /// Use to find a minion to attack when this is attacking a structure
-    /// </summary>
-    /// <param name="range"></param>
-    /// <param name="shouldExtendAttackRange"></param> 
-
-    /*private async Task AsyncFindAlternateLowerHealthMinionAttackTarget(float range)
-    {
-        SelectableEntity valid = null;
-        for (int i = 0; i < attackMoveDestinationEnemyCount; i++)
-        {
-            SelectableEntity check = attackMoveDestinationEnemyArray[i];
-            if (IsEnemy(check) && check.alive && check.isTargetable.Value && check.IsMinion()) //only check on enemies that are alive, targetable, visible, and in range
-            {
-                if (InRangeOfEntity(check, range))
-                {
-                    valid = check;
-                }
-            }
-            if (valid != null)
-            {
-                if (alternateAttackTarget == null || valid.currentHP.Value < alternateAttackTarget.currentHP.Value)
-                {
-                    alternateAttackTarget = valid;
-                }
-            }
-            await Task.Yield();
-        }
-    }*/
 }

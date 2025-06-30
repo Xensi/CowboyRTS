@@ -576,7 +576,7 @@ public class Pathfinder : EntityAddon
             BasicWalkTo(target);
         }
     }
-    private int changeBlockedDelayMs = 5;
+    private int changeBlockedDelayMs = 1;
     private async void BasicWalkTo(Vector3 target)
     {
         sm.ClearTargets();
@@ -587,7 +587,6 @@ public class Pathfinder : EntityAddon
         await Task.Delay(changeBlockedDelayMs); //give time for obstacle clearing to register
 
         ChangeBlockedByMinionObstacleStatus(true);
-        ai.SearchPath();
         SwitchState(EntityStates.Walk); //will clear obstacle and idleness
 
 

@@ -386,32 +386,4 @@ public class Harvester : SwingEntityAddon
             select.Harvest(amount);
         }
     }
-    /*private void UpdateResourceCollectableMeshes()
-    {
-        if (entity == null) return;
-        if (resourceCollectingMeshes.Length == 0) return;
-        if (entity.isVisibleInFog)
-        {
-            //compare max resources against max resourceCollectingMeshes
-            float frac = (float)harvestedResourceAmount / harvestCapacity;
-            int numToActivate = Mathf.FloorToInt(frac * resourceCollectingMeshes.Length);
-            for (int i = 0; i < resourceCollectingMeshes.Length; i++)
-            {
-                if (resourceCollectingMeshes[i] != null)
-                {
-                    resourceCollectingMeshes[i].enabled = i <= numToActivate - 1;
-                }
-            }
-        }
-        else
-        {
-            for (int i = 0; i < resourceCollectingMeshes.Length; i++)
-            {
-                if (resourceCollectingMeshes[i] != null)
-                {
-                    resourceCollectingMeshes[i].enabled = false;
-                }
-            }
-        }
-    }*/
 }

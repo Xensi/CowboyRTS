@@ -199,205 +199,7 @@ public class StateMachineController : NetworkBehaviour
             }
         }
     }
-    /*[SerializeField] private List<SelectableEntity> nearbyEnemies; 
-    private int nearbyEnemyIndexer = 0;
-    private void EvaluateNearbyEntities()
-    {
-        float range = 0;
-        if (entity.IsMelee())
-        {
-            range = defaultMeleeDetectionRange * 2;
-        }
-        else
-        {
-            range *= 2;
-        }
-        SelectableEntity enemy = Global.Instance.enemyEntities[nearbyEnemyIndexer];
-        bool visible = enemy.visibleInFog;
-        float dist = Vector3.Distance(transform.position, enemy.transform.position);
-        if (visible dist <= range)
-        {
-            if (!nearbyEnemies.Contains(enemy))
-            {
-                nearbyEnemies.Add(enemy);
-            }
-        }
-        else
-        {
-            nearbyEnemies.Remove(enemy);
-            *//*if (nearbyEnemies.Contains(enemy))
-            {
-            }*//*
-        }
-
-        nearbyEnemyIndexer++;
-        if (nearbyEnemyIndexer >= Global.Instance.enemyEntities.Count) nearbyEnemyIndexer = 0;
-    }
-    private void CleanNearbyEnemies()
-    {
-
-    }*/
-    /// <summary>
-    /// No functionality.
-    /// </summary>
-    private void FixGarrisonObstacle()
-    {
-        /*if (IsGarrisoned())
-        {
-            ClearObstacle();
-        }*/
-    }
-    //float stopDistIncreaseThreshold = 0.01f;
-    private void ClientSeekEnemy()
-    {
-        /*if (nearbyIndexer >= Global.Instance.allEntities.Count)
-        {
-            nearbyIndexer = Global.Instance.allEntities.Count - 1;
-        }
-        SelectableEntity check = Global.Instance.allEntities[nearbyIndexer]; //fix this so we don't get out of range 
-        if (clientSideTargetInRange == null)
-        {
-            if (check != null && check.alive && check.teamNumber.Value != ent.teamNumber.Value) //  && check.visibleInFog <-- doesn't work?
-            { //only check on enemies that are alive, targetable, visible, and in range  
-                clientSideTargetInRange = check;
-            }
-        }
-        nearbyIndexer++;
-        if (nearbyIndexer >= Global.Instance.allEntities.Count) nearbyIndexer = 0;
-
-        if (clientSideTargetInRange != null)
-        {
-            FreezeRigid();
-        }*/
-    }
-    private void NonOwnerUpdateAnimationBasedOnContext()
-    {
-        /*if (ent.alive)
-        {
-            if (ent.occupiedGarrison != null)
-            {
-                //ClientSeekEnemy();
-                if (clientSideTargetInRange != null)
-                {
-                    //Debug.DrawLine(transform.position, clientSideEnemyInRange.transform.position, Color.red, 0.1f);
-                    anim.Play("Attack");
-                    LookAtTarget(clientSideTargetInRange.transform);
-                }
-                else
-                {
-                    animator.Play("Idle");
-                }
-            }
-            else
-            {
-                switch (lastCommand.Value)
-                {
-                    case CommandTypes.Move:
-                    case CommandTypes.Deposit:
-                        ent.pf.IdleOrWalkContextuallyAnimationOnly();
-                        break;
-                    case CommandTypes.Attack:
-                        ClientSeekEnemy();
-                        ContextualIdleOrAttack();
-                        break;
-                    case CommandTypes.Harvest:
-                        ClientSeekHarvestable();
-                        ContextualIdleOrHarvestBuild();
-                        break;
-                    case CommandTypes.Build:
-                        ClientSeekBuildable();
-                        ContextualIdleOrHarvestBuild();
-                        break;
-                }
-            }
-        }
-        else
-        {
-            animator.Play("Die");
-        }*/
-    }
-    private void ContextualIdleOrHarvestBuild()
-    {
-        /*if (effectivelyIdleInstances > idleThreshold || ai.reachedDestination)
-        {
-            if (clientSideTargetInRange != null)
-            {
-                //Debug.DrawLine(transform.position, clientSideEnemyInRange.transform.position, Color.red, 0.1f);
-                animator.Play("Attack");
-                LookAtTarget(clientSideTargetInRange.transform);
-            }
-        }
-        else
-        {
-            animator.Play("Walk");
-        }*/
-    }
-    private void ContextualIdleOrAttack()
-    {
-        /*if (effectivelyIdleInstances > idleThreshold || ai.reachedDestination)
-        {
-            if (clientSideTargetInRange != null)
-            {
-                //Debug.DrawLine(transform.position, clientSideEnemyInRange.transform.position, Color.red, 0.1f);
-                LookAtTarget(clientSideTargetInRange.transform);
-                animator.Play("Attack");
-            }
-        }
-        else
-        {
-            if (!animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalkStart") && !animator.GetCurrentAnimatorStateInfo(0).IsName("AttackWalk"))
-            {
-                animator.Play("AttackWalkStart");
-            }
-        }*/
-    }
-    private void ClientSeekHarvestable()
-    {
-        /*if (nearbyIndexer >= Global.Instance.allEntities.Count)
-        {
-            nearbyIndexer = Global.Instance.allEntities.Count - 1;
-        }
-        SelectableEntity check = Global.Instance.allEntities[nearbyIndexer]; //fix this so we don't get out of range 
-        if (clientSideTargetInRange == null)
-        {
-            if (check != null && check.alive 
-                && check.IsOre())
-            { //only check on enemies that are alive, targetable, visible, and in range  
-                clientSideTargetInRange = check;
-            }
-        }
-        nearbyIndexer++;
-        if (nearbyIndexer >= Global.Instance.allEntities.Count) nearbyIndexer = 0;
-
-        if (clientSideTargetInRange != null)
-        {
-            FreezeRigid();
-        }*/
-    }
-
-    /*private void ClientSeekBuildable()
-    {
-        if (nearbyIndexer >= Global.instance.allEntities.Count)
-        {
-            nearbyIndexer = Global.instance.allEntities.Count - 1;
-        }
-        SelectableEntity check = Global.instance.allEntities[nearbyIndexer]; //fix this so we don't get out of range 
-        if (clientSideTargetInRange == null)
-        {
-            if (check != null && check.alive && check.teamNumber == ent.teamNumber &&
-                !check.fullyBuilt) //  && check.visibleInFog <-- doesn't work?
-            { //only check on enemies that are alive, targetable, visible, and in range  
-                clientSideTargetInRange = check;
-            }
-        }
-        nearbyIndexer++;
-        if (nearbyIndexer >= Global.instance.allEntities.Count) nearbyIndexer = 0;
-
-        if (clientSideTargetInRange != null)
-        {
-            pf.FreezeRigid();
-        }
-    }*/
+    
     private Entity clientSideTargetInRange = null;
     private void UpdateRealLocation()
     {
@@ -411,23 +213,12 @@ public class StateMachineController : NetworkBehaviour
             pf.SetRealLocation();
         }
     }
-    //private bool realLocationReached = false;
-    //private float updateRealLocThreshold = 1f; //1
-    //private readonly float allowedNonOwnerError = 1.5f; //1.5 ideally higher than real loc update; don't want to lerp to old position
     private new void OnDestroy()
     {
         CancelAllAsyncTasks();
     }
     #endregion
     #region States 
-    /*private void StopWalkingInGarrison()
-    {
-        if (ent.occupiedGarrison != null)
-        {
-            ent.interactionTarget = null;
-            SwitchState(EntityStates.Idle);
-        }
-    }*/
     private bool FollowGivenMission()
     {
         bool valid = false;
@@ -499,32 +290,6 @@ public class StateMachineController : NetworkBehaviour
         }
         return valid;
     }
-    private void AutoSeekEnemies()
-    {
-        /*if (shouldAggressivelySeekEnemies)
-        {
-            targetEnemy = FindEnemyMinionToAttack(attackRange, true);
-        }
-        else
-        {
-            targetEnemy = FindEnemyMinionToAttack(attackRange, false);
-        }*/
-        /*if (IsValidTarget(targetEnemy))
-        {
-            SwitchState(MinionStates.WalkToSpecificEnemy);
-        }*/
-    }
-    /*private void GarrisonedSeekEnemies()
-    {
-        if (IsValidTarget(targetEnemy))
-        {
-            SwitchState(EntityStates.Attacking);
-        }
-        else
-        {
-            targetEnemy = FindEnemyToAttack(attackRange);
-        }
-    }*/
     private void FinishSpawning()
     {
         SwitchState(EntityStates.Idle);
@@ -582,11 +347,11 @@ public class StateMachineController : NetworkBehaviour
             canReceiveNewCommands = true;
         }
     }
-    public async void SwitchState(EntityStates stateToSwitchTo)
+    public void SwitchState(EntityStates stateToSwitchTo)
     {
         if (ent.IsAlliedTo(ent.controllerOfThis))
         {
-            Debug.Log(name + " is switching state to: " + stateToSwitchTo);
+            //Debug.Log(name + " is switching state to: " + stateToSwitchTo);
         }
         UpdateIfCanReceiveNewCommands(stateToSwitchTo);
         switch (stateToSwitchTo)
@@ -858,40 +623,6 @@ public class StateMachineController : NetworkBehaviour
                 if (pf != null) pf.WalkState();
                 break;
             case EntityStates.WalkToTarget:
-            /*UpdateStopDistance();
-            IdleOrWalkContextuallyAnimationOnly();
-            if (ent.interactionTarget != null)
-            {
-                SetOrderedDestination(ent.interactionTarget.transform.position);
-            }
-            if (InRangeOfEntity(ent.interactionTarget, attackRange)) //if in range, check if this has an ability that can be satisfied
-            {
-                List<AbilityOnCooldown> usedAbilities = ent.unitAbilities.GetUsedAbilities();
-                if (usedAbilities.Count > 0)
-                {
-                    for (int i = usedAbilities.Count - 1; i >= 0; i--)
-                    {
-                        AbilityOnCooldown used = usedAbilities[i];
-                        if (used == null) continue;
-                        if (used.shouldCooldown) continue;
-                        if (used != null && used.visitBuildingToRefresh.Count > 0)
-                        {
-                            foreach (BuildingAndCost b in used.visitBuildingToRefresh)
-                            {
-                                if (b == null) continue;
-                                if (b.building == ent.interactionTarget.factionEntity && b.cost <= ent.controllerOfThis.gold) //this works
-                                {
-                                    usedAbilities.Remove(used);
-                                    ent.controllerOfThis.gold -= b.cost;
-
-                                    Global.Instance.PlayMinionRefreshSound(ent);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }*/
             case EntityStates.WalkToRally:
                 if (pf != null) pf.WalkToRallyState();
                 break;
@@ -1121,27 +852,6 @@ public class StateMachineController : NetworkBehaviour
         SwitchState(EntityStates.WalkToInteractable);
     }
     #endregion
-    #region DetectionFunctions
-    /*private void DetectIfShouldStopFollowingMoveOrder()
-    {
-        if (change <= walkAnimThreshold && effectivelyIdleInstances <= idleThreshold)
-        {
-            effectivelyIdleInstances++;
-        }
-        else if (change > walkAnimThreshold)
-        {
-            effectivelyIdleInstances = 0;
-        }
-        if (effectivelyIdleInstances > idleThreshold || ai.reachedDestination)
-        {
-            if (attackMoving)
-            {
-                //Debug.Log("moving to ordered destination");
-                SetDestination(orderedDestination);//destination.Value = orderedDestination;
-            }
-        }
-    }*/
-    #endregion
     #region More Stuff
     private void HideMoveIndicator()
     {
@@ -1189,19 +899,6 @@ public class StateMachineController : NetworkBehaviour
 
     public Vector3 targetEnemyClosestPoint;
     [HideInInspector] public bool shouldAggressivelySeekEnemies = true;
-    /*private bool CheckFacingTowards(Vector3 pos)
-    {
-        if (!directionalAttack) return true;
-        float threshold = .95f; //-1 opposite, 0 perpendicular, 1 facing
-        Vector3 forward = transform.TransformDirection(Vector3.forward).normalized;
-        Vector3 heading = (pos - transform.position).normalized;
-        //Debug.Log(Vector3.Dot(forward, heading));
-        if (Vector3.Dot(forward, heading) >= threshold)
-        {
-            return true;
-        }
-        return false;
-    } */
     private void UpdateReadiness()
     {
         if (ent.IsAttacker()) ent.attacker.UpdateReadiness();
@@ -1323,41 +1020,6 @@ public class StateMachineController : NetworkBehaviour
     /*private bool IsGarrisoned()
     {
         return ent.occupiedGarrison != null;
-    }*/
-    /*public void WorkOnGarrisoningInto(SelectableEntity garrison)
-    {
-        if (garrison.garrisonablePositions.Count <= 0)
-        {
-            MoveToTarget(garrison);
-        }
-        else
-        {
-            //Debug.Log("Trying to garrison");
-            SelectableEntity justLeftGarrison = null;
-            if (IsGarrisoned()) //we are currently garrisoned
-            {
-                justLeftGarrison = ent.occupiedGarrison;
-                ent.occupiedGarrison.UnloadPassenger(this); //leave garrison by moving out of it
-                PlaceOnGround(); //snap to ground
-            }
-            // && selectableEntity.garrisonablePositions.Count <= 0
-            if (justLeftGarrison != garrison) //not perfect, fails on multiple units
-            {
-                if (garrison.acceptsHeavy || !ent.isHeavy)
-                {
-                    ent.interactionTarget = garrison;
-                    SwitchState(EntityStates.WalkToInteractable);
-                    lastMajorState = EntityStates.Garrisoning;
-                    //Debug.Log("Moving into garrison");
-                }
-            }
-            lastCommand.Value = CommandTypes.Move;
-            *//*SelectableEntity garrison = select.occupiedGarrison;
-            selectableEntity.tryingToTeleport = true;
-            selectableEntity.interactionTarget = select;
-            state = State.WalkToInteractable;
-            lastState = State.Garrisoning;*//*
-        }
     }*/
     public void ChangeRVOStatus(bool val) //used
     {

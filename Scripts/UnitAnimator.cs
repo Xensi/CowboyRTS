@@ -59,17 +59,17 @@ public class UnitAnimator : EntityAddon
     }
     public void IdleOrWalkContextuallyAnimationOnly()
     {
-        /*if (pf == null) return;
+        if (pf == null) return;
         float limit = pf.changeThreshold;
         if (pf.change < limit * limit && pf.walkStartTimer <= 0 || pf.ai.reachedDestination) //basicallyIdleInstances > idleThreshold
         {
-            Play(IDLE); 
+            Play(IDLE);
         }
         else
         {
-            Play(WALK); 
-        }*/
-        Play(WALK);
+            Play(WALK);
+        }
+        //Play(WALK);
     }
     /// <summary>
     /// Handles code for playing animations for certain states that loop a single animation.
@@ -81,6 +81,9 @@ public class UnitAnimator : EntityAddon
             case EntityStates.Idle:
             case EntityStates.FindInteractable:
                 Play(IDLE);
+                break;
+            case EntityStates.PushableIdle:
+                IdleOrWalkContextuallyAnimationOnly();
                 break;
             case EntityStates.Walk:
             case EntityStates.WalkToSpecificEnemy:
