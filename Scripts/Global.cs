@@ -7,6 +7,7 @@ using Unity.Netcode;
 using UnityEngine.Rendering;
 using Pathfinding;
 using System.Linq;
+using UtilityMethods;
 
 public class Global : NetworkBehaviour
 {
@@ -18,39 +19,29 @@ public class Global : NetworkBehaviour
     public List<Color> teamColors;
     public List<Color> aiTeamColors;
     public List<Faction> factions;
-    public List<Button> productionButtons;
     public Material transparent;
     public Material blocked;
     [HideInInspector] public RTSPlayer localPlayer;
-    public TMP_Text goldText;
     public AudioClip[] footsteps;
-    public List<Button> queueButtons;
     public Transform queueParent;
     public GameObject explosionPrefab;
-
-    public GameObject selectedParent;
-    public TMP_Text nameText;
-    public TMP_Text descText;
-    public GameObject resourcesParent;
-    public TMP_Text resourceText;
     public GameObject gridVisual;
-    public TMP_Text hpText;
 
     public TrailController gunTrailGlobal;
     public ExplosiveProjectile cannonBall;
     public AudioClip explosion;
-    public GameObject singleUnitInfoParent;
-    public TMP_Text popText;
     public Volume fogVolume;
     public GraphUpdateScene graphUpdateScenePrefab;
-    public int maxMapSize = 25; //radius
-    public float allowedNonOwnerError = 1.5f; //should be greater than real loc threshold
-    public float updateRealLocThreshold = .75f; //1
+    [HideInInspector] public int maxMapSize = 25; //radius
+    #region Nonowner Movement
+    [HideInInspector] public float allowedNonOwnerError = 1.5f; //should be greater than real loc threshold
+    [HideInInspector] public float updateRealLocThreshold = .75f; //1
     public readonly float defaultMeleeSearchRange = 4f;
 
-    public int maximumQueuedRealLocations = 5;
-    public float closeEnoughDist = .3f;
-    public float lerpScale = 1;
+    [HideInInspector] public int maximumQueuedRealLocations = 5;
+    [HideInInspector] public float closeEnoughDist = .3f;
+    [HideInInspector] public float lerpScale = .15f;
+    #endregion
     public readonly float maxFogValue = 255;
     public readonly float minFogStrength = 0.45f;
     public readonly float exploredFogStrength = 0.51f;
@@ -66,7 +57,6 @@ public class Global : NetworkBehaviour
     [HideInInspector] public List<RTSPlayer> uninitializedPlayers = new();
     [HideInInspector] public List<RTSPlayer> initializedPlayers = new();
     [HideInInspector] public AIPlayer[] aiPlayers;
-    private readonly int maxAIPlayers = 10;
     [HideInInspector] public List<Player> allPlayers = new();
     public Grid grid;
 
@@ -75,11 +65,9 @@ public class Global : NetworkBehaviour
     public Canvas gameCanvas;
     public GameObject defaultCaptureEffect;
 
-    public GameObject setRallyPointButton;
     public GenericProgressBar structureProgressBar;
     public readonly int maxUnitsInProductionQueue = 10;
 
-    public GameObject popFullWarning;
 
     public TMP_Text reinforcementText;
     [HideInInspector] public ArbitraryUnitSpawner unitSpawnerToTrackReinforcements;
@@ -88,14 +76,22 @@ public class Global : NetworkBehaviour
     public EntitySearcher entitySearcher;
     public CrosshairDisplay crosshairPrefab;
 
-    private const int maxEntities = 1000;
-    public int maxFramesToFindTarget = 30;
-    public bool playerHasWon = false;
-    private bool finishedInitializingNewPlayers = false;
+    [HideInInspector] public bool playerHasWon = false;
     public readonly int attackMoveDestinationEnemyArrayBufferSize = 50;
     public readonly int fullEnemyArraySize = 50;
 
-    public int waitForNavmeshUpdateMS = 2;
+    public HashSet<Entity> allEntities = new();
+    [HideInInspector] public SpatialHash spatialHash;
+
+    private bool finishedInitializingNewPlayers = false;
+    private const int maxEntities = 1000;
+    private readonly int maxAIPlayers = 10;
+
+    #region UI
+
+    public GameObject resourcesParent;
+    public TMP_Text resourceText;
+    #endregion
 
     //Minion sound profile mapping:
     // 0: spawn
@@ -107,12 +103,48 @@ public class Global : NetworkBehaviour
     //Structure sound profile mapping:
     //0: spawn
     //1: selection
-    //
-    //
 
-    public HashSet<Entity> allEntities = new();
-    public SpatialHash spatialHash;
+    #region Standard
+    private void Awake()
+    {
+        groundLayer = LayerMask.GetMask("Ground");
+        blockingLayer = LayerMask.GetMask(FRIENDLY_ENTITY, "Obstacle");
+        gameLayer = LayerMask.GetMask(FRIENDLY_ENTITY, "Obstacle", "Ground", "OtherEntities", ENEMY_ENTITY);
+        allEntityLayer = LayerMask.GetMask(FRIENDLY_ENTITY, "OtherEntities", ENEMY_ENTITY);
+        enemyLayer = LayerMask.GetMask(ENEMY_ENTITY);
+        friendlyEntityLayer = LayerMask.GetMask(FRIENDLY_ENTITY);
 
+        if (instance != null && instance != this)
+        {
+            Destroy(this);
+        }
+        else
+        {
+            instance = this;
+        }
+
+        aiPlayers = new AIPlayer[maxAIPlayers];
+        /*SelectableEntity[] array = FindObjectsOfType<SelectableEntity>();
+        harvestableResources = new SelectableEntity[array.Length];
+        int j = 0;
+        for (int i = 0; i < array.Length; i++)
+        {
+            if (array[i] != null && array[i].IsOre())
+            {
+                harvestableResources[j] = array[i];
+                j++;
+            }
+        }*/
+        resourcesParent.SetActive(false);
+        spatialHash = GetComponent<SpatialHash>();
+    }
+    private void Update()
+    {
+        InitializePlayers();
+        if (!playerHasWon) CheckIfAPlayerHasWon();
+        UpdateReinforcementText();
+    }
+    #endregion
 
     public void AddEntityToMainList(Entity ent)
     {
@@ -139,16 +171,6 @@ public class Global : NetworkBehaviour
         return ref allEntities;
     }
 
-    public void UpdatePopFullWarning()
-    {
-        if (localPlayer == null) return;
-        bool full = localPlayer.population >= localPlayer.maxPopulation;
-        if (popFullWarning != null) popFullWarning.SetActive(full);
-    }
-    public void ChangeRallyPointButton(bool val)
-    {
-        if (setRallyPointButton != null) setRallyPointButton.SetActive(val);
-    }
     public void PlayStructureSelectSound(Entity entity)
     {
         if (entity.sounds.Length > 1) PlayClipAtPoint(entity.sounds[1], entity.transform.position, .75f);
@@ -160,45 +182,6 @@ public class Global : NetworkBehaviour
     public void PlayMinionAbilitySound(Entity entity)
     {
         if (entity.sounds.Length > 3) PlayClipAtPoint(entity.sounds[3], entity.transform.position, .5f, 1, true);
-    }
-    private void Awake()
-    {
-        groundLayer = LayerMask.GetMask("Ground");
-        blockingLayer = LayerMask.GetMask(FRIENDLY_ENTITY, "Obstacle");
-        gameLayer = LayerMask.GetMask(FRIENDLY_ENTITY, "Obstacle", "Ground", "OtherEntities", ENEMY_ENTITY);
-        allEntityLayer = LayerMask.GetMask(FRIENDLY_ENTITY, "OtherEntities", ENEMY_ENTITY);
-        enemyLayer = LayerMask.GetMask(ENEMY_ENTITY);
-        friendlyEntityLayer = LayerMask.GetMask(FRIENDLY_ENTITY);
-
-        if (instance != null && instance != this)
-        {
-            Destroy(this);
-        }
-        else
-        {
-            instance = this;
-        }
-
-        aiPlayers = new AIPlayer[maxAIPlayers];
-
-        foreach (Button item in productionButtons)
-        {
-            item.gameObject.SetActive(false);
-        }
-        /*SelectableEntity[] array = FindObjectsOfType<SelectableEntity>();
-        harvestableResources = new SelectableEntity[array.Length];
-        int j = 0;
-        for (int i = 0; i < array.Length; i++)
-        {
-            if (array[i] != null && array[i].IsOre())
-            {
-                harvestableResources[j] = array[i];
-                j++;
-            }
-        }*/
-        selectedParent.SetActive(false);
-        resourcesParent.SetActive(false);
-        spatialHash = GetComponent<SpatialHash>();
     }
     public void UpdateLevelObjective()
     {
@@ -217,13 +200,7 @@ public class Global : NetworkBehaviour
         }
         return entity;
     }
-    private void Update()
-    {
-        InitializePlayers();
-        if (!playerHasWon) CheckIfAPlayerHasWon();
-        UpdatePopFullWarning();
-        UpdateReinforcementText();
-    }
+    
     private void UpdateReinforcementText()
     {
         if (reinforcementText != null)

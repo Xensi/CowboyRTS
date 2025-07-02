@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 namespace UtilityMethods
@@ -24,6 +25,15 @@ namespace UtilityMethods
         public static bool SqrDistCheck(float sqrDist, float threshold)
         {
             return sqrDist < threshold * threshold;
+        }
+        public static void SetText(TMP_Text text, string words)
+        {
+            if (text != null) text.SetText(words);
+        }
+
+        public static void SmartSetActive(GameObject obj, bool val)
+        {
+            if (obj != null && obj.activeInHierarchy != val) obj.SetActive(val);
         }
     }
 }

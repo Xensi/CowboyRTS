@@ -11,6 +11,8 @@ using System;
 using System.Threading.Tasks;
 //using static UnityEditor.PlayerSettings;
 //using static UnityEditor.Progress;
+using UtilityMethods;
+using UnityEngine.UI;
 
 public class RTSPlayer : Player
 {
@@ -103,7 +105,6 @@ public class RTSPlayer : Player
             UpdateGUIFromSelectedEntities();
         }
     }
-
     public override void OnNetworkSpawn()
     {
         playerTeamID = System.Convert.ToInt32(OwnerClientId);
@@ -137,315 +138,6 @@ public class RTSPlayer : Player
         }
         //playerFaction = Global.Instance.factions[teamID];
         allegianceTeamID = playerTeamID;
-    }
-    private void OnDisable()
-    {
-        Global.instance.uninitializedPlayers.Remove(this);
-    }
-    #endregion
-    #region Cam
-    private void MoveCamToSpawn()
-    {
-        Vector3 spawn = playerSpawns.spawnsList[Convert.ToInt32(OwnerClientId)].position;
-        camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
-    }
-    private LevelInfo playerSpawns;
-    private void RetrieveSpawnPositionsList()
-    {
-        playerSpawns = null;
-        playerSpawns = FindFirstObjectByType<LevelInfo>();
-    }
-    private void CameraMove()
-    {
-        Vector3 motion = new(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
-        camParent.transform.Translate(camSpeed * Time.deltaTime * motion); //reordered operands for better performance
-        //from 0 to 10 
-        for (int i = 0; i < cams.Length; i++)
-        {
-            cams[i].orthographicSize = Mathf.Clamp(cams[i].orthographicSize - Input.mouseScrollDelta.y * camScroll, 1, 10); ;
-        }
-    }
-    #endregion
-    #region Commands
-
-    private void SelectedAttackMove()
-    {
-        //Debug.Log("trying to attack move");
-        Vector3 clickedPosition;
-        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.instance.localPlayer.groundLayer))
-        {
-            clickedPosition = hit.point;
-            EntitySearcher searcher = null;
-            if (GetNumSelected() > 0)
-            {
-                //create an entity searcher at the clicked position
-                searcher = CreateEntitySearcherAtPosition(clickedPosition, 0);
-            }
-
-            UnitOrdersQueue.Clear();
-
-            if (searcher == null) return;
-            for (int i = 0; i < numSelectedEntities; i++)
-            {
-                Entity item = selectedEntities[i];
-                if (item != null && item.sm != null && item.IsAttacker()) //minion
-                {
-                    //if this unit is already assigned to an entity searcher, unassign it
-                    if (item.attacker.assignedEntitySearcher != null)
-                    {
-                        item.attacker.assignedEntitySearcher.UnassignUnit(item.sm);
-                    }
-                    //assign the entity searcher to selected units
-                    item.attacker.assignedEntitySearcher = searcher;
-                    //update the entity searcher's assigned units list
-                    item.attacker.assignedEntitySearcher.AssignUnit(item.sm);
-                    item.attacker.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search
-                    UnitOrder order = new();
-                    order.unit = item.sm;
-                    order.targetPosition = clickedPosition;
-                    order.action = ActionType.AttackMove;
-                    UnitOrdersQueue.Add(order);
-                }
-            }
-        }
-    }
-    #endregion
-    #region MiscRegion
-    public void LoseGame()
-    {
-        inTheGame.Value = false;
-    }
-    private int GetNumSelected()
-    {
-        return numSelectedEntities;
-    }
-    private bool SameAllegiance(Entity foreign)
-    {   //later update this so it works with allegiances
-        //return foreign.controllerOfThis == this;
-        return foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
-        //return foreign.teamNumber.Value == (sbyte)playerTeamID;
-        //foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
-    }
-    /// <summary>
-    /// Behavior depends on what is right clicked and the type of unit responding
-    /// </summary>
-    private void ContextualQueueUnitOrders()
-    {
-        Vector3 clickedPosition = Vector3.zero;
-        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
-        RaycastHit[] raycastHits = new RaycastHit[5];
-        int hits = Physics.RaycastNonAlloc(ray.origin, ray.direction, raycastHits, Mathf.Infinity, Global.instance.gameLayer);
-
-        Entity hitEntity = null;
-        for (int i = 0; i < hits; i++)
-        {
-            Entity checkEntity = Global.instance.FindEntityFromObject(raycastHits[i].collider.gameObject);
-            if (hitEntity == null || checkEntity.controllerOfThis != null && checkEntity.controllerOfThis.allegianceTeamID != allegianceTeamID)
-            {
-                //enemy takes priority over allies 
-                hitEntity = checkEntity;
-            }
-
-            bool groundWasHit = raycastHits[i].collider.gameObject.layer == LayerMask.NameToLayer("Ground");
-            if (groundWasHit)
-            {
-                clickedPosition = raycastHits[i].point;
-            }
-        }
-        //EntitySearcher searcher = CreateEntitySearcherAtPosition(clickedPosition);
-
-        if (hits > 0) 
-        {
-            //determine action type
-            if (hitEntity != null && PositionExplored(clickedPosition)) //if exists and is explored at least
-            {
-                if (hitEntity.teamType == Entity.TeamBehavior.OwnerTeam)
-                {
-                    if (SameAllegiance(hitEntity)) //same team
-                    {
-                        /*if ((hitEntity.depositType == SelectableEntity.DepositType.Gold || hitEntity.depositType == SelectableEntity.DepositType.All)
-                            && hitEntity.fullyBuilt) //if deposit point
-                        {
-                            actionType = ActionType.Deposit;
-                        }*/
-                        if (!hitEntity.fullyBuilt || hitEntity.IsDamaged() && !hitEntity.IsMinion()) //if buildable
-                        {
-                            actionType = ActionType.BuildTarget;
-
-                            AssignBuildersBasedOnDistance();
-
-                        }
-                        else if (hitEntity.fullyBuilt && hitEntity.HasEmptyGarrisonablePosition())
-                        { //target can be garrisoned, and passenger cannot garrison, then enter
-                            actionType = ActionType.Garrison;
-                        }
-                        else if (hitEntity.occupiedGarrison != null && hitEntity.occupiedGarrison.HasEmptyGarrisonablePosition())
-                        { //target is passenger of garrison, then enter garrison
-                            actionType = ActionType.Garrison;
-                            hitEntity = hitEntity.occupiedGarrison;
-                        }
-                        else
-                        {
-                            actionType = ActionType.MoveToTarget;
-                        }
-                    }
-                    else if (hitEntity.isAttackable) //enemy
-                    { //try to target this enemy specifically
-                        actionType = ActionType.AttackTarget;
-                        //Debug.Log("Trying to attack " + hitEntity.name);
-                    }
-                    else
-                    {
-                        actionType = ActionType.Move;
-                    }
-                }
-                else if (hitEntity.teamType == Entity.TeamBehavior.FriendlyNeutral) //for now resources are only neutral; this may change
-                { 
-                    if (hitEntity.IsOre())
-                    {
-                        Debug.Log("trying to harvest");
-                        actionType = ActionType.Harvest;
-                    }
-                }
-            }
-            else
-            {
-                actionType = ActionType.Move;
-                //Debug.Log("Moving");
-            }
-            //finished determining action type 
-            UnitOrdersQueue.Clear();
-            for (int i = 0; i < numSelectedEntities; i++)
-            {
-                Entity item = selectedEntities[i];
-                if (item != null && item.sm != null)
-                {
-                    UnitOrder order = new();
-                    order.unit = item.sm;
-                    order.targetPosition = clickedPosition;
-                    order.target = hitEntity;
-
-                    if (!item.IsBuilder() && actionType == ActionType.BuildTarget
-                        || !item.IsHarvester() && actionType == ActionType.Harvest)
-                    {
-                        Debug.Log("invalid action, defaulting to moving to target");
-                        actionType = ActionType.MoveToTarget;
-                    }
-                    order.action = actionType;
-
-                    UnitOrdersQueue.Add(order);
-                }
-            }
-            //totalNumUnitOrders = UnitOrdersQueue.Count;
-        }
-    }
-    //private int totalNumUnitOrders = 0;
-    public void ReadySetRallyPoint()
-    {
-        mouseState = MouseState.ReadyToSetRallyPoint;
-    }
-    private void SetSelectedRallyPoint()
-    {
-        for (int i = 0; i < numSelectedEntities; i++)
-        {
-            Entity item = selectedEntities[i];
-            if (item == null) continue;
-            item.SetRally();
-        }
-    }
-    private bool IsEntityGarrrisoned(Entity entity)
-    {
-        return entity.occupiedGarrison != null;
-    }
-    public bool IsTargetExplicitlyOnOurTeam(Entity target)
-    {
-        return target.teamType == Entity.TeamBehavior.OwnerTeam && ownedEntities.Contains(target);
-    }
-    private void UpdateGridVisual()
-    {
-        if (Global.instance.gridVisual != null)
-        {
-            Global.instance.gridVisual.SetActive(mouseState == MouseState.ReadyToPlace);
-        }
-    }
-    private void DetectHotkeys()
-    {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            //Debug.Log("Spacebar");
-            SelectAllAttackers();
-        }
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            SelectAllProduction();
-        }
-        if (Input.GetKeyDown(KeyCode.B))
-        {
-            SelectAllIdleBuilders();
-        }
-        if (Input.GetKeyDown(KeyCode.Period))
-        {
-            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[2], this);
-        }
-        if (Input.GetKeyDown(KeyCode.RightControl))
-        {
-            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[3], this);
-        }
-        if (Input.GetKeyDown(KeyCode.RightShift))
-        {
-            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[1], this);
-        }
-
-        if (Input.GetKeyDown(KeyCode.RightAlt))
-        {
-            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[4], this);
-        }
-#if UNITY_EDITOR //DEBUG COMMANDS
-#endif
-    }
-    Vector3 oldCursorWorldPosition;
-    private int requiredAssignments = 0;
-
-    private void AssignBuildersBasedOnDistance()
-    {
-        Debug.Log("Starting to assign");
-        requiredAssignments = unbuiltStructures.Count;
-    }
-    private void AssignBuildersSelectedWorkhorse()
-    {
-        float maxAllowableDistance = 10;
-        float distance = Mathf.Infinity;
-        Entity currentBuilding = null;
-        StateMachineController closestBuilder = null;
-        //get building and builder that have the least distance
-        foreach (Entity building in unbuiltStructures)
-        {
-            if (building == null) continue;
-            if (building.workersInteracting.Count < building.allowedWorkers)
-            {
-                //get the closest available builder in builder list
-                foreach (StateMachineController builder in selectedBuilders)
-                {
-                    if (!builder.IsCurrentlyBuilding())
-                    {
-                        float newDist = Vector3.SqrMagnitude(building.transform.position - builder.transform.position);
-                        //float newDist = Vector3.Distance(building.transform.position, builder.transform.position);
-                        if (newDist < distance)
-                        {
-                            currentBuilding = building;
-                            closestBuilder = builder;
-                            distance = newDist;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (closestBuilder != null && currentBuilding != null && distance <= maxAllowableDistance)
-        {
-            closestBuilder.CommandBuildTarget(currentBuilding);
-        }
     }
     public override void Update()
     {
@@ -632,29 +324,346 @@ public class RTSPlayer : Player
         {
             Global.instance.selectionRect.gameObject.SetActive(false);
         }
-        Global.instance.goldText.text = "Gold: " + gold;
-        if (Global.instance.popText != null)
-        {
-            Global.instance.popText.text = "Army Size: " + population + "/" + maxPopulation;
-        }
+        UpdateGoldText();
+        UpdatePopText();
         //TryReplaceFakeSpawn();
         UpdateSpawnerProgressBar();
+        if (IsOwner)
+        {
+            UpdatePopFullWarning();
+        }
     }
-    private void FinishPlacingRotatedBuilding()
+    private void OnDisable()
     {
-        Debug.Log("Finishing placing rotated building");
-        //PlaceBuilding(buildingToPlace, buildingGhost.transform.position); 
-        Vector3 alignedForward = SnapToNearestWorldAxis(buildingGhost.transform.forward);
-        Vector3 alignedUp = SnapToNearestWorldAxis(buildingGhost.transform.up);
-        Quaternion quaternion = Quaternion.LookRotation(alignedForward, alignedUp);
-        Direction dir = ConvertForwardToEnum(alignedForward);
+        Global.instance.uninitializedPlayers.Remove(this);
+    }
+    #endregion
 
-        if (gold < buildingToPlace.goldCost) return;
-        gold -= buildingToPlace.goldCost;
-        SpawnBuildingWithRotation(buildingToPlace, buildingGhost.transform.position, dir, quaternion);
-        Entity last = Global.instance.localPlayer.ownedEntities.Last();
-        TellSelectedToBuild(last);
-        StopPlacingBuilding();
+    #region Cam
+    private void MoveCamToSpawn()
+    {
+        Vector3 spawn = playerSpawns.spawnsList[Convert.ToInt32(OwnerClientId)].position;
+        camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
+    }
+    private LevelInfo playerSpawns;
+    private void RetrieveSpawnPositionsList()
+    {
+        playerSpawns = null;
+        playerSpawns = FindFirstObjectByType<LevelInfo>();
+    }
+    private void CameraMove()
+    {
+        Vector3 motion = new(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical"));
+        camParent.transform.Translate(camSpeed * Time.deltaTime * motion); //reordered operands for better performance
+        //from 0 to 10 
+        for (int i = 0; i < cams.Length; i++)
+        {
+            cams[i].orthographicSize = Mathf.Clamp(cams[i].orthographicSize - Input.mouseScrollDelta.y * camScroll, 1, 10); ;
+        }
+    }
+    #endregion
+
+    #region Commands
+
+    /// <summary>
+    /// Behavior depends on what is right clicked and the type of unit responding
+    /// </summary>
+    private void ContextualQueueUnitOrders()
+    {
+        Vector3 clickedPosition = Vector3.zero;
+        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
+        RaycastHit[] raycastHits = new RaycastHit[5];
+        int hits = Physics.RaycastNonAlloc(ray.origin, ray.direction, raycastHits, Mathf.Infinity, Global.instance.gameLayer);
+
+        Entity hitEntity = null;
+        for (int i = 0; i < hits; i++)
+        {
+            Entity checkEntity = Global.instance.FindEntityFromObject(raycastHits[i].collider.gameObject);
+            if (hitEntity == null || checkEntity.controllerOfThis != null && checkEntity.controllerOfThis.allegianceTeamID != allegianceTeamID)
+            {
+                //enemy takes priority over allies 
+                hitEntity = checkEntity;
+            }
+
+            bool groundWasHit = raycastHits[i].collider.gameObject.layer == LayerMask.NameToLayer("Ground");
+            if (groundWasHit)
+            {
+                clickedPosition = raycastHits[i].point;
+            }
+        }
+        //EntitySearcher searcher = CreateEntitySearcherAtPosition(clickedPosition);
+
+        if (hits > 0)
+        {
+            //determine action type
+            if (hitEntity != null && PositionExplored(clickedPosition)) //if exists and is explored at least
+            {
+                if (hitEntity.teamType == Entity.TeamBehavior.OwnerTeam)
+                {
+                    if (SameAllegiance(hitEntity)) //same team
+                    {
+                        /*if ((hitEntity.depositType == SelectableEntity.DepositType.Gold || hitEntity.depositType == SelectableEntity.DepositType.All)
+                            && hitEntity.fullyBuilt) //if deposit point
+                        {
+                            actionType = ActionType.Deposit;
+                        }*/
+                        if (!hitEntity.fullyBuilt || hitEntity.IsDamaged() && !hitEntity.IsMinion()) //if buildable
+                        {
+                            actionType = ActionType.BuildTarget;
+
+                            AssignBuildersBasedOnDistance();
+
+                        }
+                        else if (hitEntity.fullyBuilt && hitEntity.HasEmptyGarrisonablePosition())
+                        { //target can be garrisoned, and passenger cannot garrison, then enter
+                            actionType = ActionType.Garrison;
+                        }
+                        else if (hitEntity.occupiedGarrison != null && hitEntity.occupiedGarrison.HasEmptyGarrisonablePosition())
+                        { //target is passenger of garrison, then enter garrison
+                            actionType = ActionType.Garrison;
+                            hitEntity = hitEntity.occupiedGarrison;
+                        }
+                        else
+                        {
+                            actionType = ActionType.MoveToTarget;
+                        }
+                    }
+                    else if (hitEntity.isAttackable) //enemy
+                    { //try to target this enemy specifically
+                        actionType = ActionType.AttackTarget;
+                        //Debug.Log("Trying to attack " + hitEntity.name);
+                    }
+                    else
+                    {
+                        actionType = ActionType.Move;
+                    }
+                }
+                else if (hitEntity.teamType == Entity.TeamBehavior.FriendlyNeutral) //for now resources are only neutral; this may change
+                {
+                    if (hitEntity.IsOre())
+                    {
+                        Debug.Log("trying to harvest");
+                        actionType = ActionType.Harvest;
+                    }
+                }
+            }
+            else
+            {
+                actionType = ActionType.Move;
+                //Debug.Log("Moving");
+            }
+            //finished determining action type 
+            UnitOrdersQueue.Clear();
+            for (int i = 0; i < numSelectedEntities; i++)
+            {
+                Entity item = selectedEntities[i];
+                if (item != null && item.sm != null)
+                {
+                    UnitOrder order = new();
+                    order.unit = item.sm;
+                    order.targetPosition = clickedPosition;
+                    order.target = hitEntity;
+
+                    if (!item.IsBuilder() && actionType == ActionType.BuildTarget
+                        || !item.IsHarvester() && actionType == ActionType.Harvest)
+                    {
+                        Debug.Log("invalid action, defaulting to moving to target");
+                        actionType = ActionType.MoveToTarget;
+                    }
+                    order.action = actionType;
+
+                    UnitOrdersQueue.Add(order);
+                }
+            }
+            //totalNumUnitOrders = UnitOrdersQueue.Count;
+        }
+    }
+    private void SelectedAttackMove()
+    {
+        //Debug.Log("trying to attack move");
+        Vector3 clickedPosition;
+        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.instance.localPlayer.groundLayer))
+        {
+            clickedPosition = hit.point;
+            EntitySearcher searcher = null;
+            if (GetNumSelected() > 0)
+            {
+                //create an entity searcher at the clicked position
+                searcher = CreateEntitySearcherAtPosition(clickedPosition, 0);
+            }
+
+            UnitOrdersQueue.Clear();
+
+            if (searcher == null) return;
+            for (int i = 0; i < numSelectedEntities; i++)
+            {
+                Entity item = selectedEntities[i];
+                if (item != null && item.sm != null && item.IsAttacker()) //minion
+                {
+                    //if this unit is already assigned to an entity searcher, unassign it
+                    if (item.attacker.assignedEntitySearcher != null)
+                    {
+                        item.attacker.assignedEntitySearcher.UnassignUnit(item.sm);
+                    }
+                    //assign the entity searcher to selected units
+                    item.attacker.assignedEntitySearcher = searcher;
+                    //update the entity searcher's assigned units list
+                    item.attacker.assignedEntitySearcher.AssignUnit(item.sm);
+                    item.attacker.hasCalledEnemySearchAsyncTask = false; //tell the minion to run a new search
+                    UnitOrder order = new();
+                    order.unit = item.sm;
+                    order.targetPosition = clickedPosition;
+                    order.action = ActionType.AttackMove;
+                    UnitOrdersQueue.Add(order);
+                }
+            }
+        }
+    }
+    #endregion
+
+    #region Gets and Checks
+
+    private int GetNumSelected()
+    {
+        return numSelectedEntities;
+    }
+    private bool SameAllegiance(Entity foreign)
+    {   //later update this so it works with allegiances
+        //return foreign.controllerOfThis == this;
+        return foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
+        //return foreign.teamNumber.Value == (sbyte)playerTeamID;
+        //foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
+    }
+    #endregion
+
+    #region MiscRegion
+
+    public void AddGold(int count)
+    {
+        gold += count;
+    }
+    public void LoseGame()
+    {
+        inTheGame.Value = false;
+    }
+    //private int totalNumUnitOrders = 0;
+    public void ReadySetRallyPoint()
+    {
+        mouseState = MouseState.ReadyToSetRallyPoint;
+    }
+    private void SetSelectedRallyPoint()
+    {
+        for (int i = 0; i < numSelectedEntities; i++)
+        {
+            Entity item = selectedEntities[i];
+            if (item == null) continue;
+            item.SetRally();
+        }
+    }
+    private bool IsEntityGarrrisoned(Entity entity)
+    {
+        return entity.occupiedGarrison != null;
+    }
+    public bool IsTargetExplicitlyOnOurTeam(Entity target)
+    {
+        return target.teamType == Entity.TeamBehavior.OwnerTeam && ownedEntities.Contains(target);
+    }
+    private void UpdateGridVisual()
+    {
+        if (Global.instance.gridVisual != null)
+        {
+            Global.instance.gridVisual.SetActive(mouseState == MouseState.ReadyToPlace);
+        }
+    }
+    private void DetectHotkeys()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            //Debug.Log("Spacebar");
+            SelectAllAttackers();
+        }
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            SelectAllProduction();
+        }
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            SelectAllIdleBuilders();
+        }
+        if (Input.GetKeyDown(KeyCode.Period))
+        {
+            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[2], this);
+        }
+        if (Input.GetKeyDown(KeyCode.RightControl))
+        {
+            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[3], this);
+        }
+        if (Input.GetKeyDown(KeyCode.RightShift))
+        {
+            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[1], this);
+        }
+
+        if (Input.GetKeyDown(KeyCode.RightAlt))
+        {
+            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[4], this);
+        }
+#if UNITY_EDITOR //DEBUG COMMANDS
+#endif
+    }
+    Vector3 oldCursorWorldPosition;
+    private int requiredAssignments = 0;
+
+    private void AssignBuildersBasedOnDistance()
+    {
+        Debug.Log("Starting to assign");
+        requiredAssignments = unbuiltStructures.Count;
+    }
+    private void AssignBuildersSelectedWorkhorse()
+    {
+        float maxAllowableDistance = 10;
+        float distance = Mathf.Infinity;
+        Entity currentBuilding = null;
+        StateMachineController closestBuilder = null;
+        //get building and builder that have the least distance
+        foreach (Entity building in unbuiltStructures)
+        {
+            if (building == null) continue;
+            if (building.workersInteracting.Count < building.allowedWorkers)
+            {
+                //get the closest available builder in builder list
+                foreach (StateMachineController builder in selectedBuilders)
+                {
+                    if (!builder.IsCurrentlyBuilding())
+                    {
+                        float newDist = Vector3.SqrMagnitude(building.transform.position - builder.transform.position);
+                        //float newDist = Vector3.Distance(building.transform.position, builder.transform.position);
+                        if (newDist < distance)
+                        {
+                            currentBuilding = building;
+                            closestBuilder = builder;
+                            distance = newDist;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (closestBuilder != null && currentBuilding != null && distance <= maxAllowableDistance)
+        {
+            closestBuilder.CommandBuildTarget(currentBuilding);
+        }
+    }
+    private void SetBuildingRallies()
+    {
+        for (int i = 0; i < numSelectedEntities; i++)
+        {
+            Entity item = selectedEntities[i];
+            if (item != null && item.IsStructure() && item.IsSpawner())
+            {
+                item.SetRally();
+            }
+        }
     }
     private Direction ConvertForwardToEnum(Vector3 alignedForward)
     {
@@ -718,17 +727,6 @@ public class RTSPlayer : Player
                 vec.z = 0;
         }
         return vec;
-    }
-    private void SetBuildingRallies()
-    {
-        for (int i = 0; i < numSelectedEntities; i++)
-        {
-            Entity item = selectedEntities[i];
-            if (item != null && item.IsStructure() && item.IsSpawner())
-            {
-                item.SetRally();
-            }
-        }
     }
     private void SelectWithinBounds() //rectangle select, finish drag select
     {
@@ -817,8 +815,72 @@ public class RTSPlayer : Player
         SelectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
     }
     #endregion
+
     #region Building
 
+    /// <summary>
+    /// Create building ghost showing where building will be placed
+    /// </summary>
+    /// <param name="id"></param>
+    private void HoverBuild(FactionBuilding building) //start building
+    {
+        mouseState = MouseState.ReadyToPlace;
+        placementBlocked = false;
+        buildingToPlace = building;
+        GameObject build = building.prefabToSpawn;
+
+        if (meshes.Length > 0)
+        {
+            for (int i = 0; i < meshes.Length; i++)
+            {
+                Destroy(meshes[i]);
+            }
+        }
+        ClearWallGhosts();
+
+        GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn ghost
+        Entity entity = spawn.GetComponent<Entity>();
+        buildOffset = entity.buildOffset;
+        /*
+            placingPortal = true;*/
+        if (building.extendable)
+        {
+            linkedState = LinkedState.PlacingStart;
+        }
+        else
+        {
+            linkedState = LinkedState.Waiting;
+        }
+        entity.isBuildIndicator = true;
+        buildingGhost = entity;
+        meshes = spawn.GetComponentsInChildren<MeshRenderer>();
+        for (int i = 0; i < meshes.Length; i++)
+        {
+            meshes[i].material = Global.instance.transparent;
+        }
+        Collider[] colliders = spawn.GetComponentsInChildren<Collider>();
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            colliders[i].isTrigger = true;
+        }
+        UpdateButtonsFromSelectedUnits();
+    }
+    private void FinishPlacingRotatedBuilding()
+    {
+        Debug.Log("Finishing placing rotated building");
+        //PlaceBuilding(buildingToPlace, buildingGhost.transform.position); 
+        Vector3 alignedForward = SnapToNearestWorldAxis(buildingGhost.transform.forward);
+        Vector3 alignedUp = SnapToNearestWorldAxis(buildingGhost.transform.up);
+        Quaternion quaternion = Quaternion.LookRotation(alignedForward, alignedUp);
+        Direction dir = ConvertForwardToEnum(alignedForward);
+
+        if (gold < buildingToPlace.goldCost) return;
+        gold -= buildingToPlace.goldCost;
+        SpawnBuildingWithRotation(buildingToPlace, buildingGhost.transform.position, dir, quaternion);
+        Entity last = Global.instance.localPlayer.ownedEntities.Last();
+        TellSelectedToBuild(last);
+        StopPlacingBuilding();
+    }
     //private byte wallID = 0;
     private void StopPlacingBuilding()
     {
@@ -1136,9 +1198,18 @@ public class RTSPlayer : Player
         return pos;
     }
     #endregion
+
     #region SpawnMinion
 
-    
+    private bool TargetCanSpawnThisEntity(Entity target, FactionEntity entity)
+    {
+        for (int i = 0; i < target.spawner.GetSpawnables().Count; i++)
+        {
+            if (target.spawner.GetSpawnables()[i].productionName == entity.productionName) return true;
+        }
+        return false;
+    }
+
     private void SpawnBuildingWithRotation(FactionBuilding building, Vector3 spawnPosition, Direction dir, Quaternion quat)
     {
         if (playerFaction == null)
@@ -1360,547 +1431,9 @@ public class RTSPlayer : Player
     private List<Entity> newSpawnsSpawnerList = new();
 
     #endregion
+
     #region Selection
 
-    private Entity infoSelectedEntity;
-    /// <summary>
-    /// Try to select an entity.
-    /// </summary>
-    /// <param name="entity"></param>
-    private bool FormalSelectEntity(Entity entity, bool toggle = true)
-    {
-        if (entity == null) return false;
-        if (!PositionFullyVisible(entity.transform.position)) return false;
-        if (!entity.alive) return false;
-        bool val = false;
-        if (IsTargetExplicitlyOnOurTeam(entity))
-        {
-            bool opp = !entity.selected;
-            if (!toggle) opp = true;
-            entity.Select(opp);
-
-            /*if (entity.factionEntity.constructableBuildings.Length > 0)
-            {
-                selectedBuilders.Add(entity.stateMachineController);
-            }*/
-
-            val = opp;
-        }
-        else
-        {
-            infoSelectedEntity = entity;
-            entity.InfoSelect(true);
-        }
-        if (entity.IsStructure())
-        {
-            Global.instance.PlayStructureSelectSound(entity);
-        }
-        //UpdateGUIFromSelections();
-        return val;
-    }
-    private void DoNotDoubleSelect()
-    {
-        _doubleSelect = false;
-    }
-    private void TryToSelectOne()
-    {
-        //DeselectAll();
-        if (!_doubleSelect)
-        {
-            _doubleSelect = true;
-            Invoke(nameof(DoNotDoubleSelect), .2f);
-            bool valid = SingleSelect();
-        }
-        else
-        {
-            _doubleSelect = false;
-            DoubleSelectDetected();
-        }
-    }
-    #endregion
-
-    #region GUI
-
-    private bool MouseOverUI()
-    {
-        PointerEventData eventDataCurrentPosition = new PointerEventData(EventSystem.current);
-        eventDataCurrentPosition.position = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
-        List<RaycastResult> results = new List<RaycastResult>();
-        EventSystem.current.RaycastAll(eventDataCurrentPosition, results);
-        foreach (RaycastResult item in results)
-        {
-            if (item.gameObject.layer == LayerMask.NameToLayer("UI"))
-            {
-                return true;
-            }
-        }
-        return false;
-
-        //return EventSystem.current.IsPointerOverGameObject();
-    }
-    public void UpdateHPText()
-    {
-        if (GetNumSelected() == 1)
-        {
-            Global.instance.hpText.text = "HP: " + selectedEntities[0].currentHP.Value + "/" + selectedEntities[0].maxHP;
-        }
-    }
-    /// <summary>
-    /// Update all buttons to be interactable or not based on their cost vs your gold.
-    /// </summary>
-    public void UpdateButtons() //TODO
-    {
-        /*for (int i = 0; i < indices.Count; i++)
-        {
-            Button button = Global.Instance.productionButtons[i];
-            FactionUnit fac = _faction.entities[indices[i]];
-            button.interactable = gold >= fac.goldCost;
-        }*/
-    }
-    /// <summary>
-    /// Mass GUI update. Use selectively, not in update().
-    /// </summary>
-    public void UpdateGUIFromSelectedEntities()
-    {
-        UpdateGUIBasedOnSelectedUnitCount();
-        UpdateButtonsFromSelectedUnits();
-        UpdateBuildQueueGUIVisibility();
-        //UpdateIndices();
-        //This method is really laggy all of sudden!
-        //UpdateBuildQueueGUI();
-    }
-    private void SmartSetActive(GameObject obj, bool val)
-    {
-        if (obj.activeInHierarchy != val)
-        {
-            obj.SetActive(val);
-        }
-    }
-    private void UpdateGUIText(Entity singleSelected)
-    {
-        TMP_Text nameText = Global.instance.nameText;
-        TMP_Text descText = Global.instance.descText;
-        TMP_Text hpText = Global.instance.hpText;
-        TMP_Text resourceText = Global.instance.resourceText;
-        nameText.SetText(singleSelected.displayName);
-        descText.SetText(singleSelected.desc);
-        string hpStr = "HP: " + singleSelected.currentHP.Value + "/" + singleSelected.maxHP;
-        hpText.SetText(hpStr);
-        //string resourceStr = "Stored gold: " + singleSelected.harvestedResourceAmount + "/" + selectedEntities[0].harvestCapacity;
-        //resourceText.SetText(resourceStr);
-    }
-    /// <summary>
-    /// Update GUI to reflect selected units.
-    /// </summary>
-    private void UpdateGUIBasedOnSelectedUnitCount()
-    {
-        if (Global.instance.selectedParent == null || Global.instance.resourcesParent == null || Global.instance.resourceText == null
-            || Global.instance.nameText == null || Global.instance.descText == null || Global.instance.singleUnitInfoParent == null) return;
-
-        GameObject selectedParent = Global.instance.selectedParent;
-        GameObject resourcesParent = Global.instance.resourcesParent;
-        GameObject rallyParent = Global.instance.setRallyPointButton;
-        Entity singleSelected = selectedEntities[0];
-
-        if (infoSelectedEntity != null && numSelectedEntities == 0) //info selected
-        {
-            SmartSetActive(selectedParent, true);
-            SmartSetActive(rallyParent, false);
-            UpdateGUIText(infoSelectedEntity);
-        }
-        else if (GetNumSelected() <= 0) //nothing selected
-        {
-            SmartSetActive(selectedParent, false);
-            SmartSetActive(rallyParent, false);
-        }
-        else if (GetNumSelected() == 1 && singleSelected != null) //select single
-        {
-            SmartSetActive(selectedParent, true);
-            SmartSetActive(rallyParent, singleSelected.IsSpawner());
-            //SmartSetActive(resourcesParent, singleSelected.IsHarvester());
-            UpdateGUIText(singleSelected);
-            /*
-            Global.Instance.singleUnitInfoParent.SetActive(true);
-            */
-        }
-        else
-        {
-            SmartSetActive(selectedParent, false);
-            /*Global.Instance.selectedParent.SetActive(true);
-            Global.Instance.singleUnitInfoParent.SetActive(false);
-            //Global.Instance.selectedParent.SetActive(false);
-            //Global.Instance.resourcesParent.SetActive(false);*/
-        }
-    }
-    private void UpdateBuildQueueGUIVisibility()
-    {
-        bool show = GetNumSelected() == 1;
-        SmartSetActive(Global.instance.queueParent.gameObject, show);
-        if (!show) return;
-        UpdateBuildQueueGUIButtonsAndProgressBar();
-    }
-    private void UpdateBuildQueueGUIButtonsAndProgressBar()
-    {
-        bool show = GetNumSelected() == 1;
-        if (!show) return;
-        Entity spawner = selectedEntities[0];
-        //only works if is production structure, fully built, and spawned
-        if (!spawner.IsSpawner() || !spawner.fullyBuilt || !spawner.net.IsSpawned) return;
-        UpdateSpawnerButtons();
-        UpdateSpawnerProgressBar();
-    }
-    private void UpdateSpawnerButtons()
-    {
-        bool show = GetNumSelected() == 1;
-        if (!show) return;
-        Entity spawner = selectedEntities[0];
-        if (!spawner.IsSpawner() || !spawner.fullyBuilt || !spawner.net.IsSpawned) return;
-        int num = Mathf.Clamp(spawner.buildQueue.Count, 0, Global.instance.queueButtons.Count);
-
-        //enable a button for each indices
-        for (int i = 0; i < Global.instance.queueButtons.Count; i++)
-        {
-            bool vis = i < num;
-            UpdateButton(spawner, vis, i);
-        }
-    }
-    private void UpdateSpawnerProgressBar()
-    {
-        bool show = GetNumSelected() == 1;
-        if (!show) return;
-
-        Entity spawner = selectedEntities[0];
-        if (!spawner.IsSpawner() || !spawner.fullyBuilt || !spawner.net.IsSpawned) return;
-        //get the progress of the first unit;
-        FactionUnit beingProduced = null;
-        if (spawner.buildQueue.Count > 0) beingProduced = spawner.buildQueue[0];
-        if (beingProduced != null && Global.instance.structureProgressBar != null)
-        {
-            Global.instance.structureProgressBar.SetRatio(beingProduced.spawnTimer, beingProduced.maxSpawnTimeCost);
-            //Debug.Log(beingProduced.spawnTimer + " / " + beingProduced.maxSpawnTimeCost);
-        }
-        else
-        {
-            Global.instance.structureProgressBar.SetRatio(0, 1);
-        }
-        Color barColor = spawner.productionBlocked ? Color.red : Color.white;
-        Global.instance.structureProgressBar.SetColor(barColor);
-    }
-    /// <summary>
-    /// Update button abilities displayed based on selected units.
-    /// </summary>
-    private void UpdateButtonsFromSelectedUnits()
-    {
-        availableConstructionOptions.Clear();
-        availableAbilities.Clear();
-        availableUnitSpawns.Clear();
-        availableUpgrades.Clear();
-        Global.instance.ChangeRallyPointButton(false);
-        if (GetNumSelected() > 0) //at least one unit selected
-        {
-            //show gui elements based on unit type selected
-            for (int i = 0; i < numSelectedEntities; i++)
-            {
-                Entity entity = selectedEntities[i];
-                if (entity == null! || !entity.net.IsSpawned || entity.factionEntity == null) //if not built or spawned, skip
-                {
-                    continue;
-                }
-                //get abilities
-                if (entity.HasAbilities())
-                {
-                    foreach (FactionAbility abilityOption in entity.unitAbilities.GetAbilities())
-                    {
-                        if ((!abilityOption.usableOnlyWhenBuilt && !entity.fullyBuilt) || (entity.fullyBuilt && abilityOption.usableOnlyWhenBuilt))
-                        {
-                            if (!availableAbilities.Contains(abilityOption)) availableAbilities.Add(abilityOption);
-                        }
-                    }
-                }
-                if (entity.HasUpgrades())
-                {
-                    //only add the upgrade button if it's actually usable
-                    foreach (FactionUpgrade upgradeOption in entity.unitUpgrades.GetUpgrades())
-                    {
-                        if (entity.CanUseUpgrade(upgradeOption) && !availableUpgrades.Contains(upgradeOption))
-                            availableUpgrades.Add(upgradeOption);
-                    }
-                }
-
-                if (!entity.fullyBuilt) continue;
-
-                if (entity.IsSpawner())
-                {
-                    //get spawnable units
-                    foreach (FactionUnit unitOption in entity.spawner.GetSpawnables())
-                    {
-                        if (!availableUnitSpawns.Contains(unitOption)) availableUnitSpawns.Add(unitOption);
-                    }
-                    Global.instance.ChangeRallyPointButton(true);
-                }
-                if (entity.IsBuilder())
-                {
-                    //get constructable buildings
-                    foreach (FactionBuilding buildingOption in entity.builder.GetBuildables())
-                    {
-                        if (!availableConstructionOptions.Contains(buildingOption)) availableConstructionOptions.Add(buildingOption);
-                    }
-                }
-            }
-        }
-        //enable a button for each indices 
-        for (byte i = 0; i < Global.instance.productionButtons.Count; i++)
-        {
-            if (i >= Global.instance.productionButtons.Count) break; //met limit
-            UnityEngine.UI.Button button = Global.instance.productionButtons[i];
-            button.gameObject.SetActive(true);
-            TMP_Text text = button.GetComponentInChildren<TMP_Text>();
-            button.onClick.RemoveAllListeners();
-
-            if (i < availableAbilities.Count) //abilities
-            {
-                FactionAbility ability = availableAbilities[i];
-                button.onClick.AddListener(delegate { UseAbility(ability); });
-                //get lowest ability cooldown 
-                float cooldown = 999;
-                for (int k = 0; k < numSelectedEntities; k++)
-                {
-                    Entity entity = selectedEntities[i];
-                    //Debug.Log(entity.name);
-                    if (entity != null && entity.CanUseAbility(ability)) //if this entity can use the ability
-                    {
-                        //Debug.Log("can use ability" + ability.name);
-                        bool foundAbility = false;
-                        List<AbilityOnCooldown> usedAbilities = entity.unitAbilities.GetUsedAbilities();
-                        for (int j = 0; j < usedAbilities.Count; j++) //find the ability and set the cooldown
-                        {
-                            if (usedAbilities[j].abilityName == ability.name) //does the ability match?
-                            {
-                                foundAbility = true;
-                                if (usedAbilities[j].cooldownTime < cooldown) //is the cooldown lower than the current cooldown?
-                                {
-                                    cooldown = usedAbilities[j].cooldownTime;
-                                    //Debug.Log("found ability");
-                                }
-                                break;
-                            }
-                        }
-                        if (foundAbility == false) cooldown = 0;
-
-                        //Debug.Log("found result: " + foundAbility);
-                    }
-                }
-                if (cooldown <= 0)
-                {
-                    text.text = ability.name;
-                }
-                else
-                {
-                    text.text = ability.name + ": " + Mathf.RoundToInt(cooldown);
-                }
-                button.interactable = cooldown <= 0;
-            }
-            else if (i < availableAbilities.Count + availableUnitSpawns.Count) //spawns
-            {
-                FactionUnit fac = availableUnitSpawns[i - availableAbilities.Count];
-                button.interactable = gold >= fac.goldCost;
-                text.text = fac.productionName + ": " + fac.goldCost + "g";
-                button.onClick.AddListener(delegate { QueueBuildingSpawn(fac); });
-            }
-            else if (i < availableAbilities.Count + availableUnitSpawns.Count + availableConstructionOptions.Count) //buildings
-            {
-                FactionBuilding fac = availableConstructionOptions[i - availableAbilities.Count - availableUnitSpawns.Count];
-                button.interactable = gold >= fac.goldCost;
-                text.text = fac.productionName + ": " + fac.goldCost + "g";
-                button.onClick.AddListener(delegate { HoverBuild(fac); });
-            }
-            else if (i < availableAbilities.Count + availableUnitSpawns.Count + availableConstructionOptions.Count + availableUpgrades.Count)
-            {
-                FactionUpgrade fac = availableUpgrades[i - availableAbilities.Count 
-                    - availableUnitSpawns.Count - availableConstructionOptions.Count];
-                button.onClick.AddListener(delegate { UseUpgrade(fac); });
-
-                int cost = fac.costs[0].quantity;
-                text.text = fac.name + ": " + cost + "g";
-                button.interactable = gold >= cost;
-                //also should make it uninteractable if it's already been used.
-            }
-            else
-            {
-                Global.instance.productionButtons[i].gameObject.SetActive(false);
-            }
-        }
-    }
-
-    #endregion
-    /// <summary>
-    /// All selected units that have this ability will attempt to use it
-    /// </summary>
-    /// <param name="ability"></param>
-    private void UseAbility(FactionAbility ability)
-    {
-        if (GetNumSelected() > 0) //at least one unit selected
-        {
-            for (int k = 0; k < numSelectedEntities; k++)
-            {
-                Entity entity = selectedEntities[k];
-                if (entity != null && EntityCanUseAbility(entity, ability))
-                {
-                    if (entity.IsMinion())
-                    {
-                        entity.unitAbilities.StartUsingAbility(ability);
-                    }
-                    else
-                    {
-                        entity.unitAbilities.ActivateAbility(ability);
-                    }
-                }
-            }
-        }
-    }
-    private void UseUpgrade(FactionUpgrade upgrade)
-    {
-        Debug.Log("Using upgrade");
-        if (GetNumSelected() > 0) //at least one unit selected
-        {
-            for (int i = 0; i < numSelectedEntities; i++)
-            {
-                Entity entity = selectedEntities[i];
-                if (entity == null) continue;
-                int cost = upgrade.costs[0].quantity;
-                if (EntityCanUseUpgrade(entity, upgrade) && gold >= cost)
-                {
-                    Debug.Log("Using upgrade");
-                    gold -= cost;
-                    entity.unitUpgrades.ActivateUpgrade(upgrade);
-                }
-            }
-            UpdateButtonsFromSelectedUnits();
-        }
-    }
-    private bool EntityCanUseUpgrade(Entity entity, FactionUpgrade upgrade)
-    {
-        return entity != null && upgrade != null && entity.fullyBuilt && entity.net.IsSpawned
-            && entity.alive && entity.CanUseUpgrade(upgrade);
-    }
-    private bool EntityCanUseAbility(Entity entity, FactionAbility ability)
-    {
-        return entity != null && ability != null && (entity.fullyBuilt || !ability.usableOnlyWhenBuilt) && entity.net.IsSpawned
-            && entity.alive && entity.CanUseAbility(ability)
-            && entity.unitAbilities.AbilityOffCooldown(ability)
-            && (entity.IsBuilding() || entity.sm.GetState() != StateMachineController.EntityStates.UsingAbility);
-    }
-    private void UpdateButton(Entity select, bool show, int i = 0)
-    {
-        SmartSetActive(Global.instance.queueButtons[i].gameObject, show);
-        if (!show) return;
-        UnityEngine.UI.Button button = Global.instance.queueButtons[i];
-        TMP_Text text = button.GetComponentInChildren<TMP_Text>();
-        FactionUnit fac = select.buildQueue[i];
-        text.text = fac.productionName;
-        button.onClick.RemoveAllListeners();
-        button.onClick.AddListener(delegate { DequeueProductionOrder(i); });
-    }
-    public void AddGold(int count)
-    {
-        gold += count;
-    }
-    public void DequeueProductionOrder(int index = 0) //on click remove thing from queue and refund gold
-    {
-        if (GetNumSelected() == 1)
-        {
-            Entity select = selectedEntities[0];
-            FactionUnit fac = select.buildQueue[index];
-            gold += fac.goldCost;
-            select.buildQueue.RemoveAt(index);
-            //UpdateGUIFromSelections();
-            UpdateSpawnerButtons();
-        }
-    }
-    private void QueueBuildingSpawn(FactionUnit unit)
-    {
-        //necessary to create new so we don't accidentally affect the files
-        /*FactionUnit newUnit = new()
-        {
-            productionName = unit.prefabToSpawn.name,
-            spawnTimeCost = unit.spawnTimeCost,
-            prefabToSpawn = unit.prefabToSpawn,
-            goldCost = unit.goldCost, 
-        };*/
-        //Debug.Log("Trying to spawn :" + unit.name);
-        FactionUnit newUnit = FactionUnit.CreateInstance(unit.productionName, unit.maxSpawnTimeCost, unit.prefabToSpawn, unit.goldCost);
-
-        int cost = newUnit.goldCost;
-        //try to spawn from all selected buildings if possible 
-        for (int i = 0; i < numSelectedEntities; i++)
-        {
-            Entity select = selectedEntities[i];
-            if (select == null) continue;
-            if (gold < cost || !select.net.IsSpawned || !select.fullyBuilt || !TargetCanSpawnThisEntity(select, newUnit)
-                || select.buildQueue.Count >= Global.instance.maxUnitsInProductionQueue) break;
-            //if requirements fulfilled
-            gold -= cost;
-            select.buildQueue.Add(newUnit);
-            //Debug.Log("Added" + newUnit.name + " to queue");
-        }
-        UpdateButtonsFromSelectedUnits();
-        UpdateSpawnerButtons();
-    }
-    private bool TargetCanSpawnThisEntity(Entity target, FactionEntity entity)
-    {
-        for (int i = 0; i < target.spawner.GetSpawnables().Count; i++)
-        {
-            if (target.spawner.GetSpawnables()[i].productionName == entity.productionName) return true;
-        }
-        return false;
-    }
-    /// <summary>
-    /// Create building ghost showing where building will be placed
-    /// </summary>
-    /// <param name="id"></param>
-    private void HoverBuild(FactionBuilding building) //start building
-    {
-        mouseState = MouseState.ReadyToPlace;
-        placementBlocked = false;
-        buildingToPlace = building;
-        GameObject build = building.prefabToSpawn;
-
-        if (meshes.Length > 0)
-        {
-            for (int i = 0; i < meshes.Length; i++)
-            {
-                Destroy(meshes[i]);
-            }
-        }
-        ClearWallGhosts();
-
-        GameObject spawn = Instantiate(build, Vector3.zero, Quaternion.Euler(0, 180, 0)); //spawn ghost
-        Entity entity = spawn.GetComponent<Entity>();
-        buildOffset = entity.buildOffset;
-        /*
-            placingPortal = true;*/
-        if (building.extendable)
-        {
-            linkedState = LinkedState.PlacingStart;
-        }
-        else
-        {
-            linkedState = LinkedState.Waiting;
-        }
-        entity.isBuildIndicator = true;
-        buildingGhost = entity;
-        meshes = spawn.GetComponentsInChildren<MeshRenderer>();
-        for (int i = 0; i < meshes.Length; i++)
-        {
-            meshes[i].material = Global.instance.transparent;
-        }
-        Collider[] colliders = spawn.GetComponentsInChildren<Collider>();
-        for (int i = 0; i < colliders.Length; i++)
-        {
-            colliders[i].isTrigger = true;
-        }
-        UpdateButtonsFromSelectedUnits();
-    }
     private bool SingleSelect()
     {
         bool successful = false;
@@ -2051,6 +1584,517 @@ public class RTSPlayer : Player
         infoSelectedEntity = null;
         //UpdateGUIFromSelections();
     }
+    private Entity infoSelectedEntity;
+    /// <summary>
+    /// Try to select an entity.
+    /// </summary>
+    /// <param name="entity"></param>
+    private bool FormalSelectEntity(Entity entity, bool toggle = true)
+    {
+        if (entity == null) return false;
+        if (!PositionFullyVisible(entity.transform.position)) return false;
+        if (!entity.alive) return false;
+        bool val = false;
+        if (IsTargetExplicitlyOnOurTeam(entity))
+        {
+            bool opp = !entity.selected;
+            if (!toggle) opp = true;
+            entity.Select(opp);
+
+            /*if (entity.factionEntity.constructableBuildings.Length > 0)
+            {
+                selectedBuilders.Add(entity.stateMachineController);
+            }*/
+
+            val = opp;
+        }
+        else
+        {
+            infoSelectedEntity = entity;
+            entity.InfoSelect(true);
+        }
+        if (entity.IsStructure())
+        {
+            Global.instance.PlayStructureSelectSound(entity);
+        }
+        //UpdateGUIFromSelections();
+        return val;
+    }
+    private void DoNotDoubleSelect()
+    {
+        _doubleSelect = false;
+    }
+    private void TryToSelectOne()
+    {
+        //DeselectAll();
+        if (!_doubleSelect)
+        {
+            _doubleSelect = true;
+            Invoke(nameof(DoNotDoubleSelect), .2f);
+            bool valid = SingleSelect();
+        }
+        else
+        {
+            _doubleSelect = false;
+            DoubleSelectDetected();
+        }
+    }
+    #endregion
+
+    #region GUI
+
+    public void UpdatePopFullWarning()
+    {
+        bool full = population >= maxPopulation;
+        Util.SmartSetActive(UIManager.instance.popFullWarning, full);
+    }
+    private void UpdateGoldText()
+    {
+        TMP_Text goldText = UIManager.instance.goldText;
+        string words = "Gold: " + gold;
+        Util.SetText(goldText, words);
+    }
+    private void UpdatePopText()
+    {
+        TMP_Text popText = UIManager.instance.popText;
+        string words = "Army Size: " + population + "/" + maxPopulation;
+        Util.SetText(popText, words);
+    }
+    public void DequeueProductionOrder(int index = 0) //on click remove thing from queue and refund gold
+    {
+        if (GetNumSelected() == 1)
+        {
+            Entity select = selectedEntities[0];
+            FactionUnit fac = select.buildQueue[index];
+            gold += fac.goldCost;
+            select.buildQueue.RemoveAt(index);
+            //UpdateGUIFromSelections();
+            UpdateSpawnerButtons();
+        }
+    }
+    private void QueueBuildingSpawn(FactionUnit unit)
+    {
+        //necessary to create new so we don't accidentally affect the files
+        /*FactionUnit newUnit = new()
+        {
+            productionName = unit.prefabToSpawn.name,
+            spawnTimeCost = unit.spawnTimeCost,
+            prefabToSpawn = unit.prefabToSpawn,
+            goldCost = unit.goldCost, 
+        };*/
+        //Debug.Log("Trying to spawn :" + unit.name);
+        FactionUnit newUnit = FactionUnit.CreateInstance(unit.productionName, unit.maxSpawnTimeCost, unit.prefabToSpawn, unit.goldCost);
+
+        int cost = newUnit.goldCost;
+        //try to spawn from all selected buildings if possible 
+        for (int i = 0; i < numSelectedEntities; i++)
+        {
+            Entity select = selectedEntities[i];
+            if (select == null) continue;
+            if (gold < cost || !select.net.IsSpawned || !select.fullyBuilt || !TargetCanSpawnThisEntity(select, newUnit)
+                || select.buildQueue.Count >= Global.instance.maxUnitsInProductionQueue) break;
+            //if requirements fulfilled
+            gold -= cost;
+            select.buildQueue.Add(newUnit);
+            //Debug.Log("Added" + newUnit.name + " to queue");
+        }
+        UpdateButtonsFromSelectedUnits();
+        UpdateSpawnerButtons();
+    }
+    private Button[] GetQueueButtons()
+    {
+        return UIManager.instance.queueButtons;
+    }
+    private void UpdateButton(Entity select, bool show, int i = 0)
+    {
+        Button[] buttonArr = GetQueueButtons();
+        SmartSetActive(buttonArr[i].gameObject, show);
+        if (!show) return;
+        UnityEngine.UI.Button button = buttonArr[i];
+        TMP_Text text = button.GetComponentInChildren<TMP_Text>();
+        FactionUnit fac = select.buildQueue[i];
+        text.text = fac.productionName;
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(delegate { DequeueProductionOrder(i); });
+    }
+    private bool MouseOverUI()
+    {
+        PointerEventData eventDataCurrentPosition = new PointerEventData(EventSystem.current);
+        eventDataCurrentPosition.position = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
+        List<RaycastResult> results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(eventDataCurrentPosition, results);
+        foreach (RaycastResult item in results)
+        {
+            if (item.gameObject.layer == LayerMask.NameToLayer("UI"))
+            {
+                return true;
+            }
+        }
+        return false;
+
+        //return EventSystem.current.IsPointerOverGameObject();
+    }
+    public void UpdateHPText()
+    {
+        if (GetNumSelected() == 1)
+        {
+            TMP_Text text = UIManager.instance.hpText;
+            string words = "HP: " + selectedEntities[0].currentHP.Value + "/" + selectedEntities[0].maxHP;
+            Util.SetText(text, words);
+        }
+    }
+    /// <summary>
+    /// Update all buttons to be interactable or not based on their cost vs your gold.
+    /// </summary>
+    public void UpdateButtons() //TODO
+    {
+        /*for (int i = 0; i < indices.Count; i++)
+        {
+            Button button = Global.Instance.productionButtons[i];
+            FactionUnit fac = _faction.entities[indices[i]];
+            button.interactable = gold >= fac.goldCost;
+        }*/
+    }
+    /// <summary>
+    /// Mass GUI update. Use selectively, not in update().
+    /// </summary>
+    public void UpdateGUIFromSelectedEntities()
+    {
+        UpdateGUIBasedOnSelectedUnitCount();
+        UpdateButtonsFromSelectedUnits();
+        UpdateBuildQueueGUIVisibility();
+        //UpdateIndices();
+        //This method is really laggy all of sudden!
+        //UpdateBuildQueueGUI();
+    }
+    private void SmartSetActive(GameObject obj, bool val)
+    {
+        Util.SmartSetActive(obj, val);
+    }
+    private void UpdateGUIText(Entity singleSelected)
+    {
+        TMP_Text nameText = UIManager.instance.nameText;
+        TMP_Text descText = UIManager.instance.descText;
+        TMP_Text hpText = UIManager.instance.hpText;
+        TMP_Text resourceText = Global.instance.resourceText;
+        Util.SetText(nameText, singleSelected.displayName);
+        Util.SetText(descText, singleSelected.desc);
+        string hpStr = "HP: " + singleSelected.currentHP.Value + "/" + singleSelected.maxHP;
+        Util.SetText(hpText, hpStr);
+        //string resourceStr = "Stored gold: " + singleSelected.harvestedResourceAmount + "/" + selectedEntities[0].harvestCapacity;
+        //resourceText.SetText(resourceStr);
+    }
+    /// <summary>
+    /// Update GUI to reflect selected units.
+    /// </summary>
+    private void UpdateGUIBasedOnSelectedUnitCount()
+    {
+        GameObject selectedParent = UIManager.instance.selectedParent;
+        GameObject resourcesParent = Global.instance.resourcesParent;
+        GameObject rallyParent = UIManager.instance.setRallyPointButton;
+        //GameObject infoParent = UIManager.instance.singleUnitInfoParent;
+        if (selectedParent == null || resourcesParent == null || Global.instance.resourceText == null
+            || UIManager.instance.nameText == null || UIManager.instance.descText == null) return;
+
+        Entity singleSelected = selectedEntities[0];
+
+        if (infoSelectedEntity != null && numSelectedEntities == 0) //info selected
+        {
+            SmartSetActive(selectedParent, true);
+            SmartSetActive(rallyParent, false);
+            UpdateGUIText(infoSelectedEntity);
+        }
+        else if (GetNumSelected() <= 0) //nothing selected
+        {
+            SmartSetActive(selectedParent, false);
+            SmartSetActive(rallyParent, false);
+        }
+        else if (GetNumSelected() == 1 && singleSelected != null) //select single
+        {
+            SmartSetActive(selectedParent, true);
+            SmartSetActive(rallyParent, singleSelected.IsSpawner());
+            //SmartSetActive(resourcesParent, singleSelected.IsHarvester());
+            UpdateGUIText(singleSelected);
+            /*
+            Global.Instance.singleUnitInfoParent.SetActive(true);
+            */
+        }
+        else
+        {
+            SmartSetActive(selectedParent, false);
+            /*Global.Instance.selectedParent.SetActive(true);
+            Global.Instance.singleUnitInfoParent.SetActive(false);
+            //Global.Instance.selectedParent.SetActive(false);
+            //Global.Instance.resourcesParent.SetActive(false);*/
+        }
+    }
+    private void UpdateBuildQueueGUIVisibility()
+    {
+        bool show = GetNumSelected() == 1;
+        SmartSetActive(Global.instance.queueParent.gameObject, show);
+        if (!show) return;
+        UpdateBuildQueueGUIButtonsAndProgressBar();
+    }
+    private void UpdateBuildQueueGUIButtonsAndProgressBar()
+    {
+        bool show = GetNumSelected() == 1;
+        if (!show) return;
+        Entity spawner = selectedEntities[0];
+        //only works if is production structure, fully built, and spawned
+        if (!spawner.IsSpawner() || !spawner.fullyBuilt || !spawner.net.IsSpawned) return;
+        UpdateSpawnerButtons();
+        UpdateSpawnerProgressBar();
+    }
+    private void UpdateSpawnerButtons()
+    {
+        Button[] buttonArr = GetQueueButtons();
+        bool show = GetNumSelected() == 1;
+        if (!show) return;
+        Entity spawner = selectedEntities[0];
+        if (!spawner.IsSpawner() || !spawner.fullyBuilt || !spawner.net.IsSpawned) return;
+        int num = Mathf.Clamp(spawner.buildQueue.Count, 0, buttonArr.Length);
+
+        //enable a button for each indices
+        for (int i = 0; i < buttonArr.Length; i++)
+        {
+            bool vis = i < num;
+            UpdateButton(spawner, vis, i);
+        }
+    }
+    private void UpdateSpawnerProgressBar()
+    {
+        bool show = GetNumSelected() == 1;
+        if (!show) return;
+
+        Entity spawner = selectedEntities[0];
+        if (!spawner.IsSpawner() || !spawner.fullyBuilt || !spawner.net.IsSpawned) return;
+        //get the progress of the first unit;
+        FactionUnit beingProduced = null;
+        if (spawner.buildQueue.Count > 0) beingProduced = spawner.buildQueue[0];
+        if (beingProduced != null && Global.instance.structureProgressBar != null)
+        {
+            Global.instance.structureProgressBar.SetRatio(beingProduced.spawnTimer, beingProduced.maxSpawnTimeCost);
+            //Debug.Log(beingProduced.spawnTimer + " / " + beingProduced.maxSpawnTimeCost);
+        }
+        else
+        {
+            Global.instance.structureProgressBar.SetRatio(0, 1);
+        }
+        Color barColor = spawner.productionBlocked ? Color.red : Color.white;
+        Global.instance.structureProgressBar.SetColor(barColor);
+    }
+    /// <summary>
+    /// Update button abilities displayed based on selected units.
+    /// </summary>
+    private void UpdateButtonsFromSelectedUnits()
+    {
+        availableConstructionOptions.Clear();
+        availableAbilities.Clear();
+        availableUnitSpawns.Clear();
+        availableUpgrades.Clear();
+        Util.SmartSetActive(UIManager.instance.setRallyPointButton, false);
+        if (GetNumSelected() > 0) //at least one unit selected
+        {
+            //show gui elements based on unit type selected
+            for (int i = 0; i < numSelectedEntities; i++)
+            {
+                Entity entity = selectedEntities[i];
+                if (entity == null! || !entity.net.IsSpawned || entity.factionEntity == null) //if not built or spawned, skip
+                {
+                    continue;
+                }
+                //get abilities
+                if (entity.HasAbilities())
+                {
+                    foreach (FactionAbility abilityOption in entity.unitAbilities.GetAbilities())
+                    {
+                        if ((!abilityOption.usableOnlyWhenBuilt && !entity.fullyBuilt) || (entity.fullyBuilt && abilityOption.usableOnlyWhenBuilt))
+                        {
+                            if (!availableAbilities.Contains(abilityOption)) availableAbilities.Add(abilityOption);
+                        }
+                    }
+                }
+                if (entity.HasUpgrades())
+                {
+                    //only add the upgrade button if it's actually usable
+                    foreach (FactionUpgrade upgradeOption in entity.unitUpgrades.GetUpgrades())
+                    {
+                        if (entity.CanUseUpgrade(upgradeOption) && !availableUpgrades.Contains(upgradeOption))
+                            availableUpgrades.Add(upgradeOption);
+                    }
+                }
+
+                if (!entity.fullyBuilt) continue;
+
+                if (entity.IsSpawner())
+                {
+                    //get spawnable units
+                    foreach (FactionUnit unitOption in entity.spawner.GetSpawnables())
+                    {
+                        if (!availableUnitSpawns.Contains(unitOption)) availableUnitSpawns.Add(unitOption);
+                    }
+                    Util.SmartSetActive(UIManager.instance.setRallyPointButton, false);
+                }
+                if (entity.IsBuilder())
+                {
+                    //get constructable buildings
+                    foreach (FactionBuilding buildingOption in entity.builder.GetBuildables())
+                    {
+                        if (!availableConstructionOptions.Contains(buildingOption)) availableConstructionOptions.Add(buildingOption);
+                    }
+                }
+            }
+        }
+        Button[] prodButtonArr = GetProdButtons();
+        //enable a button for each indices 
+        for (byte i = 0; i < prodButtonArr.Length; i++)
+        {
+            if (i >= prodButtonArr.Length) break; //met limit
+            UnityEngine.UI.Button button = prodButtonArr[i];
+            button.gameObject.SetActive(true);
+            TMP_Text text = button.GetComponentInChildren<TMP_Text>();
+            button.onClick.RemoveAllListeners();
+
+            if (i < availableAbilities.Count) //abilities
+            {
+                FactionAbility ability = availableAbilities[i];
+                button.onClick.AddListener(delegate { UseAbility(ability); });
+                //get lowest ability cooldown 
+                float cooldown = 999;
+                for (int k = 0; k < numSelectedEntities; k++)
+                {
+                    Entity entity = selectedEntities[i];
+                    //Debug.Log(entity.name);
+                    if (entity != null && entity.CanUseAbility(ability)) //if this entity can use the ability
+                    {
+                        //Debug.Log("can use ability" + ability.name);
+                        bool foundAbility = false;
+                        List<AbilityOnCooldown> usedAbilities = entity.unitAbilities.GetUsedAbilities();
+                        for (int j = 0; j < usedAbilities.Count; j++) //find the ability and set the cooldown
+                        {
+                            if (usedAbilities[j].abilityName == ability.name) //does the ability match?
+                            {
+                                foundAbility = true;
+                                if (usedAbilities[j].cooldownTime < cooldown) //is the cooldown lower than the current cooldown?
+                                {
+                                    cooldown = usedAbilities[j].cooldownTime;
+                                    //Debug.Log("found ability");
+                                }
+                                break;
+                            }
+                        }
+                        if (foundAbility == false) cooldown = 0;
+
+                        //Debug.Log("found result: " + foundAbility);
+                    }
+                }
+                if (cooldown <= 0)
+                {
+                    text.text = ability.name;
+                }
+                else
+                {
+                    text.text = ability.name + ": " + Mathf.RoundToInt(cooldown);
+                }
+                button.interactable = cooldown <= 0;
+            }
+            else if (i < availableAbilities.Count + availableUnitSpawns.Count) //spawns
+            {
+                FactionUnit fac = availableUnitSpawns[i - availableAbilities.Count];
+                button.interactable = gold >= fac.goldCost;
+                text.text = fac.productionName + ": " + fac.goldCost + "g";
+                button.onClick.AddListener(delegate { QueueBuildingSpawn(fac); });
+            }
+            else if (i < availableAbilities.Count + availableUnitSpawns.Count + availableConstructionOptions.Count) //buildings
+            {
+                FactionBuilding fac = availableConstructionOptions[i - availableAbilities.Count - availableUnitSpawns.Count];
+                button.interactable = gold >= fac.goldCost;
+                text.text = fac.productionName + ": " + fac.goldCost + "g";
+                button.onClick.AddListener(delegate { HoverBuild(fac); });
+            }
+            else if (i < availableAbilities.Count + availableUnitSpawns.Count + availableConstructionOptions.Count + availableUpgrades.Count)
+            {
+                FactionUpgrade fac = availableUpgrades[i - availableAbilities.Count 
+                    - availableUnitSpawns.Count - availableConstructionOptions.Count];
+                button.onClick.AddListener(delegate { UseUpgrade(fac); });
+
+                int cost = fac.costs[0].quantity;
+                text.text = fac.name + ": " + cost + "g";
+                button.interactable = gold >= cost;
+                //also should make it uninteractable if it's already been used.
+            }
+            else
+            {
+                prodButtonArr[i].gameObject.SetActive(false);
+            }
+        }
+    }
+    private Button[] GetProdButtons()
+    {
+        return UIManager.instance.productionButtons;
+    }
+    #endregion
+
+    #region Abilities/Upgrades
+
+    /// <summary>
+    /// All selected units that have this ability will attempt to use it
+    /// </summary>
+    /// <param name="ability"></param>
+    private void UseAbility(FactionAbility ability)
+    {
+        if (GetNumSelected() > 0) //at least one unit selected
+        {
+            for (int k = 0; k < numSelectedEntities; k++)
+            {
+                Entity entity = selectedEntities[k];
+                if (entity != null && EntityCanUseAbility(entity, ability))
+                {
+                    if (entity.IsMinion())
+                    {
+                        entity.unitAbilities.StartUsingAbility(ability);
+                    }
+                    else
+                    {
+                        entity.unitAbilities.ActivateAbility(ability);
+                    }
+                }
+            }
+        }
+    }
+    private void UseUpgrade(FactionUpgrade upgrade)
+    {
+        Debug.Log("Using upgrade");
+        if (GetNumSelected() > 0) //at least one unit selected
+        {
+            for (int i = 0; i < numSelectedEntities; i++)
+            {
+                Entity entity = selectedEntities[i];
+                if (entity == null) continue;
+                int cost = upgrade.costs[0].quantity;
+                if (EntityCanUseUpgrade(entity, upgrade) && gold >= cost)
+                {
+                    Debug.Log("Using upgrade");
+                    gold -= cost;
+                    entity.unitUpgrades.ActivateUpgrade(upgrade);
+                }
+            }
+            UpdateButtonsFromSelectedUnits();
+        }
+    }
+    private bool EntityCanUseUpgrade(Entity entity, FactionUpgrade upgrade)
+    {
+        return entity != null && upgrade != null && entity.fullyBuilt && entity.net.IsSpawned
+            && entity.alive && entity.CanUseUpgrade(upgrade);
+    }
+    private bool EntityCanUseAbility(Entity entity, FactionAbility ability)
+    {
+        return entity != null && ability != null && (entity.fullyBuilt || !ability.usableOnlyWhenBuilt) && entity.net.IsSpawned
+            && entity.alive && entity.CanUseAbility(ability)
+            && entity.unitAbilities.AbilityOffCooldown(ability)
+            && (entity.IsBuilding() || entity.sm.GetState() != StateMachineController.EntityStates.UsingAbility);
+    }
+    #endregion
     #region Damage
     /// <summary>
     /// Damages all in radius at point.

@@ -535,7 +535,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4173366746532056064, guid: d91334d9cc4f89f4baeb7037cdfaf7b5, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7978386187057044588, guid: d91334d9cc4f89f4baeb7037cdfaf7b5, type: 3}
       propertyPath: m_Pivot.x
@@ -9234,17 +9234,6 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 7978386187057044588, guid: d91334d9cc4f89f4baeb7037cdfaf7b5, type: 3}
   m_PrefabInstance: {fileID: 328780217}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1190738925 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8436158403717426570, guid: d91334d9cc4f89f4baeb7037cdfaf7b5, type: 3}
-  m_PrefabInstance: {fileID: 328780217}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1207609331
 GameObject:
   m_ObjectHideFlags: 0
@@ -14864,6 +14853,7 @@ GameObject:
   - component: {fileID: 2114043656}
   - component: {fileID: 2114043659}
   - component: {fileID: 2114043660}
+  - component: {fileID: 2114043661}
   m_Layer: 0
   m_Name: 'GlobalReference '
   m_TagString: Untagged
@@ -14900,21 +14890,9 @@ MonoBehaviour:
   factions:
   - {fileID: 11400000, guid: 48d2654104c708448a90a4bfe3b2baa9, type: 2}
   - {fileID: 11400000, guid: 48d2654104c708448a90a4bfe3b2baa9, type: 2}
-  productionButtons:
-  - {fileID: 709131283}
-  - {fileID: 521612977}
-  - {fileID: 1866347917}
-  - {fileID: 1028512887}
-  - {fileID: 1091822618}
-  - {fileID: 435892642}
-  - {fileID: 1557959358}
-  - {fileID: 1752020572}
-  - {fileID: 453071233}
-  - {fileID: 1190738925}
   transparent: {fileID: 2100000, guid: deacb7294ee520949a07a572621051c9, type: 2}
   blocked: {fileID: 2100000, guid: af869502384536d4085a91bc91ee5517, type: 2}
   localPlayer: {fileID: 0}
-  goldText: {fileID: 1803696941}
   footsteps:
   - {fileID: 8300000, guid: 39e24eb7f7c86b84f86f7e8e2b187f38, type: 3}
   - {fileID: 8300000, guid: b4ba03700a761f14ea918bc42c46e441, type: 3}
@@ -14926,31 +14904,12 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 8c4b3ded28c2e9f498bc80d9a7dc2ed6, type: 3}
   - {fileID: 8300000, guid: 86cbb8462ea50b441aeaf69d7dd4a37e, type: 3}
   - {fileID: 8300000, guid: c432d55e4412f3149a0a252fbad48ada, type: 3}
-  queueButtons:
-  - {fileID: 923658057}
-  - {fileID: 643396312}
-  - {fileID: 1619694415}
-  - {fileID: 955527305}
-  - {fileID: 417412256}
-  - {fileID: 1431468260}
-  - {fileID: 1563472600}
-  - {fileID: 1330977728}
-  - {fileID: 1586661547}
-  - {fileID: 1502200742}
   queueParent: {fileID: 2038981963}
   explosionPrefab: {fileID: 5075167953364670934, guid: 3af944e0f12a33f469c4fe25be7383c6, type: 3}
-  selectedParent: {fileID: 1076464098}
-  nameText: {fileID: 1720408164}
-  descText: {fileID: 379104344}
-  resourcesParent: {fileID: 1539402572}
-  resourceText: {fileID: 995845711}
   gridVisual: {fileID: 904017616}
-  hpText: {fileID: 1409714780}
   gunTrailGlobal: {fileID: 3867023542017964721, guid: 7beb53985a2959a4e92721b60820683e, type: 3}
   cannonBall: {fileID: 4931648679904400479, guid: ff26c0b7fbc2c1e439bd021472664b90, type: 3}
   explosion: {fileID: 8300000, guid: 53ce377f4f8f57347a834ce5d017add5, type: 3}
-  singleUnitInfoParent: {fileID: 290658384}
-  popText: {fileID: 241116836}
   fogVolume: {fileID: 1261646710}
   graphUpdateScenePrefab: {fileID: 8171473213557650441, guid: 71e0c50986a2e6c41beebb97b98491ab, type: 3}
   maxMapSize: 25
@@ -14989,17 +14948,16 @@ MonoBehaviour:
   grid: {fileID: 1949437213}
   gameCanvas: {fileID: 1357281861}
   defaultCaptureEffect: {fileID: 5408459219581451750, guid: 79fdd10ce92332f48bdd4a70e0180172, type: 3}
-  setRallyPointButton: {fileID: 1319956301}
   structureProgressBar: {fileID: 318731384}
-  popFullWarning: {fileID: 1261687023}
   reinforcementText: {fileID: 394575984}
   unitSpawnerToTrackReinforcements: {fileID: 0}
   levelObjective: {fileID: 1131607442}
   entitySearcher: {fileID: 2353444043544607824, guid: 377e6261b5e52ff4ca53f4ef20ee48de, type: 3}
   crosshairPrefab: {fileID: 8138555312592417819, guid: 63591ec333626d742b25380f25fc2366, type: 3}
-  maxFramesToFindTarget: 5
   playerHasWon: 0
-  changeBlockedDelayMs: 250
+  spatialHash: {fileID: 0}
+  resourcesParent: {fileID: 1539402572}
+  resourceText: {fileID: 995845711}
 --- !u!114 &2114043657
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15066,6 +15024,49 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9927d46dafc58e548a8138e9c619218f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  table: 
+  denseEntityArray: []
+--- !u!114 &2114043661
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2114043655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 773c4d88b376478428bf6b456bb3b2e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  popText: {fileID: 241116836}
+  goldText: {fileID: 1803696941}
+  nameText: {fileID: 1720408164}
+  descText: {fileID: 379104344}
+  queueButtons:
+  - {fileID: 923658057}
+  - {fileID: 643396312}
+  - {fileID: 1619694415}
+  - {fileID: 955527305}
+  - {fileID: 417412256}
+  - {fileID: 1431468260}
+  - {fileID: 1563472600}
+  - {fileID: 1330977728}
+  - {fileID: 1586661547}
+  - {fileID: 1502200742}
+  productionButtons:
+  - {fileID: 709131283}
+  - {fileID: 521612977}
+  - {fileID: 1866347917}
+  - {fileID: 1028512887}
+  - {fileID: 1091822618}
+  - {fileID: 435892642}
+  - {fileID: 1557959358}
+  - {fileID: 1752020572}
+  - {fileID: 453071233}
+  selectedParent: {fileID: 1076464098}
+  hpText: {fileID: 1409714780}
+  setRallyPointButton: {fileID: 1319956301}
+  popFullWarning: {fileID: 1261687023}
 --- !u!1 &2120837475
 GameObject:
   m_ObjectHideFlags: 0
