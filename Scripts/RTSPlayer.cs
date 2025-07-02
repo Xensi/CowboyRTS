@@ -81,32 +81,13 @@ public class RTSPlayer : Player
     private Vector3 buildOffset = Vector3.zero;
     public bool placingPortal = false;
     public List<byte> indices;
-    
-    public void LoseGame()
-    {
-        inTheGame.Value = false;
-    }
-    private void MoveCamToSpawn()
-    {
-        Vector3 spawn = playerSpawns.spawnsList[Convert.ToInt32(OwnerClientId)].position;
-        camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
-    }
-    public void UpdateHPText()
-    {
-        if (GetNumSelected() == 1)
-        {
-            Global.instance.hpText.text = "HP: " + selectedEntities[0].currentHP.Value + "/" + selectedEntities[0].maxHP;
-        }
-    }
-    private void OnDisable()
-    {
-        Global.instance.uninitializedPlayers.Remove(this);
-    }
+
+    #region StandardFunctions
     public override void Start()
     {
         base.Start();
         groundLayer = LayerMask.GetMask("Ground");
-        blockingLayer = LayerMask.GetMask("Entity", "Obstacle"); 
+        blockingLayer = LayerMask.GetMask("Entity", "Obstacle");
         gameLayer = LayerMask.GetMask("Entity", "Obstacle", "Ground");
         placementGhost = LayerMask.GetMask("PlacementGhost");
         //_offset = new Vector3(0.5f, 0, .5f);
@@ -119,14 +100,10 @@ public class RTSPlayer : Player
         if (IsOwner)
         {
             MoveCamToSpawn();
+            UpdateGUIFromSelectedEntities();
         }
     }
-    private LevelInfo playerSpawns;
-    private void RetrieveSpawnPositionsList()
-    {
-        playerSpawns = null;
-        playerSpawns = FindFirstObjectByType<LevelInfo>();
-    }
+
     public override void OnNetworkSpawn()
     {
         playerTeamID = System.Convert.ToInt32(OwnerClientId);
@@ -161,22 +138,22 @@ public class RTSPlayer : Player
         //playerFaction = Global.Instance.factions[teamID];
         allegianceTeamID = playerTeamID;
     }
-    private bool MouseOverUI()
+    private void OnDisable()
     {
-        PointerEventData eventDataCurrentPosition = new PointerEventData(EventSystem.current);
-        eventDataCurrentPosition.position = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
-        List<RaycastResult> results = new List<RaycastResult>();
-        EventSystem.current.RaycastAll(eventDataCurrentPosition, results);
-        foreach (RaycastResult item in results)
-        {
-            if (item.gameObject.layer == LayerMask.NameToLayer("UI"))
-            {
-                return true;
-            }
-        }
-        return false;
-
-        //return EventSystem.current.IsPointerOverGameObject();
+        Global.instance.uninitializedPlayers.Remove(this);
+    }
+    #endregion
+    #region Cam
+    private void MoveCamToSpawn()
+    {
+        Vector3 spawn = playerSpawns.spawnsList[Convert.ToInt32(OwnerClientId)].position;
+        camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
+    }
+    private LevelInfo playerSpawns;
+    private void RetrieveSpawnPositionsList()
+    {
+        playerSpawns = null;
+        playerSpawns = FindFirstObjectByType<LevelInfo>();
     }
     private void CameraMove()
     {
@@ -188,10 +165,9 @@ public class RTSPlayer : Player
             cams[i].orthographicSize = Mathf.Clamp(cams[i].orthographicSize - Input.mouseScrollDelta.y * camScroll, 1, 10); ;
         }
     }
-    private int GetNumSelected()
-    {
-        return numSelectedEntities;
-    }
+    #endregion
+    #region Commands
+
     private void SelectedAttackMove()
     {
         //Debug.Log("trying to attack move");
@@ -233,6 +209,16 @@ public class RTSPlayer : Player
                 }
             }
         }
+    }
+    #endregion
+    #region MiscRegion
+    public void LoseGame()
+    {
+        inTheGame.Value = false;
+    }
+    private int GetNumSelected()
+    {
+        return numSelectedEntities;
     }
     private bool SameAllegiance(Entity foreign)
     {   //later update this so it works with allegiances
@@ -375,42 +361,6 @@ public class RTSPlayer : Player
     public bool IsTargetExplicitlyOnOurTeam(Entity target)
     {
         return target.teamType == Entity.TeamBehavior.OwnerTeam && ownedEntities.Contains(target);
-    }
-    private Entity infoSelectedEntity;
-    /// <summary>
-    /// Try to select an entity.
-    /// </summary>
-    /// <param name="entity"></param>
-    private bool FormalSelectEntity(Entity entity, bool toggle = true)
-    {
-        if (entity == null) return false;
-        if (!PositionFullyVisible(entity.transform.position)) return false;
-        if (!entity.alive) return false;
-        bool val = false;
-        if (IsTargetExplicitlyOnOurTeam(entity))
-        {
-            bool opp = !entity.selected;
-            if (!toggle) opp = true;
-            entity.Select(opp);
-
-            /*if (entity.factionEntity.constructableBuildings.Length > 0)
-            {
-                selectedBuilders.Add(entity.stateMachineController);
-            }*/
-
-            val = opp;
-        }
-        else
-        {
-            infoSelectedEntity = entity;
-            entity.InfoSelect(true);
-        }
-        if (entity.IsStructure())
-        {
-            Global.instance.PlayStructureSelectSound(entity);
-        }
-        //UpdateGUIFromSelections();
-        return val;
     }
     private void UpdateGridVisual()
     {
@@ -567,7 +517,7 @@ public class RTSPlayer : Player
                     default:
                         break;
                 }
-                UpdateGUIFromSelections();
+                UpdateGUIFromSelectedEntities();
             }
             switch (mouseState)
             {
@@ -661,7 +611,7 @@ public class RTSPlayer : Player
                     if (Input.GetMouseButtonUp(0))
                     {
                         SelectWithinBounds();
-                        UpdateGUIFromSelections();
+                        UpdateGUIFromSelectedEntities();
                     }
                 }
                 break;
@@ -688,7 +638,7 @@ public class RTSPlayer : Player
             Global.instance.popText.text = "Army Size: " + population + "/" + maxPopulation;
         }
         //TryReplaceFakeSpawn();
-        //UpdateGUIFromSelections();// this might be expensive ...
+        UpdateSpawnerProgressBar();
     }
     private void FinishPlacingRotatedBuilding()
     {
@@ -865,6 +815,82 @@ public class RTSPlayer : Player
 
         SelectionBox.anchoredPosition = StartMousePosition + new Vector2(width / 2, height / 2);
         SelectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
+    }
+    #endregion
+    #region Building
+
+    //private byte wallID = 0;
+    private void StopPlacingBuilding()
+    {
+        //Debug.Log("Stopping building placement and destroying ghosts");
+        if (buildingGhost != null)
+        {
+            Destroy(buildingGhost.gameObject);
+            buildingGhost = null;
+        }
+        mouseState = MouseState.Waiting;
+        linkedState = LinkedState.Waiting;
+        placingLinkedBuilding = false;
+
+        foreach (GameObject item in wallGhosts)
+        {
+            if (item != null)
+            {
+                Destroy(item);
+            }
+        }
+        wallGhosts.Clear();
+    }
+    public void UpdatePlacementBlockedStatus()
+    {
+        if (buildingGhost != null && buildingGhost.gameObject.activeInHierarchy)
+        {
+            //placementBlocked = IsPositionBlocked(buildingGhost.transform.position);
+            placementBlocked = IsPositionBlockedByEntity(buildingGhost);
+            if (placementBlocked != oldPlacement)
+            {
+                oldPlacement = placementBlocked;
+                UpdatePlacementMeshes();
+            }
+        }
+    }
+    private void UpdatePlacementMeshes()
+    {
+        if (placementBlocked)
+        {
+            for (int i = 0; i < meshes.Length; i++)
+            {
+                if (meshes[i] != null)
+                {
+                    meshes[i].material = Global.instance.blocked;
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < meshes.Length; i++)
+            {
+                if (meshes[i] != null)
+                {
+                    meshes[i].material = Global.instance.transparent;
+                }
+            }
+        }
+    }
+    /// <summary>
+    /// Updates cursor world position onto grid
+    /// </summary>
+    private void GetMouseWorldPosition()
+    {
+        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
+
+        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, groundLayer))
+        {
+            _mousePosition = hit.point;
+            _gridPosition = grid.WorldToCell(_mousePosition);
+            cursorWorldPosition = grid.CellToWorld(_gridPosition) + buildOffset;
+            cursorWorldPosition = new Vector3(cursorWorldPosition.x, hit.point.y, cursorWorldPosition.z);
+        }
     }
     private void TellSelectedToBuild(Entity building)
     {
@@ -1109,79 +1135,7 @@ public class RTSPlayer : Player
         Vector3 pos = grid.CellToWorld(gridPosition) + buildOffset;
         return pos;
     }
-    //private byte wallID = 0;
-    private void StopPlacingBuilding()
-    {
-        //Debug.Log("Stopping building placement and destroying ghosts");
-        if (buildingGhost != null)
-        {
-            Destroy(buildingGhost.gameObject);
-            buildingGhost = null;
-        }
-        mouseState = MouseState.Waiting;
-        linkedState = LinkedState.Waiting;
-        placingLinkedBuilding = false;
-
-        foreach (GameObject item in wallGhosts)
-        {
-            if (item != null)
-            {
-                Destroy(item);
-            }
-        }
-        wallGhosts.Clear();
-    }
-    public void UpdatePlacementBlockedStatus()
-    {
-        if (buildingGhost != null && buildingGhost.gameObject.activeInHierarchy)
-        {
-            //placementBlocked = IsPositionBlocked(buildingGhost.transform.position);
-            placementBlocked = IsPositionBlockedByEntity(buildingGhost);
-            if (placementBlocked != oldPlacement)
-            {
-                oldPlacement = placementBlocked;
-                UpdatePlacementMeshes();
-            }
-        }
-    }
-    private void UpdatePlacementMeshes()
-    {
-        if (placementBlocked)
-        {
-            for (int i = 0; i < meshes.Length; i++)
-            {
-                if (meshes[i] != null)
-                {
-                    meshes[i].material = Global.instance.blocked;
-                }
-            }
-        }
-        else
-        {
-            for (int i = 0; i < meshes.Length; i++)
-            {
-                if (meshes[i] != null)
-                {
-                    meshes[i].material = Global.instance.transparent;
-                }
-            }
-        }
-    }
-    /// <summary>
-    /// Updates cursor world position onto grid
-    /// </summary>
-    private void GetMouseWorldPosition()
-    {
-        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
-
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, groundLayer))
-        {
-            _mousePosition = hit.point;
-            _gridPosition = grid.WorldToCell(_mousePosition);
-            cursorWorldPosition = grid.CellToWorld(_gridPosition) + buildOffset;
-            cursorWorldPosition = new Vector3(cursorWorldPosition.x, hit.point.y, cursorWorldPosition.z);
-        }
-    }
+    #endregion
     #region SpawnMinion
 
     
@@ -1404,9 +1358,46 @@ public class RTSPlayer : Player
         }
     }
     private List<Entity> newSpawnsSpawnerList = new();
-    
+
     #endregion
     #region Selection
+
+    private Entity infoSelectedEntity;
+    /// <summary>
+    /// Try to select an entity.
+    /// </summary>
+    /// <param name="entity"></param>
+    private bool FormalSelectEntity(Entity entity, bool toggle = true)
+    {
+        if (entity == null) return false;
+        if (!PositionFullyVisible(entity.transform.position)) return false;
+        if (!entity.alive) return false;
+        bool val = false;
+        if (IsTargetExplicitlyOnOurTeam(entity))
+        {
+            bool opp = !entity.selected;
+            if (!toggle) opp = true;
+            entity.Select(opp);
+
+            /*if (entity.factionEntity.constructableBuildings.Length > 0)
+            {
+                selectedBuilders.Add(entity.stateMachineController);
+            }*/
+
+            val = opp;
+        }
+        else
+        {
+            infoSelectedEntity = entity;
+            entity.InfoSelect(true);
+        }
+        if (entity.IsStructure())
+        {
+            Global.instance.PlayStructureSelectSound(entity);
+        }
+        //UpdateGUIFromSelections();
+        return val;
+    }
     private void DoNotDoubleSelect()
     {
         _doubleSelect = false;
@@ -1426,6 +1417,34 @@ public class RTSPlayer : Player
             DoubleSelectDetected();
         }
     }
+    #endregion
+
+    #region GUI
+
+    private bool MouseOverUI()
+    {
+        PointerEventData eventDataCurrentPosition = new PointerEventData(EventSystem.current);
+        eventDataCurrentPosition.position = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
+        List<RaycastResult> results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(eventDataCurrentPosition, results);
+        foreach (RaycastResult item in results)
+        {
+            if (item.gameObject.layer == LayerMask.NameToLayer("UI"))
+            {
+                return true;
+            }
+        }
+        return false;
+
+        //return EventSystem.current.IsPointerOverGameObject();
+    }
+    public void UpdateHPText()
+    {
+        if (GetNumSelected() == 1)
+        {
+            Global.instance.hpText.text = "HP: " + selectedEntities[0].currentHP.Value + "/" + selectedEntities[0].maxHP;
+        }
+    }
     /// <summary>
     /// Update all buttons to be interactable or not based on their cost vs your gold.
     /// </summary>
@@ -1441,14 +1460,21 @@ public class RTSPlayer : Player
     /// <summary>
     /// Mass GUI update. Use selectively, not in update().
     /// </summary>
-    public void UpdateGUIFromSelections()
+    public void UpdateGUIFromSelectedEntities()
     {
         UpdateGUIBasedOnSelectedUnitCount();
         UpdateButtonsFromSelectedUnits();
-
+        UpdateBuildQueueGUIVisibility();
         //UpdateIndices();
         //This method is really laggy all of sudden!
         //UpdateBuildQueueGUI();
+    }
+    private void SmartSetActive(GameObject obj, bool val)
+    {
+        if (obj.activeInHierarchy != val)
+        {
+            obj.SetActive(val);
+        }
     }
     private void UpdateGUIText(Entity singleSelected)
     {
@@ -1462,13 +1488,6 @@ public class RTSPlayer : Player
         hpText.SetText(hpStr);
         //string resourceStr = "Stored gold: " + singleSelected.harvestedResourceAmount + "/" + selectedEntities[0].harvestCapacity;
         //resourceText.SetText(resourceStr);
-    }
-    private void SmartSetActive(GameObject obj, bool val)
-    {
-        if (obj.activeInHierarchy != val)
-        {
-            obj.SetActive(val);
-        }
     }
     /// <summary>
     /// Update GUI to reflect selected units.
@@ -1513,10 +1532,64 @@ public class RTSPlayer : Player
             //Global.Instance.resourcesParent.SetActive(false);*/
         }
     }
+    private void UpdateBuildQueueGUIVisibility()
+    {
+        bool show = GetNumSelected() == 1;
+        SmartSetActive(Global.instance.queueParent.gameObject, show);
+        if (!show) return;
+        UpdateBuildQueueGUIButtonsAndProgressBar();
+    }
+    private void UpdateBuildQueueGUIButtonsAndProgressBar()
+    {
+        bool show = GetNumSelected() == 1;
+        if (!show) return;
+        Entity spawner = selectedEntities[0];
+        //only works if is production structure, fully built, and spawned
+        if (!spawner.IsSpawner() || !spawner.fullyBuilt || !spawner.net.IsSpawned) return;
+        UpdateSpawnerButtons();
+        UpdateSpawnerProgressBar();
+    }
+    private void UpdateSpawnerButtons()
+    {
+        bool show = GetNumSelected() == 1;
+        if (!show) return;
+        Entity spawner = selectedEntities[0];
+        if (!spawner.IsSpawner() || !spawner.fullyBuilt || !spawner.net.IsSpawned) return;
+        int num = Mathf.Clamp(spawner.buildQueue.Count, 0, Global.instance.queueButtons.Count);
+
+        //enable a button for each indices
+        for (int i = 0; i < Global.instance.queueButtons.Count; i++)
+        {
+            bool vis = i < num;
+            UpdateButton(spawner, vis, i);
+        }
+    }
+    private void UpdateSpawnerProgressBar()
+    {
+        bool show = GetNumSelected() == 1;
+        if (!show) return;
+
+        Entity spawner = selectedEntities[0];
+        if (!spawner.IsSpawner() || !spawner.fullyBuilt || !spawner.net.IsSpawned) return;
+        //get the progress of the first unit;
+        FactionUnit beingProduced = null;
+        if (spawner.buildQueue.Count > 0) beingProduced = spawner.buildQueue[0];
+        if (beingProduced != null && Global.instance.structureProgressBar != null)
+        {
+            Global.instance.structureProgressBar.SetRatio(beingProduced.spawnTimer, beingProduced.maxSpawnTimeCost);
+            //Debug.Log(beingProduced.spawnTimer + " / " + beingProduced.maxSpawnTimeCost);
+        }
+        else
+        {
+            Global.instance.structureProgressBar.SetRatio(0, 1);
+        }
+        Color barColor = spawner.productionBlocked ? Color.red : Color.white;
+        Global.instance.structureProgressBar.SetColor(barColor);
+    }
     /// <summary>
     /// Update button abilities displayed based on selected units.
     /// </summary>
-    private void UpdateButtonsFromSelectedUnits() //TODO: revise
+    private void UpdateButtonsFromSelectedUnits()
     {
         availableConstructionOptions.Clear();
         availableAbilities.Clear();
@@ -1658,6 +1731,8 @@ public class RTSPlayer : Player
             }
         }
     }
+
+    #endregion
     /// <summary>
     /// All selected units that have this ability will attempt to use it
     /// </summary>
@@ -1715,55 +1790,11 @@ public class RTSPlayer : Player
             && entity.unitAbilities.AbilityOffCooldown(ability)
             && (entity.IsBuilding() || entity.sm.GetState() != StateMachineController.EntityStates.UsingAbility);
     }
-    public void UpdateBuildQueueGUI()
+    private void UpdateButton(Entity select, bool show, int i = 0)
     {
-        Global.instance.queueParent.gameObject.SetActive(false);
-        if (GetNumSelected() != 1) return; //only works with a single unit for now
-
-        Entity selectedProductionEntity = selectedEntities[0];
-        //only works if is production structure, fully built, and spawned
-        if (!selectedProductionEntity.IsSpawner() || !selectedProductionEntity.fullyBuilt || !selectedProductionEntity.net.IsSpawned) return;
-
-        Global.instance.queueParent.gameObject.SetActive(true);
-        int num = Mathf.Clamp(selectedProductionEntity.buildQueue.Count, 0, Global.instance.queueButtons.Count);
-
-        //enable a button for each indices
-        for (int i = 0; i < Global.instance.queueButtons.Count; i++)
-        {
-            Global.instance.queueButtons[i].gameObject.SetActive(false);
-            if (i < num)
-            {
-                UpdateButton(selectedProductionEntity, i);
-            }
-        }
-        //get the progress of the first unit;
-        FactionUnit beingProduced = null;
-        if (selectedProductionEntity.buildQueue.Count > 0)
-        {
-            beingProduced = selectedProductionEntity.buildQueue[0];
-        }
-        if (beingProduced != null && Global.instance.structureProgressBar != null)
-        {
-            Global.instance.structureProgressBar.SetRatio(beingProduced.spawnTimer, beingProduced.maxSpawnTimeCost-1);
-            //Debug.Log(beingProduced.spawnTimer + " / " + beingProduced.maxSpawnTimeCost);
-        }
-        else
-        {
-            Global.instance.structureProgressBar.SetRatio(0, 1);
-        }
-        if (selectedProductionEntity.productionBlocked)
-        {
-            Global.instance.structureProgressBar.SetColor(Color.red);
-        }
-        else
-        {
-            Global.instance.structureProgressBar.SetColor(Color.white);
-        }
-    }
-    private void UpdateButton(Entity select, int i = 0)
-    {
+        SmartSetActive(Global.instance.queueButtons[i].gameObject, show);
+        if (!show) return;
         UnityEngine.UI.Button button = Global.instance.queueButtons[i];
-        button.gameObject.SetActive(true);
         TMP_Text text = button.GetComponentInChildren<TMP_Text>();
         FactionUnit fac = select.buildQueue[i];
         text.text = fac.productionName;
@@ -1783,6 +1814,7 @@ public class RTSPlayer : Player
             gold += fac.goldCost;
             select.buildQueue.RemoveAt(index);
             //UpdateGUIFromSelections();
+            UpdateSpawnerButtons();
         }
     }
     private void QueueBuildingSpawn(FactionUnit unit)
@@ -1811,8 +1843,8 @@ public class RTSPlayer : Player
             select.buildQueue.Add(newUnit);
             //Debug.Log("Added" + newUnit.name + " to queue");
         }
-        //UpdateBuildQueueGUI();
         UpdateButtonsFromSelectedUnits();
+        UpdateSpawnerButtons();
     }
     private bool TargetCanSpawnThisEntity(Entity target, FactionEntity entity)
     {
@@ -1962,7 +1994,7 @@ public class RTSPlayer : Player
                 i++;
             }
         }
-        UpdateGUIFromSelections();
+        UpdateGUIFromSelectedEntities();
     }
     private void SelectAllProduction()
     {
@@ -1974,7 +2006,7 @@ public class RTSPlayer : Player
                 FormalSelectEntity(item, false);
             }
         }
-        UpdateGUIFromSelections();
+        UpdateGUIFromSelectedEntities();
     }
     private void SelectAllIdleBuilders()
     {
@@ -1992,7 +2024,7 @@ public class RTSPlayer : Player
                 }
             }
         }
-        UpdateGUIFromSelections();
+        UpdateGUIFromSelectedEntities();
     }
     public void DeselectSpecific(Entity entity)
     {
@@ -2019,11 +2051,7 @@ public class RTSPlayer : Player
         infoSelectedEntity = null;
         //UpdateGUIFromSelections();
     }
-    #endregion
-
-
-
-
+    #region Damage
     /// <summary>
     /// Damages all in radius at point.
     /// </summary> 
@@ -2092,4 +2120,5 @@ public class RTSPlayer : Player
         GameObject prefab = Global.instance.explosionPrefab;
         _ = Instantiate(prefab, pos, Quaternion.identity);
     }
+    #endregion
 }

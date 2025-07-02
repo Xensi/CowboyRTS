@@ -634,31 +634,7 @@ public class Entity : NetworkBehaviour
     }
     private void SetStartingSelectionRadius()
     {
-        if (IsMinion())
-        {
-            selectIndicator.UpdateRadius(pf.ai.radius); //TODO ERROR
-        }
-        else
-        {
-            float offset = 0.1f;
-            if (obstacle.type == NavmeshCut.MeshType.Circle)
-            {
-                selectIndicator.UpdateRadius(obstacle.circleRadius+offset);
-            }
-            else
-            {
-                float size = 1;
-                if (obstacle.rectangleSize.x < obstacle.rectangleSize.y)
-                {
-                    size = obstacle.rectangleSize.x;
-                }
-                else
-                {
-                    size = obstacle.rectangleSize.y;
-                }
-                selectIndicator.UpdateRadius(size + offset);
-            }
-        }
+        selectIndicator.UpdateRadius(GetAestheticRadius());
     }
     private void SetInitialVisuals()
     {
@@ -1859,9 +1835,22 @@ public class Entity : NetworkBehaviour
         }
         else
         {
-            return ((physicalCollider.bounds.size.x * 0.5f) + (physicalCollider.bounds.size.z * 0.5f))/2;
+            return ((physicalCollider.bounds.size.x * 0.5f) + (physicalCollider.bounds.size.z * 0.5f)) / 2;
         }
-
+    }
+    private float GetAestheticRadius()
+    {
+        if (pf != null)
+        {
+            return pf.ai.radius;
+        }
+        else
+        {
+            //get diagonal and divide by 2 to get radius
+            float x = physicalCollider.bounds.size.x;
+            float z = physicalCollider.bounds.size.z;
+            return Mathf.Sqrt(Mathf.Pow(x, 2) + Mathf.Pow(z, 2))/2;
+        }
     }
     public bool IsStructure()
     {

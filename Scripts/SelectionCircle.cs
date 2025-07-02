@@ -30,9 +30,14 @@ public class SelectionCircle : MonoBehaviour
             lr.endColor = color;
         }
     }
+    public float GetRadius()
+    {
+        return radius;
+    }
     public void UpdateRadius(float newRad)
     {
         radius = newRad;
+        UpdateSelectionCirclePositions();
     }
     public void UpdateSelectionCirclePositions()
     {
