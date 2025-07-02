@@ -57,11 +57,12 @@ public class UnitAnimator : EntityAddon
     {
         return animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1;
     }
+    private float walkChangeAnimThreshold = 0.1f;
     public void IdleOrWalkContextuallyAnimationOnly()
     {
         if (pf == null) return;
-        float limit = pf.changeThreshold;
-        if (pf.change < limit * limit && pf.walkStartTimer <= 0 || pf.ai.reachedDestination) //basicallyIdleInstances > idleThreshold
+        float limit = walkChangeAnimThreshold;
+        if (pf.sqrDistChange < limit * limit && pf.walkStartTimer <= 0 || pf.ai.reachedDestination)
         {
             Play(IDLE);
         }

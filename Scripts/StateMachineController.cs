@@ -481,7 +481,6 @@ public class StateMachineController : NetworkBehaviour
     public void ProcessOrder(UnitOrder order)
     {
         //Debug.Log("Processing order");
-        //if (attacker != null) attacker.ResetGoal();
         Vector3 targetPosition = order.targetPosition;
         Entity target = order.target;
         lastOrderType = order.action;

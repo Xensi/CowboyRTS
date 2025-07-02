@@ -425,17 +425,14 @@ public class RTSPlayer : Player
         {
             //Debug.Log("Spacebar");
             SelectAllAttackers();
-            UpdateGUIFromSelections();
         }
         if (Input.GetKeyDown(KeyCode.E))
         {
             SelectAllProduction();
-            UpdateGUIFromSelections();
         }
         if (Input.GetKeyDown(KeyCode.B))
         {
             SelectAllIdleBuilders();
-            UpdateGUIFromSelections();
         }
         if (Input.GetKeyDown(KeyCode.Period))
         {
@@ -1442,7 +1439,7 @@ public class RTSPlayer : Player
         }*/
     }
     /// <summary>
-    /// Mass GUI update. Use carefully.
+    /// Mass GUI update. Use selectively, not in update().
     /// </summary>
     public void UpdateGUIFromSelections()
     {
@@ -1965,6 +1962,7 @@ public class RTSPlayer : Player
                 i++;
             }
         }
+        UpdateGUIFromSelections();
     }
     private void SelectAllProduction()
     {
@@ -1976,6 +1974,7 @@ public class RTSPlayer : Player
                 FormalSelectEntity(item, false);
             }
         }
+        UpdateGUIFromSelections();
     }
     private void SelectAllIdleBuilders()
     {
@@ -1993,6 +1992,7 @@ public class RTSPlayer : Player
                 }
             }
         }
+        UpdateGUIFromSelections();
     }
     public void DeselectSpecific(Entity entity)
     {

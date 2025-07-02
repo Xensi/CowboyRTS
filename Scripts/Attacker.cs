@@ -1,14 +1,10 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Globalization;
 using System.Threading;
+using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
-using static Player;
 using static StateMachineController;
 using static UnitAnimator;
-using System.Threading.Tasks;
 
 public class Attacker : SwingEntityAddon
 {
@@ -31,7 +27,7 @@ public class Attacker : SwingEntityAddon
     /// </summary>
     public Entity preferredAttackTarget;
     public Entity alternateAttackTarget;
-    public enum Goal { None, AttackFromIdle, OrderedToAttackMove }
+    public enum Goal { None, AttackFromIdle, OrderedToAttackMove, OrderedToAttackSpecificTarget }
     public Goal longTermGoal = Goal.None; 
     public Vector3 lastIdlePosition;
     public EntitySearcher assignedEntitySearcher;
@@ -303,6 +299,17 @@ public class Attacker : SwingEntityAddon
         //Entity eligibleIdleEnemy = FindEnemyThroughPhysSearch(physSearchRange, RequiredEnemyType.Minion, false, true);
         return eligibleIdleEnemy;
     }
+    private Entity AttackingDetectEnemies()
+    {
+        float physSearchRange = range;
+        if (ent.IsMelee())
+        {
+            physSearchRange = Global.instance.defaultMeleeSearchRange;
+        }
+        Entity eligibleIdleEnemy = GetClosestMinionHashSearch(physSearchRange);
+        return eligibleIdleEnemy;
+    }
+
 
     private void GenericAttackMovePrep(Vector3 target)
     {
@@ -464,28 +471,41 @@ public class Attacker : SwingEntityAddon
     private void HandleLackOfValidTargetEnemy()
     {
         targetEnemy = null;
+        //Debug.Log(longTermGoal);
         switch (longTermGoal)
         {
             case Goal.None:
+                SwitchState(EntityStates.Idle);
                 break;
             case Goal.AttackFromIdle:
-                //check if there's more enemies within our idle attack range
-                Entity found = IdleDetectEnemies();
-                if (found != null && InChaseRange(found))
                 {
-                    targetEnemy = found;
-                    longTermGoal = Goal.AttackFromIdle;
-                    SwitchState(EntityStates.WalkToSpecificEnemy);
-                    //Debug.Log("New target");
-                }
-                else
-                {
-                    pf.MoveTo(lastIdlePosition);
-                    ResetGoal();
+                    //check if there's more enemies within our idle attack range
+                    Entity found = IdleDetectEnemies();
+                    if (found != null && InChaseRange(found))
+                    {
+                        targetEnemy = found;
+                        SwitchState(EntityStates.WalkToSpecificEnemy);
+                    }
+                    else
+                    {
+                        pf.MoveTo(lastIdlePosition);
+                        ResetGoal();
+                    }
                 }
                 break;
             case Goal.OrderedToAttackMove:
                 SwitchState(EntityStates.AttackMoving);
+                break;
+            case Goal.OrderedToAttackSpecificTarget:
+                {
+                    Entity found = AttackingDetectEnemies();
+                    if (found != null)
+                    {
+                        Debug.Log(found);
+                        targetEnemy = found;
+                        SwitchState(EntityStates.WalkToSpecificEnemy);
+                    }
+                }
                 break;
             default:
                 break;
@@ -602,6 +622,11 @@ public class Attacker : SwingEntityAddon
     private Entity GetFirstEnemyHashSearch(float range, RequiredEnemyType requiredEnemyType)
     {
         return Global.instance.spatialHash.GetFirstEnemyHashSearch(ent, range, requiredEnemyType);
+        //return Global.instance.spatialHash.GetClosestEnemyHashSearch(ent, range, requiredEnemyType);
+    }
+    private Entity GetClosestMinionHashSearch(float range)
+    {
+        return Global.instance.spatialHash.GetClosestMinionHashSearch(ent, range);
     }
     private Entity FindSpecificEnemyInSearchListInRange(float range, Entity enemy)
     {
@@ -760,6 +785,7 @@ public class Attacker : SwingEntityAddon
     }
     public void AttackTarget(Entity select)
     {
+        longTermGoal = Goal.OrderedToAttackSpecificTarget;
         targetEnemy = select;
         SwitchState(EntityStates.WalkToSpecificEnemy);
     }

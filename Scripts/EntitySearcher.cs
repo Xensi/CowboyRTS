@@ -90,7 +90,7 @@ public class EntitySearcher : MonoBehaviour
     }
     private void SearchHash()
     {
-        Global.instance.spatialHash.SearchHash(transform.position, searchRadius, playerCreator,
+        Global.instance.spatialHash.EntitySearchHash(transform.position, searchRadius, playerCreator,
             ref searchedMinions, ref searchedStructures, ref searchedAll,
             ref minionCount, ref structureCount, ref allCount);
     }

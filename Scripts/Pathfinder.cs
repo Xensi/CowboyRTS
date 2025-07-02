@@ -378,13 +378,10 @@ public class Pathfinder : EntityAddon
     {
         ValidatePathStatus();
         //path reaches and we're a distance away from the pathfinding target
-        if (!Util.FastDistanceCheck(ent.transform.position, PFTargetPos(), 0.75f))
+        if (!Util.FastDistanceCheck(ent.transform.position, PFTargetPos(), 0.75f) && PathReaches())
         {
-            if (PathReaches())
-            {
-                //Debug.Log("We can resume moving");
-                SwitchState(EntityStates.Walk);
-            }
+            //Debug.Log("We can resume moving");
+            SwitchState(EntityStates.Walk);
         }
     }
     public void WalkState()
@@ -586,7 +583,7 @@ public class Pathfinder : EntityAddon
     public void MoveToTarget(Entity target)
     {
         if (target == null) return;
-        //Debug.Log("Moving to target");
+        Debug.Log("Moving to target");
         sm.lastCommand.Value = CommandTypes.Move;
         if (sm.currentState != EntityStates.Spawn)
         {
@@ -608,11 +605,11 @@ public class Pathfinder : EntityAddon
     }
     public void UpdateIdleCount()
     {
-        if (change < walkAnimThreshold && effectivelyIdleInstances < idleThreshold)
+        if (sqrDistChange < walkAnimThreshold && effectivelyIdleInstances < idleThreshold)
         {
             effectivelyIdleInstances += Time.deltaTime;
         }
-        else if (change >= walkAnimThreshold)
+        else if (sqrDistChange >= walkAnimThreshold)
         {
             effectivelyIdleInstances = 0;
         }
@@ -665,23 +662,23 @@ public class Pathfinder : EntityAddon
             moveTimer = 0;
             Vector3 offset = transform.position - oldPosition;
             float sqrLen = offset.sqrMagnitude;
-            change = sqrLen;
+            sqrDistChange = sqrLen;
             oldPosition = transform.position;
             //Debug.Log(change);
         }
     }
-    public float change;
+    public float sqrDistChange;
     readonly public float changeThreshold = 0.001f;
     float defaultEndReachedDistance = 0.1f;
     public void UpdateStopDistance()    
     {
         float limit = changeThreshold;
         float reduceEndReachedDistanceScale = 0.1f;
-        if (change < limit && walkStartTimer <= 0)
+        if (sqrDistChange < limit && walkStartTimer <= 0)
         {
             ai.endReachedDistance += Time.deltaTime;
         }
-        if (change >= limit)
+        if (sqrDistChange >= limit)
         {
             ai.endReachedDistance = Mathf.Clamp(ai.endReachedDistance -= Time.deltaTime * reduceEndReachedDistanceScale, 
                 defaultEndReachedDistance, 50);

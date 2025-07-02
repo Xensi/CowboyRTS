@@ -13,8 +13,17 @@ namespace UtilityMethods
         /// <returns></returns>
         public static bool FastDistanceCheck(Vector3 start, Vector3 end, float threshold)
         {
+            float mag = GetSqrDist(start, end);
+            return SqrDistCheck(mag, threshold);
+        }
+        public static float GetSqrDist(Vector3 start, Vector3 end)
+        {
             Vector3 offset = start - end;
-            return Vector3.SqrMagnitude(offset) <= threshold * threshold;
+            return Vector3.SqrMagnitude(offset);
+        }
+        public static bool SqrDistCheck(float sqrDist, float threshold)
+        {
+            return sqrDist < threshold * threshold;
         }
     }
 }

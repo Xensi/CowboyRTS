@@ -139,7 +139,7 @@ public class SpatialHash : MonoBehaviour
     {
         return target.GetRadius() + range;
     }
-    public void SearchHash(Vector3 pos, float rangeRadius, Player player,
+    public void EntitySearchHash(Vector3 pos, float rangeRadius, Player player,
         ref Entity[] searchedMinions, ref Entity[] searchedStructures, ref Entity[] searchedAll,
         ref int minionCount, ref int structureCount, ref int allCount)
     {
@@ -216,5 +216,34 @@ public class SpatialHash : MonoBehaviour
         }
         if (backup != null && valid == null) valid = backup; //if we search all and minion preferred, we can target structure
         return valid;
+    }
+    public Entity GetClosestMinionHashSearch(Entity queryingEntity, float rangeRadius)
+    {
+        Vector3 pos = queryingEntity.transform.position;
+        Entity closest = null;
+        float closestSqrDist = Mathf.Infinity;
+        foreach (int h in GetHashesToCheck(pos, rangeRadius)) //check through cells
+        {
+            for (int i = GetDenseStart(h); i <= GetDenseEnd(h); i++)
+            {
+                Entity targetEnt = denseEntityArray[GetIndexClampedByNumEntities(i)];
+                if (targetEnt == null || targetEnt == queryingEntity) continue;
+                if (queryingEntity.attacker != null && !queryingEntity.attacker.IsValidTarget(targetEnt)) continue;
+                if (!targetEnt.IsMinion()) continue;
+                float newSqrDist = Util.GetSqrDist(pos, targetEnt.transform.position);
+                bool closer = Util.SqrDistCheck(newSqrDist, closestSqrDist);
+                if (closer)
+                {
+                    closest = targetEnt;
+                    closestSqrDist = newSqrDist;
+                }
+            }
+        }
+        if (closest != null)
+        {
+            bool inRange = Util.FastDistanceCheck(pos, closest.transform.position, GetCombinedRadii(closest, rangeRadius));
+            return inRange ? closest : null;
+        }
+        return null;
     }
 }
