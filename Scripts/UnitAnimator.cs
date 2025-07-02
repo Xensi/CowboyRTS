@@ -57,7 +57,7 @@ public class UnitAnimator : EntityAddon
     {
         return animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1;
     }
-    private float walkChangeAnimThreshold = 0.1f;
+    private float walkChangeAnimThreshold = 0.001f;
     public void IdleOrWalkContextuallyAnimationOnly()
     {
         if (pf == null) return;
