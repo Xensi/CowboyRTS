@@ -1,21 +1,18 @@
-using System.Collections.Generic;
-using UnityEngine;
-using Unity.Netcode;
-using UnityEngine.EventSystems;// Required when using Event data.
-using TMPro;
-using System.Linq;
 using FoW;
-using UnityEngine.Rendering;
 using System;
-//using Unity.Burst.CompilerServices;
-using System.Threading.Tasks;
-//using static UnityEditor.PlayerSettings;
-//using static UnityEditor.Progress;
-using UtilityMethods;
+using System.Collections.Generic;
+using System.Linq;
+using TMPro;
+using Unity.Netcode;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.Rendering;
 using UnityEngine.UI;
+using UtilityMethods;
 
 public class RTSPlayer : Player
 {
+    #region Vars
     public NetworkVariable<bool> inTheGame = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public List<Entity> keystoneUnits = new();
     [SerializeField] private Grid grid;
@@ -83,6 +80,7 @@ public class RTSPlayer : Player
     private Vector3 buildOffset = Vector3.zero;
     public bool placingPortal = false;
     public List<byte> indices;
+    #endregion
 
     #region StandardFunctions
     public override void Start()
@@ -557,8 +555,7 @@ public class RTSPlayer : Player
         for (int i = 0; i < numSelectedEntities; i++)
         {
             Entity item = selectedEntities[i];
-            if (item == null) continue;
-            item.SetRally();
+            if (item != null) item.SetRally();
         }
     }
     private bool IsEntityGarrrisoned(Entity entity)
@@ -1379,10 +1376,11 @@ public class RTSPlayer : Player
             }
             if (select != null)
             {
-                if (spawner.TryGet(out Entity spawnerEntity))
+                if (spawner.TryGet(out Spawner spawnerEntity))
                 {
                     select.spawnerThatSpawnedThis = spawnerEntity;
-                    select.controllerOfThis = spawnerEntity.controllerOfThis;
+                    //select.controllerOfThis = spawnerEntity.GetController();
+                    select.spawnedBySpawner = true;
                 }
                 //grant ownership 
                 if (NetworkManager.ConnectedClients.ContainsKey(clientID))
@@ -1664,10 +1662,11 @@ public class RTSPlayer : Player
     {
         if (GetNumSelected() == 1)
         {
-            Entity select = selectedEntities[0];
-            FactionUnit fac = select.buildQueue[index];
+            Entity ent = selectedEntities[0];
+            Spawner spawner = ent.spawner;
+            FactionUnit fac = ent.GetBuildQueue()[index];
             gold += fac.goldCost;
-            select.buildQueue.RemoveAt(index);
+            ent.GetBuildQueue().RemoveAt(index);
             //UpdateGUIFromSelections();
             UpdateSpawnerButtons();
         }
@@ -1683,19 +1682,22 @@ public class RTSPlayer : Player
             goldCost = unit.goldCost, 
         };*/
         //Debug.Log("Trying to spawn :" + unit.name);
-        FactionUnit newUnit = FactionUnit.CreateInstance(unit.productionName, unit.maxSpawnTimeCost, unit.prefabToSpawn, unit.goldCost);
-
-        int cost = newUnit.goldCost;
         //try to spawn from all selected buildings if possible 
         for (int i = 0; i < numSelectedEntities; i++)
         {
-            Entity select = selectedEntities[i];
-            if (select == null) continue;
-            if (gold < cost || !select.net.IsSpawned || !select.fullyBuilt || !TargetCanSpawnThisEntity(select, newUnit)
-                || select.buildQueue.Count >= Global.instance.maxUnitsInProductionQueue) break;
+            Debug.Log(unit.maxSpawnTimeCost);
+            FactionUnit newUnit = FactionUnit.CreateInstance(unit.productionName, unit.maxSpawnTimeCost, unit.prefabToSpawn, unit.goldCost,
+                unit.consumePopulationAmount);
+
+            int cost = newUnit.goldCost;
+            Entity ent = selectedEntities[i];
+            if (ent == null) continue;
+            Spawner spawner = ent.spawner;
+            if (gold < cost || !ent.net.IsSpawned || !ent.fullyBuilt || !TargetCanSpawnThisEntity(ent, newUnit)
+                || !ent.IsSpawner() || ent.GetBuildQueue().Count >= Global.instance.maxUnitsInProductionQueue) break;
             //if requirements fulfilled
             gold -= cost;
-            select.buildQueue.Add(newUnit);
+            ent.GetBuildQueue().Add(newUnit);
             //Debug.Log("Added" + newUnit.name + " to queue");
         }
         UpdateButtonsFromSelectedUnits();
@@ -1712,7 +1714,8 @@ public class RTSPlayer : Player
         if (!show) return;
         UnityEngine.UI.Button button = buttonArr[i];
         TMP_Text text = button.GetComponentInChildren<TMP_Text>();
-        FactionUnit fac = select.buildQueue[i];
+        Spawner spawner = select.spawner;
+        FactionUnit fac = spawner.buildQueue[i];
         text.text = fac.productionName;
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(delegate { DequeueProductionOrder(i); });
@@ -1845,20 +1848,20 @@ public class RTSPlayer : Player
         UpdateSpawnerButtons();
         UpdateSpawnerProgressBar();
     }
-    private void UpdateSpawnerButtons()
+    public void UpdateSpawnerButtons()
     {
         Button[] buttonArr = GetQueueButtons();
         bool show = GetNumSelected() == 1;
         if (!show) return;
-        Entity spawner = selectedEntities[0];
-        if (!spawner.IsSpawner() || !spawner.fullyBuilt || !spawner.net.IsSpawned) return;
-        int num = Mathf.Clamp(spawner.buildQueue.Count, 0, buttonArr.Length);
+        Entity ent = selectedEntities[0];
+        if (!ent.IsSpawner() || !ent.fullyBuilt || !ent.net.IsSpawned) return;
+        int num = Mathf.Clamp(ent.GetBuildQueue().Count, 0, buttonArr.Length);
 
         //enable a button for each indices
         for (int i = 0; i < buttonArr.Length; i++)
         {
             bool vis = i < num;
-            UpdateButton(spawner, vis, i);
+            UpdateButton(ent, vis, i);
         }
     }
     private void UpdateSpawnerProgressBar()
@@ -1866,11 +1869,12 @@ public class RTSPlayer : Player
         bool show = GetNumSelected() == 1;
         if (!show) return;
 
-        Entity spawner = selectedEntities[0];
-        if (!spawner.IsSpawner() || !spawner.fullyBuilt || !spawner.net.IsSpawned) return;
+        Entity ent = selectedEntities[0];
+        if (!ent.IsSpawner() || !ent.fullyBuilt || !ent.net.IsSpawned) return;
+        Spawner spawner = ent.spawner;
         //get the progress of the first unit;
         FactionUnit beingProduced = null;
-        if (spawner.buildQueue.Count > 0) beingProduced = spawner.buildQueue[0];
+        if (ent.GetBuildQueue().Count > 0) beingProduced = ent.GetBuildQueue()[0];
         if (beingProduced != null && Global.instance.structureProgressBar != null)
         {
             Global.instance.structureProgressBar.SetRatio(beingProduced.spawnTimer, beingProduced.maxSpawnTimeCost);
@@ -2095,6 +2099,7 @@ public class RTSPlayer : Player
             && (entity.IsBuilding() || entity.sm.GetState() != StateMachineController.EntityStates.UsingAbility);
     }
     #endregion
+
     #region Damage
     /// <summary>
     /// Damages all in radius at point.

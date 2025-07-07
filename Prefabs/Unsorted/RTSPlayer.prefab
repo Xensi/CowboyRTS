@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 4183589894
+  GlobalObjectIdHash: 707310657
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -68,11 +68,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerFaction: {fileID: 11400000, guid: 48d2654104c708448a90a4bfe3b2baa9, type: 2}
+  selectedEntities: []
+  numSelectedEntities: 0
   ownedEntities: []
   ownedMinions: []
   unbuiltStructures: []
   ownedBuilders: []
   ownedHarvesters: []
+  ownedSpawners: []
   ownedDepots: []
   friendlyOres: []
   gold: 0
@@ -80,6 +83,7 @@ MonoBehaviour:
   cactus: 0
   population: 0
   maxPopulation: 10
+  predictedPop: 0
   playerTeamID: 0
   allegianceTeamID: 0
   fow: {fileID: 0}
@@ -93,7 +97,6 @@ MonoBehaviour:
     m_InternalValue: 0
   keystoneUnits: []
   grid: {fileID: 2084301759269820934}
-  selectedEntities: []
   selectedBuilders: []
   cursorWorldPosition: {x: 0, y: 0, z: 0}
   linkedState: 0

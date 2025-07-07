@@ -15,18 +15,20 @@ public class FactionUnit : FactionEntity
         Generic, //default  
     }*/
 
-    public void Init(string name, int spawnTime, GameObject prefab, int goldCost)
+    public void Init(string name, int spawnTime, GameObject prefab, int goldCost, int popCost)
     {
         productionName = name; 
         spawnTimer = 0;
+        maxSpawnTimeCost = spawnTime;
         prefabToSpawn = prefab;
-        this.goldCost = goldCost; 
+        this.goldCost = goldCost;
+        consumePopulationAmount = popCost;
     }
 
-    public static FactionUnit CreateInstance(string name, int spawnTime, GameObject prefab, int goldCost)
+    public static FactionUnit CreateInstance(string name, int spawnTime, GameObject prefab, int goldCost, int popCost)
     {
         var data = CreateInstance<FactionUnit>();
-        data.Init(name, spawnTime, prefab, goldCost);
+        data.Init(name, spawnTime, prefab, goldCost, popCost);
         return data;
     }
     public bool IsFighter()

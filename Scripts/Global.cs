@@ -87,6 +87,7 @@ public class Global : NetworkBehaviour
     private const int maxEntities = 1000;
     private readonly int maxAIPlayers = 10;
 
+    public GameObject rallyPrefab;
     #region UI
 
     public GameObject resourcesParent;

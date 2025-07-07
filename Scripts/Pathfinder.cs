@@ -583,7 +583,7 @@ public class Pathfinder : EntityAddon
     public void MoveToTarget(Entity target)
     {
         if (target == null) return;
-        Debug.Log("Moving to target");
+        //Debug.Log("Moving to target");
         sm.lastCommand.Value = CommandTypes.Move;
         if (sm.currentState != EntityStates.Spawn)
         {

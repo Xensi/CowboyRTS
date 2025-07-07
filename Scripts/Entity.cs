@@ -15,6 +15,7 @@ using static UnitAnimator;
 public class Entity : NetworkBehaviour
 {
     [HideInInspector] public bool fakeSpawn = false;
+    public bool spawnedBySpawner = false;
     #region Enums 
     public enum RallyMission
     {
@@ -59,7 +60,6 @@ public class Entity : NetworkBehaviour
     [HideInInspector] public sbyte desiredTeamNumber = 0; //Set when spawned by AI. Only matters if negative
     [HideInInspector] public byte clientIDToSpawnUnder = 0;
     [HideInInspector] public bool aiControlled = false;
-    [HideInInspector] public bool productionBlocked = false;
     [HideInInspector] public Collider[] allPhysicalColliders;
     //public CrosshairDisplay crosshairAssignedToEnemy;
     public CrosshairDisplay createdCrosshair;
@@ -67,11 +67,11 @@ public class Entity : NetworkBehaviour
     public CrosshairDisplay entitySearcherCrosshairTargetingThis; //Crosshair assigned to this by entity searcher
 
     [Header("Must Be Manually Set")]
+    public Transform positionToSpawnMinions; //used for buildings
     public EntityHealthBar healthBar;
     public EntityHealthBar productionProgressBar;
     public FactionEntity factionEntity;
     [SerializeField] private GameObject finishedRendererParent;
-    [SerializeField] private GameObject rallyVisual;
     //[SerializeField] private MeshRenderer[] damageableMeshes;
     public MeshRenderer[] attackEffects;
     public GameObject targetIndicator;
@@ -81,7 +81,6 @@ public class Entity : NetworkBehaviour
     //Add on components
 
     [HideInInspector] public bool selected = false;
-    [HideInInspector] public Vector3 rallyPoint;
     [HideInInspector] public bool alive = true;
 
     [HideInInspector] public Entity occupiedGarrison;
@@ -90,8 +89,6 @@ public class Entity : NetworkBehaviour
 
     [Header("Debug")]
     public Entity interactionTarget;
-
-    [HideInInspector] public List<FactionUnit> buildQueue;
     [SerializeField] private MeshRenderer[] unbuiltRenderers;
     private AreaEffector[] areaEffectors;
     //when fog of war changes, check if we should hide or show attack effects
@@ -131,7 +128,6 @@ public class Entity : NetworkBehaviour
     [HideInInspector]
     public bool acceptsHeavy = false;
 
-    public Transform positionToSpawnMinions; //used for buildings
 
     [Header("Aesthetic Settings")]
     private Material damagedState;
@@ -172,8 +168,6 @@ public class Entity : NetworkBehaviour
     private MeshRenderer[] allMeshes;
     private MeshRenderer[] finishedMeshRenderers;
     [HideInInspector] public Collider physicalCollider; 
-    [HideInInspector] public RallyMission rallyMission;
-    [HideInInspector] public Entity rallyTarget;
     [HideInInspector]
     public int consumePopulationAmount = 1;
     [HideInInspector]
@@ -359,7 +353,7 @@ public class Entity : NetworkBehaviour
     { 
         RTSPlayer playerController = Global.instance.localPlayer;
         playerController.lastSpawnedEntity = this;
-        this.controllerOfThis = playerController;
+        controllerOfThis = playerController;
         AddToPlayerOwnedLists(this.controllerOfThis);
         if (!fullyBuilt)
         {
@@ -398,9 +392,8 @@ public class Entity : NetworkBehaviour
         {
             isTargetable.Value = true;
         }
-        if (teamType == TeamBehavior.OwnerTeam) ChangePopulation(consumePopulationAmount);
+        if (teamType == TeamBehavior.OwnerTeam && !spawnedBySpawner) ChangePopulation(consumePopulationAmount);
         Select(false);
-        rallyPoint = transform.position;
         ChangeSelectIndicatorStatus(selected);
         if (lineIndicator != null)
         {
@@ -411,7 +404,6 @@ public class Entity : NetworkBehaviour
             targetIndicator.transform.parent = Global.instance.transform;
         }
         SetStartingSelectionRadius();
-        TryToRegisterRallyMission();
         SetInitialVisuals();
         aiControlled = desiredTeamNumber < 0 || controllerOfThis is AIPlayer;
         if (isKeystone && Global.instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
@@ -444,7 +436,7 @@ public class Entity : NetworkBehaviour
                 }
             }
         }
-        if (rallyVisual != null) rallyVisual.SetActive(false);
+        TryToRegisterRallyMission();
         if (teamType == TeamBehavior.OwnerTeam) Global.instance.AddEntityToMainList(this);
 
         InitializeBars();
@@ -473,12 +465,16 @@ public class Entity : NetworkBehaviour
                 //DetectIfDamaged();
                 UpdateEntityAddons();
 
-                if (IsOwner)
+                /*if (IsOwner)
                 {
                     OwnerUpdateBuildQueue();
-                }
+                }*/
             }
         }
+    }
+    private void UpdateRallyVariables()
+    {
+        if (spawner != null) spawner.UpdateRallyVariables();
     }
     #region Start() Code
     private void DetermineLayerBasedOnAllegiance()
@@ -583,20 +579,25 @@ public class Entity : NetworkBehaviour
     }
     private void AddToPlayerOwnedLists(Player player)
     {
-        //Debug.Log("Adding to player lists");
         player.ownedEntities.Add(this);
-        if (IsMinion())
-        {
-            //Debug.Log("Adding to minion list");
-            player.ownedMinions.Add(sm);
-        }
-        else
-        {
-            //Debug.Log("Not a minion");
-        }
+        if (IsMinion()) player.ownedMinions.Add(sm);
+        if (IsBuilder()) player.ownedBuilders.Add(sm);
         if (IsNotYetBuilt()) player.unbuiltStructures.Add(this);
         if (IsHarvester()) player.ownedHarvesters.Add(harvester);
         if (IsDepot()) player.ownedDepots.Add(depot);
+        if (IsSpawner()) player.ownedSpawners.Add(spawner);
+    }
+    private void RemoveFromPlayerLists(Player player)
+    {
+        if (player == null) return;
+        player.ownedEntities.Remove(this);
+        if (IsMinion()) player.ownedMinions.Remove(sm);
+        if (IsBuilder()) player.ownedBuilders.Remove(sm);
+        if (IsNotYetBuilt()) player.unbuiltStructures.Remove(this);
+        if (IsHarvester()) player.ownedHarvesters.Remove(harvester);
+        if (IsOre()) player.friendlyOres.Remove(ore);
+        if (IsDepot()) player.ownedDepots.Remove(depot);
+        if (IsSpawner()) player.ownedSpawners.Remove(spawner);
     }
     private void AddToPlayerOreList(Player player)
     { 
@@ -692,7 +693,7 @@ public class Entity : NetworkBehaviour
         if (spawnerThatSpawnedThis != null && sm != null)
         {
             //Debug.Log("mission registered");
-            RallyMission spawnerRallyMission = spawnerThatSpawnedThis.rallyMission;
+            RallyMission spawnerRallyMission = spawnerThatSpawnedThis.spawnerRallyMission;
             Entity rallyTarget = spawnerThatSpawnedThis.rallyTarget;
             setRallyDest = spawnerThatSpawnedThis.rallyPoint;
             //assign mission to last
@@ -733,6 +734,10 @@ public class Entity : NetworkBehaviour
             }
         }
     }
+    public void SetRally()
+    {
+        if (IsSpawner()) spawner.SetRally();
+    }
     public bool InRangeOfEntity(Entity target, float range)
     {
         if (target == null) return false;
@@ -761,14 +766,6 @@ public class Entity : NetworkBehaviour
     public bool IsBuilding()
     {
         return sm == null;
-    }
-    private void UpdateRallyVariables()
-    {
-        if (rallyTarget != null) //update rally visual and rally point to rally target position
-        {
-            rallyVisual.transform.position = rallyTarget.transform.position;
-            rallyPoint = rallyTarget.transform.position;
-        }
     }
     [HideInInspector] public bool constructionBegun = false;
     private void DetectIfBuilt()
@@ -1196,20 +1193,6 @@ public class Entity : NetworkBehaviour
     {
         if (obstacle != null) obstacle.enabled = false;
     }
-    private void RemoveFromPlayerLists(Player player)
-    {
-        if (player == null) return;
-        player.ownedEntities.Add(this);
-        if (IsMinion())
-        {
-            player.ownedMinions.Add(sm);
-            player.ownedBuilders.Remove(sm);
-        }
-        if (IsNotYetBuilt()) player.unbuiltStructures.Add(this);
-        if (IsHarvester()) player.ownedHarvesters.Add(harvester);
-        if (IsOre()) player.friendlyOres.Add(ore);
-        if (IsDepot()) player.ownedDepots.Add(depot);
-    } 
     private bool IsLoot()
     {
         return lootComponent != null;
@@ -1660,7 +1643,7 @@ public class Entity : NetworkBehaviour
             //Global.Instance.localPlayer.maxPopulation += change;
         }
     }
-    private void ChangePopulation(int change)
+    public void ChangePopulation(int change)
     {
         if (IsOwner && teamType == TeamBehavior.OwnerTeam)
         {
@@ -1708,65 +1691,8 @@ public class Entity : NetworkBehaviour
         GameObject game = obj;
         //Destroy(game);
         net.Despawn(game);
-    } 
-    public void SetRally() //later have this take in a vector3?
-    {
-        rallyMission = RallyMission.Move;
-        rallyTarget = null;
-        //determine if spawned units should be given a mission
-
-        Ray ray = Global.instance.localPlayer.mainCam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray.origin, ray.direction, out RaycastHit hit, Mathf.Infinity, Global.instance.gameLayer))
-        {
-            rallyPoint = hit.point;
-            Debug.Log("Setting rally" + rallyPoint);
-            if (rallyVisual != null)
-            {
-                rallyVisual.transform.position = rallyPoint;
-
-            } 
-            if (lineIndicator != null)
-            {
-                Vector3 offset = new Vector3(0, 0.01f, 0);
-                lineIndicator.SetPosition(0, transform.position + offset);
-                lineIndicator.SetPosition(1, rallyPoint + offset);
-            }
-            Entity target = Global.instance.FindEntityFromObject(hit.collider.gameObject);
-            //SelectableEntity target = hit.collider.GetComponent<SelectableEntity>();
-            if (target != null)
-            {
-                if (target.teamType == TeamBehavior.OwnerTeam)
-                {
-                    if (target.net.OwnerClientId == net.OwnerClientId) //same team
-                    {
-                        if (target.fullyBuilt && target.HasEmptyGarrisonablePosition()) //target can be garrisoned
-                        {
-                            rallyMission = RallyMission.Garrison;
-                            rallyTarget = target;
-                        }
-                        else //clicking on structure causes us to try to build
-                        {
-                            rallyMission = RallyMission.Build;
-                            rallyTarget = target;
-                        }
-                    }
-                    else //enemy
-                    {
-                        rallyMission = RallyMission.Attack;
-                        rallyTarget = target;
-                    }
-                }
-                else if (target.teamType == TeamBehavior.FriendlyNeutral)
-                {
-                    if (target.IsOre())
-                    {
-                        rallyMission = RallyMission.Harvest;
-                        rallyTarget = target;
-                    }
-                }
-            }
-        }
     }
+    
 
     private readonly float attackEffectDuration = 0.1f;
     public void DisplayAttackEffects()
@@ -1856,94 +1782,22 @@ public class Entity : NetworkBehaviour
     {
         return sm == null;
     }
-    private void OwnerUpdateBuildQueue()
+    public List<FactionUnit> GetBuildQueue()
     {
-        if (buildQueue.Count > 0)
+        if (IsSpawner())
         {
-            // todo add ability to build multiple from one structure
-            FactionUnit fac = buildQueue[0];
-            fac.spawnTimer += Time.deltaTime;
-            //check if the position is blocked;
-            if (Physics.Raycast(positionToSpawnMinions.position + (new Vector3(0, 100, 0)), Vector3.down,
-                out RaycastHit hit, Mathf.Infinity, Global.instance.gameLayer))
-            {
-                Entity target = Global.instance.FindEntityFromObject(hit.collider.gameObject);
-                if (target != null) //something blocking
-                {
-                    if (target.sm != null && target.controllerOfThis == controllerOfThis && !target.sm.InState(EntityStates.Walk))
-                    {
-                        //tell blocker to get out of the way.
-                        float randRadius = 1;
-                        Vector2 randCircle = UnityEngine.Random.insideUnitCircle * randRadius;
-                        Vector3 rand = target.transform.position + new Vector3(randCircle.x, 0, randCircle.y);
-                        target.pf.MoveTo(rand);
-                        //Debug.Log("trying to move blocking unit to: " + rand);
-                        productionBlocked = true;
-                    }
-                }
-                else if (fac.consumePopulationAmount <= controllerOfThis.maxPopulation - controllerOfThis.population)
-                {
-                    productionBlocked = false;
-                }
-            }
-            if (fac.spawnTimer >= fac.maxSpawnTimeCost && !productionBlocked) //ready to spawn
-            {
-                BuildQueueSpawn(fac);
-                //spawn the unit 
-            }
-        }
-        /*if (controllerOfThis is RTSPlayer)
-        {
-            RTSPlayer rts = controllerOfThis as RTSPlayer;
-            rts.UpdateBuildQueueGUI();
-        }*/
-
-        if (productionProgressBar != null)
-        {
-            if (buildQueue.Count > 0)
-            {
-                productionProgressBar.SetVisible(true);
-                FactionUnit fac = buildQueue[0];
-                if (fac != null)
-                {
-                    productionProgressBar.SetRatioBasedOnProduction(fac.spawnTimer, fac.maxSpawnTimeCost);
-                }
-            }
-            else
-            {
-                productionProgressBar.SetVisible(false);
-            }
-        }
-    }
-    private void BuildQueueSpawn(FactionUnit unit)
-    {
-        buildQueue.RemoveAt(0);
-        SpawnFromSpawner(this, rallyPoint, unit);
-    }
-    [HideInInspector] public Entity spawnerThatSpawnedThis;
-    public void SpawnFromSpawner(Entity select, Vector3 rally, FactionUnit unit)
-    {
-        //spawner is this
-        Vector3 pos;
-        if (select.positionToSpawnMinions != null)
-        {
-            pos = new Vector3(select.positionToSpawnMinions.position.x, 0, select.positionToSpawnMinions.position.z);
+            return spawner.buildQueue;
         }
         else
         {
-            pos = select.transform.position;
-        }
-        if (controllerOfThis is RTSPlayer)
-        {
-            RTSPlayer rts = controllerOfThis as RTSPlayer;
-            rts.GenericSpawnMinion(pos, unit, this);
-        }
-        else if (controllerOfThis is AIPlayer)
-        {
-            AIPlayer ai = controllerOfThis as AIPlayer;
-            ai.SpawnMinion(pos, unit);
+            return null;
         }
     }
+    private void OwnerUpdateBuildQueue()
+    {
+        if (spawner != null) spawner.UpdateBuildQueue();
+    }
+    [HideInInspector] public Spawner spawnerThatSpawnedThis;
     private Vector3[] LineArray(Vector3 des)
     {
         targetIndicator.transform.position = new Vector3(des.x, 0.05f, des.z);
@@ -2024,22 +1878,7 @@ public class Entity : NetworkBehaviour
     }
     private void UpdateRallyVisual(bool val)
     {
-        if (rallyVisual != null)
-        {
-            if (IsSpawner())
-            {
-                rallyVisual.transform.position = rallyPoint;
-                rallyVisual.SetActive(val);
-            }
-            else
-            {
-                rallyVisual.SetActive(false);
-            }
-        }
-        if (lineIndicator != null)
-        {
-            lineIndicator.enabled = val;
-        }
+        if (IsSpawner()) spawner.UpdateRallyVisual(val);
     }
     public bool GetSelected()
     {

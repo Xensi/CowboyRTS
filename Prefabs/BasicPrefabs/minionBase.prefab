@@ -232,7 +232,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 56881033
+  GlobalObjectIdHash: 2641155720
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -254,6 +254,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fakeSpawn: 0
+  spawnedBySpawner: 0
   isTargetable:
     m_InternalValue: 0
   oldVisibleInFog: 0
@@ -264,27 +265,24 @@ MonoBehaviour:
   desiredTeamNumber: 0
   clientIDToSpawnUnder: 0
   aiControlled: 0
-  productionBlocked: 0
   allPhysicalColliders: []
   createdCrosshair: {fileID: 0}
   manualCrosshairTargetingThis: {fileID: 0}
   entitySearcherCrosshairTargetingThis: {fileID: 0}
+  positionToSpawnMinions: {fileID: 0}
   healthBar: {fileID: 6900349819852542005}
   productionProgressBar: {fileID: 8509637767066359466}
   factionEntity: {fileID: 0}
   finishedRendererParent: {fileID: 0}
-  rallyVisual: {fileID: 0}
   attackEffects: []
   targetIndicator: {fileID: 3480814061053556006}
   lineIndicator: {fileID: 555440906972586300}
   teamRenderers: []
   selected: 0
-  rallyPoint: {x: 0, y: 0, z: 0}
   alive: 1
   occupiedGarrison: {fileID: 0}
   isBuildIndicator: 0
   interactionTarget: {fileID: 0}
-  buildQueue: []
   unbuiltRenderers: []
   displayName: name
   desc: desc
@@ -303,7 +301,6 @@ MonoBehaviour:
   buildOffset: {x: 0.5, y: 0, z: 0.5}
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  positionToSpawnMinions: {fileID: 0}
   sounds:
   - {fileID: 8300000, guid: e12124de62f005543a8b08aff5493439, type: 3}
   - {fileID: 8300000, guid: f44f3479724a08e4e8c995e2f633bbfe, type: 3}
@@ -326,8 +323,6 @@ MonoBehaviour:
   pf: {fileID: 0}
   garrison: {fileID: 0}
   physicalCollider: {fileID: 0}
-  rallyMission: 0
-  rallyTarget: {fileID: 0}
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0
   net: {fileID: 4126868118260038068}
@@ -491,7 +486,7 @@ MonoBehaviour:
   nudgedTargetEnemyStructurePosition: {x: 0, y: 0, z: 0}
   walkStartTimer: 0
   oldPosition: {x: 0, y: 0, z: 0}
-  change: 0
+  sqrDistChange: 0
   effectivelyIdleInstances: 0
 --- !u!114 &4721624654941951496
 MonoBehaviour:

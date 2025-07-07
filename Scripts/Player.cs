@@ -1,11 +1,8 @@
 using FoW;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.UIElements;
-using static RTSPlayer;
 using System.Threading.Tasks;
 
 [RequireComponent(typeof(NetworkObject))]
@@ -21,6 +18,7 @@ public class Player : NetworkBehaviour
     public List<Entity> unbuiltStructures;
     public List<StateMachineController> ownedBuilders;
     public List<Harvester> ownedHarvesters = new();
+    public List<Spawner> ownedSpawners;
     public List<Depot> ownedDepots = new();
     public List<Ore> friendlyOres = new();
     public int gold = 100;
@@ -28,6 +26,7 @@ public class Player : NetworkBehaviour
     public int cactus = 0;
     public int population = 0;
     public int maxPopulation = 10;
+    public int predictedPop = 0;
     public int playerTeamID = 0; //used for a player's fog of war
     public int allegianceTeamID = 0; //used to determine who is friendly and who is enemy. by default: 0 is player, 1 is AI
     [HideInInspector] public FogOfWarTeam fow;
@@ -37,6 +36,20 @@ public class Player : NetworkBehaviour
     public bool enable = true; //enabling in the middle of the game does not currently work
     public Color playerColor = Color.white;
 
+    public void AddToPredictedPop(int delta)
+    {
+        predictedPop += delta;
+        Debug.Log(predictedPop);
+    }
+    public int GetPredictedPop()
+    {
+        return predictedPop;
+    }
+    private void ResetPredictedPop()
+    {
+        if (predictedPop > 0) Debug.Log(predictedPop);
+        predictedPop = 0;
+    }
     public void UpdateSelectedEntities(Entity ent, bool val)
     {
         //Debug.Log(selectedEntities.Length);
@@ -102,8 +115,19 @@ public class Player : NetworkBehaviour
         if (!enable) return;
         UpdateVisibilities();
         //CleanEntityLists();
+        UpdateSpawners();
     }
-
+    private void UpdateSpawners()
+    {
+        foreach (Spawner spawner in ownedSpawners)
+        {
+            spawner.UpdateBuildQueue();
+        }
+    }
+    public void ChangePopulation(int change)
+    {
+        population = Mathf.Clamp(population + change, 0, 999);
+    }
     public async void ProcessOrdersInBatches()
     {
         while (UnitOrdersQueue.Count > 0)

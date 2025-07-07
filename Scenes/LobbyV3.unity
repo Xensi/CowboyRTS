@@ -14956,6 +14956,7 @@ MonoBehaviour:
   crosshairPrefab: {fileID: 8138555312592417819, guid: 63591ec333626d742b25380f25fc2366, type: 3}
   playerHasWon: 0
   spatialHash: {fileID: 0}
+  rallyPrefab: {fileID: 2736432229192086856, guid: 1bcd54720553fa04e898e5360fa5eeb9, type: 3}
   resourcesParent: {fileID: 1539402572}
   resourceText: {fileID: 995845711}
 --- !u!114 &2114043657
