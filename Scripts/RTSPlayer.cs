@@ -1682,7 +1682,7 @@ public class RTSPlayer : Player
         //try to spawn from all selected buildings if possible 
         for (int i = 0; i < base.GetNumSelected(); i++)
         {
-            Debug.Log(unit.maxSpawnTimeCost);
+            //Debug.Log(unit.maxSpawnTimeCost);
             FactionUnit newUnit = FactionUnit.CreateInstance(unit.productionName, unit.maxSpawnTimeCost, unit.prefabToSpawn, unit.goldCost,
                 unit.consumePopulationAmount);
 

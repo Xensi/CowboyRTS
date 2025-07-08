@@ -56,6 +56,22 @@ public class Spawner : EntityAddon
     {
         return ent.positionToSpawnMinions;
     }
+    private bool DislodgeBlocker(Entity target)
+    {
+        bool blocked = false;
+        if (target != null && target.IsMinion() && target.sm.givenMission != RallyMission.Move
+            && target.controllerOfThis == GetController() && !target.sm.InState(EntityStates.Walk))
+        {
+            //tell blocker to get out of the way.
+            float randRadius = 1;
+            Vector2 randCircle = UnityEngine.Random.insideUnitCircle * randRadius;
+            Vector3 rand = target.transform.position + new Vector3(randCircle.x, 0, randCircle.y);
+            target.pf.MoveTo(rand);
+            //Debug.Log("trying to move blocking unit to: " + rand);
+            blocked = true;
+        }
+        return blocked;
+    }
     public void UpdateBuildQueue()
     {
         if (!IsOwner) return;
@@ -72,20 +88,9 @@ public class Spawner : EntityAddon
                 out RaycastHit hit, Mathf.Infinity, Global.instance.gameLayer))
             {
                 Entity target = Global.instance.FindEntityFromObject(hit.collider.gameObject);
-                if (target != null) //something blocking
-                {
-                    if (target.sm != null && target.controllerOfThis == GetController() && !target.sm.InState(EntityStates.Walk))
-                    {
-                        //tell blocker to get out of the way.
-                        float randRadius = 1;
-                        Vector2 randCircle = UnityEngine.Random.insideUnitCircle * randRadius;
-                        Vector3 rand = target.transform.position + new Vector3(randCircle.x, 0, randCircle.y);
-                        target.pf.MoveTo(rand);
-                        //Debug.Log("trying to move blocking unit to: " + rand);
-                        productionBlocked = true;
-                    }
-                }   
-                else if (num >= fac.consumePopulationAmount)
+                bool blocked = DislodgeBlocker(target);
+                if (blocked) productionBlocked = true;
+                if (!blocked && num >= fac.consumePopulationAmount)
                 {
                     productionBlocked = false;
                 }

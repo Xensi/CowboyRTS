@@ -138,7 +138,7 @@ public class StateMachineController : NetworkBehaviour
         {
             if (IsMelee())
             {
-                ent.attacker.maximumChaseRange = Global.instance.defaultMeleeSearchRange;
+                ent.attacker.maximumChaseRange = Global.instance.defaultMeleeSearchRange * 1.1f;
             }
             else
             {

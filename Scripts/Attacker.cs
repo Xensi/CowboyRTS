@@ -50,7 +50,7 @@ public class Attacker : SwingEntityAddon
     private bool asyncSearchTimerActive = false;
     bool playedAttackMoveSound = false;
 
-    public float maximumChaseRange = 5;
+    public float maximumChaseRange = 4;
     private float searchTimerDuration = 0.1f;
     CancellationTokenSource hasCalledEnemySearchAsyncTaskTimerCancellationToken;
     Vector3 targetEnemyLastPosition;
@@ -110,7 +110,7 @@ public class Attacker : SwingEntityAddon
         {
             if (longTermGoal == Goal.AttackFromIdle && !InChaseRange(targetEnemy))
             {
-                //Debug.Log("Outside chase range"); 
+                Debug.Log("Outside chase range"); 
                 HandleLackOfValidTargetEnemy();
                 return;
             }
