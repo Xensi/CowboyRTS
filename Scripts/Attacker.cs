@@ -262,7 +262,7 @@ public class Attacker : SwingEntityAddon
         MakeAsyncSearchAvailableAgain();
         pf.ValidatePathStatus();
 
-        if (longTermGoal == Goal.OrderedToAttackSpecificTarget)
+        if (!IsValidTarget(preferredAttackTarget) && longTermGoal == Goal.OrderedToAttackSpecificTarget)
         {
             if (targetEnemy.IsStructure()) //we can find alternate targets
             {
@@ -840,6 +840,7 @@ public class Attacker : SwingEntityAddon
     public void AttackTarget(Entity select)
     {
         longTermGoal = Goal.OrderedToAttackSpecificTarget;
+        preferredAttackTarget = select;
         targetEnemy = select;
         SwitchState(EntityStates.WalkToSpecificEnemy, true);
     }

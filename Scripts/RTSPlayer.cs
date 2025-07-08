@@ -1561,9 +1561,9 @@ public class RTSPlayer : Player
     private void DeselectAll()
     {
         //Debug.Log("Deselecting all");
-        for (int i = 0; i < ownedMinions.Count; i++)
+        for (int i = 0; i < ownedEntities.Count; i++)
         {
-            Entity ent = ownedMinions[i].ent;
+            Entity ent = ownedEntities[i];
             if (ent != null)
             {
                 ent.SetSelected(false);
