@@ -16,5 +16,5 @@ MonoBehaviour:
   conditions: 03000000
   mouseInput: 0
   entityToCheck: {fileID: 11400000, guid: 5482cede677f6c94299d9143b7094d12, type: 2}
-  numEntitiesToCheck: 2
+  numEntitiesToCheck: 3
   playerNeedsToClickToContinue: 0

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: 6graveCapture
   m_EditorClassIdentifier: 
   messageContents: You have captured a new grave, which expands your maximum army
-    size by 10. You cannot raise more units if your army is full.
+    size by 5. You cannot raise more units if your army is full.
   conditions: 00000000
   mouseInput: 0
   entityToCheck: {fileID: 0}

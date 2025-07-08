@@ -480,22 +480,9 @@ public class Attacker : SwingEntityAddon
     {
 
         if (target == null || !target.isAttackable || !target.alive || !target.isTargetable.Value
-            || IsPlayerControlled() && !target.IsVisibleInFog() || !target.IsEnemyOfTarget(ent) || target.currentHP.Value <= 0
-            )
-        //reject if target is null, or target is dead, or target is untargetable, or this unit is player controlled and target is hidden,
-        //or this unit can't attack structures and target is structure
+            || (IsPlayerControlled() && !target.IsVisibleInFog()) 
+            || !target.IsEnemyOfTarget(ent) || target.currentHP.Value <= 0)
         {
-            //if enemy is not valid, remove them
-            /*Debug.Log("invalid target" + target);
-            if (target != null)
-            {
-                if (!target.isAttackable) Debug.Log(1);
-                if (!target.alive) Debug.Log(2);
-                if (!target.isTargetable.Value) Debug.Log(3);
-                if (IsPlayerControlled() && !target.IsVisibleInFog()) Debug.Log(4);
-                if (!target.IsEnemyOfTarget(ent)) Debug.Log(5);
-                if (target.currentHP.Value <= 0) Debug.Log(6);
-            }*/
             if (targetEnemy == target) targetEnemy = null;
             return false;
         }
@@ -524,7 +511,7 @@ public class Attacker : SwingEntityAddon
         float physSearchRange = range;
         if (ent.IsMelee())
         {
-            physSearchRange = 6;
+            physSearchRange = Global.instance.defaultMeleeSearchRange;
         }
         Entity eligibleIdleEnemy = GetClosestMinionHashSearch(physSearchRange);
         return eligibleIdleEnemy;
