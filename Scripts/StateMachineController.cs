@@ -353,45 +353,53 @@ public class StateMachineController : NetworkBehaviour
             canReceiveNewCommands = true;
         }
     }
+    int frames = 0;
+    int desiredFrames = 5;
+
+    bool switchingState = false;
     public void SwitchState(EntityStates stateToSwitchTo)
     {
         if (pf == null) return;
-        switch (stateToSwitchTo)
+
+        if (!switchingState) //ignore other SwitchState commands while switching
         {
-            case EntityStates.Walk:
-            case EntityStates.AttackMoving:
-            case EntityStates.WalkToSpecificEnemy:
-            case EntityStates.WalkToInteractable:
-            case EntityStates.WalkToRally:
-            case EntityStates.Garrisoning:
-            case EntityStates.Depositing:
-            case EntityStates.WalkToTarget:
-                pf.ClearObstacle();
-                pf.ChangeBlockedByMinionObstacleStatus(false);
-                StartCoroutine(WaitForFramesSwitchState(stateToSwitchTo));
-                break;
-            case EntityStates.PushableIdle:
-                pf.ClearObstacle();
-                StartCoroutine(WaitForFramesSwitchState(stateToSwitchTo));
-                break;
-            default:
-                FinishSwitchState(stateToSwitchTo);
-                break;
+            switchingState = true;
+            switch (stateToSwitchTo)
+            {
+                case EntityStates.Walk:
+                case EntityStates.AttackMoving:
+                case EntityStates.WalkToSpecificEnemy:
+                case EntityStates.WalkToInteractable:
+                case EntityStates.WalkToRally:
+                case EntityStates.Garrisoning:
+                case EntityStates.Depositing:
+                case EntityStates.WalkToTarget:
+                    pf.ClearObstacle();
+                    pf.ChangeBlockedByMinionObstacleStatus(false);
+                    StartCoroutine(WaitForFramesSwitchState(stateToSwitchTo));
+                    break;
+                case EntityStates.PushableIdle:
+                    pf.ClearObstacle();
+                    StartCoroutine(WaitForFramesSwitchState(stateToSwitchTo));
+                    break;
+                default:
+                    FinishSwitchState(stateToSwitchTo);
+                    break;
+            }
         }
     }
-    int frames = 0;
-    int desiredFrames = 5;
-    private IEnumerator WaitForFramesSwitchState(EntityStates stateToSwitchTo)
-    {
+    private IEnumerator WaitForFramesSwitchState(EntityStates stateToSwitchTo) //the frame delay here is causing walks to get overridden
+    { //try ignoring other switch state commands while waiting for the switch state
         yield return new WaitUntil(() => frames >= desiredFrames);
         FinishSwitchState(stateToSwitchTo);
     }
     private void FinishSwitchState(EntityStates stateToSwitchTo)
     {
+        switchingState = false;
         pf.ChangeBlockedByMinionObstacleStatus(true);
-        if (ent.IsAlliedTo(ent.controllerOfThis))
+        if (ent.IsAlliedTo(Global.instance.localPlayer))
         {
-            //Debug.Log(name + " is switching state to: " + stateToSwitchTo);
+            Debug.Log(name + " is switching state to: " + stateToSwitchTo);
         }
         UpdateIfCanReceiveNewCommands(stateToSwitchTo);
         switch (stateToSwitchTo)

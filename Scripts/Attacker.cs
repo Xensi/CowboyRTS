@@ -292,7 +292,7 @@ public class Attacker : SwingEntityAddon
         }
 
     }
-    #endregion
+
     private void ContinueAttack()
     {
 
@@ -374,6 +374,9 @@ public class Attacker : SwingEntityAddon
                 break;
         }
     }
+    #endregion
+
+    #region Explosions
     private void SelfDestructInExplosion(float explodeRadius)
     {
         if (!hasSelfDestructed)
@@ -426,6 +429,18 @@ public class Attacker : SwingEntityAddon
             SpawnExplosion(pos);
         }
     }
+
+    #endregion
+    /// <summary>
+    /// Assumes destination is set to this target.
+    /// </summary>
+    /// <param name="target"></param>
+    /// <returns></returns>
+    private bool CouldAttackTarget(Entity target)
+    {
+        if (target != null) return pf.PathReaches() || sm.InRangeOfEntity(target, range);
+        else return false;
+    }
     private void AfterAttackCheck()
     {
         ent.anim.Play(IDLE); 
@@ -436,7 +451,7 @@ public class Attacker : SwingEntityAddon
         else //if target enemy is alive
         {
             //if path is clear and we were previously trying to attack a different target
-            if (preferredAttackTarget != null && pf.PathReaches()) //!pf.PathBlocked()
+            if (CouldAttackTarget(preferredAttackTarget)) //!pf.PathBlocked()
             {
                 targetEnemy = preferredAttackTarget;
                 preferredAttackTarget = null;

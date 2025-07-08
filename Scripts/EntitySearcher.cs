@@ -55,7 +55,7 @@ public class EntitySearcher : MonoBehaviour
             }
         }
 
-        DeleteIfNoAssignedUnits();
+        //DeleteIfNoAssignedUnits();
         CheckIfShouldBeVisible();
         if (dr != null)
         {
