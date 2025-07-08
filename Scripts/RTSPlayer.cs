@@ -1831,9 +1831,15 @@ public class RTSPlayer : Player
             //Global.Instance.resourcesParent.SetActive(false);*/
         }
     }
+    private Entity GetSoleSelected()
+    {
+        if (selectedEntities[0] != null) return selectedEntities[0];
+        else return null;
+    }
     private void UpdateBuildQueueGUIVisibility()
     {
-        bool show = GetNumSelected() == 1;
+        //only show if a spawner is selected
+        bool show = GetNumSelected() == 1 && GetSoleSelected().IsSpawner();
         SmartSetActive(Global.instance.queueParent.gameObject, show);
         if (!show) return;
         UpdateBuildQueueGUIButtonsAndProgressBar();

@@ -39,6 +39,21 @@ public class Attacker : SwingEntityAddon
     public float sqrDistToTargetEnemy = Mathf.Infinity;
     private float sqrDistToAlternateTarget = Mathf.Infinity;
     private readonly float minAttackMoveDestinationViabilityRange = 4;
+    bool hasSelfDestructed = false;
+
+
+    public int attackMoveDestinationEnemyCount = 0;
+    private readonly float defaultMeleeDetectionRange = 2;
+    private readonly float rangedUnitRangeExtension = 2;
+
+    CancellationTokenSource asyncSearchCancellationToken;
+    private bool asyncSearchTimerActive = false;
+    bool playedAttackMoveSound = false;
+
+    public float maximumChaseRange = 5;
+    private float searchTimerDuration = 0.1f;
+    CancellationTokenSource hasCalledEnemySearchAsyncTaskTimerCancellationToken;
+    Vector3 targetEnemyLastPosition;
     public override void InitAddon()
     {  
         attackType = GetAttackSettings().attackType; 
@@ -62,218 +77,14 @@ public class Attacker : SwingEntityAddon
             assignedEntitySearcher.UnassignUnit(sm);
         }
     }
-    public void AttackingState()
+    #region States
+    public void OnEnterState()
     {
-        if (!IsValidTarget(targetEnemy))
-        {
-            HandleLackOfValidTargetEnemy();
-            return;
-        }
-        MakeAsyncSearchAvailableAgain();
-        pf.ValidatePathStatus();
-
-        if (sm.InRangeOfEntity(targetEnemy, range))
-        {
-            //UpdateAttackIndicator(); 
-            //if (IsOwner) SetDestination(transform.position);//destination.Value = transform.position; //stop in place
-            //rotationSpeed = ai.rotationSpeed / 60;
-            sm.LookAtTarget(targetEnemy.transform);
-
-            if (ready) // && CheckFacingTowards(targetEnemy.transform.position
-            {
-                ent.anim.Play(ATTACK); 
-                //Debug.Log("Anim progress" + animator.GetCurrentAnimatorStateInfo(0).normalizedTime);
-                if (ent.anim.InProgress()) // && !attackOver
-                { //is attackOver necessary?
-                    /*if (timerUntilAttackTrailBegins < attackTrailBeginTime)
-                    {
-                        timerUntilAttackTrailBegins += Time.deltaTime;
-                    }
-                    else if (!attackTrailTriggered)
-                    {
-                        attackTrailTriggered = true;
-                        timerUntilAttackTrailBegins = 0;
-                        ChangeAttackTrailState(true);
-                    }*/
-                    if (sm.stateTimer < impactTime)
-                    {
-                        sm.stateTimer += Time.deltaTime;
-                    }
-                    else if (ready)
-                    {
-                        ready = false;
-                        sm.stateTimer = 0;
-                        //attackOver = true;
-                        switch (attackType)
-                        {
-                            case AttackType.Instant:
-                                DamageSpecifiedEnemy(targetEnemy, swingDelta);
-                                break;
-                            case AttackType.SelfDestruct:
-                                SelfDestructInExplosion(areaOfEffectRadius);
-                                break;
-                            case AttackType.Projectile:
-                                Vector3 positionToShoot = targetEnemy.transform.position + new Vector3(0, 0.5f, 0);
-                                if (targetEnemy.physicalCollider != null) //get closest point on collider; //this has an issue
-                                {
-                                    Vector3 centerToMax = targetEnemy.physicalCollider.bounds.center - targetEnemy.physicalCollider.bounds.max;
-                                    float boundsFakeRadius = centerToMax.magnitude;
-                                    float discrepancyThreshold = boundsFakeRadius + .5f;
-                                    Vector3 closest = targetEnemy.physicalCollider.ClosestPoint(transform.position);
-                                    float rawDist = Vector3.Distance(transform.position, targetEnemy.transform.position);
-                                    float closestDist = Vector3.Distance(transform.position, closest);
-                                    if (Mathf.Abs(rawDist - closestDist) <= discrepancyThreshold)
-                                    {
-                                        positionToShoot = closest + new Vector3(0, 0.5f, 0);
-                                    }
-                                }
-                                ShootProjectileAtPosition(positionToShoot);
-                                break; 
-                            case AttackType.None:
-                                break;
-                            default:
-                                break;
-                        }
-                        //Debug.Log("impact");
-                    }
-                }
-                else //animation finished
-                {
-                    //Debug.Log("Attack Complete");
-                    AfterAttackCheck();
-                }
-            }
-            else if (!ent.anim.InState(ATTACK))
-            {
-                ent.anim.Play(IDLE);
-            }
-        }
-        else if (!sm.InRangeOfEntity(targetEnemy, range)) //walk to enemy if out of range
-        {
-            if (longTermGoal == Goal.OrderedToAttackMove)
-            {
-                SwitchState(EntityStates.AttackMoving);
-            }
-            else
-            {
-                SwitchState(EntityStates.WalkToSpecificEnemy);
-            }
-        }
+        asyncSearchTimerActive = false;
+        pf.pathfindingValidationTimerActive = false;
+        hasCalledEnemySearchAsyncTask = false;
+        alternateAttackTarget = null;
     }
-
-    bool hasSelfDestructed = false;
-    private void SelfDestructInExplosion(float explodeRadius)
-    {
-        if (!hasSelfDestructed)
-        {
-            Debug.Log("self destructing");
-            hasSelfDestructed = true;
-            Global.instance.localPlayer.CreateExplosionAtPoint(transform.position, explodeRadius, swingDelta);
-            SimpleExplosionEffect(transform.position);
-            Global.instance.localPlayer.DamageEntity(99, ent); //it is a self destruct, after all
-            //selectableEntity.ProperDestroyEntity();
-            //DamageSpecifiedEnemy(selectableEntity, damage);
-        }
-    }
-    private void SimpleExplosionEffect(Vector3 pos)
-    {
-        //spawn explosion prefab locally
-        SpawnExplosion(pos);
-
-        //spawn for other clients as well
-        if (IsServer)
-        {
-            SpawnExplosionClientRpc(pos);
-        }
-        else
-        {
-            RequestExplosionServerRpc(pos);
-        }
-    }
-    private void SpawnExplosion(Vector3 pos)
-    {
-        GameObject prefab = Global.instance.explosionPrefab;
-        _ = Instantiate(prefab, pos, Quaternion.identity);
-    }
-    /// <summary>
-    /// Ask server to play explosions
-    /// </summary> 
-    [ServerRpc]
-    private void RequestExplosionServerRpc(Vector3 pos)
-    {
-        SpawnExplosionClientRpc(pos);
-    }
-    /// <summary>
-    /// Play explosion for all other clients
-    /// </summary> 
-    [ClientRpc]
-    private void SpawnExplosionClientRpc(Vector3 pos)
-    {
-        if (!IsOwner)
-        {
-            SpawnExplosion(pos);
-        }
-    }
-    private void AfterAttackCheck()
-    {
-        ent.anim.Play(IDLE); 
-        if (!IsValidTarget(targetEnemy)) //target enemy is not valid because it is dead or missing
-        {
-            HandleLackOfValidTargetEnemy();
-        }
-        else //if target enemy is alive
-        {
-            //if path is clear and we were previously trying to attack a different target
-            if (longTermGoal == Goal.OrderedToAttackMove && preferredAttackTarget != null && !pf.PathBlocked())
-            {
-                targetEnemy = preferredAttackTarget;
-                preferredAttackTarget = null;
-                SwitchState(EntityStates.AttackMoving);
-            }
-            else
-            {
-                SwitchState(EntityStates.Attacking);
-            }
-        }
-    }
-    /// <summary>
-    /// Is target nonnull, alive, targetable, etc?
-    /// </summary>
-    /// <param name="target"></param>
-    /// <returns></returns>
-    public bool IsValidTarget(Entity target)
-    {
-
-        if (target == null || !target.isAttackable || !target.alive || !target.isTargetable.Value
-            || IsPlayerControlled() && !target.IsVisibleInFog() || !target.IsEnemyOfTarget(ent) || target.currentHP.Value <= 0
-            )
-        //reject if target is null, or target is dead, or target is untargetable, or this unit is player controlled and target is hidden,
-        //or this unit can't attack structures and target is structure
-        {
-            //if enemy is not valid, remove them
-            /*Debug.Log("invalid target" + target);
-            if (target != null)
-            {
-                if (!target.isAttackable) Debug.Log(1);
-                if (!target.alive) Debug.Log(2);
-                if (!target.isTargetable.Value) Debug.Log(3);
-                if (IsPlayerControlled() && !target.IsVisibleInFog()) Debug.Log(4);
-                if (!target.IsEnemyOfTarget(ent)) Debug.Log(5);
-                if (target.currentHP.Value <= 0) Debug.Log(6);
-            }*/
-            if (targetEnemy == target) targetEnemy = null;
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    }
-    private bool IsPlayerControlled()
-    {
-        return !ent.aiControlled;
-    }
-    bool playedAttackMoveSound = false; 
     public void IdleState()
     {
         lastIdlePosition = transform.position;
@@ -288,70 +99,64 @@ public class Attacker : SwingEntityAddon
             //Debug.Log("trying to target enemy idle");
         }
     }
-    private Entity IdleDetectEnemies()
+    public void WalkToSpecificEnemyState()
     {
-        float physSearchRange = range;
-        if (ent.IsMelee())
+        /*if (IsEffectivelyIdle(.1f) && IsMelee()) //!pathReachesDestination && 
+        //if we can't reach our specific target, find a new one
         {
-            physSearchRange = Global.instance.defaultMeleeSearchRange;
-        }
-        Entity eligibleIdleEnemy = GetFirstEnemyHashSearch(physSearchRange, RequiredEnemyType.Minion);
-        //Entity eligibleIdleEnemy = FindEnemyThroughPhysSearch(physSearchRange, RequiredEnemyType.Minion, false, true);
-        return eligibleIdleEnemy;
-    }
-    private Entity AttackingDetectEnemies()
-    {
-        float physSearchRange = range;
-        if (ent.IsMelee())
+            AutomaticAttackMove();
+        }*/
+        if (IsValidTarget(targetEnemy))
         {
-            physSearchRange = Global.instance.defaultMeleeSearchRange;
-        }
-        Entity eligibleIdleEnemy = GetClosestMinionHashSearch(physSearchRange);
-        return eligibleIdleEnemy;
-    }
-
-
-    private void GenericAttackMovePrep(Vector3 target)
-    {
-        attackMoveDestination = target;
-        sm.lastCommand.Value = CommandTypes.Attack;
-        sm.ClearTargets();
-        pf.ClearIdleness();
-        SwitchState(EntityStates.AttackMoving);
-        playedAttackMoveSound = false;
-        pf.SetDestination(target);
-        pf.orderedDestination = pf.destination;
-    }
-    public void AttackMoveToPosition(Vector3 target) //called by local player
-    {
-        if (!ent.alive) return; //dead units cannot be ordered
-                                //if (IsGarrisoned()) return;
-        longTermGoal = Goal.OrderedToAttackMove;
-        //Debug.Log(longTermGoal);
-        GenericAttackMovePrep(target);
-    }
-    public void ResetGoal() //tell the unit to stop attacking from idle; other use cases: stop attack moving
-    {
-        longTermGoal = Goal.None;
-        lastIdlePosition = transform.position;
-        //Debug.Log("Resetting goal");
-    }
-    /// <summary>
-    /// Run animations and sounds based off anim state.
-    /// </summary>
-    private void AttackMovingAesthetics()
-    {
-        if (!ent.anim.InState(BEGIN_ATTACK_WALK)
-            && !ent.anim.InState(CONTINUE_ATTACK_WALK))
-        {
-            if (!playedAttackMoveSound) //play sound and anim
+            if (longTermGoal == Goal.AttackFromIdle && !InChaseRange(targetEnemy))
             {
-                playedAttackMoveSound = true;
-                ent.SimplePlaySound(2);
+                //Debug.Log("Outside chase range"); 
+                HandleLackOfValidTargetEnemy();
+                return;
             }
-            ent.anim.Play(BEGIN_ATTACK_WALK);
+            //UpdateAttackIndicator();
+            pf.ValidatePathStatus();
+            pf.PushNearbyOwnedIdlers();
+            if (ent.IsMelee()) // melee troops should detect when blocked by walls and attack them
+            {
+                Entity enemy = null;
+                if (pf.PathBlocked() && pf.IsEffectivelyIdle(.1f)) //no path to enemy, attack structures in our way
+                {
+                    //periodically perform mini physics searches around us and if we get anything attack it 
+                    enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Structure);
+                    //enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Structure, false); 
+                    if (enemy != null)
+                    {
+                        //Debug.Log("Found new enemy while blocked");
+                        targetEnemy = enemy;
+                        SwitchState(EntityStates.Attacking);
+                    }
+                }
+            }
+            if (!InRangeOfEntity(targetEnemy, range))
+            {
+                /*if (ent.occupiedGarrison != null)
+                {
+                    SwitchState(EntityStates.Idle); 
+                    return;
+                }*/
+                //anim.Play(CONTINUE_ATTACK_WALK);
+
+                //if target is a structure, move the destination closer to us until it no longer hits obstacle
+                SetTargetEnemyAsDestination();
+            }
+            else
+            {
+                SwitchState(EntityStates.Attacking);
+                return;
+            }
+        }
+        else
+        {
+            HandleLackOfValidTargetEnemy();
         }
     }
+
     public async void AttackMovingState()
     {
         //NOTE: On entering this state, hasCalledEnemySearchAsyncTask becomes false.
@@ -447,6 +252,311 @@ public class Attacker : SwingEntityAddon
         }
         #endregion
     }
+    public void AttackingState()
+    {
+        if (!IsValidTarget(targetEnemy))
+        {
+            HandleLackOfValidTargetEnemy();
+            return;
+        }
+        MakeAsyncSearchAvailableAgain();
+        pf.ValidatePathStatus();
+
+        if (longTermGoal == Goal.OrderedToAttackSpecificTarget)
+        {
+            if (targetEnemy.IsStructure()) //we can find alternate targets
+            {
+                Entity found = AttackingDetectEnemies();
+                if (found != null) //only switch if we have a path to the new target
+                {
+                    pf.SetDestinationIfHighDiff(found.transform.position); //important not to constantly set destination;
+                    preferredAttackTarget = found;
+                }
+            }
+        }
+
+        if (sm.InRangeOfEntity(targetEnemy, range))
+        {
+            ContinueAttack();
+        }
+        else if (!sm.InRangeOfEntity(targetEnemy, range)) //walk to enemy if out of range
+        {
+            if (longTermGoal == Goal.OrderedToAttackMove)
+            {
+                SwitchState(EntityStates.AttackMoving);
+            }
+            else
+            {
+                SwitchState(EntityStates.WalkToSpecificEnemy);
+            }
+        }
+
+    }
+    #endregion
+    private void ContinueAttack()
+    {
+
+        //UpdateAttackIndicator(); 
+        //if (IsOwner) SetDestination(transform.position);//destination.Value = transform.position; //stop in place
+        //rotationSpeed = ai.rotationSpeed / 60;
+        sm.LookAtTarget(targetEnemy.transform);
+
+        if (ready) // && CheckFacingTowards(targetEnemy.transform.position
+        {
+            ent.anim.Play(ATTACK);
+            //Debug.Log("Anim progress" + animator.GetCurrentAnimatorStateInfo(0).normalizedTime);
+            if (ent.anim.InProgress()) // && !attackOver
+            { //is attackOver necessary?
+                /*if (timerUntilAttackTrailBegins < attackTrailBeginTime)
+                {
+                    timerUntilAttackTrailBegins += Time.deltaTime;
+                }
+                else if (!attackTrailTriggered)
+                {
+                    attackTrailTriggered = true;
+                    timerUntilAttackTrailBegins = 0;
+                    ChangeAttackTrailState(true);
+                }*/
+                if (sm.stateTimer < impactTime)
+                {
+                    sm.stateTimer += Time.deltaTime;
+                }
+                else if (ready)
+                {
+                    ready = false;
+                    sm.stateTimer = 0;
+                    //attackOver = true;
+                    AttackImpact();
+                    //Debug.Log("impact");
+                }
+            }
+            else //animation finished
+            {
+                //Debug.Log("Attack Complete");
+                AfterAttackCheck();
+            }
+        }
+        else if (!ent.anim.InState(ATTACK))
+        {
+            ent.anim.Play(IDLE);
+        }
+    }
+    private void AttackImpact()
+    {
+        switch (attackType)
+        {
+            case AttackType.Instant:
+                DamageSpecifiedEnemy(targetEnemy, swingDelta);
+                break;
+            case AttackType.SelfDestruct:
+                SelfDestructInExplosion(areaOfEffectRadius);
+                break;
+            case AttackType.Projectile:
+                Vector3 positionToShoot = targetEnemy.transform.position + new Vector3(0, 0.5f, 0);
+                if (targetEnemy.physicalCollider != null) //get closest point on collider; //this has an issue
+                {
+                    Vector3 centerToMax = targetEnemy.physicalCollider.bounds.center - targetEnemy.physicalCollider.bounds.max;
+                    float boundsFakeRadius = centerToMax.magnitude;
+                    float discrepancyThreshold = boundsFakeRadius + .5f;
+                    Vector3 closest = targetEnemy.physicalCollider.ClosestPoint(transform.position);
+                    float rawDist = Vector3.Distance(transform.position, targetEnemy.transform.position);
+                    float closestDist = Vector3.Distance(transform.position, closest);
+                    if (Mathf.Abs(rawDist - closestDist) <= discrepancyThreshold)
+                    {
+                        positionToShoot = closest + new Vector3(0, 0.5f, 0);
+                    }
+                }
+                ShootProjectileAtPosition(positionToShoot);
+                break;
+            case AttackType.None:
+                break;
+            default:
+                break;
+        }
+    }
+    private void SelfDestructInExplosion(float explodeRadius)
+    {
+        if (!hasSelfDestructed)
+        {
+            Debug.Log("self destructing");
+            hasSelfDestructed = true;
+            Global.instance.localPlayer.CreateExplosionAtPoint(transform.position, explodeRadius, swingDelta);
+            SimpleExplosionEffect(transform.position);
+            Global.instance.localPlayer.DamageEntity(99, ent); //it is a self destruct, after all
+            //selectableEntity.ProperDestroyEntity();
+            //DamageSpecifiedEnemy(selectableEntity, damage);
+        }
+    }
+    private void SimpleExplosionEffect(Vector3 pos)
+    {
+        //spawn explosion prefab locally
+        SpawnExplosion(pos);
+
+        //spawn for other clients as well
+        if (IsServer)
+        {
+            SpawnExplosionClientRpc(pos);
+        }
+        else
+        {
+            RequestExplosionServerRpc(pos);
+        }
+    }
+    private void SpawnExplosion(Vector3 pos)
+    {
+        GameObject prefab = Global.instance.explosionPrefab;
+        _ = Instantiate(prefab, pos, Quaternion.identity);
+    }
+    /// <summary>
+    /// Ask server to play explosions
+    /// </summary> 
+    [ServerRpc]
+    private void RequestExplosionServerRpc(Vector3 pos)
+    {
+        SpawnExplosionClientRpc(pos);
+    }
+    /// <summary>
+    /// Play explosion for all other clients
+    /// </summary> 
+    [ClientRpc]
+    private void SpawnExplosionClientRpc(Vector3 pos)
+    {
+        if (!IsOwner)
+        {
+            SpawnExplosion(pos);
+        }
+    }
+    private void AfterAttackCheck()
+    {
+        ent.anim.Play(IDLE); 
+        if (!IsValidTarget(targetEnemy)) //target enemy is not valid because it is dead or missing
+        {
+            HandleLackOfValidTargetEnemy();
+        }
+        else //if target enemy is alive
+        {
+            //if path is clear and we were previously trying to attack a different target
+            if (preferredAttackTarget != null && pf.PathReaches()) //!pf.PathBlocked()
+            {
+                targetEnemy = preferredAttackTarget;
+                preferredAttackTarget = null;
+                switch (longTermGoal)
+                {
+                    case Goal.OrderedToAttackMove:
+                        SwitchState(EntityStates.AttackMoving);
+                        break;
+                    case Goal.OrderedToAttackSpecificTarget:
+                        SwitchState(EntityStates.WalkToSpecificEnemy);
+                        break;
+                }
+            }
+            else
+            {
+                SwitchState(EntityStates.Attacking);
+            }
+        }
+    }
+    /// <summary>
+    /// Is target nonnull, alive, targetable, etc?
+    /// </summary>
+    /// <param name="target"></param>
+    /// <returns></returns>
+    public bool IsValidTarget(Entity target)
+    {
+
+        if (target == null || !target.isAttackable || !target.alive || !target.isTargetable.Value
+            || IsPlayerControlled() && !target.IsVisibleInFog() || !target.IsEnemyOfTarget(ent) || target.currentHP.Value <= 0
+            )
+        //reject if target is null, or target is dead, or target is untargetable, or this unit is player controlled and target is hidden,
+        //or this unit can't attack structures and target is structure
+        {
+            //if enemy is not valid, remove them
+            /*Debug.Log("invalid target" + target);
+            if (target != null)
+            {
+                if (!target.isAttackable) Debug.Log(1);
+                if (!target.alive) Debug.Log(2);
+                if (!target.isTargetable.Value) Debug.Log(3);
+                if (IsPlayerControlled() && !target.IsVisibleInFog()) Debug.Log(4);
+                if (!target.IsEnemyOfTarget(ent)) Debug.Log(5);
+                if (target.currentHP.Value <= 0) Debug.Log(6);
+            }*/
+            if (targetEnemy == target) targetEnemy = null;
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+    private bool IsPlayerControlled()
+    {
+        return !ent.aiControlled;
+    }
+    private Entity IdleDetectEnemies()
+    {
+        float physSearchRange = range;
+        if (ent.IsMelee())
+        {
+            physSearchRange = Global.instance.defaultMeleeSearchRange;
+        }
+        Entity eligibleIdleEnemy = GetFirstEnemyHashSearch(physSearchRange, RequiredEnemyType.Minion);
+        //Entity eligibleIdleEnemy = FindEnemyThroughPhysSearch(physSearchRange, RequiredEnemyType.Minion, false, true);
+        return eligibleIdleEnemy;
+    }
+    private Entity AttackingDetectEnemies()
+    {
+        float physSearchRange = range;
+        if (ent.IsMelee())
+        {
+            physSearchRange = 6;
+        }
+        Entity eligibleIdleEnemy = GetClosestMinionHashSearch(physSearchRange);
+        return eligibleIdleEnemy;
+    }
+
+
+    private void GenericAttackMovePrep(Vector3 target)
+    {
+        attackMoveDestination = target;
+        sm.lastCommand.Value = CommandTypes.Attack;
+        sm.ClearTargets();
+        pf.ClearIdleness();
+        SwitchState(EntityStates.AttackMoving);
+        playedAttackMoveSound = false;
+        pf.SetDestination(target);
+        pf.orderedDestination = pf.destination;
+    }
+    public void AttackMoveToPosition(Vector3 target) //called by local player
+    {
+        if (!ent.alive) return; //dead units cannot be ordered
+                                //if (IsGarrisoned()) return;
+        longTermGoal = Goal.OrderedToAttackMove;
+        //Debug.Log(longTermGoal);
+        GenericAttackMovePrep(target);
+    }
+    public void ResetGoal() //tell the unit to stop attacking from idle; other use cases: stop attack moving
+    {
+        longTermGoal = Goal.None;
+        lastIdlePosition = transform.position;
+        //Debug.Log("Resetting goal");
+    }
+    /// <summary>
+    /// Run animations and sounds based off anim state.
+    /// </summary>
+    private void AttackMovingAesthetics()
+    {
+        if (!ent.anim.InState(BEGIN_ATTACK_WALK)
+            && !ent.anim.InState(CONTINUE_ATTACK_WALK))
+        {
+            if (!playedAttackMoveSound) //play sound and anim
+            {
+                playedAttackMoveSound = true;
+                ent.SimplePlaySound(2);
+            }
+            ent.anim.Play(BEGIN_ATTACK_WALK);
+        }
+    }
     public void SetTargetEnemyAsDestination()
     {
         if (targetEnemy == null || pf == null) return;
@@ -459,14 +569,6 @@ public class Attacker : SwingEntityAddon
         {
             pf.SetDestinationIfHighDiff(targetEnemy.transform.position);
         }
-    }
-    private bool asyncSearchTimerActive = false;
-    public void OnEnterState()
-    { 
-        asyncSearchTimerActive = false;
-        pf.pathfindingValidationTimerActive = false;
-        hasCalledEnemySearchAsyncTask = false;
-        alternateAttackTarget = null;
     }
     private void HandleLackOfValidTargetEnemy()
     {
@@ -676,9 +778,6 @@ public class Attacker : SwingEntityAddon
         return null;
     }
 
-    CancellationTokenSource asyncSearchCancellationToken;
-
-    public float maximumChaseRange = 5;
     /// <summary>
     /// Cancel an in-progress async search (searching through list of enemies for a target enemy).
     /// </summary>
@@ -690,66 +789,6 @@ public class Attacker : SwingEntityAddon
     {
         return Vector3.Distance(lastIdlePosition, target.transform.position) <= maximumChaseRange;
     }
-    public void WalkToSpecificEnemyState()
-    {
-        /*if (IsEffectivelyIdle(.1f) && IsMelee()) //!pathReachesDestination && 
-        //if we can't reach our specific target, find a new one
-        {
-            AutomaticAttackMove();
-        }*/
-        if (IsValidTarget(targetEnemy))
-        {
-            if (longTermGoal == Goal.AttackFromIdle && !InChaseRange(targetEnemy))
-            {
-                //Debug.Log("Outside chase range"); 
-                HandleLackOfValidTargetEnemy();
-                return;
-            }
-            //UpdateAttackIndicator();
-            pf.ValidatePathStatus();
-            pf.PushNearbyOwnedIdlers();
-            if (ent.IsMelee()) // melee troops should detect when blocked by walls and attack them
-            {
-                Entity enemy = null;
-                if (pf.PathBlocked() && pf.IsEffectivelyIdle(.1f)) //no path to enemy, attack structures in our way
-                {
-                    //periodically perform mini physics searches around us and if we get anything attack it 
-                    enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Structure);
-                    //enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Structure, false); 
-                    if (enemy != null)
-                    {
-                        //Debug.Log("Found new enemy while blocked");
-                        targetEnemy = enemy;
-                        SwitchState(EntityStates.Attacking);
-                    }
-                }
-            }
-            if (!InRangeOfEntity(targetEnemy, range))
-            { 
-                /*if (ent.occupiedGarrison != null)
-                {
-                    SwitchState(EntityStates.Idle); 
-                    return;
-                }*/
-                //anim.Play(CONTINUE_ATTACK_WALK);
-
-                //if target is a structure, move the destination closer to us until it no longer hits obstacle
-                SetTargetEnemyAsDestination();
-            }
-            else
-            {
-                SwitchState(EntityStates.Attacking);
-                return;
-            }
-        }
-        else
-        { 
-            HandleLackOfValidTargetEnemy();
-        }
-    }
-
-    private float searchTimerDuration = 0.1f;
-    CancellationTokenSource hasCalledEnemySearchAsyncTaskTimerCancellationToken;
     /// <summary>
     /// When this timer elapses, a new async search through the enemy list will become available.
     /// hasCalledEnemySearchAsyncTask == true means that we have started running a search through the enemy list already
@@ -793,10 +832,6 @@ public class Attacker : SwingEntityAddon
     { 
         alternateAttackTarget = null;
     }
-    public int attackMoveDestinationEnemyCount = 0;
-    private readonly float defaultMeleeDetectionRange = 2;
-    private readonly float rangedUnitRangeExtension = 2;
-
     /// <summary>
     /// Sets target enemy to the closest enemy in search list
     /// </summary>
@@ -953,8 +988,6 @@ public class Attacker : SwingEntityAddon
             }
         }
     }
-
-    Vector3 targetEnemyLastPosition;
     /// <summary>
     /// Update Attacker's target enemy last position.
     /// </summary>
