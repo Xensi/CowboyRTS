@@ -48,6 +48,7 @@ public class CrosshairDisplay : MonoBehaviour
     public void SetEntitySearcherVisible(bool val)
     {
         entitySearcherVisible = val;
+        CheckIfShouldBeVisible();
     }
     private void CheckIfShouldBeVisible()
     {

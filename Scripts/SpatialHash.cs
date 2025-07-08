@@ -4,6 +4,7 @@ using UnityEngine;
 using UtilityMethods;
 using UnityEngine.Profiling;
 using static Attacker;
+using System;
 public class SpatialHash : MonoBehaviour
 {
     private const int hashX = 73856093;
@@ -146,14 +147,20 @@ public class SpatialHash : MonoBehaviour
         int tempAllCount = 0;
         int tempMinionCount = 0;
         int tempStructureCount = 0;
+        List<Entity> stashedEntities = new();
+        Array.Clear(searchedMinions, 0, searchedMinions.Length);
+        Array.Clear(searchedStructures, 0, searchedStructures.Length);
+        Array.Clear(searchedAll, 0, searchedAll.Length);
         foreach (int h in GetHashesToCheck(pos, rangeRadius)) //check through cells
         {
             for (int i = GetDenseStart(h); i <= GetDenseEnd(h); i++)
             {
-                Entity targetEnt = denseEntityArray[GetIndexClampedByNumEntities(i)];
-                if (!player.IsValidTarget(targetEnt)) continue;
+                Entity targetEnt = denseEntityArray[GetIndexClampedByNumEntities(i)]; //get target
+                if (!player.IsValidTarget(targetEnt)) continue; //skip invalid targets
                 bool inRange = Util.FastDistanceCheck(pos, targetEnt.transform.position, GetCombinedRadii(targetEnt, rangeRadius));
                 if (!inRange) continue; //we filter out all options that are out of range
+                if (stashedEntities.Contains(targetEnt)) continue; //don't store targets we've already seen
+                stashedEntities.Add(targetEnt);
                 if (targetEnt.IsMinion() && tempMinionCount < searchedMinions.Length)
                 {
                     searchedMinions[tempMinionCount] = targetEnt;

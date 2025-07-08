@@ -47,9 +47,9 @@ public class StateMachineController : NetworkBehaviour
     }
     #endregion
 
-    public EntityStates lastMajorState = EntityStates.Idle;
+    #region Variables
 
-    #region Hidden
+    public EntityStates lastMajorState = EntityStates.Idle;
     LayerMask enemyMask;
     private Camera cam;
     private RaycastModifier rayMod;
@@ -57,10 +57,6 @@ public class StateMachineController : NetworkBehaviour
     private readonly sbyte buildDelta = 5;
     public float stateTimer = 0;
     private float rotationSpeed = 10f;
-    //[HideInInspector] public bool followingMoveOrder = false;
-    #endregion
-    #region Variables
-
     [Header("Behavior Settings")]
 
     //[SerializeField] private LocalRotation localRotate;
@@ -70,17 +66,29 @@ public class StateMachineController : NetworkBehaviour
     //private readonly int delay = 0; 
     public EntityStates currentState = EntityStates.Spawn;
     public Entity.RallyMission givenMission = Entity.RallyMission.None;
-    #endregion
-    #region NetworkVariables 
     public bool canReceiveNewCommands = true;
 
     [SerializeField] private List<TrailRenderer> attackTrails = new();
     [HideInInspector]
     public NetworkVariable<CommandTypes> lastCommand = new NetworkVariable<CommandTypes>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    #endregion
     public Pathfinder pf;
     public UnitAnimator anim;
+
+    private bool skipFirstFrame = true;
+    private bool attackTrailActive = false;
+
+    public UnitOrder lastOrder = null;
+    public ActionType lastOrderType;
+    [SerializeField] private float attackTrailBeginTime = 0.2f;
+    private float timerUntilAttackTrailBegins = 0;
+    private bool attackTrailTriggered = false;
+    bool missionFollowed = false;
+    private float graphUpdateTime = 0.02f; //derived through trial and error
+    public Vector3 targetEnemyClosestPoint;
+    [HideInInspector] public bool shouldAggressivelySeekEnemies = true;
+
+    #endregion
 
     #region Core 
     private bool CanPathfind()
@@ -224,6 +232,7 @@ public class StateMachineController : NetworkBehaviour
         CancelAllAsyncTasks();
     }
     #endregion
+
     #region States 
     private bool FollowGivenMission()
     {
@@ -476,10 +485,6 @@ public class StateMachineController : NetworkBehaviour
             if (pf != null) pf.ChangeBlockedByMinionObstacleStatus(false);
         }
     }
-    private bool skipFirstFrame = true;
-    private bool attackTrailActive = false;
-
-    public UnitOrder lastOrder = null;
     private bool OrderValid(UnitOrder order)
     {
         return order != null && order.unit != null;
@@ -491,7 +496,6 @@ public class StateMachineController : NetworkBehaviour
             ProcessOrder(lastOrder);
         }
     }
-    public ActionType lastOrderType;
     public void ProcessOrder(UnitOrder order)
     {
         //Debug.Log("Processing order");
@@ -591,9 +595,6 @@ public class StateMachineController : NetworkBehaviour
             ent.attacker.AttackTarget(select);
         }
     }
-    [SerializeField] private float attackTrailBeginTime = 0.2f;
-    private float timerUntilAttackTrailBegins = 0;
-    private bool attackTrailTriggered = false;
     private void CheckIfAttackTrailIsActiveErroneously()
     {
         if (currentState != EntityStates.Attacking)
@@ -627,7 +628,6 @@ public class StateMachineController : NetworkBehaviour
     {
         return currentState == state;
     }
-    bool missionFollowed = false;
     private void OwnerUpdateState()
     {
         CheckIfAttackTrailIsActiveErroneously();
@@ -828,6 +828,7 @@ public class StateMachineController : NetworkBehaviour
 
     }
     #endregion
+
     #region UpdaterFunctions 
     private void UpdateInteractors()
     {
@@ -873,6 +874,7 @@ public class StateMachineController : NetworkBehaviour
     {
     }
     #endregion
+
     #region SetterFunctions
 
     public void PrepareForDeath()
@@ -905,6 +907,7 @@ public class StateMachineController : NetworkBehaviour
         SwitchState(EntityStates.WalkToInteractable);
     }
     #endregion
+
     #region More Stuff
     private void HideMoveIndicator()
     {
@@ -921,8 +924,6 @@ public class StateMachineController : NetworkBehaviour
             PlaceOnGround();
         }
     }
-    //
-    //ai.GetRemainingPath
     private void FleeFromPosition(Vector3 position)
     {
         if (pf.ai == null) return;
@@ -938,8 +939,6 @@ public class StateMachineController : NetworkBehaviour
         path.spread = 4000;
         pf.ai.SetPath(path);
     }
-    private float graphUpdateTime = 0.02f; //derived through trial and error
-    //public bool allowBecomingObstacles = false;
     public void LookAtTarget(Transform target)
     {
         ent.LookAtTarget(target);
@@ -950,18 +949,11 @@ public class StateMachineController : NetworkBehaviour
         return ent.InRangeOfEntity(target, range);
     }
 
-    public Vector3 targetEnemyClosestPoint;
-    [HideInInspector] public bool shouldAggressivelySeekEnemies = true;
     private void UpdateReadiness()
     {
         if (ent.IsAttacker()) ent.attacker.UpdateReadiness();
         if (ent.IsHarvester()) ent.harvester.UpdateReadiness();
         if (ent.IsBuilder()) ent.builder.UpdateReadiness();
-    }
-    private float ConvertTimeToFrames(float seconds) //1 second is 50 frames
-    {
-        float frames = seconds * 50;
-        return frames;
     }
     private Entity FindClosestBuildable()
     {
@@ -983,6 +975,7 @@ public class StateMachineController : NetworkBehaviour
         }
         return closest;
     }
+
     #region FindClosest
 
 
@@ -993,6 +986,7 @@ public class StateMachineController : NetworkBehaviour
 
 
     #endregion
+
     #region Attacks  
     public void AIAttackMove(Vector3 target)
     {

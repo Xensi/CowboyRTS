@@ -141,6 +141,16 @@ public class EntitySearcher : MonoBehaviour
     {
         Gizmos.DrawWireSphere(transform.position, searchRadius);
     }
+    private void CreateNeededCrosshairs(int neededCrosshairs)
+    {
+        //if we lack crosshairs, create some
+        while (crosshairs.Count < neededCrosshairs)
+        {
+            CrosshairDisplay cd = Instantiate(crosshairPrefab, Vector3.zero, Quaternion.identity);
+            cd.AssignEntitySearcher(this);
+            crosshairs.Add(cd);
+        }
+    }
     private void HighlightRelevantEnemies()
     {
         bool checkMinions = true;
@@ -162,20 +172,21 @@ public class EntitySearcher : MonoBehaviour
         {
             defaultDR.SetLREnable(neededCrosshairs <= 0 && visible);
         }
-        //if we lack crosshairs, create some
-        while (crosshairs.Count < neededCrosshairs)
-        {
-            CrosshairDisplay cd = Instantiate(crosshairPrefab, Vector3.zero, Quaternion.identity);
-            cd.AssignEntitySearcher(this);
-            crosshairs.Add(cd);
-        }
+        CreateNeededCrosshairs(neededCrosshairs);
         if (visible)
         {
-            for (int i = 0; i < crosshairs.Count; i++)
+            int numberOfCrosshairsUsed = 0;
+            bool allCrosshairsUsed = false;
+            for (int i = crosshairs.Count - 1; i >= 0; i--)
             {
-                if (crosshairs[i] == null) return;
+                if (crosshairs[i] == null)
+                {
+                    crosshairs.RemoveAt(i);
+                    continue;
+                }
                 crosshairs[i].SetPulse(false);
-                if (i < neededCrosshairs)
+
+                if (!allCrosshairsUsed)
                 {
                     Entity ent = null;
                     if (checkMinions)
@@ -186,22 +197,28 @@ public class EntitySearcher : MonoBehaviour
                     {
                         ent = searchedStructures[i];
                     }
-                    if (ent == null) return;
-                    //crosshairs[i].UpdateVisibility(true);
-                    crosshairs[i].SetEntitySearcherVisible(true);
-                    crosshairs[i].transform.SetParent(ent.transform, false);
-                    crosshairs[i].assignedEntity = ent;
-                    ent.entitySearcherCrosshairTargetingThis = crosshairs[i]; //assign the crosshair to the entity
-
-                    //check if any assigned units are attacking the enemy the crosshair is assigned to
-                    foreach (StateMachineController item in assignedUnits)
+                    if (ent == null)
                     {
-                        if (!Exists(item)) continue;
-                        if (item.attacker != null && item.attacker.targetEnemy == ent)
+                        crosshairs[i].SetEntitySearcherVisible(false);
+                        crosshairs[i].assignedEntity = null;
+                    }
+                    else
+                    {
+                        crosshairs[i].SetEntitySearcherVisible(true);
+                        crosshairs[i].transform.SetParent(ent.transform, false);
+                        crosshairs[i].assignedEntity = ent;
+                        ent.entitySearcherCrosshairTargetingThis = crosshairs[i]; //assign the crosshair to the entity
+                                                                                  //check if any assigned units are attacking the enemy the crosshair is assigned to
+                        foreach (StateMachineController item in assignedUnits)
                         {
-                            crosshairs[i].SetPulse(true);
-                            break;
+                            if (!Exists(item)) continue;
+                            if (item.attacker != null && item.attacker.targetEnemy == ent)
+                            {
+                                crosshairs[i].SetPulse(true);
+                                break;
+                            }
                         }
+                        numberOfCrosshairsUsed++;
                     }
                 }
                 else //disable
@@ -210,13 +227,14 @@ public class EntitySearcher : MonoBehaviour
                     //crosshairs[i].UpdateVisibility(false);
                     crosshairs[i].assignedEntity = null;
                 }
+                if (numberOfCrosshairsUsed >= neededCrosshairs) allCrosshairsUsed = true;
             }
         }
         else
         {
             for (int i = 0; i < crosshairs.Count; i++)
             {
-                if (crosshairs[i] == null) return;
+                if (crosshairs[i] == null) continue;
                 crosshairs[i].SetEntitySearcherVisible(false);
                 //crosshairs[i].UpdateVisibility(false);
                 crosshairs[i].assignedEntity = null;
