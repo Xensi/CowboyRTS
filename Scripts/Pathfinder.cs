@@ -569,7 +569,7 @@ public class Pathfinder : EntityAddon
         sm.ClearTargets();
         SetOrderedDestination(target);
 
-        SwitchState(EntityStates.Walk); //will clear obstacle and idleness
+        SwitchState(EntityStates.Walk, true); //will clear obstacle and idleness
 
 
         /*SelectableEntity justLeftGarrison = null;
@@ -592,7 +592,7 @@ public class Pathfinder : EntityAddon
             ClearIdleness();
             ent.interactionTarget = target;
             SetOrderedDestination(ent.interactionTarget.transform.position);
-            SwitchState(EntityStates.WalkToTarget);
+            SwitchState(EntityStates.WalkToTarget, true);
 
             Entity justLeftGarrison = null;
             if (ent.occupiedGarrison != null) //we are currently garrisoned

@@ -9,10 +9,10 @@ using System.Threading.Tasks;
 public class Player : NetworkBehaviour
 {
     public Faction playerFaction;
-    //public List<SelectableEntity> selectedEntities; //selected and we can control them
-    private readonly int maxArmy = 300;
-    public Entity[] selectedEntities;
+    public List<Entity> selectedEntities = new(); //selected and we can control them
+    //public Entity[] selectedEntities;
     public int numSelectedEntities = 0;
+    public int staticNumSelectedEntities = 0;
     public List<Entity> ownedEntities;
     public List<StateMachineController> ownedMinions;
     public List<Entity> unbuiltStructures;
@@ -55,15 +55,16 @@ public class Player : NetworkBehaviour
         //Debug.Log(selectedEntities.Length);
         if (val)
         {
-            selectedEntities[numSelectedEntities] = ent;
-            numSelectedEntities++;
-            //selectedEntities.Add(ent);
+            //selectedEntities[numSelectedEntities] = ent;
+            //numSelectedEntities++;
+            //staticNumSelectedEntities++;
+            selectedEntities.Add(ent);
         }
         else
         {
-            selectedEntities[numSelectedEntities] = null;
-            numSelectedEntities = Mathf.Clamp(numSelectedEntities--, 0, maxArmy);
-            //selectedEntities.Remove(ent);
+            //selectedEntities[numSelectedEntities] = null;
+            //numSelectedEntities = Mathf.Clamp(numSelectedEntities - 1, 0, Global.instance.GetMaxArmySize());
+            selectedEntities.Remove(ent);
         }
     }
     public enum ActionType
@@ -87,7 +88,7 @@ public class Player : NetworkBehaviour
         if (!enable) return;
         Global.instance.allPlayers.Add(this);
         //allegianceTeamID = playerTeamID; //by default
-        selectedEntities = new Entity[maxArmy];
+        //selectedEntities = new Entity[Global.instance.GetMaxArmySize()];
     }
     public virtual void Start()
     {
@@ -318,9 +319,14 @@ public class Player : NetworkBehaviour
         }
     }
     private void OnDrawGizmos()
-    { 
+    {
         //Gizmos.color = Color.yellow;
         //Gizmos.DrawWireCube(debugPos, debugSize);
+    }
+
+    public int GetNumSelected()
+    {
+        return selectedEntities.Count;
     }
     public bool IsPositionBlocked(Vector3 position)
     {

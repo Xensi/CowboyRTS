@@ -357,35 +357,47 @@ public class StateMachineController : NetworkBehaviour
     int desiredFrames = 5;
 
     bool switchingState = false;
-    public void SwitchState(EntityStates stateToSwitchTo)
+    public void SwitchState(EntityStates stateToSwitchTo, bool shouldOverride = false)
     {
         if (pf == null) return;
-
-        if (!switchingState) //ignore other SwitchState commands while switching
+        if (shouldOverride) //manual override
         {
-            switchingState = true;
-            switch (stateToSwitchTo)
-            {
-                case EntityStates.Walk:
-                case EntityStates.AttackMoving:
-                case EntityStates.WalkToSpecificEnemy:
-                case EntityStates.WalkToInteractable:
-                case EntityStates.WalkToRally:
-                case EntityStates.Garrisoning:
-                case EntityStates.Depositing:
-                case EntityStates.WalkToTarget:
-                    pf.ClearObstacle();
-                    pf.ChangeBlockedByMinionObstacleStatus(false);
-                    StartCoroutine(WaitForFramesSwitchState(stateToSwitchTo));
-                    break;
-                case EntityStates.PushableIdle:
-                    pf.ClearObstacle();
-                    StartCoroutine(WaitForFramesSwitchState(stateToSwitchTo));
-                    break;
-                default:
-                    FinishSwitchState(stateToSwitchTo);
-                    break;
-            }
+            StopAllCoroutines();
+        }
+        else if (switchingState) //ignore switch state
+        {
+            return;
+        }
+        switchingState = true;
+
+        if (currentState != stateToSwitchTo)
+        {
+            ExitState(currentState);
+            EnterState(stateToSwitchTo);
+        }
+        currentState = stateToSwitchTo;
+
+        switch (stateToSwitchTo)
+        {
+            case EntityStates.Walk:
+            case EntityStates.AttackMoving:
+            case EntityStates.WalkToSpecificEnemy:
+            case EntityStates.WalkToInteractable:
+            case EntityStates.WalkToRally:
+            case EntityStates.Garrisoning:
+            case EntityStates.Depositing:
+            case EntityStates.WalkToTarget:
+                pf.ClearObstacle();
+                pf.ChangeBlockedByMinionObstacleStatus(false);
+                StartCoroutine(WaitForFramesSwitchState(stateToSwitchTo));
+                break;
+            case EntityStates.PushableIdle:
+                pf.ClearObstacle();
+                StartCoroutine(WaitForFramesSwitchState(stateToSwitchTo));
+                break;
+            default:
+                FinishSwitchState(stateToSwitchTo);
+                break;
         }
     }
     private IEnumerator WaitForFramesSwitchState(EntityStates stateToSwitchTo) //the frame delay here is causing walks to get overridden
@@ -399,7 +411,7 @@ public class StateMachineController : NetworkBehaviour
         pf.ChangeBlockedByMinionObstacleStatus(true);
         if (ent.IsAlliedTo(Global.instance.localPlayer))
         {
-            Debug.Log(name + " is switching state to: " + stateToSwitchTo);
+            //Debug.Log(name + " is switching state to: " + stateToSwitchTo);
         }
         UpdateIfCanReceiveNewCommands(stateToSwitchTo);
         switch (stateToSwitchTo)
@@ -457,12 +469,6 @@ public class StateMachineController : NetworkBehaviour
                 }
                 break;
         }
-        if (currentState != stateToSwitchTo)
-        {
-            ExitState(currentState);
-            EnterState(stateToSwitchTo);
-        }
-        currentState = stateToSwitchTo;
         //Debug.Log("Switching state to " + minionState);
 
         if (currentState == EntityStates.Attacking)
@@ -1027,7 +1033,7 @@ public class StateMachineController : NetworkBehaviour
                     //Debug.Log("valid ore");
                     lastCommand.Value = CommandTypes.Harvest;
                     ent.interactionTarget = select;
-                    SwitchState(EntityStates.WalkToInteractable);
+                    SwitchState(EntityStates.WalkToInteractable, true);
                     lastMajorState = EntityStates.Harvesting;
                 }
             }
@@ -1044,7 +1050,7 @@ public class StateMachineController : NetworkBehaviour
     {
         lastCommand.Value = CommandTypes.Deposit;
         ent.interactionTarget = select;
-        SwitchState(EntityStates.WalkToInteractable);
+        SwitchState(EntityStates.WalkToInteractable, true);
         lastMajorState = EntityStates.Depositing;
     }
     public void CommandBuildTarget(Entity select)
@@ -1060,7 +1066,7 @@ public class StateMachineController : NetworkBehaviour
             //Debug.Log("can build");
             lastCommand.Value = CommandTypes.Build;
             ent.interactionTarget = select;
-            SwitchState(EntityStates.WalkToInteractable);
+            SwitchState(EntityStates.WalkToInteractable, true);
             lastMajorState = EntityStates.Building;
         }
     }

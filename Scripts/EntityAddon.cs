@@ -35,9 +35,9 @@ public class EntityAddon : NetworkBehaviour
     /// Switches the state machine controller state.
     /// </summary>
     /// <param name="state"></param>
-    public void SwitchState(EntityStates state)
+    public void SwitchState(EntityStates state, bool shouldOverride = false)
     {
-        if (sm != null) sm.SwitchState(state);
+        if (sm != null) sm.SwitchState(state, shouldOverride);
     }
     public EntityStates GetState()
     {

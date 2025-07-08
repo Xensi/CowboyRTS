@@ -472,6 +472,11 @@ public class Entity : NetworkBehaviour
             }
         }
     }
+    void LateUpdate() //Orient the camera after all movement is completed this frame to avoid jittering
+    {
+        UpdateHealthBarPosition();
+    }
+
     private void UpdateRallyVariables()
     {
         if (spawner != null) spawner.UpdateRallyVariables();
@@ -1060,10 +1065,6 @@ public class Entity : NetworkBehaviour
         }
     }
 
-    void LateUpdate() //Orient the camera after all movement is completed this frame to avoid jittering
-    {
-        UpdateHealthBarPosition();
-    }
     private float attackEffectTimer = 0;
     private void FixedUpdate()
     {
@@ -1205,7 +1206,9 @@ public class Entity : NetworkBehaviour
     bool entityDestructionPrepped = false;
     public void PrepareForEntityDestruction()
     {
-        if (entityDestructionPrepped) return;
+        if (attacker != null) attacker.RemoveFromEntitySearcher();
+
+        if (entityDestructionPrepped) return; //guard against repeated death calls
         entityDestructionPrepped = true;
 
         if (manualCrosshairTargetingThis != null)
@@ -1218,7 +1221,6 @@ public class Entity : NetworkBehaviour
             entitySearcherCrosshairTargetingThis.CheckIfShouldBeDestroyed(this);
         }
 
-        if (attacker != null) attacker.RemoveFromEntitySearcher();
         if (IsLoot()) lootComponent.LootForLocalPlayer();
 
         if (selectIndicator != null) Destroy(selectIndicator.gameObject);
@@ -1444,7 +1446,7 @@ public class Entity : NetworkBehaviour
     private void RequestBuilders()
     {
         //Debug.Log("request builders");
-        for (int i = 0; i < controllerOfThis.numSelectedEntities; i++)
+        for (int i = 0; i < controllerOfThis.GetNumSelected(); i++)
         {
             Entity item = controllerOfThis.selectedEntities[i];
 

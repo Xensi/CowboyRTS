@@ -537,7 +537,7 @@ public class Attacker : SwingEntityAddon
         sm.lastCommand.Value = CommandTypes.Attack;
         sm.ClearTargets();
         pf.ClearIdleness();
-        SwitchState(EntityStates.AttackMoving);
+        SwitchState(EntityStates.AttackMoving, true);
         playedAttackMoveSound = false;
         pf.SetDestination(target);
         pf.orderedDestination = pf.destination;
@@ -618,7 +618,7 @@ public class Attacker : SwingEntityAddon
                     Entity found = AttackingDetectEnemies();
                     if (found != null)
                     {
-                        Debug.Log(found);
+                        //Debug.Log(found);
                         targetEnemy = found;
                         SwitchState(EntityStates.WalkToSpecificEnemy);
                     }
@@ -841,7 +841,7 @@ public class Attacker : SwingEntityAddon
     {
         longTermGoal = Goal.OrderedToAttackSpecificTarget;
         targetEnemy = select;
-        SwitchState(EntityStates.WalkToSpecificEnemy);
+        SwitchState(EntityStates.WalkToSpecificEnemy, true);
     }
     public void OnSwitchState()
     { 

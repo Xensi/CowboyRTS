@@ -35,5 +35,10 @@ namespace UtilityMethods
         {
             if (obj != null && obj.activeInHierarchy != val) obj.SetActive(val);
         }
+
+        /*public static bool EntityIsValid(Entity ent)
+        {
+            return ent != null 
+        }*/
     }
 }

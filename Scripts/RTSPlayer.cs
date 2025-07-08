@@ -452,7 +452,7 @@ public class RTSPlayer : Player
             }
             //finished determining action type 
             UnitOrdersQueue.Clear();
-            for (int i = 0; i < numSelectedEntities; i++)
+            for (int i = 0; i < GetNumSelected(); i++)
             {
                 Entity item = selectedEntities[i];
                 if (item != null && item.sm != null)
@@ -494,7 +494,7 @@ public class RTSPlayer : Player
             UnitOrdersQueue.Clear();
 
             if (searcher == null) return;
-            for (int i = 0; i < numSelectedEntities; i++)
+            for (int i = 0; i < GetNumSelected(); i++)
             {
                 Entity item = selectedEntities[i];
                 if (item != null && item.sm != null && item.IsAttacker()) //minion
@@ -521,11 +521,6 @@ public class RTSPlayer : Player
     #endregion
 
     #region Gets and Checks
-
-    private int GetNumSelected()
-    {
-        return numSelectedEntities;
-    }
     private bool SameAllegiance(Entity foreign)
     {   //later update this so it works with allegiances
         //return foreign.controllerOfThis == this;
@@ -552,7 +547,7 @@ public class RTSPlayer : Player
     }
     private void SetSelectedRallyPoint()
     {
-        for (int i = 0; i < numSelectedEntities; i++)
+        for (int i = 0; i < base.GetNumSelected(); i++)
         {
             Entity item = selectedEntities[i];
             if (item != null) item.SetRally();
@@ -653,7 +648,7 @@ public class RTSPlayer : Player
     }
     private void SetBuildingRallies()
     {
-        for (int i = 0; i < numSelectedEntities; i++)
+        for (int i = 0; i < base.GetNumSelected(); i++)
         {
             Entity item = selectedEntities[i];
             if (item != null && item.IsStructure() && item.IsSpawner())
@@ -1513,7 +1508,7 @@ public class RTSPlayer : Player
     private void SelectAllAttackers()
     {
         //Debug.Log("trying to select all attackers");
-        //DeselectAll();
+        DeselectAll();
         int i = 0;
         foreach (StateMachineController item in ownedMinions)
         {
@@ -1566,9 +1561,9 @@ public class RTSPlayer : Player
     private void DeselectAll()
     {
         //Debug.Log("Deselecting all");
-        for (int i = 0; i < numSelectedEntities; i++)
+        for (int i = 0; i < ownedMinions.Count; i++)
         {
-            Entity ent = selectedEntities[i];
+            Entity ent = ownedMinions[i].ent;
             if (ent != null)
             {
                 ent.SetSelected(false);
@@ -1576,7 +1571,9 @@ public class RTSPlayer : Player
             }
         }
         numSelectedEntities = 0;
-        Array.Clear(selectedEntities, 0, selectedEntities.Length);
+        staticNumSelectedEntities = 0;
+        selectedEntities.Clear();
+        //Array.Clear(selectedEntities, 0, GetNumSelected());
         selectedBuilders.Clear();
         if (infoSelectedEntity != null) infoSelectedEntity.InfoSelect(false);
         infoSelectedEntity = null;
@@ -1683,7 +1680,7 @@ public class RTSPlayer : Player
         };*/
         //Debug.Log("Trying to spawn :" + unit.name);
         //try to spawn from all selected buildings if possible 
-        for (int i = 0; i < numSelectedEntities; i++)
+        for (int i = 0; i < base.GetNumSelected(); i++)
         {
             Debug.Log(unit.maxSpawnTimeCost);
             FactionUnit newUnit = FactionUnit.CreateInstance(unit.productionName, unit.maxSpawnTimeCost, unit.prefabToSpawn, unit.goldCost,
@@ -1799,7 +1796,7 @@ public class RTSPlayer : Player
         if (selectedParent == null || resourcesParent == null || Global.instance.resourceText == null
             || UIManager.instance.nameText == null || UIManager.instance.descText == null) return;
 
-        Entity singleSelected = selectedEntities[0];
+        Entity singleSelected = GetSoleSelected();
 
         if (infoSelectedEntity != null && numSelectedEntities == 0) //info selected
         {
@@ -1833,7 +1830,7 @@ public class RTSPlayer : Player
     }
     private Entity GetSoleSelected()
     {
-        if (selectedEntities[0] != null) return selectedEntities[0];
+        if (selectedEntities.Count > 0 && selectedEntities[0] != null) return selectedEntities[0];
         else return null;
     }
     private void UpdateBuildQueueGUIVisibility()
@@ -1906,7 +1903,7 @@ public class RTSPlayer : Player
         if (GetNumSelected() > 0) //at least one unit selected
         {
             //show gui elements based on unit type selected
-            for (int i = 0; i < numSelectedEntities; i++)
+            for (int i = 0; i < base.GetNumSelected(); i++)
             {
                 Entity entity = selectedEntities[i];
                 if (entity == null! || !entity.net.IsSpawned || entity.factionEntity == null) //if not built or spawned, skip
@@ -1971,7 +1968,7 @@ public class RTSPlayer : Player
                 button.onClick.AddListener(delegate { UseAbility(ability); });
                 //get lowest ability cooldown 
                 float cooldown = 999;
-                for (int k = 0; k < numSelectedEntities; k++)
+                for (int k = 0; k < base.GetNumSelected(); k++)
                 {
                     Entity entity = selectedEntities[i];
                     //Debug.Log(entity.name);
@@ -2055,7 +2052,7 @@ public class RTSPlayer : Player
     {
         if (GetNumSelected() > 0) //at least one unit selected
         {
-            for (int k = 0; k < numSelectedEntities; k++)
+            for (int k = 0; k < base.GetNumSelected(); k++)
             {
                 Entity entity = selectedEntities[k];
                 if (entity != null && EntityCanUseAbility(entity, ability))
@@ -2077,7 +2074,7 @@ public class RTSPlayer : Player
         Debug.Log("Using upgrade");
         if (GetNumSelected() > 0) //at least one unit selected
         {
-            for (int i = 0; i < numSelectedEntities; i++)
+            for (int i = 0; i < base.GetNumSelected(); i++)
             {
                 Entity entity = selectedEntities[i];
                 if (entity == null) continue;

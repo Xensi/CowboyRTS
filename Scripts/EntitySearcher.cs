@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Threading.Tasks;
 using Unity.Netcode;
+using UtilityMethods;
 /// <summary>
 /// Used to asynchronously put enemies into arrays so units can attack them.
 /// </summary>
@@ -41,6 +42,7 @@ public class EntitySearcher : MonoBehaviour
         {
             defaultDR.SetLREnable(false);
         }
+        CheckIfShouldBeVisible();
     }
     void Update()
     {
@@ -54,16 +56,21 @@ public class EntitySearcher : MonoBehaviour
                 SearchHash();
             }
         }
-
-        //DeleteIfNoAssignedUnits();
+        CleanAssignedUnits();
         CheckIfShouldBeVisible();
-        if (dr != null)
-        {
-            //Debug.Log("TEST");
-            //dr.UpdateLR();
-            dr.SetLREnable(visible);
-        }
         HighlightRelevantEnemies();
+    }
+    private void CleanAssignedUnits()
+    {
+        for (int i = assignedUnits.Count - 1; i >= 0; i--)
+        {
+            StateMachineController item = assignedUnits[i];
+            if (item == null || !item.ent.alive) assignedUnits.Remove(item);
+        }
+    }
+    private void UpdateVisibility()
+    {
+        if (dr != null) dr.SetLREnable(visible);
     }
     public bool MinionsInSearch()
     {
@@ -78,6 +85,14 @@ public class EntitySearcher : MonoBehaviour
             break;
         }
         visible = atLeastOneUnitSelected;
+        if (!visible)
+        {
+            if (assignedUnits.Count <= 0)
+            {
+                Destroy(gameObject);
+            }
+        }
+        UpdateVisibility();
         return atLeastOneUnitSelected;
     }
     /// <summary>
@@ -94,64 +109,6 @@ public class EntitySearcher : MonoBehaviour
             ref searchedMinions, ref searchedStructures, ref searchedAll,
             ref minionCount, ref structureCount, ref allCount);
     }
-    private async void Search()
-    {
-        //Debug.Log("Starting search");
-        searchingInProgress = true;
-        //create a list of viable targets to attack   
-        Collider[] enemyArray = new Collider[Global.instance.fullEnemyArraySize];
-        LayerMask searchMask;
-        if (creatorAllegianceID == 0)
-        {
-            searchMask = Global.instance.enemyLayer;
-        }
-        else
-        {
-            searchMask = Global.instance.friendlyEntityLayer;
-        }
-        searchedCount = Physics.OverlapSphereNonAlloc(transform.position, searchRadius, enemyArray, searchMask); //use fixed distance for now
-
-        tempAllCount = 0;
-        tempMinionCount = 0;
-        tempStructureCount = 0;
-        for (int i = 0; i < searchedCount; i++) //place valid entities into array
-        {
-            if (enemyArray[i] == null) continue; //if invalid do not increment slotToWriteTo
-            Entity select = enemyArray[i].GetComponent<Entity>();
-            
-            if (select == null) continue;
-            if (!select.alive || !select.isTargetable.Value || !select.isAttackable) //overwrite these slots
-            {
-                continue;
-            }
-            if (select.IsMinion())
-            {
-                if (tempMinionCount < searchedMinions.Length)
-                { 
-                    searchedMinions[tempMinionCount] = select;
-                    tempMinionCount++;
-                }
-            }
-            else
-            {
-                if (tempStructureCount < searchedStructures.Length)
-                { 
-                    searchedStructures[tempStructureCount] = select;
-                    tempStructureCount++;
-                }
-            }
-            if (tempAllCount < searchedAll.Length)
-            { 
-                searchedAll[tempAllCount] = select;
-                tempAllCount++;
-            }
-            await Task.Yield();
-        }
-        allCount = tempAllCount;
-        minionCount = tempMinionCount;
-        structureCount = tempStructureCount;
-        searchingInProgress = false;
-    }
     public void AssignUnit(StateMachineController unit)
     {
         assignedUnits.Add(unit);
@@ -159,6 +116,7 @@ public class EntitySearcher : MonoBehaviour
     public void UnassignUnit(StateMachineController unit)
     {
         assignedUnits.Remove(unit);
+        DeleteIfNoAssignedUnits();
     }
     private void OnDestroy()
     {
@@ -175,6 +133,7 @@ public class EntitySearcher : MonoBehaviour
     {
         if (assignedUnits.Count <= 0)
         {
+            //Debug.Log("Deleting bc no assigned units");
             Destroy(gameObject);
         }
     }

@@ -88,6 +88,7 @@ public class Global : NetworkBehaviour
     private readonly int maxAIPlayers = 10;
 
     public GameObject rallyPrefab;
+    private readonly int maxArmySize = 300;
     #region UI
 
     public GameObject resourcesParent;
@@ -104,6 +105,11 @@ public class Global : NetworkBehaviour
     //Structure sound profile mapping:
     //0: spawn
     //1: selection
+
+    public int GetMaxArmySize()
+    {
+        return maxArmySize;
+    }
 
     #region Standard
     private void Awake()
