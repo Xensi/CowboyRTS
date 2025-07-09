@@ -44,9 +44,7 @@ public class LobbyManager : MonoBehaviour
     private const string PLAYERNAME = "PlayerName";
     private const string STARTGAME = "StartGame";
 
-    public Canvas lobbyCanvas;
-    public Canvas gameCanvas; 
-
+    #region Instance
     public static LobbyManager Instance { get; private set; }
     private void Awake()
     {
@@ -58,9 +56,9 @@ public class LobbyManager : MonoBehaviour
         {
             Instance = this;
         }
-        ChangeLobbyUIStatus(true);
-        ChangeGameUIStatus(false);
     }
+    #endregion
+
     private async void Start()
     {
         if (playerName == "") playerName = "anonymous";
@@ -68,8 +66,6 @@ public class LobbyManager : MonoBehaviour
         playerNameField.text = playerName;
         await Authenticate(); //sign in
         playerNameField.onEndEdit.AddListener(delegate { SavePlayerName(playerNameField.text); });
-
-
         //NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectedCallback;
         //NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnectCallback;
     }
@@ -80,17 +76,18 @@ public class LobbyManager : MonoBehaviour
             DeleteLobby(hostLobby);
         }
     }
-    private void SavePlayerName(string name)
-    {
-        PlayerPrefs.SetString(PLAYERNAME, name);
-        playerName = name;
-        playerNameField.text = playerName;
-    }
     private void Update()
     {
         HandleLobbyHeartBeat();
         HandleLobbyPollForUpdates();
         UpdateButtons();
+    }
+    #region Multiplayer
+    private void SavePlayerName(string name)
+    {
+        PlayerPrefs.SetString(PLAYERNAME, name);
+        playerName = name;
+        playerNameField.text = playerName;
     }
     private void UpdateButtons()
     {
@@ -107,36 +104,7 @@ public class LobbyManager : MonoBehaviour
             startGameButton.interactable = hostLobby != null;
         }
     }
-    public UnityTransport singleplayerTransport;
-    public void StartSinglePlayerGame(int level)
-    {
-        string levelName = LevelManager.Instance.GetLevelName(level);
 
-        LevelManager.Instance.LoadLevel(levelName, StartSinglePlayerGameCallback);
-        if (startSPGameButton != null) startSPGameButton.gameObject.SetActive(false);
-    }
-    private void StartSinglePlayerGameCallback()
-    { 
-        if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
-        {
-            NetworkManager.Singleton.NetworkConfig.NetworkTransport = singleplayerTransport;
-            NetworkManager.Singleton.StartHost();
-            ChangeGameUIStatus(true);
-            ChangeLobbyUIStatus(false);
-        }
-        Global.instance.UpdateLevelObjective();
-        //Debug.Log("How many players?" + Global.Instance.allPlayers.Count);
-    } 
-    public void JoinLocalHost()
-    {
-        if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
-        {
-            NetworkManager.Singleton.NetworkConfig.NetworkTransport = singleplayerTransport;
-            NetworkManager.Singleton.StartClient();
-            ChangeGameUIStatus(true);
-            ChangeLobbyUIStatus(false);
-        }
-    }
     private async Task Authenticate()
     {
         var options = new InitializationOptions();
@@ -252,7 +220,7 @@ public class LobbyManager : MonoBehaviour
                 joinedLobby = hostLobby;
 
                 Debug.Log("Created lobby! " + lobby.Name + " " + lobby.MaxPlayers + " " + lobby.Id + " " + lobby.LobbyCode);
-                PrintPlayers(hostLobby); 
+                PrintPlayers(hostLobby);
             }
         }
         catch (LobbyServiceException e)
@@ -319,11 +287,11 @@ public class LobbyManager : MonoBehaviour
     }
     private void ChangeLobbyUIStatus(bool val)
     {
-        lobbyCanvas.enabled = val;
+        UIManager.instance.ChangeLobbyUIStatus(val);
     }
     private void ChangeGameUIStatus(bool val)
     {
-        gameCanvas.enabled = val;
+        UIManager.instance.ChangeGameUIStatus(val);
     }
     private async Task<string> CreateRelay()
     {
@@ -363,7 +331,7 @@ public class LobbyManager : MonoBehaviour
             heartbeatTimer = heartBeatTimerMax;
 
             if (hostLobby != null)
-            { 
+            {
                 await LobbyService.Instance.SendHeartbeatPingAsync(hostLobby.Id);
             }
         }
@@ -373,7 +341,7 @@ public class LobbyManager : MonoBehaviour
 
         pollTimer -= Time.deltaTime;
         if (pollTimer < 0)
-        { 
+        {
             pollTimer = queryRateLimit;
             if (joinedLobby != null)
             {
@@ -396,11 +364,11 @@ public class LobbyManager : MonoBehaviour
                     }
                 }
             }
-            
+
             UpdateLobbyPlayerNames();
             RefreshLobbies();
         }
-    } 
+    }
     private async void JoinRelay(string joinCode)
     {
         try
@@ -553,4 +521,37 @@ public class LobbyManager : MonoBehaviour
             Debug.Log(e);
         }
     }
+    #endregion
+
+    #region Singleplayer
+
+    public UnityTransport singleplayerTransport;
+    public void StartSinglePlayerGame(int level)
+    {
+        string levelName = LevelManager.instance.GetLevelName(level);
+
+        LevelManager.instance.LoadLevel(levelName, StartSinglePlayerGameCallback);
+        if (startSPGameButton != null) startSPGameButton.gameObject.SetActive(false);
+    }
+    private void StartSinglePlayerGameCallback()
+    {
+        if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
+        {
+            NetworkManager.Singleton.NetworkConfig.NetworkTransport = singleplayerTransport;
+            NetworkManager.Singleton.StartHost();
+        }
+        Global.instance.UpdateLevelObjective();
+        //Debug.Log("How many players?" + Global.Instance.allPlayers.Count);
+    }
+    public void JoinLocalHost()
+    {
+        if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
+        {
+            NetworkManager.Singleton.NetworkConfig.NetworkTransport = singleplayerTransport;
+            NetworkManager.Singleton.StartClient();
+            ChangeGameUIStatus(true);
+            ChangeLobbyUIStatus(false);
+        }
+    }
+    #endregion
 }

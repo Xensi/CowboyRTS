@@ -21,6 +21,11 @@ public class UIManager : MonoBehaviour
     public TMP_Text modifiableMessageText;
     public Image levelMessageBG;
     public Button clickToContinue;
+
+    public Canvas lobbyCanvas;
+    public Canvas gameCanvas;
+
+    public GameObject mainCamParent;
     private void Awake()
     {
         if (instance != null && instance != this)
@@ -37,5 +42,27 @@ public class UIManager : MonoBehaviour
         {
             Util.SmartSetActive(item.gameObject, false);
         }
+    }
+    private void Start()
+    {
+        ChangeLobbyUIStatus(true);
+        ChangeGameUIStatus(false);
+    }
+    public void HideAllUI()
+    {
+        ChangeLobbyUIStatus(false);
+        ChangeGameUIStatus(false);
+    }
+    public void ChangeLobbyUIStatus(bool val)
+    {
+        lobbyCanvas.enabled = val;
+    }
+    public void ChangeGameUIStatus(bool val)
+    {
+        gameCanvas.enabled = val;
+    }
+    public void ChangeCamStatus(bool val)
+    {
+        mainCamParent.SetActive(val);
     }
 }

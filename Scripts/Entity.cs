@@ -382,8 +382,12 @@ public class Entity : NetworkBehaviour
         }
     } 
     #endregion
-    private void Start() //Non netcode related initialization
-    { 
+    public void SetSpawnedBySpawner()
+    {
+        spawnedBySpawner = true;
+    }
+    private void EntitySetup()
+    {
         if (currentHP.Value <= 0 && !constructionBegun) //buildings begun as untargetable (by enemies)
         {
             isTargetable.Value = false;
@@ -392,9 +396,6 @@ public class Entity : NetworkBehaviour
         {
             isTargetable.Value = true;
         }
-        if (teamType == TeamBehavior.OwnerTeam && !spawnedBySpawner) ChangePopulation(consumePopulationAmount);
-        Select(false);
-        ChangeSelectIndicatorStatus(selected);
         if (lineIndicator != null)
         {
             lineIndicator.enabled = false;
@@ -403,8 +404,6 @@ public class Entity : NetworkBehaviour
         {
             targetIndicator.transform.parent = Global.instance.transform;
         }
-        SetStartingSelectionRadius();
-        SetInitialVisuals();
         aiControlled = desiredTeamNumber < 0 || controllerOfThis is AIPlayer;
         if (isKeystone && Global.instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
         {
@@ -417,7 +416,6 @@ public class Entity : NetworkBehaviour
                 obstacle.enabled = false;
             }
         }
-        SetFinishedRenderersVisibility(false);
         foreach (MeshRenderer item in unbuiltRenderers)
         {
             if (item != null)
@@ -436,12 +434,21 @@ public class Entity : NetworkBehaviour
                 }
             }
         }
+    }
+    private void Start() //Non netcode related initialization
+    {
+        EntitySetup();
+        if (teamType == TeamBehavior.OwnerTeam && !spawnedBySpawner) ChangePopulation(consumePopulationAmount);
+        Select(false);
+        ChangeSelectIndicatorStatus(selected);
+        SetStartingSelectionRadius();
+        SetInitialVisuals();
+        SetFinishedRenderersVisibility(false);
         TryToRegisterRallyMission();
         if (teamType == TeamBehavior.OwnerTeam) Global.instance.AddEntityToMainList(this);
-
         InitializeBars();
         DetermineLayerBasedOnAllegiance();
-        PlaySpawnSound();
+        if (spawnedBySpawner) PlaySpawnSound();
     }
 
     private void Update()

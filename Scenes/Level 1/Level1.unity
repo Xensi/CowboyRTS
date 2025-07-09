@@ -812,7 +812,6 @@ MonoBehaviour:
     levelEntities: []
   - message: {fileID: 11400000, guid: 8cf29333498869e48b176a750f8f2bc2, type: 2}
     levelEntities: []
-  clickToContinue: {fileID: 0}
 --- !u!114 &26221862
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -6,20 +6,20 @@ using UnityEngine.SceneManagement;
 
 public class LevelManager : MonoBehaviour
 {
-    public static LevelManager Instance { get; private set; }
+    public static LevelManager instance { get; private set; }
 
     [SerializeField] private List<string> levelNames;
     public readonly string LEVEL1 = "Level1";
     // Start is called before the first frame update
     private void Awake()
     { 
-        if (Instance != null && Instance != this)
+        if (instance != null && instance != this)
         {
             Destroy(this);
         }
         else
         {
-            Instance = this;
+            instance = this;
         }
     }
     Action loadAction;
@@ -29,9 +29,16 @@ public class LevelManager : MonoBehaviour
     }
     public void LoadLevel(string level, Action callback)
     {
-        SceneManager.LoadScene(level, LoadSceneMode.Additive);
+        SceneManager.LoadSceneAsync(level, LoadSceneMode.Additive);
         loadAction = callback;
     } 
+    public void StartLevelNoFrills(int levelNum)
+    {
+        LobbyManager.Instance.StartSinglePlayerGame(levelNum);
+        UIManager.instance.ChangeGameUIStatus(true);
+        UIManager.instance.ChangeLobbyUIStatus(false);
+        UIManager.instance.ChangeCamStatus(true);
+    }
     void OnEnable()
     { 
         SceneManager.sceneLoaded += OnSceneLoaded;

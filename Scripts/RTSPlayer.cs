@@ -1375,7 +1375,7 @@ public class RTSPlayer : Player
                 {
                     select.spawnerThatSpawnedThis = spawnerEntity;
                     //select.controllerOfThis = spawnerEntity.GetController();
-                    select.spawnedBySpawner = true;
+                    select.SetSpawnedBySpawner();
                 }
                 //grant ownership 
                 if (NetworkManager.ConnectedClients.ContainsKey(clientID))
