@@ -465,8 +465,8 @@ public class RTSPlayer : Player
                     if (!item.IsBuilder() && actionType == ActionType.BuildTarget
                         || !item.IsHarvester() && actionType == ActionType.Harvest)
                     {
-                        Debug.Log("invalid action, defaulting to moving to target");
-                        actionType = ActionType.MoveToTarget;
+                        Debug.Log("invalid action, defaulting to moving");
+                        actionType = ActionType.Move;
                     }
                     order.action = actionType;
 

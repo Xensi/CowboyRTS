@@ -11,20 +11,27 @@ public class ConditionalMessage : MonoBehaviour
     private int linearMessageBookmark = -1;
     [SerializeField] private List<MessageWithCondition> linearMessages; //play these messages one after another  
     private MessageWithCondition currentMessageWithCondition;
+
     private TMP_Text modifiableMessageText;
-    private Image bg;
-    [SerializeField] private Button clickToContinue;
-    private void OnEnable()
+    private Image levelMessageBG;
+    private Button clickToContinue;
+    private void Start()
     {
-        modifiableMessageText = GetComponentInChildren<TMP_Text>(true);
-        bg = GetComponentInChildren<Image>(true);
+        modifiableMessageText = UIManager.instance.modifiableMessageText;
+        levelMessageBG = UIManager.instance.levelMessageBG;
+        clickToContinue = UIManager.instance.clickToContinue;
+        SetFunctionalityOfContinueButton();
         SetVisibilityOfConfirmationButton(false);
         linearMessageBookmark = -1;
         ShowNextMessage();
     }
+    private void SetFunctionalityOfContinueButton()
+    {
+        clickToContinue.onClick.AddListener(() => ConfirmationReceived());
+    }
     private void ShowMessage(int id = 0)
     {
-        if (bg != null) bg.gameObject.SetActive(true);
+        if (levelMessageBG != null) levelMessageBG.gameObject.SetActive(true);
         if (modifiableMessageText != null) modifiableMessageText.gameObject.SetActive(true);
         if (modifiableMessageText != null) modifiableMessageText.text = linearMessages[id].message.messageContents;
         currentMessageWithCondition = linearMessages[id];
@@ -98,7 +105,7 @@ public class ConditionalMessage : MonoBehaviour
     }
     private void HideMessages()
     {
-        if (bg != null) bg.gameObject.SetActive(false);
+        if (levelMessageBG != null) levelMessageBG.gameObject.SetActive(false);
         if (modifiableMessageText != null) modifiableMessageText.gameObject.SetActive(false);
         currentMessageWithCondition = null;
         SetVisibilityOfConfirmationButton(false);

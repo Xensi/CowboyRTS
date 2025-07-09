@@ -18,6 +18,9 @@ public class UIManager : MonoBehaviour
     public GameObject setRallyPointButton;
     public GameObject popFullWarning;
     //public GameObject singleUnitInfoParent;
+    public TMP_Text modifiableMessageText;
+    public Image levelMessageBG;
+    public Button clickToContinue;
     private void Awake()
     {
         if (instance != null && instance != this)

@@ -11,10 +11,21 @@ public class VictoryManager : MonoBehaviour
 
     private enum VictoryCondition
     {
-        EliminateAllMinionsControlledByWatchedPlayer
+        DestroyAllPlayerUnits
     } 
 
-    [SerializeField] private VictoryCondition victoryCondition = VictoryCondition.EliminateAllMinionsControlledByWatchedPlayer;
+    [SerializeField] private VictoryCondition victoryCondition = VictoryCondition.DestroyAllPlayerUnits;
+
+    private enum LevelAction
+    {
+        SendToLevel, //plays the level cutscene first
+        RestartLevel,
+        SendToMainMenu
+    }
+    [SerializeField] private LevelAction victoryAction = LevelAction.SendToLevel;
+
+    [SerializeField] private int levelToSwitchTo = 0;
+
     public string levelGoal = "";
     private bool victory = false;
     private void Awake()
@@ -43,7 +54,7 @@ public class VictoryManager : MonoBehaviour
             {
                 switch (victoryCondition)
                 {
-                    case VictoryCondition.EliminateAllMinionsControlledByWatchedPlayer:
+                    case VictoryCondition.DestroyAllPlayerUnits:
                         foreach (StateMachineController minion in player.ownedMinions)
                         {
                             if (minion != null)
@@ -67,10 +78,12 @@ public class VictoryManager : MonoBehaviour
     {
         victory = true;
         //Debug.Log("YOU WON!");
+        ShowVictoryScreen();
+    }
+    private void ShowVictoryScreen()
+    {
         if (conditionalMessage != null)
         {
-
         }
     }
-
 }

@@ -38,10 +38,8 @@ public class UnitUpgrades : EntityAddon
     public void ActivateUpgrade(FactionUpgrade upgrade)
     {
         
-        Debug.Log("Activating upgrade");
-        Debug.Log(upgrade.uses);
+        //Debug.Log("Activating upgrade");
         upgrade.uses--;
-        Debug.Log(upgrade.uses);
         Entity target = ent;
         foreach (Stats stats in upgrade.addStats)
         {
