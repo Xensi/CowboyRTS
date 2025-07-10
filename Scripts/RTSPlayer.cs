@@ -99,7 +99,7 @@ public class RTSPlayer : Player
         meshes = new MeshRenderer[1];
         if (IsOwner)
         {
-            MoveCamToSpawn();
+            //MoveCamToSpawn();
             UpdateGUIFromSelectedEntities();
         }
     }

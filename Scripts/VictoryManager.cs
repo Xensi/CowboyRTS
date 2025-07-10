@@ -24,9 +24,7 @@ public class VictoryManager : MonoBehaviour
     }
     [SerializeField] private LevelAction victoryAction = LevelAction.SendToLevel;
 
-    [SerializeField] private int levelToSwitchTo = 0;
-
-    public string levelGoal = "";
+    [SerializeField] private Level levelToSwitchTo;
     private bool victory = false;
     private void Awake()
     { 
@@ -46,7 +44,7 @@ public class VictoryManager : MonoBehaviour
     }
     private void EvaluateVictoryConditions()
     {
-        if (victory) return;
+        if (victory || !LevelManager.instance.GetLevelStarted()) return;
         bool victoryAchieved = true;
         foreach (Player player in watchedPlayers)
         {
@@ -76,14 +74,32 @@ public class VictoryManager : MonoBehaviour
     }
     private void VictoryAchieved()
     {
-        victory = true;
         //Debug.Log("YOU WON!");
-        ShowVictoryScreen();
+        //ShowVictoryScreen();
+        VictoryAction();
     }
     private void ShowVictoryScreen()
     {
         if (conditionalMessage != null)
         {
+        }
+    }
+    private void VictoryAction()
+    {
+        if (victory) return;
+        victory = true;
+        Debug.Log("Victory action");
+        switch (victoryAction)
+        {
+            case LevelAction.SendToLevel:
+                LevelManager.instance.GeneralLoadLevel(levelToSwitchTo);
+                break;
+            case LevelAction.RestartLevel:
+                break;
+            case LevelAction.SendToMainMenu:
+                break;
+            default:
+                break;
         }
     }
 }

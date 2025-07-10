@@ -44,6 +44,7 @@ public class SpatialHash : MonoBehaviour
         Entity[] tempEntityArray = new Entity[global.GetNumEntities()];
         foreach (Entity ent in global.GetEntityList())
         {
+            if (ent == null) continue;
             int x = IntCoord(ent.transform.position.x);
             int y = IntCoord(ent.transform.position.z);
             int h = HashCoordinates(x, y); //compute hash value of the cell
@@ -60,6 +61,7 @@ public class SpatialHash : MonoBehaviour
         //fill in the particle array
         foreach (Entity ent in global.GetEntityList())
         {
+            if (ent == null) continue;
             int tableIndex = ent.GetHash();
             tempTable[tableIndex]--; //decrease it by one
             int particleIndex = tempTable[tableIndex];

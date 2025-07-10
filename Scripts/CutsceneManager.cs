@@ -21,17 +21,40 @@ public class CutsceneManager : MonoBehaviour
     }
     #endregion
 
-    public void LoadCutscene(int levelNum)
+    Action unloadAction;
+    void OnEnable()
     {
-        string level = LevelManager.instance.GetLevelName(levelNum) + "c";
-        SceneManager.LoadScene(level, LoadSceneMode.Additive);
-        UIManager.instance.HideAllUI();
+        SceneManager.sceneUnloaded += OnSceneUnloaded;
     }
-    public void EndCutscene(int levelNum)
+    void OnSceneUnloaded(Scene scene) //runs when scene is loaded
     {
-        string level = LevelManager.instance.GetLevelName(levelNum) + "c";
-        SceneManager.UnloadSceneAsync(level);
-        UIManager.instance.ChangeGameUIStatus(true);
-        UIManager.instance.ChangeCamStatus(true);
+        unloadAction?.Invoke();
+        unloadAction = null;
+    }
+    void OnDisable()
+    {
+        SceneManager.sceneUnloaded -= OnSceneUnloaded;
+    }
+    public string LevelCutsceneName(Level level)
+    {
+        return level.name + "c";
+    }
+    private bool cutscenePlaying = false;
+    public void LoadCutscene(Level level)
+    {
+        Debug.Log("Loading cutscene");
+        SceneManager.LoadSceneAsync(LevelCutsceneName(level), LoadSceneMode.Additive);
+        UIManager.instance.HideAllUI();
+        cutscenePlaying = true;
+    }
+    public void EndCutscene(Level level)
+    {
+        SceneManager.UnloadSceneAsync(LevelCutsceneName(level));
+        unloadAction = LevelManager.instance.BeginLevelGameplay; // show UI on unload
+        cutscenePlaying = false;
+    }
+    public bool Playing()
+    {
+        return cutscenePlaying;
     }
 }

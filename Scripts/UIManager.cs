@@ -26,6 +26,8 @@ public class UIManager : MonoBehaviour
     public Canvas gameCanvas;
 
     public GameObject mainCamParent;
+    public GameObject SPButtonsParent;
+    public TMP_Text levelObjective;
     private void Awake()
     {
         if (instance != null && instance != this)
@@ -52,10 +54,18 @@ public class UIManager : MonoBehaviour
     {
         ChangeLobbyUIStatus(false);
         ChangeGameUIStatus(false);
+        ChangeCamStatus(false);
     }
     public void ChangeLobbyUIStatus(bool val)
     {
         lobbyCanvas.enabled = val;
+        SPButtonsParent.SetActive(val);
+    }
+    public void ShowGameUI()
+    {
+        ChangeLobbyUIStatus(false);
+        ChangeGameUIStatus(true);
+        ChangeCamStatus(true);
     }
     public void ChangeGameUIStatus(bool val)
     {
@@ -64,5 +74,9 @@ public class UIManager : MonoBehaviour
     public void ChangeCamStatus(bool val)
     {
         mainCamParent.SetActive(val);
+    }
+    public void UpdateLevelObjective(string obj)
+    {
+        if (levelObjective != null) levelObjective.text = obj;
     }
 }

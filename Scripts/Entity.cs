@@ -1205,10 +1205,6 @@ public class Entity : NetworkBehaviour
     {
         return lootComponent != null;
     }
-    private new void OnDestroy()
-    {
-        PrepareForEntityDestruction();
-    }
     bool deathEffectPlayed = false;
     bool entityDestructionPrepped = false;
     public void PrepareForEntityDestruction()

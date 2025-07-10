@@ -7,7 +7,7 @@ using UnityEngine;
 /// </summary>
 public class AutoStartLevel : MonoBehaviour
 {
-    [SerializeField] private int levelNum = 1;
+    [SerializeField] private Level level;
     public enum Behavior
     {
         LoadLevel,
@@ -20,10 +20,10 @@ public class AutoStartLevel : MonoBehaviour
         switch (behavior)
         {
             case Behavior.LoadLevel:
-                LobbyManager.Instance.StartSinglePlayerGame(levelNum);
+                LevelManager.instance.LoadLevelDuringCutscene(level);
                 break;
             case Behavior.EndCutscene:
-                CutsceneManager.Instance.EndCutscene(levelNum);
+                CutsceneManager.Instance.EndCutscene(level);
                 break;
             default:
                 break;

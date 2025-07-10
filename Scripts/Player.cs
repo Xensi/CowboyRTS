@@ -95,17 +95,17 @@ public class Player : NetworkBehaviour
         if (!enable) return;
         if (playerFaction != null)
         {
+            gold = playerFaction.startingGold;
+            maxPopulation = playerFaction.startingMaxPopulation;
             //Debug.Log("Setting gold and pop");
-            if (LevelInfo.Instance.overrideDefaultValues)
+            /*if (LevelInfo.Instance.overrideDefaultValues)
             { 
                 gold = LevelInfo.Instance.goldValueOverride;
                 maxPopulation = LevelInfo.Instance.startMaxPopOverride;
             }
             else
             { 
-                gold = playerFaction.startingGold;
-                maxPopulation = playerFaction.startingMaxPopulation;
-            }
+            }*/
         }
         fow = FogOfWarTeam.GetTeam(playerTeamID);
         if (fow == null) Debug.LogError("No fow found");

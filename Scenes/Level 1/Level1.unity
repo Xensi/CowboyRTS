@@ -828,7 +828,7 @@ MonoBehaviour:
   - {fileID: 577371786}
   victoryCondition: 0
   victoryAction: 0
-  levelToSwitchTo: 0
+  levelToSwitchTo: {fileID: 11400000, guid: 1119bda2c90a8924bab13c1ce5de4e49, type: 2}
   levelGoal: Capture the saloon.
 --- !u!1 &26833601
 GameObject:

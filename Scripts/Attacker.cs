@@ -110,7 +110,7 @@ public class Attacker : SwingEntityAddon
         {
             if (longTermGoal == Goal.AttackFromIdle && !InChaseRange(targetEnemy))
             {
-                Debug.Log("Outside chase range"); 
+                //Debug.Log("Outside chase range"); 
                 HandleLackOfValidTargetEnemy();
                 return;
             }

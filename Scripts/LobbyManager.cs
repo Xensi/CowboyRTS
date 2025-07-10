@@ -68,6 +68,7 @@ public class LobbyManager : MonoBehaviour
         playerNameField.onEndEdit.AddListener(delegate { SavePlayerName(playerNameField.text); });
         //NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectedCallback;
         //NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnectCallback;
+        HostSingleplayer();
     }
     void OnApplicationQuit()
     {
@@ -526,21 +527,17 @@ public class LobbyManager : MonoBehaviour
     #region Singleplayer
 
     public UnityTransport singleplayerTransport;
-    public void StartSinglePlayerGame(int level)
+    /*public void StartSinglePlayerGame(Level level)
     {
         string levelName = LevelManager.instance.GetLevelName(level);
 
-        LevelManager.instance.LoadLevel(levelName, StartSinglePlayerGameCallback);
+        LevelManager.instance.LoadLevel(level, HostSingleplayer);
         if (startSPGameButton != null) startSPGameButton.gameObject.SetActive(false);
-    }
-    private void StartSinglePlayerGameCallback()
+    }*/
+    public void HostSingleplayer()
     {
-        if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
-        {
-            NetworkManager.Singleton.NetworkConfig.NetworkTransport = singleplayerTransport;
-            NetworkManager.Singleton.StartHost();
-        }
-        Global.instance.UpdateLevelObjective();
+        NetworkManager.Singleton.NetworkConfig.NetworkTransport = singleplayerTransport;
+        NetworkManager.Singleton.StartHost();
         //Debug.Log("How many players?" + Global.Instance.allPlayers.Count);
     }
     public void JoinLocalHost()

@@ -71,7 +71,6 @@ public class Global : NetworkBehaviour
 
     public TMP_Text reinforcementText;
     [HideInInspector] public ArbitraryUnitSpawner unitSpawnerToTrackReinforcements;
-    public TMP_Text levelObjective;
 
     public EntitySearcher entitySearcher;
     public CrosshairDisplay crosshairPrefab;
@@ -105,7 +104,6 @@ public class Global : NetworkBehaviour
     //Structure sound profile mapping:
     //0: spawn
     //1: selection
-
     public int GetMaxArmySize()
     {
         return maxArmySize;
@@ -189,10 +187,6 @@ public class Global : NetworkBehaviour
     public void PlayMinionAbilitySound(Entity entity)
     {
         if (entity.sounds.Length > 3) PlayClipAtPoint(entity.sounds[3], entity.transform.position, .5f, 1, true);
-    }
-    public void UpdateLevelObjective()
-    {
-        if (levelObjective != null) levelObjective.text = VictoryManager.Instance.levelGoal;
     }
     public Entity FindEntityFromObject(GameObject obj)
     {
