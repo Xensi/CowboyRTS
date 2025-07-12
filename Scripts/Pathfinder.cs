@@ -69,7 +69,7 @@ public class Pathfinder : EntityAddon
         if (setter != null && setter.target == null)
         { //create a target that our setter will use to update our pathfinding
             GameObject obj = new GameObject(ent.name + " pf target");
-            obj.transform.parent = Global.instance.transform;
+            //obj.transform.parent = Global.instance.transform;
             pathfindingTarget = obj.transform;
             pathfindingTarget.position = transform.position; //set to be on us
             setter.target = pathfindingTarget;

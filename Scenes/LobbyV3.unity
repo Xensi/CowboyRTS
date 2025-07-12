@@ -11046,7 +11046,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1357281858
 RectTransform:
   m_ObjectHideFlags: 0
@@ -13309,7 +13309,7 @@ Transform:
   m_GameObject: {fileID: 1793166350}
   serializedVersion: 2
   m_LocalRotation: {x: 0.38268343, y: 0, z: 0, w: 0.92387956}
-  m_LocalPosition: {x: 1.19, y: -8, z: -17.61}
+  m_LocalPosition: {x: 0.5, y: -8, z: -2.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -15895,6 +15895,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82e73b3aac0ef464aa40db3496d90676, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  localPlayer: {fileID: 0}
   selectionRect: {fileID: 736966070}
   colors:
   - {fileID: 2100000, guid: f6e72cb4d0f2f0a47895a02988eaae88, type: 2}
@@ -15914,7 +15915,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 48d2654104c708448a90a4bfe3b2baa9, type: 2}
   transparent: {fileID: 2100000, guid: deacb7294ee520949a07a572621051c9, type: 2}
   blocked: {fileID: 2100000, guid: af869502384536d4085a91bc91ee5517, type: 2}
-  localPlayer: {fileID: 0}
   footsteps:
   - {fileID: 8300000, guid: 39e24eb7f7c86b84f86f7e8e2b187f38, type: 3}
   - {fileID: 8300000, guid: b4ba03700a761f14ea918bc42c46e441, type: 3}
@@ -16030,6 +16030,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f73484938cf45754b962d3f7d721b96c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  levelStarted: 0
 --- !u!114 &2114043660
 MonoBehaviour:
   m_ObjectHideFlags: 0

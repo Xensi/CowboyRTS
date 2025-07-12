@@ -31,14 +31,12 @@ public class Attacker : SwingEntityAddon
     public Goal longTermGoal = Goal.None; 
     public Vector3 lastIdlePosition;
     public EntitySearcher assignedEntitySearcher;
-    private bool attackOver = false;
 
     public enum RequiredEnemyType { Any, Minion, Structure, MinionPreferred }
     public bool hasCalledEnemySearchAsyncTask = false;
     public Vector3 attackMoveDestination;
     public float sqrDistToTargetEnemy = Mathf.Infinity;
     private float sqrDistToAlternateTarget = Mathf.Infinity;
-    private readonly float minAttackMoveDestinationViabilityRange = 4;
     bool hasSelfDestructed = false;
 
 

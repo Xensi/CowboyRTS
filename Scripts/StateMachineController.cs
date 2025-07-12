@@ -101,9 +101,8 @@ public class StateMachineController : NetworkBehaviour
     {
         Initialize();
         enemyMask = LayerMask.GetMask("Entity", "Obstacle");
-        nearbyIndexer = 0;
     }
-    [HideInInspector] public Entity ent;
+    public Entity ent;
     [HideInInspector] public Collider col;
     [HideInInspector] private Rigidbody rigid;
     public Attacker attacker;
@@ -184,7 +183,8 @@ public class StateMachineController : NetworkBehaviour
     
     private void Update()
     {
-        //update real location, or catch up
+        if (!LevelManager.instance.LevelStarted()) return;
+        //update real location, or catch up 
         if (!ent.fakeSpawn && IsSpawned)
         {
             ent.pf.GetActualPositionChange();
@@ -881,9 +881,9 @@ public class StateMachineController : NetworkBehaviour
     {
         CancelAllAsyncTasks();
 
-        if (ent.controllerOfThis is RTSPlayer)
+        if (ent.playerControllingThis is RTSPlayer)
         {
-            RTSPlayer rts = ent.controllerOfThis as RTSPlayer;
+            RTSPlayer rts = ent.playerControllingThis as RTSPlayer;
             //rts.selectedEntities.Remove(ent);
         }
         ent.Select(false);
@@ -957,7 +957,7 @@ public class StateMachineController : NetworkBehaviour
     }
     private Entity FindClosestBuildable()
     {
-        List<Entity> list = ent.controllerOfThis.ownedEntities;
+        List<Entity> list = ent.playerControllingThis.ownedEntities;
 
         Entity closest = null;
         float distance = Mathf.Infinity;
@@ -976,16 +976,6 @@ public class StateMachineController : NetworkBehaviour
         return closest;
     }
 
-    #region FindClosest
-
-
-    //could try cycling through entire list of enemy units .. .
-    //SelectableEntity currentClosestEnemy = null;
-    int nearbyIndexer = 0;
-
-
-
-    #endregion
 
     #region Attacks  
     public void AIAttackMove(Vector3 target)

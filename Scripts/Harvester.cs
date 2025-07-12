@@ -144,8 +144,8 @@ public class Harvester : SwingEntityAddon
     private Entity FindClosestHarvestable()
     {
         //Debug.Log("Finding closest harvestable");
-        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)ent.controllerOfThis.playerTeamID);
-        List<Ore> oreList = ent.controllerOfThis.friendlyOres;
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)ent.playerControllingThis.playerTeamID);
+        List<Ore> oreList = ent.playerControllingThis.friendlyOres;
 
         Entity closest = null;
         float distance = Mathf.Infinity;
@@ -169,7 +169,7 @@ public class Harvester : SwingEntityAddon
     }
     private Entity FindClosestDeposit() //right now resource agnostic
     {
-        List<Depot> list = ent.controllerOfThis.ownedDepots;
+        List<Depot> list = ent.playerControllingThis.ownedDepots;
 
         Entity closest = null;
         float distance = Mathf.Infinity;
@@ -214,7 +214,6 @@ public class Harvester : SwingEntityAddon
             }
         }
     }
-    private bool harvestOver = false;
     public void HarvestingState()
     {
         if (sm == null) return;
@@ -305,13 +304,13 @@ public class Harvester : SwingEntityAddon
                         case ResourceType.All:
                             break;
                         case ResourceType.Gold:
-                            ent.controllerOfThis.gold++;
+                            ent.playerControllingThis.gold++;
                             break;
                         case ResourceType.Wood:
-                            ent.controllerOfThis.wood++;
+                            ent.playerControllingThis.wood++;
                             break;
                         case ResourceType.Cactus:
-                            ent.controllerOfThis.cactus++;
+                            ent.playerControllingThis.cactus++;
                             break;
                         default:
                             break;

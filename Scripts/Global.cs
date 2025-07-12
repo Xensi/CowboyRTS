@@ -12,6 +12,7 @@ using UtilityMethods;
 public class Global : NetworkBehaviour
 {
     public static Global instance { get; private set; }
+    public RTSPlayer localPlayer;
     public readonly string FRIENDLY_ENTITY = "Entity";
     public readonly string ENEMY_ENTITY = "EnemyEntity";
     public RectTransform selectionRect;
@@ -21,7 +22,6 @@ public class Global : NetworkBehaviour
     public List<Faction> factions;
     public Material transparent;
     public Material blocked;
-    [HideInInspector] public RTSPlayer localPlayer;
     public AudioClip[] footsteps;
     public Transform queueParent;
     public GameObject explosionPrefab;

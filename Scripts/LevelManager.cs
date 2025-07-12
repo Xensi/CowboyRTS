@@ -15,7 +15,7 @@ public class LevelManager : MonoBehaviour
     {
         levelStarted = val;
     }
-    public bool GetLevelStarted()
+    public bool LevelStarted()
     {
         return levelStarted;
     }
@@ -116,7 +116,8 @@ public class LevelManager : MonoBehaviour
     public void BeginLevelGameplay()
     {
         UIManager.instance.ShowGameUI();
-        //SetLevelStarted(true);
+        SetLevelStarted(true);
+        Global.instance.localPlayer.MoveCamToSpawn();
     }
     public void UpdateLevelObjective()
     {

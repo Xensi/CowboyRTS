@@ -16,10 +16,8 @@ public class AIPlayer : Player
     private readonly float minimumDecisionTime = 2;
     private float decisionTime = 1; 
     private readonly float maximumDecisionTime = 30;
-    private float actionTime = 3;
     [SerializeField] private float attackTime = 5;
     public float timer = 0;
-    private float attackTimer = 0;
     public Transform spawnPosition;
     public List<Entity> knownEnemyStructures = new();
     public List<Entity> knownEnemyUnits = new();

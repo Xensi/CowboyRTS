@@ -58,7 +58,7 @@ public class Entity : NetworkBehaviour
     [HideInInspector] public NavmeshCut obstacle;
     [HideInInspector] public int localTeamNumber = 0;
     [HideInInspector] public sbyte desiredTeamNumber = 0; //Set when spawned by AI. Only matters if negative
-    [HideInInspector] public byte clientIDToSpawnUnder = 0;
+    [HideInInspector] public byte originalSpawnerClientID = 0;
     [HideInInspector] public bool aiControlled = false;
     [HideInInspector] public Collider[] allPhysicalColliders;
     //public CrosshairDisplay crosshairAssignedToEnemy;
@@ -93,8 +93,6 @@ public class Entity : NetworkBehaviour
     private AreaEffector[] areaEffectors;
     //when fog of war changes, check if we should hide or show attack effects
     private bool damaged = false;
-    private readonly int delay = 50;
-    private int count = 0;
     #region Variables
     [Header("Behavior Settings")]
     [HideInInspector] public string displayName = "name";
@@ -142,7 +140,7 @@ public class Entity : NetworkBehaviour
     #region NetworkSpawn 
     //private bool hasRegisteredRallyMission = false;
     private List<Material> savedMaterials = new();
-    public Player controllerOfThis;
+    public Player playerControllingThis;
 
     private bool oneTimeForceUpdateFog = false;
     //[SerializeField]
@@ -176,8 +174,8 @@ public class Entity : NetworkBehaviour
     [HideInInspector] public Attacker attacker;
     public CaptureFlag capFlag;
     #endregion
-    #region Just Spawned Code
-    #region Awake Code 
+
+    #region Standard
     private void Awake() //Awake should be used to initialize component automatically
     { //in scene placed: Awake, Start, NetworkSpawn //Dynamic: awake, networkspawn, start 
         //Debug.Log("Awake");
@@ -185,6 +183,109 @@ public class Entity : NetworkBehaviour
         InitializeEntityInfo();
         initialized = true;
     }
+    private void Start() //Non netcode related initialization
+    {
+        EntitySetup();
+        if (teamType == TeamBehavior.OwnerTeam && !spawnedBySpawner) ChangePopulation(consumePopulationAmount);
+        Select(false);
+        ChangeSelectIndicatorStatus(selected);
+        SetStartingSelectionRadius();
+        SetInitialVisuals();
+        SetFinishedRenderersVisibility(false);
+        TryToRegisterRallyMission();
+        if (teamType == TeamBehavior.OwnerTeam) Global.instance.AddEntityToMainList(this);
+        InitializeBars();
+        DetermineLayerBasedOnAllegiance();
+        if (spawnedBySpawner) PlaySpawnSound();
+        CustomNetworkSpawn(GetOwnerClientID());
+    }
+    /// <summary>
+    /// Spawns in entity and syncs it with the network. 
+    /// Pass in OwnerClientID if spawning under owner's control.
+    /// </summary>
+    /// <param name="spawnerClientID"></param>
+    public void CustomNetworkSpawn(byte spawnerClientID)
+    {
+        if (NetworkManager.ConnectedClients.ContainsKey(spawnerClientID) && !IsSpawned)
+        {
+            originalSpawnerClientID = spawnerClientID;
+            //Debug.Log("Granting ownership of " + select.name + " to client " + clientID); 
+            if (net == null) net = GetComponent<NetworkObject>();
+            net.SpawnWithOwnership(spawnerClientID);
+        }
+    }
+    public override void OnNetworkSpawn() //Netcode related initialization ONLY
+    {
+        //Debug.Log("Network Spawn");
+
+        if (IsServer)
+        {
+            currentHP.Value = startingHP;
+        }
+        currentHP.OnValueChanged += OnHitPointsChanged;
+
+        localTeamNumber = System.Convert.ToInt32(OwnerClientId);
+
+        if (IsOwner)
+        {
+            InitializeBasedOffController();
+            //place effect dependent on "controller of this" being defined after this line!
+            if (playerControllingThis != null)
+            {
+                StartGameAddToEnemyLists();
+                if (fogUnit != null) fogUnit.team = playerControllingThis.playerTeamID;
+            }
+            DetectIfShouldUnghost();
+            DetectIfBuilt();
+        }
+    }
+    private void Update()
+    {
+        if (!LevelManager.instance.LevelStarted()) return;
+        if (IsSpawned)
+        {
+            DetectIfShouldDie();
+            if (HasStateMachine() && sm.InState(EntityStates.Die)) return;
+            UpdateVisibilityFromFogOfWar();
+            DetectIfShouldUnghost();
+            DetectIfBuilt();
+            UpdateInteractors();
+            //UpdateSelectionCirclePosition();
+            if (fullyBuilt)
+            {
+                UpdateRallyVariables();
+                UpdateTimers();
+                UpdateAppliedEffects();
+                UpdateUsedAbilities();
+                DetectChangeHarvestedResourceAmount();
+                //DetectIfDamaged();
+                UpdateEntityAddons();
+
+                /*if (IsOwner)
+                {
+                    OwnerUpdateBuildQueue();
+                }*/
+            }
+        }
+    }
+    void LateUpdate() //Orient the camera after all movement is completed this frame to avoid jittering
+    {
+        if (!LevelManager.instance.LevelStarted()) return;
+        UpdateHealthBarPosition();
+    }
+    private new void OnDestroy()
+    {
+        if (healthBar != null) healthBar.Delete();
+        if (productionProgressBar != null) productionProgressBar.Delete();
+    }
+    #endregion
+    private byte GetOwnerClientID()
+    {
+        return (byte)OwnerClientId;
+    }
+
+    #region Just Spawned Code
+    #region Awake Code 
     private void Initialize()
     {
         //Used by all entities
@@ -288,33 +389,10 @@ public class Entity : NetworkBehaviour
         }
     }
     #endregion 
-    public override void OnNetworkSpawn() //Netcode related initialization ONLY
-    {
-        //Debug.Log("Network Spawn");
-
-        if (IsOwner)
-        {
-            InitializeBasedOffController();
-
-            //place effect dependent on "controller of this" being defined after this line!
-            if (controllerOfThis != null)
-            {
-                StartGameAddToEnemyLists();
-                if (fogUnit != null) fogUnit.team = controllerOfThis.playerTeamID;
-            }
-        }
-        if (IsServer)
-        {
-            currentHP.Value = startingHP;
-        }
-        currentHP.OnValueChanged += OnHitPointsChanged;
-
-        localTeamNumber = System.Convert.ToInt32(net.OwnerClientId);
-    }
     #region Network Spawn Code
     private void InitializeBasedOffController()
     {
-        if (controllerOfThis != null)
+        if (playerControllingThis != null)
         {
             ControllerFound();
         }
@@ -325,10 +403,10 @@ public class Entity : NetworkBehaviour
     }
     private void ControllerFound() // placed in scene manually and AI controlled
     { 
-        teamNumber.Value = (sbyte)controllerOfThis.playerTeamID;
+        teamNumber.Value = (sbyte)playerControllingThis.playerTeamID;
         if (teamType == TeamBehavior.OwnerTeam)
         {
-            AddToPlayerOwnedLists(controllerOfThis);
+            AddToPlayerOwnedLists(playerControllingThis);
         }
     }
     private void ControllerNull()
@@ -353,8 +431,8 @@ public class Entity : NetworkBehaviour
     { 
         RTSPlayer playerController = Global.instance.localPlayer;
         playerController.lastSpawnedEntity = this;
-        controllerOfThis = playerController;
-        AddToPlayerOwnedLists(this.controllerOfThis);
+        playerControllingThis = playerController;
+        AddToPlayerOwnedLists(this.playerControllingThis);
         if (!fullyBuilt)
         {
             RequestBuilders();
@@ -377,8 +455,8 @@ public class Entity : NetworkBehaviour
         if (teamType == TeamBehavior.OwnerTeam)
         {
             AIPlayer AIController = Global.instance.aiPlayers[Mathf.Abs(desiredTeamNumber) - 1];
-            controllerOfThis = AIController;
-            AddToPlayerOwnedLists(controllerOfThis);
+            playerControllingThis = AIController;
+            AddToPlayerOwnedLists(playerControllingThis);
         }
     } 
     #endregion
@@ -400,11 +478,11 @@ public class Entity : NetworkBehaviour
         {
             lineIndicator.enabled = false;
         }
-        if (targetIndicator != null)
+        /*if (targetIndicator != null)
         {
             targetIndicator.transform.parent = Global.instance.transform;
-        }
-        aiControlled = desiredTeamNumber < 0 || controllerOfThis is AIPlayer;
+        }*/
+        aiControlled = desiredTeamNumber < 0 || playerControllingThis is AIPlayer;
         if (isKeystone && Global.instance.localPlayer.IsTargetExplicitlyOnOurTeam(this))
         {
             Global.instance.localPlayer.keystoneUnits.Add(this);
@@ -435,54 +513,6 @@ public class Entity : NetworkBehaviour
             }
         }
     }
-    private void Start() //Non netcode related initialization
-    {
-        EntitySetup();
-        if (teamType == TeamBehavior.OwnerTeam && !spawnedBySpawner) ChangePopulation(consumePopulationAmount);
-        Select(false);
-        ChangeSelectIndicatorStatus(selected);
-        SetStartingSelectionRadius();
-        SetInitialVisuals();
-        SetFinishedRenderersVisibility(false);
-        TryToRegisterRallyMission();
-        if (teamType == TeamBehavior.OwnerTeam) Global.instance.AddEntityToMainList(this);
-        InitializeBars();
-        DetermineLayerBasedOnAllegiance();
-        if (spawnedBySpawner) PlaySpawnSound();
-    }
-
-    private void Update()
-    {
-        if (IsSpawned)
-        {
-            DetectIfShouldDie();
-            if (HasStateMachine() && sm.InState(EntityStates.Die)) return;
-            UpdateVisibilityFromFogOfWar();
-            DetectIfShouldUnghost();
-            DetectIfBuilt();
-            UpdateInteractors();
-            //UpdateSelectionCirclePosition();
-            if (fullyBuilt)
-            {
-                UpdateRallyVariables();
-                UpdateTimers();
-                UpdateAppliedEffects();
-                UpdateUsedAbilities();
-                DetectChangeHarvestedResourceAmount();
-                //DetectIfDamaged();
-                UpdateEntityAddons();
-
-                /*if (IsOwner)
-                {
-                    OwnerUpdateBuildQueue();
-                }*/
-            }
-        }
-    }
-    void LateUpdate() //Orient the camera after all movement is completed this frame to avoid jittering
-    {
-        UpdateHealthBarPosition();
-    }
 
     private void UpdateRallyVariables()
     {
@@ -491,7 +521,7 @@ public class Entity : NetworkBehaviour
     #region Start() Code
     private void DetermineLayerBasedOnAllegiance()
     { 
-        if (controllerOfThis != null && controllerOfThis.allegianceTeamID != Global.instance.localPlayer.allegianceTeamID)
+        if (playerControllingThis != null && playerControllingThis.allegianceTeamID != Global.instance.localPlayer.allegianceTeamID)
         {   //this should be counted as an enemy 
             gameObject.layer = LayerMask.NameToLayer("EnemyEntity");
         }
@@ -523,7 +553,6 @@ public class Entity : NetworkBehaviour
         Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(transform.position, GetRadius());*/
     }
-    private int oldHarvestedResourceAmount = 0;
     private void DetectChangeHarvestedResourceAmount()
     {
         if (!IsHarvester()) return;
@@ -591,6 +620,7 @@ public class Entity : NetworkBehaviour
     }
     private void AddToPlayerOwnedLists(Player player)
     {
+        if (player == null) return;
         player.ownedEntities.Add(this);
         if (IsMinion()) player.ownedMinions.Add(sm);
         if (IsBuilder()) player.ownedBuilders.Add(sm);
@@ -622,7 +652,7 @@ public class Entity : NetworkBehaviour
             //selectIndicator.gameObject.SetActive(true);
             selectIndicator.UpdateVisibility(val);
             Color selectColor = Color.green;
-            if (Global.instance.localPlayer != controllerOfThis)
+            if (Global.instance.localPlayer != playerControllingThis)
             {
                 selectColor = Color.red;
             }
@@ -686,7 +716,7 @@ public class Entity : NetworkBehaviour
             if (item != null)
             {
                 ///item.material = Global.Instance.colors[System.Convert.ToInt32(net.OwnerClientId)];
-                if (item.material != null && controllerOfThis != null) item.material.color = controllerOfThis.playerColor;
+                if (item.material != null && playerControllingThis != null) item.material.color = playerControllingThis.playerColor;
             }
         }
     }
@@ -1075,6 +1105,7 @@ public class Entity : NetworkBehaviour
     private float attackEffectTimer = 0;
     private void FixedUpdate()
     {
+        if (!LevelManager.instance.LevelStarted()) return;
         if (IsSpawned && IsOwner && fullyBuilt)
         {
             //walking sounds. client side only
@@ -1138,11 +1169,11 @@ public class Entity : NetworkBehaviour
         //Debug.Log("num players " + Global.Instance.allPlayers.Count);
         foreach (Player player in Global.instance.allPlayers)
         {
-            if (controllerOfThis == null) break;
+            if (playerControllingThis == null) break;
             if (player == null) continue;
             //Debug.Log(controllerOfThis.name + "name, id" + controllerOfThis.allegianceTeamID + "versus name id " + player.name + player.allegianceTeamID);
 
-            if (controllerOfThis.allegianceTeamID != player.allegianceTeamID)
+            if (playerControllingThis.allegianceTeamID != player.allegianceTeamID)
             {
                 if (!checkedPlayers.Contains(player))
                 {
@@ -1157,9 +1188,9 @@ public class Entity : NetworkBehaviour
     {
         foreach (Player player in Global.instance.allPlayers)
         {
-            if (controllerOfThis == null) break;
+            if (playerControllingThis == null) break;
             if (player == null) continue;
-            if (controllerOfThis.allegianceTeamID != player.allegianceTeamID)
+            if (playerControllingThis.allegianceTeamID != player.allegianceTeamID)
             {
                 player.enemyEntities.Add(this);
             }
@@ -1174,9 +1205,9 @@ public class Entity : NetworkBehaviour
     {
         foreach (Player player in Global.instance.allPlayers)
         {
-            if (controllerOfThis == null) break;
+            if (playerControllingThis == null) break;
             if (player == null) continue;
-            if (controllerOfThis.allegianceTeamID != player.allegianceTeamID)
+            if (playerControllingThis.allegianceTeamID != player.allegianceTeamID)
             {
                 player.enemyEntities.Remove(this);
                 player.visibleEnemies.Remove(this);
@@ -1229,12 +1260,12 @@ public class Entity : NetworkBehaviour
         if (selectIndicator != null) Destroy(selectIndicator.gameObject);
 
         ClearObstacle();
-        RemoveFromEnemyLists(); 
-        if (healthBar != null) healthBar.Delete();
-        if (productionProgressBar != null) productionProgressBar.Delete();
+        RemoveFromEnemyLists();
+        if (healthBar != null) healthBar.SetVisible(false);
+        if (productionProgressBar != null) productionProgressBar.SetVisible(false);
         Global.instance.RemoveEntityFromMainList(this);
 
-        RemoveFromPlayerLists(controllerOfThis); 
+        RemoveFromPlayerLists(playerControllingThis); 
 
         if (IsOwner)
         {
@@ -1370,13 +1401,20 @@ public class Entity : NetworkBehaviour
     }
     public bool IsEnemyOfPlayer(Player player)
     {
-        return controllerOfThis.allegianceTeamID != player.allegianceTeamID;
+        if (playerControllingThis != null && player != null)
+        {
+            return playerControllingThis.allegianceTeamID != player.allegianceTeamID;
+        }
+        else
+        {
+            return false;
+        }
     }
     public bool IsEnemyOfTarget(Entity target)
     {
-        if (target != null)
+        if (target != null && target.playerControllingThis != null && playerControllingThis != null)
         {
-            return target.controllerOfThis.allegianceTeamID != controllerOfThis.allegianceTeamID;
+            return target.playerControllingThis.allegianceTeamID != playerControllingThis.allegianceTeamID;
         }
         return false;
         //return target.teamNumber.Value != entity.teamNumber.Value;
@@ -1449,9 +1487,9 @@ public class Entity : NetworkBehaviour
     private void RequestBuilders()
     {
         //Debug.Log("request builders");
-        for (int i = 0; i < controllerOfThis.GetNumSelected(); i++)
+        for (int i = 0; i < playerControllingThis.GetNumSelected(); i++)
         {
-            Entity item = controllerOfThis.selectedEntities[i];
+            Entity item = playerControllingThis.selectedEntities[i];
 
             if (item != null && item.IsBuilder())
             {
@@ -1636,14 +1674,14 @@ public class Entity : NetworkBehaviour
 
         if (IsOwner)
         {
-            if (controllerOfThis != null) controllerOfThis.unbuiltStructures.Remove(this);
+            if (playerControllingThis != null) playerControllingThis.unbuiltStructures.Remove(this);
         }
     }
     private void ChangeMaxPopulation(int change)
     {
         if (IsOwner && teamType == TeamBehavior.OwnerTeam)
         {
-            if (controllerOfThis != null) controllerOfThis.maxPopulation += change;
+            if (playerControllingThis != null) playerControllingThis.maxPopulation += change;
             //Debug.Log(controllerOfThis.maxPopulation);
             //Global.Instance.localPlayer.maxPopulation += change;
         }
@@ -1653,9 +1691,9 @@ public class Entity : NetworkBehaviour
         if (IsOwner && teamType == TeamBehavior.OwnerTeam)
         {
             //Global.Instance.localPlayer.population += change;
-            if (controllerOfThis != null)
+            if (playerControllingThis != null)
             {
-                controllerOfThis.population = Mathf.Clamp(controllerOfThis.population + change, 0, 999);
+                playerControllingThis.population = Mathf.Clamp(playerControllingThis.population + change, 0, 999);
             }
         }
     }
@@ -1821,7 +1859,8 @@ public class Entity : NetworkBehaviour
     }
     public int GetAllegiance()
     {
-        return controllerOfThis.allegianceTeamID;
+        if (playerControllingThis != null) return playerControllingThis.allegianceTeamID;
+        else return 0;
     }
     /// <summary>
     /// Has the same allegiance; Not necessarily controlled by us.
@@ -1829,17 +1868,24 @@ public class Entity : NetworkBehaviour
     /// <returns></returns>
     public bool IsAlliedTo(Player player)
     {
-        return GetAllegiance() == player.allegianceTeamID;
+        if (player != null)
+        {
+            return GetAllegiance() == player.allegianceTeamID;
+        }
+        else
+        {
+            return false;
+        }
     }
     public void CaptureForLocalPlayer() //switch team of entity
     {
         //Debug.Log("capturing");
-        this.controllerOfThis = Global.instance.localPlayer;
-        if (this.controllerOfThis != null)
+        this.playerControllingThis = Global.instance.localPlayer;
+        if (this.playerControllingThis != null)
         {
-            teamNumber.Value = (sbyte)this.controllerOfThis.playerTeamID;
+            teamNumber.Value = (sbyte)this.playerControllingThis.playerTeamID;
 
-            if (fogUnit != null) fogUnit.team = this.controllerOfThis.playerTeamID;
+            if (fogUnit != null) fogUnit.team = this.playerControllingThis.playerTeamID;
         }
         UpdateTeamRenderers();
 
@@ -1903,7 +1949,7 @@ public class Entity : NetworkBehaviour
         {
             selected = false;
         }
-        if (controllerOfThis != null) controllerOfThis.UpdateSelectedEntities(this, val);
+        if (playerControllingThis != null) playerControllingThis.UpdateSelectedEntities(this, val);
         UpdateIndicator(selected);
     }
 

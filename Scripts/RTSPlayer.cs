@@ -105,6 +105,7 @@ public class RTSPlayer : Player
     }
     public override void OnNetworkSpawn()
     {
+        Debug.Log("RTSPlayer Spawned");
         playerTeamID = System.Convert.ToInt32(OwnerClientId);
         Global.instance.uninitializedPlayers.Add(this);
         RetrieveSpawnPositionsList();
@@ -152,6 +153,7 @@ public class RTSPlayer : Player
         UpdateGridVisual();
         DetectHotkeys();
         CameraMove();
+        UpdateGUIBasedOnSelectedUnitCount();
         if (!MouseOverUI())
         {
             GetMouseWorldPosition();
@@ -338,9 +340,9 @@ public class RTSPlayer : Player
     #endregion
 
     #region Cam
-    private void MoveCamToSpawn()
+    public void MoveCamToSpawn()
     {
-        Vector3 spawn = playerSpawns.spawnsList[Convert.ToInt32(OwnerClientId)].position;
+        Vector3 spawn = LevelInfo.Instance.spawnsList[Convert.ToInt32(OwnerClientId)].position;
         camParent.position = new Vector3(spawn.x, camParent.position.y, spawn.z);
     }
     private LevelInfo playerSpawns;
@@ -377,7 +379,7 @@ public class RTSPlayer : Player
         for (int i = 0; i < hits; i++)
         {
             Entity checkEntity = Global.instance.FindEntityFromObject(raycastHits[i].collider.gameObject);
-            if (hitEntity == null || checkEntity.controllerOfThis != null && checkEntity.controllerOfThis.allegianceTeamID != allegianceTeamID)
+            if (hitEntity == null || checkEntity.playerControllingThis != null && checkEntity.playerControllingThis.allegianceTeamID != allegianceTeamID)
             {
                 //enemy takes priority over allies 
                 hitEntity = checkEntity;
@@ -524,7 +526,7 @@ public class RTSPlayer : Player
     private bool SameAllegiance(Entity foreign)
     {   //later update this so it works with allegiances
         //return foreign.controllerOfThis == this;
-        return foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
+        return foreign.playerControllingThis.allegianceTeamID == allegianceTeamID;
         //return foreign.teamNumber.Value == (sbyte)playerTeamID;
         //foreign.controllerOfThis.allegianceTeamID == allegianceTeamID;
     }
@@ -1255,7 +1257,7 @@ public class RTSPlayer : Player
                 //grant ownership 
                 if (NetworkManager.ConnectedClients.ContainsKey(clientID))
                 {
-                    select.clientIDToSpawnUnder = clientID;
+                    select.originalSpawnerClientID = clientID;
                     Debug.Log("Granting ownership of " + select.name + " to client " + clientID);
                     if (select.net == null) select.net = select.GetComponent<NetworkObject>();
 
@@ -1355,20 +1357,23 @@ public class RTSPlayer : Player
         }*/
         ServerSpawnMinion(spawnPosition, entity, clientID, spawner);
     }
-    private void ServerSpawnMinion(Vector3 spawnPosition, FactionEntity unit, byte clientID, NetworkBehaviourReference spawner)
+    /// <summary>
+    /// Server spawns in the minion. Only the server has the authority to spawn in entities.
+    /// </summary>
+    /// <param name="spawnPosition"></param>
+    /// <param name="unit"></param>
+    /// <param name="spawnerClientID"></param>
+    /// <param name="spawner"></param>
+    private void ServerSpawnMinion(Vector3 spawnPosition, FactionEntity unit, byte spawnerClientID, NetworkBehaviourReference spawner)
     {
         if (!IsServer) return;
-
         //FactionUnit fac = _faction.entities[minionID]; //get information about minion based on ID
         if (unit != null && unit.prefabToSpawn != null)
         {
             //Debug.Log("SERVER: spawning " + unit.productionName);
-            GameObject minion = Instantiate(unit.prefabToSpawn.gameObject, spawnPosition, Quaternion.identity); //spawn the minion
+            GameObject minionObj = Instantiate(unit.prefabToSpawn.gameObject, spawnPosition, Quaternion.identity); //spawn the minion
             Entity select = null;
-            if (minion != null)
-            {
-                select = minion.GetComponent<Entity>(); //get select
-            }
+            if (minionObj != null) select = minionObj.GetComponent<Entity>(); //get select
             if (select != null)
             {
                 if (spawner.TryGet(out Spawner spawnerEntity))
@@ -1377,29 +1382,7 @@ public class RTSPlayer : Player
                     //select.controllerOfThis = spawnerEntity.GetController();
                     select.SetSpawnedBySpawner();
                 }
-                //grant ownership 
-                if (NetworkManager.ConnectedClients.ContainsKey(clientID))
-                {
-                    select.clientIDToSpawnUnder = clientID;
-                    //Debug.Log("Granting ownership of " + select.name + " to client " + clientID); 
-                    if (select.net == null) select.net = select.GetComponent<NetworkObject>(); 
-                    select.net.SpawnWithOwnership(clientID);
-                    //change fog of war unit to the correct team
-                    //select.localTeamNumber = clientID;
-                    //if (select.fogUnit != null) select.fogUnit.team = clientID;
-
-                    //change teamrenderers to correct color
-
-                    //use client rpc to send this ID to client
-                    ClientRpcParams clientRpcParams = new ClientRpcParams
-                    {
-                        Send = new ClientRpcSendParams
-                        {
-                            TargetClientIds = new ulong[] { clientID }
-                        }
-                    }; 
-                    //SendReferenceToSpawnedMinionClientRpc((ushort)select.NetworkObjectId, spawner, clientRpcParams);
-                }
+                select.CustomNetworkSpawn(spawnerClientID);
             }
         }
     }

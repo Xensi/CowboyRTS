@@ -31,7 +31,7 @@ public class Spawner : EntityAddon
     }
     public Player GetController()
     {
-        return ent.controllerOfThis;
+        return ent.playerControllingThis;
     }
     private EntityHealthBar GetProductionBar()
     {
@@ -60,7 +60,7 @@ public class Spawner : EntityAddon
     {
         bool blocked = false;
         if (target != null && target.IsMinion() && target.sm.givenMission != RallyMission.Move
-            && target.controllerOfThis == GetController() && !target.sm.InState(EntityStates.Walk))
+            && target.playerControllingThis == GetController() && !target.sm.InState(EntityStates.Walk))
         {
             //tell blocker to get out of the way.
             float randRadius = 1;

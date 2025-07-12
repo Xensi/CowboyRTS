@@ -27,6 +27,7 @@ public class CaptureFlag : MonoBehaviour
     }
     private void Update()
     {
+        if (!LevelManager.instance.LevelStarted()) return;
         SetFlagPosition();
         CheckIfFlagShouldSwitch();
     }
@@ -100,7 +101,7 @@ public class CaptureFlag : MonoBehaviour
     {
         foreach (Entity item in captureEntities)
         {
-            if (item != null && item.controllerOfThis != Global.instance.localPlayer)
+            if (item != null && item.playerControllingThis != Global.instance.localPlayer)
             {
                 item.CaptureForLocalPlayer();
             }

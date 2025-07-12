@@ -11,13 +11,15 @@ public class VictoryManager : MonoBehaviour
 
     private enum VictoryCondition
     {
-        DestroyAllPlayerUnits
+        None,
+        DestroyAllPlayerUnits,
     } 
 
     [SerializeField] private VictoryCondition victoryCondition = VictoryCondition.DestroyAllPlayerUnits;
 
     private enum LevelAction
     {
+        None,
         SendToLevel, //plays the level cutscene first
         RestartLevel,
         SendToMainMenu
@@ -44,7 +46,7 @@ public class VictoryManager : MonoBehaviour
     }
     private void EvaluateVictoryConditions()
     {
-        if (victory || !LevelManager.instance.GetLevelStarted()) return;
+        if (victory || !LevelManager.instance.LevelStarted()) return;
         bool victoryAchieved = true;
         foreach (Player player in watchedPlayers)
         {

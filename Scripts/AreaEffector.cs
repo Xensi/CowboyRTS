@@ -39,6 +39,7 @@ public class AreaEffector : MonoBehaviour
     }
     private void Update()
     {
+        if (!LevelManager.instance.LevelStarted()) return;
         timer += Time.deltaTime;
         if (timer >= timeToApply)
         {

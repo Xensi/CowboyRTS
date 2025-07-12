@@ -11,8 +11,7 @@ public class EntitySearcher : MonoBehaviour
 {
     [SerializeField] private List<StateMachineController> assignedUnits = new();
     private float timer = 0;
-    private float searchTime = 0.1f; 
-    private int searchedCount = 0; //up to where in array search results are valid
+    private float searchTime = 0.1f;
     [SerializeField] private float searchRadius = 4;
     public int structureCount = 0;
     public Entity[] searchedStructures = new Entity[0];
