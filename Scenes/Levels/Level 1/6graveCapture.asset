@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f17ac8ae0b16ee14880cc169aa872a25, type: 3}
+  m_Name: 6graveCapture
+  m_EditorClassIdentifier: 
+  messageContents: You have captured a new grave, which expands your maximum army
+    size by 5. You cannot raise more units if your army is full.
+  conditions: 00000000
+  mouseInput: 0
+  entityToCheck: {fileID: 0}
+  numEntitiesToCheck: 1
+  playerNeedsToClickToContinue: 1

@@ -61,14 +61,16 @@ public class LobbyManager : MonoBehaviour
 
     private async void Start()
     {
+        //NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectedCallback;
+        //NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnectCallback;
+        HostSingleplayer();
+
+        return; //continue only if we're doing lobby stuff
         if (playerName == "") playerName = "anonymous";
         playerName = PlayerPrefs.GetString(PLAYERNAME);
         playerNameField.text = playerName;
         await Authenticate(); //sign in
         playerNameField.onEndEdit.AddListener(delegate { SavePlayerName(playerNameField.text); });
-        //NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectedCallback;
-        //NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnectCallback;
-        HostSingleplayer();
     }
     void OnApplicationQuit()
     {
@@ -79,9 +81,12 @@ public class LobbyManager : MonoBehaviour
     }
     private void Update()
     {
-        HandleLobbyHeartBeat();
-        HandleLobbyPollForUpdates();
-        UpdateButtons();
+        if (hostLobby != null)
+        {
+            HandleLobbyHeartBeat();
+            HandleLobbyPollForUpdates();
+            UpdateButtons();
+        }
     }
     #region Multiplayer
     private void SavePlayerName(string name)

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f8a5a04a3b145299afb77db9d03c233, type: 3}
   m_Name: shake
   m_EditorClassIdentifier: 
-  effectTag: violent_shake
+  effectTag: shake
   startCharIndex: 0
   charLength: 0
   animationType: 2

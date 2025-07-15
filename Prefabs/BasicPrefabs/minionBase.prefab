@@ -263,7 +263,7 @@ MonoBehaviour:
   obstacle: {fileID: 0}
   localTeamNumber: 0
   desiredTeamNumber: 0
-  clientIDToSpawnUnder: 0
+  originalSpawnerClientID: 0
   aiControlled: 0
   allPhysicalColliders: []
   createdCrosshair: {fileID: 0}
@@ -308,7 +308,7 @@ MonoBehaviour:
   selectIndicator: {fileID: 0}
   teamNumber:
     m_InternalValue: 0
-  controllerOfThis: {fileID: 0}
+  playerControllingThis: {fileID: 0}
   isAttackable: 1
   rigid: {fileID: 0}
   unitAbilities: {fileID: 0}
@@ -748,10 +748,10 @@ MonoBehaviour:
   version: 1073741824
   graphMask:
     value: 1
-  type: 1
+  type: 5
   mesh: {fileID: 0}
   rectangleSize: {x: 0, y: 0}
-  circleRadius: 0.1
+  circleRadius: 0.05
   circleResolution: 6
   height: 1
   meshScale: 1
