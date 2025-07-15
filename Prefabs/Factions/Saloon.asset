@@ -13,46 +13,32 @@ MonoBehaviour:
   m_Name: Saloon
   m_EditorClassIdentifier: 
   productionName: Saloon
-  description: "The Valhalla of the West, where the warrior-dead congregate between
-    battles.\r\r\nRaise advanced units."
+  description: Raise advanced units.
   prefabToSpawn: {fileID: 3798861697192735719, guid: b4e9f923a3dbe1441ad535f64f46abf9, type: 3}
   goldCost: 50
+  costs:
+  - resource: 2
+    quantity: 30
+  - resource: 3
+    quantity: 80
   maxHP: 50
-  isKeystone: 0
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0
   shouldHideInFog: 1
   visionRange: 7
   soundProfile: {fileID: 11400000, guid: 58c4f57c5002ce348a36785e6a06bad4, type: 2}
   teamType: 0
-  constructableBuildings: []
-  usableAbilities: []
   deathEffect: {fileID: 1596140512904530975, guid: 67836dd37cc44c24eaf1ccca6de50459, type: 3}
-  depositType: 0
-  selfHarvestableType: 1
-  attackType: 0
-  damage: 1
-  directionalAttack: 0
-  attackRange: 1
-  attackDuration: 1
-  impactTime: 0.5
-  areaOfEffectRadius: 1
-  shouldAggressivelySeekEnemies: 0
-  spawnableUnits:
-  - {fileID: 11400000, guid: 062fe0b231fb3b54289b317e0e999443, type: 2}
-  - {fileID: 11400000, guid: cb023bde7bc23994d82355c43644efc7, type: 2}
-  - {fileID: 11400000, guid: 780c8c6df0f384c40ae61e992fc342b0, type: 2}
-  - {fileID: 11400000, guid: 00023773805685043a801bb5f08da14f, type: 2}
-  spawnableAtOnce: 1
   isHarvester: 0
   harvestCapacity: 5
   depositRange: 1
   expandGarrisonOptions: 0
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  attackProjectilePrefab: {fileID: 0}
   hideModelOnDeath: 0
   needsConstructing: 1
   buildOffset: {x: 0, y: 0, z: 0}
   extendable: 0
   rotatable: 1
+  isSpawner: 0
+  isPopAdder: 0

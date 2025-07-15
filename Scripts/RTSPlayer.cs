@@ -2019,6 +2019,10 @@ public class RTSPlayer : Player
             }
         }
     }
+    private bool CanPayCosts(FactionEntity fac) //TODO
+    {
+        return false;
+    }
     private Button[] GetProdButtons()
     {
         return UIManager.instance.productionButtons;

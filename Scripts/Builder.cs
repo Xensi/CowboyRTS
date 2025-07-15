@@ -31,14 +31,15 @@ public class Builder : SwingEntityAddon
     }
     public void BuildingState()
     {
-        if (InvalidBuildable(ent.interactionTarget) || !sm.InRangeOfEntity(ent.interactionTarget, range))
+        Entity interactionTarget = ent.GetInteractionTarget();
+        if (InvalidBuildable(interactionTarget) || !sm.InRangeOfEntity(interactionTarget, range))
         {
             SwitchState(EntityStates.FindInteractable);
             SetLastMajorState(EntityStates.Building);
         }
         else
         {
-            sm.LookAtTarget(ent.interactionTarget.transform);
+            sm.LookAtTarget(interactionTarget.transform);
             if (ready)
             {
                 anim.Play(ATTACK);
@@ -53,7 +54,7 @@ public class Builder : SwingEntityAddon
                     {
                         sm.stateTimer = 0;
                         ready = false;
-                        BuildTarget(ent.interactionTarget);
+                        BuildTarget(interactionTarget);
                     }
                 }
                 else //animation finished
@@ -91,29 +92,31 @@ public class Builder : SwingEntityAddon
         }
     }
     public void WalkToBuildable()
-    { 
-        if (InvalidBuildable(ent.interactionTarget))
+    {
+        Entity interactionTarget = ent.GetInteractionTarget();
+        if (InvalidBuildable(interactionTarget))
         {
             SwitchState(EntityStates.FindInteractable);
         }
         else
         {
-            if (InRangeOfEntity(ent.interactionTarget, range))
+            if (InRangeOfEntity(interactionTarget, range))
             {
                 SwitchState(EntityStates.Building);
             }
             else
             {
                 anim.Play(WALK);
-                Vector3 closest = ent.interactionTarget.physicalCollider.ClosestPoint(transform.position);
+                Vector3 closest = interactionTarget.physicalCollider.ClosestPoint(transform.position);
                 pf.SetDestinationIfHighDiff(closest);
             }
         }
     }
     private void AfterBuildCheck()
     {
+        Entity interactionTarget = ent.GetInteractionTarget();
         anim.Play(IDLE); 
-        if (InvalidBuildable(ent.interactionTarget))
+        if (InvalidBuildable(interactionTarget))
         {
             SwitchState(EntityStates.FindInteractable);
             SetLastMajorState(EntityStates.Building);

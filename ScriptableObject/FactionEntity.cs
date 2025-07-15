@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-
 public class FactionEntity : ScriptableObject
 {
     [Header("Core Information")]
@@ -9,6 +8,7 @@ public class FactionEntity : ScriptableObject
     public string description = "";
     public GameObject prefabToSpawn;
     public int goldCost = 0;
+    public ResourceQuantity[] costs;
     public int maxHP = 10;
     //public bool isKeystone = false; //if all keystone entities are destroyed, you lose
     public int consumePopulationAmount = 0;

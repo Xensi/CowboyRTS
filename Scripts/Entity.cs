@@ -15,7 +15,7 @@ using static UnitAnimator;
 public class Entity : NetworkBehaviour
 {
     [HideInInspector] public bool fakeSpawn = false;
-    public bool spawnedBySpawner = false;
+    private bool spawnedBySpawner = false;
     #region Enums 
     public enum RallyMission
     {
@@ -88,7 +88,7 @@ public class Entity : NetworkBehaviour
     //[HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
 
     [Header("Debug")]
-    public Entity interactionTarget;
+    [HideInInspector] public Entity interactionTarget;
     [SerializeField] private MeshRenderer[] unbuiltRenderers;
     private AreaEffector[] areaEffectors;
     //when fog of war changes, check if we should hide or show attack effects
@@ -161,7 +161,7 @@ public class Entity : NetworkBehaviour
     [HideInInspector] public StateMachineController sm; //Entities that need to be able to switch states
     [HideInInspector] public Builder builder; //Entities that need to pathfind
     [HideInInspector] public Spawner spawner;
-    public Pathfinder pf;
+    [HideInInspector] public Pathfinder pf;
     [HideInInspector] public Garrison garrison;
     private MeshRenderer[] allMeshes;
     private MeshRenderer[] finishedMeshRenderers;
@@ -279,6 +279,14 @@ public class Entity : NetworkBehaviour
         if (productionProgressBar != null) productionProgressBar.Delete();
     }
     #endregion
+    public Entity GetInteractionTarget()
+    {
+        return interactionTarget;
+    }
+    public void SetInteractionTarget(Entity ent)
+    {
+        interactionTarget = ent;
+    }
     private byte GetOwnerClientID()
     {
         return (byte)OwnerClientId;

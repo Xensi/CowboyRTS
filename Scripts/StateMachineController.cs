@@ -832,37 +832,38 @@ public class StateMachineController : NetworkBehaviour
     #region UpdaterFunctions 
     private void UpdateInteractors()
     {
-        if (ent.interactionTarget != null && ent.interactionTarget.alive)
+        Entity interactionTarget = ent.GetInteractionTarget();
+        if (interactionTarget != null && interactionTarget.alive)
         {
             switch (lastMajorState)
             {
                 case EntityStates.Building:
                 case EntityStates.Harvesting:
 
-                    if (!ent.interactionTarget.workersInteracting.Contains(ent)) //if we are not in harvester list
+                    if (!interactionTarget.workersInteracting.Contains(ent)) //if we are not in harvester list
                     {
-                        if (ent.interactionTarget.workersInteracting.Count < ent.interactionTarget.allowedWorkers) //if there is space
+                        if (interactionTarget.workersInteracting.Count < interactionTarget.allowedWorkers) //if there is space
                         {
-                            ent.interactionTarget.workersInteracting.Add(ent);
+                            interactionTarget.workersInteracting.Add(ent);
                         }
                         else //there is no space
                         {
                             //get a new harvest target
-                            ent.interactionTarget = null;
+                            interactionTarget = null;
                         }
                     }
                     break;
                 case EntityStates.Depositing:
                 case EntityStates.Garrisoning:
-                    if (!ent.interactionTarget.othersInteracting.Contains(ent))
+                    if (!interactionTarget.othersInteracting.Contains(ent))
                     {
-                        if (ent.interactionTarget.othersInteracting.Count < ent.interactionTarget.allowedInteractors) //if there is space
+                        if (interactionTarget.othersInteracting.Count < interactionTarget.allowedInteractors) //if there is space
                         {
-                            ent.interactionTarget.othersInteracting.Add(ent);
+                            interactionTarget.othersInteracting.Add(ent);
                         }
                         else //there is no space
                         {
-                            ent.interactionTarget = null;
+                            interactionTarget = null;
                         }
                     }
                     break;
@@ -1033,7 +1034,7 @@ public class StateMachineController : NetworkBehaviour
     public void DepositTo(Entity select)
     {
         lastCommand.Value = CommandTypes.Deposit;
-        ent.interactionTarget = select;
+        ent.SetInteractionTarget(select);
         SwitchState(EntityStates.WalkToInteractable, true);
         lastMajorState = EntityStates.Depositing;
     }
@@ -1043,13 +1044,13 @@ public class StateMachineController : NetworkBehaviour
         {
             if (select.workersInteracting.Count == 1 && select.workersInteracting[0].sm.currentState != EntityStates.Building)
             {
-                select.workersInteracting[0].interactionTarget = null;
+                select.workersInteracting[0].SetInteractionTarget(null);
                 select.workersInteracting.Clear();
             }
 
             //Debug.Log("can build");
             lastCommand.Value = CommandTypes.Build;
-            ent.interactionTarget = select;
+            ent.SetInteractionTarget(select);
             SwitchState(EntityStates.WalkToInteractable, true);
             lastMajorState = EntityStates.Building;
         }

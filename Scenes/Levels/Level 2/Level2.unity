@@ -1213,6 +1213,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1064530045903839195, guid: 8887e7e6db8279940b8b708e593d0b0c, type: 3}
+      propertyPath: fullyBuiltInScene
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2652990438528750811, guid: 8887e7e6db8279940b8b708e593d0b0c, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 2763098448

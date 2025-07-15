@@ -196,6 +196,7 @@ public class Harvester : SwingEntityAddon
     public void WalkToOre()
     {
         if (sm == null) return;
+        Entity interactionTarget = ent.GetInteractionTarget();
         if (!ValidOreForHarvester(ent.interactionTarget))
         {
             SwitchState(EntityStates.FindInteractable);
@@ -217,6 +218,7 @@ public class Harvester : SwingEntityAddon
     public void HarvestingState()
     {
         if (sm == null) return;
+        Entity interactionTarget = ent.GetInteractionTarget();
         if (!ValidOreForHarvester(ent.interactionTarget)) //invalid ore
         {
             SwitchState(EntityStates.FindInteractable);

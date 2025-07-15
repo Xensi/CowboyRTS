@@ -16,6 +16,11 @@ MonoBehaviour:
   description: Adds 5 army size. Raise basic skeleton units.
   prefabToSpawn: {fileID: 4666221357970134544, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
   goldCost: 100
+  costs:
+  - resource: 2
+    quantity: 20
+  - resource: 3
+    quantity: 30
   maxHP: 50
   consumePopulationAmount: 0
   raisePopulationLimitBy: 5

@@ -77,14 +77,14 @@ PrefabInstance:
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: factionEntity
       value: 
-      objectReference: {fileID: 11400000, guid: 3672041456810f74fafd9b4dc0b6e03b, type: 2}
+      objectReference: {fileID: 11400000, guid: 3bf88c211f665ae43ab0489742a3623b, type: 2}
     - target: {fileID: 2870261118279373742, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: m_Name
       value: FrontierCamp
       objectReference: {fileID: 0}
     - target: {fileID: 3728683629940428650, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 3624980842
+      value: 3274309469
       objectReference: {fileID: 0}
     - target: {fileID: 5541063728032177516, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: m_LocalPosition.x
@@ -143,6 +143,9 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2870261118279373742, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       insertIndex: -1
+      addedObject: {fileID: 5291539357403954113}
+    - targetCorrespondingSourceObject: {fileID: 2870261118279373742, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
+      insertIndex: -1
       addedObject: {fileID: 5204333267747551824}
   m_SourcePrefab: {fileID: 100100000, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
 --- !u!1 &3511283758261209119 stripped
@@ -150,6 +153,29 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 2870261118279373742, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
   m_PrefabInstance: {fileID: 1688747326030109617}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &5291539357403954113
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3511283758261209119}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30008fd271530e54e8157c6586d299aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ent: {fileID: 0}
+  sm: {fileID: 0}
+  anim: {fileID: 0}
+  pf: {fileID: 0}
+  at: {fileID: 0}
+  spawnableOptions: {fileID: 11400000, guid: 127f916f95757b946861120551771007, type: 2}
+  buildQueue: []
+  productionBlocked: 0
+  rallyPoint: {x: 0, y: 0, z: 0}
+  rallyTarget: {fileID: 0}
+  spawnerRallyMission: 0
 --- !u!114 &5204333267747551824
 MonoBehaviour:
   m_ObjectHideFlags: 0
