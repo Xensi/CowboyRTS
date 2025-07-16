@@ -18827,6 +18827,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9132968045737705940, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
+      propertyPath: playerControllingThis
+      value: 
+      objectReference: {fileID: 1309311697}
+    - target: {fileID: 9132968045737705940, guid: 01b3dadba3f9ef145aa635c0f0c70af3, type: 3}
       propertyPath: whenTheseEnemiesKilledCaptureThis.Array.size
       value: 4
       objectReference: {fileID: 0}

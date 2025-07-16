@@ -92,6 +92,7 @@ public class LevelManager : MonoBehaviour
     }
     public void LoadLevel(Level level, Action callback = null)
     {
+        if (Global.instance.localPlayer != null) Global.instance.localPlayer.ResetPopulation();
         SetLevelStarted(false);
         currentlyLoadedLevel = level;
         SceneManager.LoadSceneAsync(level.name, LoadSceneMode.Additive);

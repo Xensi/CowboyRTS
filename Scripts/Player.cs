@@ -36,6 +36,12 @@ public class Player : NetworkBehaviour
     public bool enable = true; //enabling in the middle of the game does not currently work
     public Color playerColor = Color.white;
 
+
+    public void ResetPopulation()
+    {
+        population = 0;
+        maxPopulation = 0;
+    }
     public void AddToPredictedPop(int delta)
     {
         predictedPop += delta;
