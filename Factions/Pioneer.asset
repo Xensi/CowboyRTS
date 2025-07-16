@@ -10,12 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b888e0fe913eaf4095ed4e0fccd988e, type: 3}
-  m_Name: Settler
+  m_Name: Pioneer
   m_EditorClassIdentifier: 
-  productionName: Settler
+  productionName: Pioneer
   description: 'Harvests resources, builds, and repairs. '
   prefabToSpawn: {fileID: 2545681379473208697, guid: dd8c1e8bc7ef8ac4bac17cfcc5864d6e, type: 3}
   goldCost: 40
+  costs: []
   maxHP: 6
   consumePopulationAmount: 1
   raisePopulationLimitBy: 0

@@ -109,7 +109,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fakeSpawn: 0
-  spawnedBySpawner: 0
   isTargetable:
     m_InternalValue: 0
   oldVisibleInFog: 0
@@ -118,7 +117,7 @@ MonoBehaviour:
   obstacle: {fileID: 0}
   localTeamNumber: 0
   desiredTeamNumber: 0
-  clientIDToSpawnUnder: 0
+  originalSpawnerClientID: 0
   aiControlled: 0
   allPhysicalColliders: []
   createdCrosshair: {fileID: 0}
@@ -162,7 +161,7 @@ MonoBehaviour:
   selectIndicator: {fileID: 0}
   teamNumber:
     m_InternalValue: 0
-  controllerOfThis: {fileID: 0}
+  playerControllingThis: {fileID: 0}
   isAttackable: 1
   rigid: {fileID: 0}
   unitAbilities: {fileID: 0}
@@ -236,7 +235,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 0.5, y: 1, z: 0.5}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &4082303753784431905
 MonoBehaviour:
@@ -322,7 +321,7 @@ MonoBehaviour:
     value: -1
   type: 3
   mesh: {fileID: 0}
-  rectangleSize: {x: 0.25, y: 0.25}
+  rectangleSize: {x: 0.5, y: 0.5}
   circleRadius: 1
   circleResolution: 6
   height: 0.5
@@ -330,7 +329,7 @@ MonoBehaviour:
   center: {x: 0, y: 0, z: 0}
   updateDistance: 0.4
   isDual: 0
-  radiusExpansionMode: 1
+  radiusExpansionMode: 0
   cutsAddedGeom: 1
   updateRotationDistance: 10
   useRotationAndScale: 0

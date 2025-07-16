@@ -211,6 +211,7 @@ public class RTSPlayer : Player
                 }
                 UpdateGUIFromSelectedEntities();
             }
+            
             switch (mouseState)
             {
                 case MouseState.Waiting:
@@ -235,6 +236,7 @@ public class RTSPlayer : Player
                     }
                     break;
             }
+            
             if (Input.GetMouseButtonUp(0)) //left click released
             {
                 switch (mouseState)
@@ -292,7 +294,7 @@ public class RTSPlayer : Player
                 if (Input.GetMouseButtonDown(0) && !MouseOverUI())
                 {
                     StartMousePosition = Input.mousePosition;
-                    Global.instance.selectionRect.gameObject.SetActive(true);
+                    Util.SmartSetActive(Global.instance.selectionRect.gameObject, true);
                 }
                 if (Global.instance.selectionRect.gameObject.activeSelf)
                 {
@@ -308,13 +310,13 @@ public class RTSPlayer : Player
                 }
                 break;
             case MouseState.ReadyToPlace:
-                Global.instance.selectionRect.gameObject.SetActive(false);
+                Util.SmartSetActive(Global.instance.selectionRect.gameObject, false);
                 break;
             case MouseState.ReadyToSetRallyPoint:
-                Global.instance.selectionRect.gameObject.SetActive(false);
+                Util.SmartSetActive(Global.instance.selectionRect.gameObject, false);
                 break;
             case MouseState.PlacingAndRotating:
-                Global.instance.selectionRect.gameObject.SetActive(false);
+                Util.SmartSetActive(Global.instance.selectionRect.gameObject, false);
                 break;
             default:
                 break;
