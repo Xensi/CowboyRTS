@@ -19,9 +19,9 @@ MonoBehaviour:
   costs:
   - resource: 3
     quantity: 50
-  maxHP: 10
+  maxHP: 25
   consumePopulationAmount: 0
-  raisePopulationLimitBy: 0
+  raisePopulationLimitBy: 5
   shouldHideInFog: 1
   visionRange: 7
   soundProfile: {fileID: 0}

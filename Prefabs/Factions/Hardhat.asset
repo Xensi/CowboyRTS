@@ -15,7 +15,7 @@ MonoBehaviour:
   productionName: Hardhat
   description: Harvests and builds.
   prefabToSpawn: {fileID: 2545681379473208697, guid: 6d0b8ddb1af33be4fb95331bfbb1fe5f, type: 3}
-  goldCost: 40
+  goldCost: 10
   costs:
   - resource: 2
     quantity: 10
