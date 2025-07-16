@@ -1419,6 +1419,10 @@ public class Entity : NetworkBehaviour
             return false;
         }
     }
+    public bool IsControlledBy(Player player)
+    {
+        return playerControllingThis == player;
+    }
     public bool IsEnemyOfTarget(Entity target)
     {
         if (target != null && target.playerControllingThis != null && playerControllingThis != null)

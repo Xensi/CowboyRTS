@@ -397,65 +397,8 @@ public class RTSPlayer : Player
 
         if (hits > 0)
         {
-            //determine action type
-            if (hitEntity != null && PositionExplored(clickedPosition)) //if exists and is explored at least
-            {
-                if (hitEntity.teamType == Entity.TeamBehavior.OwnerTeam)
-                {
-                    if (SameAllegiance(hitEntity)) //same team
-                    {
-                        if (hitEntity.IsDepot() && hitEntity.fullyBuilt) //if deposit point
-                        {
-                            actionType = ActionType.Deposit;
-                        }
-                        if (!hitEntity.fullyBuilt || hitEntity.IsDamaged() && !hitEntity.IsMinion()) //if buildable
-                        {
-                            actionType = ActionType.BuildTarget;
-
-                            AssignBuildersBasedOnDistance();
-
-                        }
-                        else if (hitEntity.fullyBuilt && hitEntity.HasEmptyGarrisonablePosition())
-                        { //target can be garrisoned, and passenger cannot garrison, then enter
-                            actionType = ActionType.Garrison;
-                        }
-                        else if (hitEntity.occupiedGarrison != null && hitEntity.occupiedGarrison.HasEmptyGarrisonablePosition())
-                        { //target is passenger of garrison, then enter garrison
-                            actionType = ActionType.Garrison;
-                            hitEntity = hitEntity.occupiedGarrison;
-                        }
-                        else
-                        {
-                            actionType = ActionType.MoveToTarget;
-                        }
-                    }
-                    else if (hitEntity.isAttackable) //enemy
-                    { //try to target this enemy specifically
-                        actionType = ActionType.AttackTarget;
-                        //Debug.Log("Trying to attack " + hitEntity.name);
-                    }
-                    else
-                    {
-                        actionType = ActionType.Move;
-                    }
-                }
-                else if (hitEntity.teamType == Entity.TeamBehavior.FriendlyNeutral) //for now resources are only neutral; this may change
-                {
-                    if (hitEntity.IsOre())
-                    {
-                        Debug.Log("trying to harvest");
-                        actionType = ActionType.Harvest;
-                    }
-                }
-            }
-            else
-            {
-                actionType = ActionType.Move;
-                //Debug.Log("Moving");
-            }
-            //finished determining action type 
             UnitOrdersQueue.Clear();
-            for (int i = 0; i < GetNumSelected(); i++)
+            for (int i = 0; i < GetNumSelected(); i++) //determine action for each selected entity
             {
                 Entity item = selectedEntities[i];
                 if (item != null && item.sm != null)
@@ -464,20 +407,66 @@ public class RTSPlayer : Player
                     order.unit = item.sm;
                     order.targetPosition = clickedPosition;
                     order.target = hitEntity;
-
-                    if (!item.IsBuilder() && actionType == ActionType.BuildTarget
-                        || !item.IsHarvester() && actionType == ActionType.Harvest)
-                    {
-                        Debug.Log("invalid action, defaulting to moving");
-                        actionType = ActionType.Move;
-                    }
-                    order.action = actionType;
-
+                    order.action = GetActionContextual(item, hitEntity, clickedPosition);
                     UnitOrdersQueue.Add(order);
                 }
             }
-            //totalNumUnitOrders = UnitOrdersQueue.Count;
         }
+    }
+    private ActionType GetActionContextual(Entity orderedUnit, Entity hitEntity, Vector3 clickedPosition)
+    {
+        ActionType actionType = ActionType.Move;
+        if (hitEntity != null && PositionExplored(clickedPosition))
+        {
+            if (hitEntity.teamType == Entity.TeamBehavior.OwnerTeam)
+            {
+                if (SameAllegiance(hitEntity)) //same team
+                {
+                    if (orderedUnit.IsHarvester() && orderedUnit.harvester.ValidDepositForHarvester(hitEntity)) //if deposit point
+                    {
+                        Debug.Log("trying to deposit");
+                        actionType = ActionType.Deposit;
+                    }
+                    else if (!hitEntity.fullyBuilt || hitEntity.IsDamaged() && !hitEntity.IsMinion()) //if buildable
+                    {
+                        actionType = ActionType.BuildTarget;
+
+                        AssignBuildersBasedOnDistance();
+
+                    }
+                    else if (hitEntity.fullyBuilt && hitEntity.HasEmptyGarrisonablePosition())
+                    { //target can be garrisoned, and passenger cannot garrison, then enter
+                        actionType = ActionType.Garrison;
+                    }
+                    else if (hitEntity.occupiedGarrison != null && hitEntity.occupiedGarrison.HasEmptyGarrisonablePosition())
+                    { //target is passenger of garrison, then enter garrison
+                        actionType = ActionType.Garrison;
+                        hitEntity = hitEntity.occupiedGarrison;
+                    }
+                    else
+                    {
+                        actionType = ActionType.MoveToTarget;
+                    }
+                }
+                else if (hitEntity.isAttackable) //enemy
+                {
+                    actionType = ActionType.AttackTarget;
+                }
+                else
+                {
+                    actionType = ActionType.Move;
+                }
+            }
+            else if (hitEntity.teamType == Entity.TeamBehavior.FriendlyNeutral) //for now resources are only neutral; this may change
+            {
+                if (hitEntity.IsOre())
+                {
+                    Debug.Log("trying to harvest");
+                    actionType = ActionType.Harvest;
+                }
+            }
+        }
+        return actionType;
     }
     private void SelectedAttackMove()
     {

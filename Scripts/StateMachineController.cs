@@ -498,7 +498,7 @@ public class StateMachineController : NetworkBehaviour
     }
     public void ProcessOrder(UnitOrder order)
     {
-        //Debug.Log("Processing order");
+        Debug.Log("Processing order " + order.action);
         Vector3 targetPosition = order.targetPosition;
         Entity target = order.target;
         lastOrderType = order.action;
@@ -553,16 +553,17 @@ public class StateMachineController : NetworkBehaviour
             case ActionType.Deposit: //try to deposit if we have stuff to deposit
                 if (ent.HasResourcesToDeposit())
                 {
+                    Debug.Log("trying to deposit 2");
                     DepositTo(target);
                 }
-                else if (target.IsDamaged() && ent.IsBuilder()) //if its damaged, we can try to build it
+                /*else if (target.IsDamaged() && ent.IsBuilder()) //if its damaged, we can try to build it
                 {
                     CommandBuildTarget(target);
                 }
                 else
                 {
                     if (pf != null) pf.MoveToTarget(target);
-                }
+                }*/
                 break;
             case ActionType.Garrison:
                 //WorkOnGarrisoningInto(target);

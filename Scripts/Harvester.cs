@@ -80,6 +80,9 @@ public class Harvester : SwingEntityAddon
     }
     public bool ValidDepositForHarvester(Entity targetDepot)
     {
+        if (!targetDepot.IsDepot()) return false;
+        if (!targetDepot.IsFullyBuilt()) return false;
+        if (!targetDepot.IsControlledBy(ent.playerControllingThis)) return false;
         bool val = false;
         List<ResourceType> presentTypes = new();
         foreach (ResourceType item in harvesterBag)
