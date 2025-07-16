@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blockbench user</author>
+      <authoring_tool>Blockbench</authoring_tool>
+    </contributor>
+    <created>2025-07-16T09:11:20.726Z</created>
+    <modified>2025-07-16T09:11:20.726Z</modified>
+    <unit name="meter" meter="1.0"/>
+    <up_axis>Y_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="Material_0-effect">
+      <profile_COMMON>
+        <newparam sid="Image_0-surface">
+          <surface type="2D">
+            <init_from>Image_0</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="Image_0-sampler">
+          <sampler2D>
+            <source>Image_0-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="Image_0-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="Material_1-effect">
+      <profile_COMMON>
+        <newparam sid="Image_1-surface">
+          <surface type="2D">
+            <init_from>Image_1</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="Image_1-sampler">
+          <sampler2D>
+            <source>Image_1-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="Image_1-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="Material_2-effect">
+      <profile_COMMON>
+        <newparam sid="Image_2-surface">
+          <surface type="2D">
+            <init_from>Image_2</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="Image_2-sampler">
+          <sampler2D>
+            <source>Image_2-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="Image_2-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="Material_3-effect">
+      <profile_COMMON>
+        <newparam sid="Image_3-surface">
+          <surface type="2D">
+            <init_from>Image_3</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="Image_3-sampler">
+          <sampler2D>
+            <source>Image_3-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="Image_3-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="Image_0" name="Image_0">
+      <init_from>frontierCampTex.png</init_from>
+    </image>
+    <image id="Image_1" name="Image_1">
+      <init_from>barrelTex.png</init_from>
+    </image>
+    <image id="Image_2" name="Image_2">
+      <init_from>hat.png</init_from>
+    </image>
+    <image id="Image_3" name="Image_3">
+      <init_from>coinBarrel.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="Material_0-material" name="Material_0">
+      <instance_effect url="#Material_0-effect"/>
+    </material>
+    <material id="Material_1-material" name="Material_1">
+      <instance_effect url="#Material_1-effect"/>
+    </material>
+    <material id="Material_2-material" name="Material_2">
+      <instance_effect url="#Material_2-effect"/>
+    </material>
+    <material id="Material_3-material" name="Material_3">
+      <instance_effect url="#Material_3-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh" name="cylinder">
+      <mesh>
+        <source id="121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-positions">
+          <float_array id="121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-positions-array" count="42">0 -0.03125 0 0 0.03125 0 0.036084 -0.03125 0.0625 0.036084 0.03125 0.0625 0.072169 -0.03125 0 0.072169 0.03125 0 0.036084 -0.03125 -0.0625 0.036084 0.03125 -0.0625 -0.036084 -0.03125 -0.0625 -0.036084 0.03125 -0.0625 -0.072169 -0.03125 0 -0.072169 0.03125 0 -0.036084 -0.03125 0.0625 -0.036084 0.03125 0.0625</float_array>
+          <technique_common>
+            <accessor source="#121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-positions-array" count="14" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-normals">
+          <float_array id="121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-normals-array" count="54">0 -1 0 0.866026 0 0.5 0 1 0 0 -1 0 0.866026 0 -0.5 0 1 0 0 -1 0 0 0 -1 0 1 0 0 -1 0 -0.866026 0 -0.5 0 1 0 0 -1 0 -0.866026 0 0.5 0 1 0 0 -1 0 0 0 1 0 1 0</float_array>
+          <technique_common>
+            <accessor source="#121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-normals-array" count="18" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-map-0">
+          <float_array id="121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-map-0-array" count="120">0.02074 0.992188 0.01623 1 0.011719 0.992188 0.023438 0.96875 0.03125 0.96875 0.03125 0.976563 0.023438 0.976563 0.01623 0.96875 0.02074 0.976563 0.011719 0.976563 0.01623 0.984375 0.02074 0.992188 0.011719 0.992188 0.03125 0.992188 0.039063 0.992188 0.039063 1 0.03125 1 0.02074 0.976563 0.01623 0.984375 0.011719 0.976563 0.007208 0.984375 0.01623 0.984375 0.011719 0.992188 0.023438 0.992188 0.03125 0.992188 0.03125 1 0.023438 1 0.01623 0.984375 0.007208 0.984375 0.011719 0.976563 0.002698 0.992188 0.007208 0.984375 0.011719 0.992188 0 0.960938 0.007813 0.960938 0.007813 0.96875 0 0.96875 0.007208 0.984375 0.002698 0.976563 0.011719 0.976563 0.007208 1 0.002698 0.992188 0.011719 0.992188 0.023438 0.976563 0.03125 0.976563 0.03125 0.984375 0.023438 0.984375 0.002698 0.976563 0.007208 0.96875 0.011719 0.976563 0.01623 1 0.007208 1 0.011719 0.992188 0.023438 0.984375 0.03125 0.984375 0.03125 0.992188 0.023438 0.992188 0.007208 0.96875 0.01623 0.96875 0.011719 0.976563</float_array>
+          <technique_common>
+            <accessor source="#121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-map-0-array" count="60" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-vertices">
+          <input semantic="POSITION" source="#121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-positions"/>
+        </vertices>
+        <polylist material="Material_1-material" count="6">
+          <input semantic="VERTEX" source="#121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh-map-0" offset="2" set="0"/>
+          <vcount>3 4 3 3 4 3 3 4 3 3 4 3 3 4 3 3 4 3</vcount>
+          <p>4 0 0 2 0 1 0 0 2 2 1 3 4 1 4 5 1 5 3 1 6 3 2 7 5 2 8 1 2 9 6 3 10 4 3 11 0 3 12 4 4 13 6 4 14 7 4 15 5 4 16 5 5 17 7 5 18 1 5 19 8 6 20 6 6 21 0 6 22 6 7 23 8 7 24 9 7 25 7 7 26 7 8 27 9 8 28 1 8 29 10 9 30 8 9 31 0 9 32 8 10 33 10 10 34 11 10 35 9 10 36 9 11 37 11 11 38 1 11 39 12 12 40 10 12 41 0 12 42 10 13 43 12 13 44 13 13 45 11 13 46 11 14 47 13 14 48 1 14 49 2 15 50 12 15 51 0 15 52 12 16 53 2 16 54 3 16 55 13 16 56 13 17 57 3 17 58 1 17 59</p>
+        </polylist>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="121f3583-fa81-789a-ed8a-5e62118eb9a9" name="cylinder" type="NODE">
+        <scale sid="scale">1 1 1</scale>
+        <translate sid="location">0 0 0</translate>
+        <rotate sid="rotationX">1 0 0 0</rotate>
+        <rotate sid="rotationY">0 1 0 0</rotate>
+        <rotate sid="rotationZ">0 0 1 0</rotate>
+        <instance_geometry url="#121f3583-fa81-789a-ed8a-5e62118eb9a9-mesh" name="cylinder">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="Material_1-material" target="#Material_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

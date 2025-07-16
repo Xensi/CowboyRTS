@@ -245,6 +245,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
+      propertyPath: autoRandomSeed
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: ShapeModule.type
       value: 5
       objectReference: {fileID: 0}
@@ -354,7 +358,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: InitialModule.maxNumParticles
-      value: 40
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: RotationBySpeedModule.enabled
@@ -366,7 +370,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: InitialModule.startSize.scalar
-      value: 0.4
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: RotationBySpeedModule.x.scalar
@@ -390,7 +394,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: InitialModule.startSpeed.scalar
-      value: 20
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: RotationModule.curve.minMaxState
@@ -398,7 +402,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: InitialModule.startSize.minScalar
-      value: 0.2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: InitialModule.startLifetime.scalar
@@ -410,7 +414,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: InitialModule.startSpeed.minScalar
-      value: 10
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: RotationBySpeedModule.separateAxes
@@ -523,6 +527,10 @@ PrefabInstance:
     - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: VelocityModule.y.maxCurve.m_Curve.Array.data[0].value
       value: 0.5179479
+      objectReference: {fileID: 0}
+    - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
+      propertyPath: EmissionModule.m_Bursts.Array.data[0].countCurve.scalar
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 19821056, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: RotationBySpeedModule.curve.maxCurve.m_Curve.Array.size
@@ -679,7 +687,7 @@ PrefabInstance:
     - target: {fileID: 19943340, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: -5668833170292645477, guid: 93c9338ce8e15234dad5ed4c928dff5c, type: 3}
+      objectReference: {fileID: 4632596647708219413, guid: 9b2001f2145bdc746ba3a39343b32cb9, type: 3}
     - target: {fileID: 19943340, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: m_Pivot.y
       value: -0.5
@@ -687,7 +695,7 @@ PrefabInstance:
     - target: {fileID: 19943340, guid: 079954accd64b32419ec069129c81273, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 2100000, guid: 4a58462331703a247a548003ab2ea6de, type: 2}
+      objectReference: {fileID: 2100000, guid: 34fb962ba2dd34148a2c431c2121d56f, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
