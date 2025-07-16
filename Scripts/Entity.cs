@@ -8,6 +8,7 @@ using FoW;
 using static Effect;
 using static StateMachineController;
 using static UnitAnimator;
+using UnityEngine.UIElements;
 
 /// <summary>
 /// Handles core behavior, like selection, HP, destruction, etc.
@@ -88,7 +89,7 @@ public class Entity : NetworkBehaviour
     //[HideInInspector] public int harvestedResourceAmount = 0; //how much have we already collected
 
     [Header("Debug")]
-    [HideInInspector] public Entity interactionTarget;
+    public Entity interactionTarget;
     [SerializeField] private MeshRenderer[] unbuiltRenderers;
     private AreaEffector[] areaEffectors;
     //when fog of war changes, check if we should hide or show attack effects

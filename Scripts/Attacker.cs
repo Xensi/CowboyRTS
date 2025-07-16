@@ -441,7 +441,7 @@ public class Attacker : SwingEntityAddon
     }
     private void AfterAttackCheck()
     {
-        ent.anim.Play(IDLE); 
+        ent.anim.Play(IDLE); //important to allow repeat attacks (since it's dependent on the anim completion status)
         if (!IsValidTarget(targetEnemy)) //target enemy is not valid because it is dead or missing
         {
             HandleLackOfValidTargetEnemy();

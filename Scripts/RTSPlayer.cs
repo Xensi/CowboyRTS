@@ -404,11 +404,10 @@ public class RTSPlayer : Player
                 {
                     if (SameAllegiance(hitEntity)) //same team
                     {
-                        /*if ((hitEntity.depositType == SelectableEntity.DepositType.Gold || hitEntity.depositType == SelectableEntity.DepositType.All)
-                            && hitEntity.fullyBuilt) //if deposit point
+                        if (hitEntity.IsDepot() && hitEntity.fullyBuilt) //if deposit point
                         {
                             actionType = ActionType.Deposit;
-                        }*/
+                        }
                         if (!hitEntity.fullyBuilt || hitEntity.IsDamaged() && !hitEntity.IsMinion()) //if buildable
                         {
                             actionType = ActionType.BuildTarget;

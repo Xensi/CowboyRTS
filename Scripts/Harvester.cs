@@ -257,6 +257,10 @@ public class Harvester : SwingEntityAddon
                     AfterHarvestCheck();
                 }
             }
+            else if (!ent.anim.InState(HARVEST))
+            {
+                ent.anim.Play(IDLE);
+            }
         }
         else
         { 
@@ -266,6 +270,8 @@ public class Harvester : SwingEntityAddon
     }
     private void AfterHarvestCheck()
     {
+        ent.anim.Play(IDLE);
+        //Debug.Log("AfterHarvestCheck");
         if (!BagHasSpace()) //we're full so deposit
         {
             SwitchState(EntityStates.FindInteractable);
@@ -281,7 +287,7 @@ public class Harvester : SwingEntityAddon
             sm.SetLastMajorState(EntityStates.Harvesting);
         }
     } 
-    public void DepositingState()
+    public void DepositingState() //keep this as a state so we can have deposits take time if we want
     {
         if (!ValidDepositForHarvester(ent.interactionTarget))
         {
@@ -290,8 +296,8 @@ public class Harvester : SwingEntityAddon
         }
         else
         {
+            Debug.Log("Depositing");
             sm.LookAtTarget(ent.interactionTarget.transform);
-            //anim.Play("Attack"); //replace with deposit animation
             //Defaults to instant dropoff, but can take time
             if (ent != null)
             {
