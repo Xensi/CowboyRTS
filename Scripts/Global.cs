@@ -43,8 +43,8 @@ public class Global : NetworkBehaviour
     [HideInInspector] public float lerpScale = .15f;
     #endregion
     public readonly float maxFogValue = 255;
-    public readonly float minFogStrength = 0.45f;
-    public readonly float exploredFogStrength = 0.51f;
+    public readonly float minFogStrengthRatio = 0.45f;
+    public readonly float exploredFogStrengthRatio = 0.51f;
     //[SerializeField] public Camera mainCam;
     //[SerializeField] public Camera lineCam;
     public Camera[] cams;
@@ -79,7 +79,7 @@ public class Global : NetworkBehaviour
     public readonly int attackMoveDestinationEnemyArrayBufferSize = 50;
     public readonly int fullEnemyArraySize = 50;
 
-    public HashSet<Entity> allEntities = new();
+    public List<Entity> allEntities = new();
     [HideInInspector] public SpatialHash spatialHash;
 
     private bool finishedInitializingNewPlayers = false;
@@ -171,7 +171,7 @@ public class Global : NetworkBehaviour
     /// Passes all entity list by reference.
     /// </summary>
     /// <returns></returns>
-    public ref HashSet<Entity> GetEntityList()
+    public ref List<Entity> GetEntityList()
     {
         return ref allEntities;
     }

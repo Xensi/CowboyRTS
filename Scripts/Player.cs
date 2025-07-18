@@ -197,7 +197,7 @@ public class Player : NetworkBehaviour
                         //check visibility of unit manually
                         if (fow == null) fow = FogOfWarTeam.GetTeam(playerTeamID);
                         byte fogValue = fow.GetFogValue(enemy.transform.position); //get the value of the fog at this position
-                        bool isVisibleInFog = fogValue < Global.instance.minFogStrength * 255;
+                        bool isVisibleInFog = fogValue < Global.instance.minFogStrengthRatio * 255;
                         if (isVisibleInFog)
                         {
                             if (!visibleEnemies.Contains(enemy))
@@ -235,11 +235,11 @@ public class Player : NetworkBehaviour
     }  
     public bool PositionFullyVisible(Vector3 position)
     {
-        return fow.GetFogValue(position) < Global.instance.minFogStrength * 255;
+        return fow.GetFogValue(position) < Global.instance.minFogStrengthRatio * 255;
     }
     public bool PositionExplored(Vector3 position)
     {
-        return fow.GetFogValue(position) <= Global.instance.exploredFogStrength * 255;
+        return fow.GetFogValue(position) <= Global.instance.exploredFogStrengthRatio * 255;
     }
     public bool CheckIfPositionIsOnRamp(Vector3 position)
     {

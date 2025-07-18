@@ -220,7 +220,7 @@ public class AIPlayer : Player
                     Entity entity = player.ownedEntities[i];
                     if (entity != null)
                     {
-                        bool visible = fow.GetFogValue(entity.transform.position) < Global.instance.minFogStrength * Global.instance.maxFogValue;
+                        bool visible = fow.GetFogValue(entity.transform.position) < Global.instance.minFogStrengthRatio * Global.instance.maxFogValue;
                         if (visible)
                         {
                             if (entity.IsMinion() && !knownEnemyUnits.Contains(entity))

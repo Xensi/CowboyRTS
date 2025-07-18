@@ -386,7 +386,7 @@ public class Pathfinder : EntityAddon
     }
     public void WalkState()
     {
-        Debug.Log("WalkState");
+        //Debug.Log("WalkState");
         UpdateStopDistance();
         DetectIfShouldReturnToIdle();
         PushNearbyOwnedIdlers();
@@ -409,7 +409,7 @@ public class Pathfinder : EntityAddon
     }
     public void WalkToRallyState()
     {
-        Debug.Log("WalkRallyState");
+        //Debug.Log("WalkRallyState");
         switch (sm.givenMission)
         {
             case Entity.RallyMission.None:

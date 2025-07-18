@@ -9,20 +9,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5040608eb03c21941b0df73233e2ec94, type: 3}
-  m_Name: WagonResource
+  m_Script: {fileID: 11500000, guid: 79131772d6f31e448abc81ee229db092, type: 3}
+  m_Name: WagonOreNew
   m_EditorClassIdentifier: 
   productionName: Wagon
   description: Harvest to obtain lumber, used to construct buildings.
+  maxHP: 100
   prefabToSpawn: {fileID: 0}
   goldCost: 0
-  maxHP: 100
+  costs: []
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0
-  shouldHideInFog: 0
-  visionRange: 0
+  shouldHideInFog: 1
+  visionRange: 7
   soundProfile: {fileID: 0}
-  teamType: 1
+  teamType: 0
   deathEffect: {fileID: 0}
   isHarvester: 0
   harvestCapacity: 5
@@ -31,9 +32,4 @@ MonoBehaviour:
   passengersAreTargetable: 0
   acceptsHeavy: 0
   hideModelOnDeath: 0
-  needsConstructing: 0
-  buildOffset: {x: 0.5, y: 0, z: 0.5}
-  extendable: 0
-  rotatable: 0
-  isSpawner: 0
-  isPopAdder: 0
+  maxHarvesters: 1

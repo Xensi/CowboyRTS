@@ -180,7 +180,7 @@ public class StateMachineController : NetworkBehaviour
     }
 
     //private bool finishedInitializingRealLocation = false;
-    
+
     private void Update()
     {
         if (!LevelManager.instance.LevelStarted()) return;
@@ -213,7 +213,7 @@ public class StateMachineController : NetworkBehaviour
             frames++;
         }
     }
-    
+
     private Entity clientSideTargetInRange = null;
     private void UpdateRealLocation()
     {
@@ -263,8 +263,8 @@ public class StateMachineController : NetworkBehaviour
                 valid = true;
                 break;
             case Entity.RallyMission.Harvest:
-                SwitchState(EntityStates.WalkToInteractable);
                 lastMajorState = EntityStates.Harvesting;
+                SwitchState(EntityStates.WalkToInteractable);
                 valid = true;
                 break;
             case Entity.RallyMission.Build:
@@ -283,8 +283,8 @@ public class StateMachineController : NetworkBehaviour
                 valid = true;
                 break;
             case Entity.RallyMission.Garrison:
-                SwitchState(EntityStates.WalkToInteractable);
                 lastMajorState = EntityStates.Garrisoning;
+                SwitchState(EntityStates.WalkToInteractable);
                 valid = true;
                 break;
             case Entity.RallyMission.Attack:
@@ -350,6 +350,20 @@ public class StateMachineController : NetworkBehaviour
                 if (ent.IsAttacker()) ent.attacker.OnEnterState();
                 break;
         }
+        ConditionalUnclaimOre(state);
+    }
+    private void ConditionalUnclaimOre(EntityStates state)
+    {
+        bool directlyRelated = (state == EntityStates.Harvesting || state == EntityStates.Depositing);
+        bool indirectlyRelated = (lastMajorState == EntityStates.Harvesting || lastMajorState == EntityStates.Depositing)
+            && (state == EntityStates.FindInteractable || state == EntityStates.WalkToInteractable);
+
+        //If we enter a state that's not related to harvesting
+        if (!directlyRelated && !indirectlyRelated)
+        {
+            //Debug.Log("Unclaiming ore because " + lastMajorState + state);
+            ent.harvester.UnclaimAllOre();
+        }
     }
     private void UpdateIfCanReceiveNewCommands(EntityStates state)
     {
@@ -385,8 +399,8 @@ public class StateMachineController : NetworkBehaviour
         }
         switchingState = true;
 
-        if (stateToSwitchTo == EntityStates.Idle) Debug.Log("Switching to idle");
-        if (stateToSwitchTo == EntityStates.Walk) Debug.Log("Switching to walk");
+        //if (stateToSwitchTo == EntityStates.Idle) Debug.Log("Switching to idle");
+        //if (stateToSwitchTo == EntityStates.Walk) Debug.Log("Switching to walk");
 
 
         if (stateToSwitchToIsDifferent)
@@ -1007,8 +1021,8 @@ public class StateMachineController : NetworkBehaviour
         }
         ent.interactionTarget = target;
 
-        SwitchState(EntityStates.WalkToInteractable);
         lastMajorState = EntityStates.Building;
+        SwitchState(EntityStates.WalkToInteractable);
     }
     public void ClearTargets()
     {
@@ -1016,39 +1030,43 @@ public class StateMachineController : NetworkBehaviour
         ent.attacker.sqrDistToTargetEnemy = Mathf.Infinity;
         ent.interactionTarget = null;
     }
-    public void CommandHarvestTarget(Entity select)
+    public void CommandHarvestTarget(Entity target)
     {
+        if (ent == null || !ent.IsHarvester()) return;
         //Debug.Log("Received command to harvest");
-        if (ent != null && ent.IsHarvester())
+        ent.harvester.UnclaimAllOre();
+        if (ent.harvester.IsTargetValidOreForHarvester(target))
         {
-            //Debug.Log("Is harvester");
-            if (ent.harvester.BagHasSpace())
+            ent.harvester.TryClaimOre(target.ore);
+        }
+        if (ent.harvester.BagHasSpace())
+        {
+            lastCommand.Value = CommandTypes.Harvest;
+            lastMajorState = EntityStates.Harvesting;
+            if (ent.harvester.IsTargetValidOreForHarvester(target))
             {
-                //Debug.Log("bag");
-                if (ent.harvester.ValidOreForHarvester(select))
-                {
-                    //Debug.Log("valid ore");
-                    lastCommand.Value = CommandTypes.Harvest;
-                    ent.interactionTarget = select;
-                    SwitchState(EntityStates.WalkToInteractable, true);
-                    lastMajorState = EntityStates.Harvesting;
-                }
+                ent.interactionTarget = target;
+                SwitchState(EntityStates.WalkToInteractable, true);
             }
-            else
+            else //find
             {
-                Debug.Log("Depositing");
-                lastCommand.Value = CommandTypes.Deposit;
-                SwitchState(EntityStates.FindInteractable);
-                lastMajorState = EntityStates.Depositing;
+                SwitchState(EntityStates.FindInteractable, true);
             }
+        }
+        else
+        {
+            Debug.Log("Depositing");
+            lastCommand.Value = CommandTypes.Deposit;
+            lastMajorState = EntityStates.Depositing;
+            SwitchState(EntityStates.FindInteractable, true);
         }
     }
     public void DepositTo(Entity select)
     {
         lastCommand.Value = CommandTypes.Deposit;
         ent.SetInteractionTarget(select);
-        SwitchState(EntityStates.WalkToInteractable, true);
         lastMajorState = EntityStates.Depositing;
+        SwitchState(EntityStates.WalkToInteractable, true);
     }
     public void CommandBuildTarget(Entity select)
     {
@@ -1063,8 +1081,8 @@ public class StateMachineController : NetworkBehaviour
             //Debug.Log("can build");
             lastCommand.Value = CommandTypes.Build;
             ent.SetInteractionTarget(select);
-            SwitchState(EntityStates.WalkToInteractable, true);
             lastMajorState = EntityStates.Building;
+            SwitchState(EntityStates.WalkToInteractable, true);
         }
     }
     /*private bool IsGarrisoned()

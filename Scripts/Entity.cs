@@ -109,11 +109,14 @@ public class Entity : NetworkBehaviour
     public EntityTypes entityType = EntityTypes.Melee;
     [HideInInspector]
     public bool isHeavy = false; //heavy units can't garrison into pallbearers
-    [HideInInspector] public bool fullyBuilt = true; //[HideInInspector] 
+    /// <summary>
+    /// Operate on the assumption that everything is already "built" unless otherwise specified.
+    /// </summary>
+    [HideInInspector] public bool fullyBuilt = true;
     [HideInInspector]
     public bool isKeystone = false;
-    public int allowedWorkers = 1; //how many can build/repair/harvest at a time
-    public int allowedInteractors = 10; //how many can interact (not build/repair)
+    [HideInInspector] public int allowedWorkers = 1; //how many can build/repair/harvest at a time
+    [HideInInspector] public int allowedInteractors = 10; //how many can interact (not build/repair)
     public List<Entity> workersInteracting;
     public List<Entity> othersInteracting;
 
@@ -194,7 +197,7 @@ public class Entity : NetworkBehaviour
         SetInitialVisuals();
         SetFinishedRenderersVisibility(false);
         TryToRegisterRallyMission();
-        if (teamType == TeamBehavior.OwnerTeam) Global.instance.AddEntityToMainList(this);
+        Global.instance.AddEntityToMainList(this);
         InitializeBars();
         DetermineLayerBasedOnAllegiance();
         if (spawnedBySpawner) PlaySpawnSound();
@@ -353,8 +356,6 @@ public class Entity : NetworkBehaviour
             consumePopulationAmount = factionEntity.consumePopulationAmount;
             raisePopulationLimitBy = factionEntity.raisePopulationLimitBy;
             //DIFFERENTIATE BETWEEN BUILDING AND UNIT TYPES 
-            teamType = factionEntity.teamType;
-            shouldHideInFog = factionEntity.shouldHideInFog;
 
             if (fogUnit != null) fogUnit.circleRadius = factionEntity.visionRange;
 
@@ -366,6 +367,19 @@ public class Entity : NetworkBehaviour
             {
                 sounds = new AudioClip[0];
             }
+
+            if (factionEntity is FactionOre)
+            {
+                startingHP = maxHP;
+                teamType = TeamBehavior.FriendlyNeutral;
+                shouldHideInFog = false;
+            }
+            else
+            {
+                teamType = factionEntity.teamType;
+                shouldHideInFog = factionEntity.shouldHideInFog;
+            }
+
             if (factionEntity is FactionBuilding)
             {
                 FactionBuilding factionBuilding = factionEntity as FactionBuilding;
@@ -392,7 +406,7 @@ public class Entity : NetworkBehaviour
             {
                 FactionUnit factionUnit = factionEntity as FactionUnit;
                 isHeavy = factionUnit.isHeavy;
-                startingHP = maxHP; 
+                startingHP = maxHP;
             }
             hideModelOnDeath = factionEntity.hideModelOnDeath;
         }
@@ -1545,7 +1559,16 @@ public class Entity : NetworkBehaviour
     /// </summary>
     private void UpdateInteractors()
     {
-        if (workersInteracting.Count > 0)
+        for (int i = workersInteracting.Count - 1; i >= 0; i--)
+        {
+            Entity ent = workersInteracting[i];
+            if (ent == null || ent.interactionTarget != this)
+            {
+                workersInteracting.RemoveAt(i);
+                continue;
+            }
+        }
+        /*if (workersInteracting.Count > 0)
         {
             if (workersInteracting[interactorIndex] != null)
             {
@@ -1568,7 +1591,7 @@ public class Entity : NetworkBehaviour
         interactorIndex++;
         othersInteractorIndex++;
         if (interactorIndex >= workersInteracting.Count) interactorIndex = 0;
-        if (othersInteractorIndex >= othersInteracting.Count) othersInteractorIndex = 0;
+        if (othersInteractorIndex >= othersInteracting.Count) othersInteractorIndex = 0;*/
     }
     public bool IsVisibleInFog()
     {
@@ -1580,7 +1603,7 @@ public class Entity : NetworkBehaviour
         /* because "hidefogteam" is the local player id, a player's units will always be
         visible to themselves. */
         fogValue = fow.GetFogValue(transform.position); //get the value of the fog at this position
-        isVisibleInFog = fogValue < Global.instance.minFogStrength * 255;
+        isVisibleInFog = fogValue < Global.instance.minFogStrengthRatio * 255;
         if (FogHideable())
         {
             //Debug.Log("running fog visibility for" + gameObject);
@@ -1649,7 +1672,20 @@ public class Entity : NetworkBehaviour
 
     //bool hideFogTeamSet = false;
 
-
+    public bool CanSeeTargetInFog(Entity target)
+    {
+        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)playerControllingThis.playerTeamID);
+        bool visible = false;
+        if (target.shouldHideInFog)
+        {
+            visible = fow.GetFogValue(target.transform.position) <= Global.instance.minFogStrengthRatio * Global.instance.maxFogValue;
+        }
+        else //accounts for explored structures
+        {
+            visible = fow.GetFogValue(target.transform.position) <= Global.instance.exploredFogStrengthRatio * Global.instance.maxFogValue;
+        }
+        return visible;
+    }
     private void StructureCosmeticDestruction()
     {
         foreach (MeshRenderer item in allMeshes)

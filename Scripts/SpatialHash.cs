@@ -4,12 +4,13 @@ using UnityEngine;
 using UtilityMethods;
 using UnityEngine.Profiling;
 using static Attacker;
+using FoW;
 using System;
 public class SpatialHash : MonoBehaviour
 {
+    #region Hashing Backend
     private const int hashX = 73856093;
     private const int hashY = 19349663;
-
     Global global;
     private int tableSize;
     [SerializeField] private int[] table;
@@ -24,9 +25,8 @@ public class SpatialHash : MonoBehaviour
     }
     private void Update()
     {
-        ParseParticles();
+        HashEntities();
     }
-
     private int HashCoordinates(int xi, int yi)
     {
         int h = (xi * hashX) ^ (yi * hashY); //^ is XOR
@@ -37,7 +37,10 @@ public class SpatialHash : MonoBehaviour
         float offset = 0.5f;
         return Mathf.FloorToInt(f + offset / spacing);
     }
-    private void ParseParticles() //minute physics solution
+    /// <summary>
+    /// Hashes all entities for later use.
+    /// </summary>
+    private void HashEntities() //minute physics solution
     {
         Profiler.BeginSample("Parsing particles");
         int[] tempTable = new int[tableSize];
@@ -99,6 +102,23 @@ public class SpatialHash : MonoBehaviour
         }
         return hashesToCheck;
     }
+    private int GetDenseStart(int h)
+    {
+        return table[h];
+    }
+    private int GetDenseEnd(int h)
+    {
+        return table[Mathf.Clamp(h + 1, 0, tableSize - 1)];
+    }
+    private int GetIndexClampedByNumEntities(int i)
+    {
+        return Mathf.Clamp(i, 0, global.GetNumEntities() - 1);
+    }
+    private float GetCombinedRadii(Entity target, float range)
+    {
+        return target.GetRadius() + range;
+    }
+    #endregion
     public Entity[] GetEntitiesInRange(Vector3 pos, Entity queryingEntity, float rangeRadius)
     {
         int[] hashesToCheck = GetHashesToCheck(pos, rangeRadius);
@@ -126,22 +146,18 @@ public class SpatialHash : MonoBehaviour
         }
         return tempList.ToArray();
     }
-    private int GetDenseStart(int h)
-    {
-        return table[h];
-    }
-    private int GetDenseEnd(int h)
-    {
-        return table[Mathf.Clamp(h + 1, 0, tableSize - 1)];
-    }
-    private int GetIndexClampedByNumEntities(int i)
-    {
-        return Mathf.Clamp(i, 0, global.GetNumEntities() - 1);
-    }
-    private float GetCombinedRadii(Entity target, float range)
-    {
-        return target.GetRadius() + range;
-    }
+    /// <summary>
+    /// Use spatial hashing to populate entity searcher arrays.
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <param name="rangeRadius"></param>
+    /// <param name="player"></param>
+    /// <param name="searchedMinions"></param>
+    /// <param name="searchedStructures"></param>
+    /// <param name="searchedAll"></param>
+    /// <param name="minionCount"></param>
+    /// <param name="structureCount"></param>
+    /// <param name="allCount"></param>
     public void EntitySearchHash(Vector3 pos, float rangeRadius, Player player,
         ref Entity[] searchedMinions, ref Entity[] searchedStructures, ref Entity[] searchedAll,
         ref int minionCount, ref int structureCount, ref int allCount)
@@ -153,7 +169,7 @@ public class SpatialHash : MonoBehaviour
         Array.Clear(searchedMinions, 0, searchedMinions.Length);
         Array.Clear(searchedStructures, 0, searchedStructures.Length);
         Array.Clear(searchedAll, 0, searchedAll.Length);
-        foreach (int h in GetHashesToCheck(pos, rangeRadius)) //check through cells
+        foreach (int h in GetHashesToCheck(pos, rangeRadius)) //check through cells in range
         {
             for (int i = GetDenseStart(h); i <= GetDenseEnd(h); i++)
             {
@@ -237,8 +253,8 @@ public class SpatialHash : MonoBehaviour
             {
                 Entity targetEnt = denseEntityArray[GetIndexClampedByNumEntities(i)];
                 if (targetEnt == null || targetEnt == queryingEntity) continue;
-                if (queryingEntity.attacker != null && !queryingEntity.attacker.IsValidTarget(targetEnt)) continue;
                 if (!targetEnt.IsMinion()) continue;
+                if (queryingEntity.IsAttacker() && !queryingEntity.attacker.IsValidTarget(targetEnt)) continue;
                 float newSqrDist = Util.GetSqrDist(pos, targetEnt.transform.position);
                 bool closer = Util.SqrDistCheck(newSqrDist, closestSqrDist);
                 if (closer)
@@ -252,6 +268,39 @@ public class SpatialHash : MonoBehaviour
         {
             bool inRange = Util.FastDistanceCheck(pos, closest.transform.position, GetCombinedRadii(closest, rangeRadius));
             return inRange ? closest : null;
+        }
+        return null;
+    }
+    public Ore GetClosestVisibleOreHashSearch(Entity queryingEntity, float range)
+    {
+        if (!queryingEntity.IsHarvester()) return null;
+        Vector3 pos = queryingEntity.transform.position;
+        Entity closest = null;
+        float closestSqrDist = Mathf.Infinity;
+        foreach (int h in GetHashesToCheck(pos, range)) //check through cells
+        {
+            for (int i = GetDenseStart(h); i <= GetDenseEnd(h); i++)
+            {
+                Entity targetEnt = denseEntityArray[GetIndexClampedByNumEntities(i)];
+                if (targetEnt == null || targetEnt == queryingEntity) continue;
+                if (!queryingEntity.CanSeeTargetInFog(targetEnt)) continue;
+                if (!targetEnt.IsOre()) continue;
+                if (!queryingEntity.harvester.IsTargetValidOreForHarvester(targetEnt)) continue;
+                float newSqrDist = Util.GetSqrDist(pos, targetEnt.transform.position);
+                bool closer = Util.SqrDistCheck(newSqrDist, closestSqrDist);
+                //Debug.Log("Distance to " + targetEnt + ": " + newSqrDist + "; Current closest: " + closest);
+                if (closer)
+                {
+                    closest = targetEnt;
+                    closestSqrDist = newSqrDist;
+                }
+            }
+        }
+        if (closest != null)
+        {
+            Debug.Log("Closest is " + closest);
+            bool inRange = Util.FastDistanceCheck(pos, closest.transform.position, GetCombinedRadii(closest, range));
+            return inRange ? closest.ore : null;
         }
         return null;
     }

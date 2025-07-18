@@ -1,26 +1,28 @@
 using System.Collections.Generic;
 using UnityEngine;
+[CreateAssetMenu(fileName = "NewEntity", menuName = "Faction/Entity", order = 0)]
+[System.Serializable]
 public class FactionEntity : ScriptableObject
 {
     [Header("Core Information")]
     public string productionName = "Name";
     [TextArea(2, 4)]
     public string description = "";
+    public int maxHP = 10;
+    public GameObject deathEffect;
+
+    [Header("For spawnables/buildables")]
     public GameObject prefabToSpawn;
     public int goldCost = 0;
     public ResourceQuantity[] costs;
-    public int maxHP = 10;
-    //public bool isKeystone = false; //if all keystone entities are destroyed, you lose
+
     public int consumePopulationAmount = 0;
     public int raisePopulationLimitBy = 0;
-    public bool shouldHideInFog = true;
+
+    public bool shouldHideInFog = true; //have this determined by if it is a building or unit
     public float visionRange = 7;
-    //public AudioClip[] sounds;
     public UnitSoundsProfile soundProfile;
     public Entity.TeamBehavior teamType = Entity.TeamBehavior.OwnerTeam;
-    //public SelectableEntity.EntityTypes entityType = SelectableEntity.EntityTypes.Generic; 
-
-    public GameObject deathEffect;  
 
     [Header("Optional Behavior")]
 

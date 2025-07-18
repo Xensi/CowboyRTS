@@ -63,7 +63,7 @@ public class Attacker : SwingEntityAddon
         attackProjectile = GetAttackSettings().attackProjectilePrefab;
         defaultAttackDuration = duration;
         defaultImpactTime = impactTime;
-    } 
+    }
     public AttackSettings GetAttackSettings()
     {
         return attackSettings;

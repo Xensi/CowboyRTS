@@ -102,6 +102,9 @@ public class EntitySearcher : MonoBehaviour
     {
         return searchRadius;
     }
+    /// <summary>
+    /// Query the Spatial Hash system to populate the search arrays.
+    /// </summary>
     private void SearchHash()
     {
         Global.instance.spatialHash.EntitySearchHash(transform.position, searchRadius, playerCreator,

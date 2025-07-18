@@ -69,14 +69,60 @@ public class Harvester : SwingEntityAddon
     /// </summary>
     /// <param name="target"></param>
     /// <returns></returns>
-    public bool ValidOreForHarvester(Entity target)
+    public bool IsTargetValidOreForHarvester(Entity target)
     { 
-        if (target != null && target.ore != null && target.alive)
+        //Must have the correct resource type
+        if (target != null && target.ore != null && target.alive && OreHasRoomForNewHarvesterClaim(target.ore)) // 
         {
             if (target.ore.resourceType == ResourceType.All) return true;
             if (allowedResources.Contains(target.ore.resourceType)) return true;
         }
         return false;
+    }
+    public bool IsOreValidForHarvester(Ore ore)
+    {
+        //Must have the correct resource type
+        if (ore != null && ore.ent.alive && OreHasRoomForNewHarvesterClaim(ore)) // 
+        {
+            if (ore.resourceType == ResourceType.All) return true;
+            if (allowedResources.Contains(ore.resourceType)) return true;
+        }
+        return false;
+    }
+    private bool OreHasRoomForNewHarvesterClaim(Ore ore)
+    {
+        int defaultWorkerSize = 1;
+        if (claimedOre == ore) //we are already working on this target
+        {
+            return ore.harvestersWithClaimsOnThis.Count <= ore.GetMaxHarvesters(); //workers interacting includes this worker
+        }
+        else //check if we can add this worker
+        {
+            return ore.harvestersWithClaimsOnThis.Count + defaultWorkerSize <= ore.GetMaxHarvesters();
+        }
+    }
+    public void TryClaimOre(Ore ore)
+    {
+        if (ore == null) return;
+        if (ore.harvestersWithClaimsOnThis.Contains(this)) //claiming ore we already own case
+        {
+            claimedOre = ore;
+        }
+        else if (OreHasRoomForNewHarvesterClaim(ore)) //claiming ore with room case
+        {
+            ore.harvestersWithClaimsOnThis.Add(this);
+            claimedOre = ore;
+        }
+        else //no room
+        {
+            ore.harvestersWithClaimsOnThis.Remove(this);
+            claimedOre = null;
+        }
+    }
+    public void UnclaimAllOre()
+    {
+        if (claimedOre != null) claimedOre.harvestersWithClaimsOnThis.Remove(this);
+        claimedOre = null;
     }
     public bool ValidDepositForHarvester(Entity targetDepot)
     {
@@ -132,50 +178,30 @@ public class Harvester : SwingEntityAddon
     }
     public void FindHarvestableState()
     {
-        Debug.Log("Finding harvestable");
-        if (ValidOreForHarvester(lastOre))
+        //Debug.Log("Finding harvestable");
+        if (IsOreValidForHarvester(claimedOre)) //return to claimed ore
         {
-            ent.interactionTarget = lastOre;
+            ent.interactionTarget = claimedOre.ent;
             SwitchState(EntityStates.WalkToInteractable);
         }
-        else if (ValidOreForHarvester(ent.interactionTarget))
+        else //revise this to find ore of the same type as our last ore
         {
+            float oreSearchRange = 8;
+            Ore foundOre = FindClosestVisibleOreInRange(oreSearchRange);
+            if (foundOre == null) return;
+            TryClaimOre(foundOre);
+            ent.interactionTarget = foundOre.ent;
             SwitchState(EntityStates.WalkToInteractable);
-        }
-        else
-        {
-            ent.interactionTarget = FindClosestHarvestable();
         }
     }
     /// <summary>
     /// Returns closest harvestable resource with space for new harvesters.
     /// </summary>
     /// <returns></returns>
-    private Entity FindClosestHarvestable()
+    private Ore FindClosestVisibleOreInRange(float range)
     {
-        //Debug.Log("Finding closest harvestable");
-        FogOfWarTeam fow = FogOfWarTeam.GetTeam((int)ent.playerControllingThis.playerTeamID);
-        List<Ore> oreList = ent.playerControllingThis.friendlyOres;
-
-        Entity closest = null;
-        float distance = Mathf.Infinity;
-        foreach (Ore ore in oreList)
-        {
-            Entity item = ore.GetEntity();
-            if (item != null && item.alive && fow.GetFogValue(item.transform.position) <= 0.5 * 255) //item is visible to some degree
-            {
-                if (item.workersInteracting.Count < item.allowedWorkers) //there is space for a new harvester
-                {
-                    float newDist = Vector3.SqrMagnitude(transform.position - item.transform.position);
-                    if (newDist < distance)
-                    {
-                        closest = item;
-                        distance = newDist;
-                    }
-                }
-            }
-        }
-        return closest;
+        return Global.instance.spatialHash.GetClosestVisibleOreHashSearch(ent, range);
+        
     }
     private Entity FindClosestDeposit() //right now resource agnostic
     {
@@ -207,7 +233,7 @@ public class Harvester : SwingEntityAddon
     {
         if (sm == null) return;
         Entity interactionTarget = ent.GetInteractionTarget();
-        if (!ValidOreForHarvester(ent.interactionTarget))
+        if (!IsTargetValidOreForHarvester(ent.interactionTarget))
         {
             SwitchState(EntityStates.FindInteractable);
         }
@@ -225,30 +251,31 @@ public class Harvester : SwingEntityAddon
             }
         }
     }
-    [SerializeField] Entity lastOre;
+    public Ore claimedOre; //This is the ore that the unit will be focusing on.
+                                                //It will return to this ore after depositing.
     public void HarvestingState()
     {
         if (sm == null) return;
-        Entity interactionTarget = ent.GetInteractionTarget();
-        if (!ValidOreForHarvester(ent.interactionTarget)) //invalid ore
+        if (!BagHasSpace())
         {
-            SwitchState(EntityStates.FindInteractable);
-            sm.SetLastMajorState(EntityStates.Harvesting);
-        }
-        else if (!BagHasSpace()) //bag has no space // && harvestReady
-        {
-            SwitchState(EntityStates.FindInteractable);
             sm.SetLastMajorState(EntityStates.Depositing);
+            SwitchState(EntityStates.FindInteractable);
+            return;
         }
-        else if (sm.InRangeOfEntity(interactionTarget, range)) //target is valid and bag has space
+        if (!IsOreValidForHarvester(claimedOre))
         {
-            lastOre = interactionTarget;
-            sm.LookAtTarget(ent.interactionTarget.transform);
+            sm.SetLastMajorState(EntityStates.Harvesting);
+            SwitchState(EntityStates.FindInteractable);
+            return;
+        }
+
+        if (sm.InRangeOfEntity(claimedOre.ent, range)) //target is valid and bag has space
+        {
+            sm.LookAtTarget(claimedOre.transform);
             if (ready)
             {
                 ent.anim.Play(HARVEST);
-                //sm.animator.Play("Harvest");
-                if (ent.anim.InProgress()) //sm.AnimatorUnfinished()
+                if (ent.anim.InProgress())
                 {
                     if (sm.stateTimer < impactTime)
                     {
@@ -258,14 +285,11 @@ public class Harvester : SwingEntityAddon
                     {
                         sm.stateTimer = 0;
                         ready = false;
-                        //Debug.Log("Harvesting once");
-                        HarvestTargetOnce(ent.interactionTarget);
+                        HarvestTargetOnce(claimedOre);
                     }
                 }
                 else
                 {
-                    //Debug.Log("Finished harvesting");
-                    //SwitchState(EntityStates.AfterHarvestCheck);
                     AfterHarvestCheck();
                 }
             }
@@ -278,6 +302,7 @@ public class Harvester : SwingEntityAddon
         { 
             SwitchState(EntityStates.WalkToInteractable);
             sm.SetLastMajorState(EntityStates.Harvesting);
+            return;
         }
     }
     private void AfterHarvestCheck()
@@ -289,7 +314,7 @@ public class Harvester : SwingEntityAddon
             SwitchState(EntityStates.FindInteractable);
             sm.SetLastMajorState(EntityStates.Depositing);
         }
-        else if (ValidOreForHarvester(ent.interactionTarget)) //keep harvesting if valid harvestable
+        else if (IsTargetValidOreForHarvester(ent.interactionTarget)) //keep harvesting if valid harvestable
         {
             SwitchState(EntityStates.Harvesting);
         }
@@ -298,18 +323,16 @@ public class Harvester : SwingEntityAddon
             SwitchState(EntityStates.FindInteractable);
             sm.SetLastMajorState(EntityStates.Harvesting);
         }
-    } 
+    }
     public void DepositingState() //keep this as a state so we can have deposits take time if we want
     {
         if (!ValidDepositForHarvester(ent.interactionTarget))
         {
-            Debug.Log("find interactable 2");
             SwitchState(EntityStates.FindInteractable); 
             sm.SetLastMajorState(EntityStates.Depositing);
         }
         else
         {
-            Debug.Log("Depositing");
             sm.LookAtTarget(ent.interactionTarget.transform);
             //Defaults to instant dropoff, but can take time
             if (ent != null)
@@ -346,28 +369,26 @@ public class Harvester : SwingEntityAddon
                     rts.UpdateGUIFromSelections();
                 }*/
             } 
-            if (ValidOreForHarvester(lastOre))//double check this behavior
+            if (IsOreValidForHarvester(claimedOre))//double check this behavior
             {
-                Debug.Log("Going to last ore");
-                ent.interactionTarget = lastOre;
+                ent.interactionTarget = claimedOre.ent;
                 SwitchState(EntityStates.WalkToInteractable, true);
                 sm.SetLastMajorState(EntityStates.Harvesting); 
             }
             else
             {
-                Debug.Log("find interactable 1");
                 SwitchState(EntityStates.FindInteractable);
                 sm.SetLastMajorState(EntityStates.Harvesting); 
             }
         }
     }
-    public void HarvestTargetOnce(Entity target)
+    public void HarvestTargetOnce(Ore ore)
     {
         //Debug.Log("Harvesting Target Once");
         ent.SimplePlaySound(1); //play impact sound 
-        if (target != null && target.IsSpawned && target.IsOre())
+        if (ore != null && ore.IsSpawned)
         {
-            int actualHarvested = Mathf.Clamp(swingDelta, 0, target.currentHP.Value); //max amount we can harvest clamped by hitpoints remaining
+            int actualHarvested = Mathf.Clamp(swingDelta, 0, ore.ent.currentHP.Value); //max amount we can harvest clamped by hitpoints remaining
             //int diff = entity.harvestCapacity - entity.harvestedResourceAmount;
             int diff = bagSize - harvesterBag.Count;
             actualHarvested = Mathf.Clamp(actualHarvested, 0, diff); //max amount we can harvest clamped by remaining carrying capacity
@@ -376,13 +397,13 @@ public class Harvester : SwingEntityAddon
 
             if (ent.IsServer)
             {
-                target.Harvest((sbyte)swingDelta);
+                ore.ent.Harvest((sbyte)swingDelta);
             }
             else //client tell server to change the network variable
             {
-                RequestHarvestServerRpc((sbyte)swingDelta, target);
+                RequestHarvestServerRpc((sbyte)swingDelta, ore);
             }
-            ResourceType resourceType = target.ore.resourceType;
+            ResourceType resourceType = ore.resourceType;
 
             harvesterBag.Add(resourceType);
 
@@ -394,7 +415,7 @@ public class Harvester : SwingEntityAddon
                 rts.UpdateGUIFromSelections();
             }*/
         }
-        else if (target != null && !target.IsSpawned)
+        else if (ore != null && !ore.IsSpawned)
         {
             Debug.LogError("target not spawned ...");
         }
