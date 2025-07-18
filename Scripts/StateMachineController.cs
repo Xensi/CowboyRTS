@@ -366,10 +366,16 @@ public class StateMachineController : NetworkBehaviour
     int desiredFrames = 5;
 
     bool switchingState = false;
-    public void SwitchState(EntityStates stateToSwitchTo, bool shouldOverride = false)
+    /// <summary>
+    /// Instant override means switch to the state even if another state is in progress
+    /// </summary>
+    /// <param name="stateToSwitchTo"></param>
+    /// <param name="instantOverride"></param>
+    public void SwitchState(EntityStates stateToSwitchTo, bool instantOverride = false)
     {
         if (pf == null) return;
-        if (shouldOverride) //manual override
+        bool stateToSwitchToIsDifferent = currentState != stateToSwitchTo;
+        if (instantOverride && stateToSwitchToIsDifferent) //manual override
         {
             StopAllCoroutines();
         }
@@ -379,13 +385,18 @@ public class StateMachineController : NetworkBehaviour
         }
         switchingState = true;
 
-        if (currentState != stateToSwitchTo)
+        if (stateToSwitchTo == EntityStates.Idle) Debug.Log("Switching to idle");
+        if (stateToSwitchTo == EntityStates.Walk) Debug.Log("Switching to walk");
+
+
+        if (stateToSwitchToIsDifferent)
         {
             ExitState(currentState);
             EnterState(stateToSwitchTo);
         }
         currentState = stateToSwitchTo;
 
+        //Temporarily ignore unit obstacles so we don't teleport
         switch (stateToSwitchTo)
         {
             case EntityStates.Walk:
@@ -556,13 +567,13 @@ public class StateMachineController : NetworkBehaviour
                     Debug.Log("trying to deposit 2");
                     DepositTo(target);
                 }
-                /*else if (target.IsDamaged() && ent.IsBuilder()) //if its damaged, we can try to build it
-                {
-                    CommandBuildTarget(target);
-                }
                 else
                 {
                     if (pf != null) pf.MoveToTarget(target);
+                }
+                /*else if (target.IsDamaged() && ent.IsBuilder()) //if its damaged, we can try to build it
+                {
+                    CommandBuildTarget(target);
                 }*/
                 break;
             case ActionType.Garrison:
@@ -891,7 +902,7 @@ public class StateMachineController : NetworkBehaviour
         ent.Select(false);
         SwitchState(EntityStates.Die);
         pf.ai.enabled = false;
-        if (ent.pf.RVO != null) ent.pf.RVO.enabled = false;
+        if (ent.pf.RVOAvoidance != null) ent.pf.RVOAvoidance.enabled = false;
         pf.seeker.enabled = false;
         Destroy(rigid);
         Destroy(col);
@@ -1023,13 +1034,13 @@ public class StateMachineController : NetworkBehaviour
                     lastMajorState = EntityStates.Harvesting;
                 }
             }
-            /*else
+            else
             {
                 Debug.Log("Depositing");
                 lastCommand.Value = CommandTypes.Deposit;
                 SwitchState(EntityStates.FindInteractable);
                 lastMajorState = EntityStates.Depositing;
-            }*/
+            }
         }
     }
     public void DepositTo(Entity select)
@@ -1062,7 +1073,7 @@ public class StateMachineController : NetworkBehaviour
     }*/
     public void ChangeRVOStatus(bool val) //used
     {
-        if (ent.pf.RVO != null) ent.pf.RVO.enabled = val;
+        if (ent.pf.RVOAvoidance != null) ent.pf.RVOAvoidance.enabled = val;
     }
     private void LoadPassengerInto(Entity garrison)
     {

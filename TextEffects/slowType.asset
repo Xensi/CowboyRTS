@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16860026da54450394f6a38fe250e740, type: 3}
   m_Name: slowType
   m_EditorClassIdentifier: 
-  effectTag: typewriter
+  effectTag: slowType
   startCharIndex: 0
   charLength: 0
   animationType: 3

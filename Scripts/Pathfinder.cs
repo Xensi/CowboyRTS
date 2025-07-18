@@ -31,7 +31,7 @@ public class Pathfinder : EntityAddon
     CancellationTokenSource pathStatusTimerCancellationToken;
     [HideInInspector] public AIPath ai;
     [HideInInspector] public Seeker seeker;
-    [HideInInspector] public RVOController RVO;
+    [HideInInspector] public RVOController RVOAvoidance;
 
     public override void Awake()
     {
@@ -39,7 +39,7 @@ public class Pathfinder : EntityAddon
         setter = GetComponent<AIDestinationSetter>();
         ai = GetComponent<AIPath>();
         seeker = GetComponent<Seeker>();
-        RVO = GetComponent<RVOController>();
+        RVOAvoidance = GetComponent<RVOController>();
     }
     public override void OnNetworkSpawn()
     {
@@ -50,7 +50,7 @@ public class Pathfinder : EntityAddon
         if (!IsOwner)
         {
             nonOwnerRealLocationList.Add(transform.position);
-            RVO.enabled = false;
+            RVOAvoidance.enabled = false;
         }
     }
     public void Start()
@@ -386,6 +386,7 @@ public class Pathfinder : EntityAddon
     }
     public void WalkState()
     {
+        Debug.Log("WalkState");
         UpdateStopDistance();
         DetectIfShouldReturnToIdle();
         PushNearbyOwnedIdlers();
@@ -408,6 +409,7 @@ public class Pathfinder : EntityAddon
     }
     public void WalkToRallyState()
     {
+        Debug.Log("WalkRallyState");
         switch (sm.givenMission)
         {
             case Entity.RallyMission.None:

@@ -87,7 +87,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 174441591
+  GlobalObjectIdHash: 1827683345
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -321,7 +321,7 @@ MonoBehaviour:
     value: -1
   type: 3
   mesh: {fileID: 0}
-  rectangleSize: {x: 0.5, y: 0.5}
+  rectangleSize: {x: 0.6, y: 0.6}
   circleRadius: 1
   circleResolution: 6
   height: 0.5

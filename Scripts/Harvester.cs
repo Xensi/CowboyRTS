@@ -80,6 +80,7 @@ public class Harvester : SwingEntityAddon
     }
     public bool ValidDepositForHarvester(Entity targetDepot)
     {
+        if (targetDepot == null) return false;
         if (!targetDepot.IsDepot()) return false;
         if (!targetDepot.IsFullyBuilt()) return false;
         if (!targetDepot.IsControlledBy(ent.playerControllingThis)) return false;
@@ -130,8 +131,14 @@ public class Harvester : SwingEntityAddon
         }
     }
     public void FindHarvestableState()
-    { 
-        if (ValidOreForHarvester(ent.interactionTarget))
+    {
+        Debug.Log("Finding harvestable");
+        if (ValidOreForHarvester(lastOre))
+        {
+            ent.interactionTarget = lastOre;
+            SwitchState(EntityStates.WalkToInteractable);
+        }
+        else if (ValidOreForHarvester(ent.interactionTarget))
         {
             SwitchState(EntityStates.WalkToInteractable);
         }
@@ -218,6 +225,7 @@ public class Harvester : SwingEntityAddon
             }
         }
     }
+    [SerializeField] Entity lastOre;
     public void HarvestingState()
     {
         if (sm == null) return;
@@ -232,8 +240,9 @@ public class Harvester : SwingEntityAddon
             SwitchState(EntityStates.FindInteractable);
             sm.SetLastMajorState(EntityStates.Depositing);
         }
-        else if (sm.InRangeOfEntity(ent.interactionTarget, range)) //target is valid and bag has space
+        else if (sm.InRangeOfEntity(interactionTarget, range)) //target is valid and bag has space
         {
+            lastOre = interactionTarget;
             sm.LookAtTarget(ent.interactionTarget.transform);
             if (ready)
             {
@@ -294,6 +303,7 @@ public class Harvester : SwingEntityAddon
     {
         if (!ValidDepositForHarvester(ent.interactionTarget))
         {
+            Debug.Log("find interactable 2");
             SwitchState(EntityStates.FindInteractable); 
             sm.SetLastMajorState(EntityStates.Depositing);
         }
@@ -336,13 +346,16 @@ public class Harvester : SwingEntityAddon
                     rts.UpdateGUIFromSelections();
                 }*/
             } 
-            if (ent.harvester.ValidOreForHarvester(ent.interactionTarget))//double check this behavior
+            if (ValidOreForHarvester(lastOre))//double check this behavior
             {
-                SwitchState(EntityStates.WalkToInteractable);
+                Debug.Log("Going to last ore");
+                ent.interactionTarget = lastOre;
+                SwitchState(EntityStates.WalkToInteractable, true);
                 sm.SetLastMajorState(EntityStates.Harvesting); 
             }
             else
             {
+                Debug.Log("find interactable 1");
                 SwitchState(EntityStates.FindInteractable);
                 sm.SetLastMajorState(EntityStates.Harvesting); 
             }

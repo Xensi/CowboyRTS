@@ -34,7 +34,7 @@ MonoBehaviour:
   passengersAreTargetable: 0
   acceptsHeavy: 0
   hideModelOnDeath: 0
-  maxSpawnTimeCost: 5
+  maxSpawnTimeCost: 1
   spawnTimer: 0
   isHeavy: 0
   maxSpeed: 2

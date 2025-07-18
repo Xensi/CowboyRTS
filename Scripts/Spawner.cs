@@ -60,7 +60,7 @@ public class Spawner : EntityAddon
     {
         bool blocked = false;
         if (target != null && target.IsMinion() && target.sm.givenMission != RallyMission.Move
-            && target.playerControllingThis == GetController() && !target.sm.InState(EntityStates.Walk))
+            && target.playerControllingThis == GetController() && target.sm.InState(EntityStates.Idle))
         {
             //tell blocker to get out of the way.
             float randRadius = 1;
