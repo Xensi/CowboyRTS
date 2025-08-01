@@ -344,10 +344,15 @@ public class Attacker : SwingEntityAddon
     }
     private void AttackImpact()
     {
+        float targetCoverVal = HowObscuredIsTarget(targetEnemy);
+        float chanceToHit = 1 - targetCoverVal;
+        float rand = UnityEngine.Random.Range(0f, 1f);
+        bool hit = rand <= chanceToHit;
+        Debug.Log(rand + " " + chanceToHit + " " + hit);
         switch (attackType)
         {
             case AttackType.Instant:
-                DamageSpecifiedEnemy(targetEnemy, swingDelta);
+                DamageSpecifiedEnemy(targetEnemy, swingDelta, hit);
                 break;
             case AttackType.SelfDestruct:
                 SelfDestructInExplosion(areaOfEffectRadius);
@@ -366,8 +371,13 @@ public class Attacker : SwingEntityAddon
                     {
                         positionToShoot = closest + new Vector3(0, 0.5f, 0);
                     }
+                    if (!hit)
+                    {
+                        Vector2 randomOffset = (UnityEngine.Random.insideUnitCircle * 0.25f).normalized;
+                        positionToShoot = positionToShoot + new Vector3(randomOffset.x, 0, randomOffset.y);
+                    }
                 }
-                ShootProjectileAtPosition(positionToShoot);
+                ShootProjectileAtPosition(positionToShoot, hit);
                 break;
             case AttackType.None:
                 break;
@@ -547,7 +557,7 @@ public class Attacker : SwingEntityAddon
             //partial cover (like sandbags) should require the target to be close to the cover (because that's the only way they can hide)
             if (coverVal < fullObscuredLevel) //if less than full cover, then first check the distance to target
             {
-                float coverThreshold = 0.5f;
+                float coverThreshold = 0.75f;
                 Vector3 coverClosestPointToTarget = coverCol.ClosestPoint(target.transform.position);
                 float coverDist = Vector3.Distance(target.transform.position, coverClosestPointToTarget);
                 if (ent.IsAlliedTo(Global.instance.localPlayer))
@@ -703,7 +713,7 @@ public class Attacker : SwingEntityAddon
         }
     }
 
-    public void DamageSpecifiedEnemy(Entity enemy, sbyte damage) //since hp is a network variable, changing it on the server will propagate changes to clients as well
+    public void DamageSpecifiedEnemy(Entity enemy, sbyte damage, bool hit = true) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         if (enemy != null)
         { //fire locally
@@ -723,13 +733,22 @@ public class Attacker : SwingEntityAddon
                 {
                     spawnPos = transform.position;
                 }
-                SimpleTrail(spawnPos, enemy.transform.position);
+                Vector3 positionToShoot = enemy.transform.position;
+                Vector3 dir = (enemy.transform.position - spawnPos).normalized;
+                Vector2 perp = Vector2.Perpendicular(new Vector2(dir.x, dir.z));
+                float rand = UnityEngine.Random.Range(0.25f, 0.5f);
+                int isNegative = UnityEngine.Random.Range(0, 2);
+                if (isNegative == 1) rand *= -1;
+                perp *= rand;
+                //Debug.DrawRay(enemy.transform.position, perp, Color.red, 1);
+                positionToShoot = positionToShoot + new Vector3(perp.x, 0, perp.y);
+                SimpleTrail(spawnPos, positionToShoot);
             }
-            Global.instance.localPlayer.DamageEntity(damage, enemy);
+            if (hit) Global.instance.localPlayer.DamageEntity(damage, enemy);
             //DamageUmbrella(damage, enemy);
         }
     }
-    private void ShootProjectileAtPosition(Vector3 dest)
+    private void ShootProjectileAtPosition(Vector3 dest, bool hit = true)
     {
         Vector3 star;
         if (attackEffectSpawnPosition != null)
@@ -741,15 +760,15 @@ public class Attacker : SwingEntityAddon
             star = transform.position;
         }
         //Spawn locally
-        SpawnProjectile(star, dest);
+        SpawnProjectile(star, dest, hit);
         //spawn for other clients as well
         if (IsServer)
         {
-            ProjectileClientRpc(star, dest);
+            ProjectileClientRpc(star, dest, hit);
         }
         else
         {
-            ProjectileServerRpc(star, dest);
+            ProjectileServerRpc(star, dest, hit);
         }
     }
 
@@ -786,11 +805,12 @@ public class Attacker : SwingEntityAddon
             SpawnTrail(star, dest);
         }
     }
-    private void SpawnProjectile(Vector3 spawnPos, Vector3 destination)
+    private void SpawnProjectile(Vector3 spawnPos, Vector3 destination, bool hit = true)
     {
         if (attackProjectile != null)
         {
             Projectile proj = Instantiate(attackProjectile, spawnPos, Quaternion.identity);
+            proj.hit = hit;
             proj.groundTarget = destination;
             proj.entityToHomeOnto = targetEnemy;
             proj.isLocal = IsOwner;
@@ -798,17 +818,17 @@ public class Attacker : SwingEntityAddon
         }
     }
     [ClientRpc]
-    private void ProjectileClientRpc(Vector3 star, Vector3 dest)
+    private void ProjectileClientRpc(Vector3 star, Vector3 dest, bool hit = true)
     {
         if (!IsOwner)
         {
-            SpawnProjectile(star, dest);
+            SpawnProjectile(star, dest, hit);
         }
     }
     [ServerRpc]
-    private void ProjectileServerRpc(Vector3 star, Vector3 dest)
+    private void ProjectileServerRpc(Vector3 star, Vector3 dest, bool hit = true)
     {
-        ProjectileClientRpc(star, dest);
+        ProjectileClientRpc(star, dest, hit);
     }
     private Entity GetFirstEnemyHashSearch(float range, RequiredEnemyType requiredEnemyType)
     {

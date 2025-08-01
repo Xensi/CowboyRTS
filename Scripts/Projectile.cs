@@ -1,6 +1,7 @@
 using UnityEngine;
 public class Projectile : MonoBehaviour
 {
+    public bool hit = true;
     public float speed = 1;
     [HideInInspector] public Vector3 groundTarget;
     public bool shouldHomeOnEntity = false;
@@ -84,7 +85,7 @@ public class Projectile : MonoBehaviour
         //Debug.Log("Arrived!");
         if (isLocal)
         {
-            if (entityToHomeOnto != null)
+            if (entityToHomeOnto != null && hit)
             {
                 Global.instance.localPlayer.DamageEntity((sbyte)damage, entityToHomeOnto);
             }

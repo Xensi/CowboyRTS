@@ -592,6 +592,10 @@ public class RTSPlayer : Player
         {
             GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[4], this);
         }
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            GenericSpawnMinion(cursorWorldPosition, playerFaction.spawnableEntities[0], this);
+        }
 #if UNITY_EDITOR //DEBUG COMMANDS
 #endif
     }
