@@ -9,10 +9,8 @@ public class FactionBuilding : FactionEntity
     public bool extendable = false; //should this building be placed in a line?
     public bool rotatable = false;
 
-    public enum BuildingTypes
-    {
-        Generic, //default  
-    }
+    public float coverVal = 0;
+
     [Header("AI Only")]
     public bool isSpawner = false;
     public bool isPopAdder = false;

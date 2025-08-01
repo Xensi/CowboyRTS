@@ -104,7 +104,7 @@ public class Attacker : SwingEntityAddon
         {
             AutomaticAttackMove();
         }*/
-        if (IsValidTarget(targetEnemy))
+        if (IsValidVisibleTarget(targetEnemy))
         {
             if (longTermGoal == Goal.AttackFromIdle && !InChaseRange(targetEnemy))
             {
@@ -168,7 +168,7 @@ public class Attacker : SwingEntityAddon
         #region Mechanics
         //target enemy is provided by enterstate finding an enemy asynchronously
         //reminder: assigned entity searcher updates enemy lists; which are then searched by asyncFindClosestEnemyToAttackMoveTowards
-        if (IsValidTarget(targetEnemy))
+        if (IsValidVisibleTarget(targetEnemy))
         {
             SetTargetEnemyAsDestination();
             //setting destination needs to be called once (or at least not constantly to the same position)
@@ -252,11 +252,10 @@ public class Attacker : SwingEntityAddon
     }
     public void GenericUpdate()
     {
-        if (IsValidTarget(targetEnemy)) targetObscuredLevel = HowObscuredIsTarget(targetEnemy);
     }
     public void AttackingState()
     {
-        if (!IsValidTarget(targetEnemy))
+        if (!IsValidVisibleTarget(targetEnemy))
         {
             HandleLackOfValidTargetEnemy();
             return;
@@ -264,7 +263,7 @@ public class Attacker : SwingEntityAddon
         MakeAsyncSearchAvailableAgain();
         pf.ValidatePathStatus();
 
-        if (!IsValidTarget(preferredAttackTarget) && longTermGoal == Goal.OrderedToAttackSpecificTarget)
+        if (!IsValidVisibleTarget(preferredAttackTarget) && longTermGoal == Goal.OrderedToAttackSpecificTarget)
         {
             if (targetEnemy.IsStructure()) //we can find alternate targets
             {
@@ -446,7 +445,7 @@ public class Attacker : SwingEntityAddon
     private void AfterAttackCheck()
     {
         ent.anim.Play(IDLE); //important to allow repeat attacks (since it's dependent on the anim completion status)
-        if (!IsValidTarget(targetEnemy)) //target enemy is not valid because it is dead or missing
+        if (!IsValidVisibleTarget(targetEnemy)) //target enemy is not valid because it is dead or missing
         {
             HandleLackOfValidTargetEnemy();
         }
@@ -479,11 +478,13 @@ public class Attacker : SwingEntityAddon
     /// </summary>
     /// <param name="target"></param>
     /// <returns></returns>
-    public bool IsValidTarget(Entity target)
+    public bool IsValidVisibleTarget(Entity target)
     {
         if (target == null || !target.isAttackable || !target.alive || !target.isTargetable.Value
             || (IsPlayerControlled() && !target.IsVisibleInFog()) 
-            || !target.IsEnemyOfTarget(ent) || target.currentHP.Value <= 0)
+            || !target.IsEnemyOfTarget(ent) || target.currentHP.Value <= 0
+            || !TargetIsVisible(target)
+            )
         {
             if (targetEnemy == target) targetEnemy = null;
             return false;
@@ -493,6 +494,30 @@ public class Attacker : SwingEntityAddon
             return true;
         }
     }
+    public bool IsValidTarget(Entity target)
+    {
+        if (target == null || !target.isAttackable || !target.alive || !target.isTargetable.Value
+            || (IsPlayerControlled() && !target.IsVisibleInFog())
+            || !target.IsEnemyOfTarget(ent) || target.currentHP.Value <= 0
+            )
+        {
+            if (targetEnemy == target) targetEnemy = null;
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+    private bool TargetIsVisible(Entity target)
+    {
+        //if (IsValidTarget(targetEnemy)) targetObscuredLevel = HowObscuredIsTarget(targetEnemy);
+        float obscuredLevel = HowObscuredIsTarget(target);
+        return obscuredLevel < fullObscuredLevel;
+    }
+
+    private readonly float unobscuredLevel = 0;
+    private readonly float fullObscuredLevel = 1;
 
     /// <summary>
     /// Get how obscured the target is on a scale of 0 to 1.
@@ -507,21 +532,50 @@ public class Attacker : SwingEntityAddon
         Vector3 sightPos = transform.position;
         Vector3 dir = (target.transform.position - sightPos).normalized;
         float dist = Vector3.Distance(sightPos, target.transform.position);
-        //for now, just check if there's an enemy structure blocking our shot
+        float greatestCoverVal = unobscuredLevel;
         RaycastHit[] m_Results = new RaycastHit[5];
         int hits = Physics.RaycastNonAlloc(sightPos, dir, m_Results, dist, Global.instance.enemyLayer);
         for (int i = 0; i < hits; i++)
         {
-            Collider col = m_Results[i].collider;
-            Entity ent = col.GetComponent<Entity>();
-            if (ent.IsStructure())
+            Collider coverCol = m_Results[i].collider;
+            Entity coverEnt = coverCol.GetComponent<Entity>();
+            if (coverEnt == target || !coverEnt.IsStructure()) continue;
+            FactionBuilding fac = coverEnt.factionEntity as FactionBuilding;
+            float coverVal = fac.coverVal;
+            bool inCover = coverVal >= fullObscuredLevel; //full cover (like walls) does not require the target to be close 
+
+            //partial cover (like sandbags) should require the target to be close to the cover (because that's the only way they can hide)
+            if (coverVal < fullObscuredLevel) //if less than full cover, then first check the distance to target
             {
-                Debug.DrawLine(sightPos, target.transform.position, Color.red);
-                return 1;
+                float coverThreshold = 0.5f;
+                Vector3 coverClosestPointToTarget = coverCol.ClosestPoint(target.transform.position);
+                float coverDist = Vector3.Distance(target.transform.position, coverClosestPointToTarget);
+                if (ent.IsAlliedTo(Global.instance.localPlayer))
+                    Debug.DrawRay(coverClosestPointToTarget, 
+                        (target.transform.position-coverClosestPointToTarget).normalized * coverThreshold, Color.black);
+
+                if (coverDist <= coverThreshold)
+                {
+                    inCover = true;
+                    if (ent.IsAlliedTo(Global.instance.localPlayer)) 
+                        Debug.DrawLine(target.transform.position, coverClosestPointToTarget, Color.green);
+                }
+                else
+                {
+                    if (ent.IsAlliedTo(Global.instance.localPlayer)) 
+                        Debug.DrawLine(target.transform.position, coverClosestPointToTarget, Color.red);
+                }
             }
+
+            if (inCover && coverVal > greatestCoverVal)
+            {
+                greatestCoverVal = coverVal;
+            }
+            if (greatestCoverVal >= fullObscuredLevel) return greatestCoverVal; //early exit if full cover
         }
-        Debug.DrawLine(sightPos, target.transform.position, Color.green);
-        return 0;
+        //Debug.DrawLine(sightPos, target.transform.position, Color.red);
+        //Debug.DrawLine(sightPos, target.transform.position, Color.green);
+        return greatestCoverVal;
     }
     [SerializeField] private float targetObscuredLevel = 0;
     private bool IsPlayerControlled()
@@ -908,7 +962,7 @@ public class Attacker : SwingEntityAddon
                     valid = checkedEnt;
                 }
             }
-            if (IsValidTarget(targetEnemy))
+            if (IsValidVisibleTarget(targetEnemy))
             { //ensure dist is up to date
                 sqrDistToTargetEnemy = (targetEnemy.transform.position - transform.position).sqrMagnitude;
             }
@@ -989,7 +1043,7 @@ public class Attacker : SwingEntityAddon
                     valid = check;
                 }
             }
-            if (IsValidTarget(alternateAttackTarget))
+            if (IsValidVisibleTarget(alternateAttackTarget))
             { //ensure dist is up to date
                 sqrDistToAlternateTarget = (alternateAttackTarget.transform.position - transform.position).sqrMagnitude;
             }

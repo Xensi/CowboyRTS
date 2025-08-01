@@ -610,7 +610,7 @@ public class StateMachineController : NetworkBehaviour
     private void AttackTarget(Entity select)
     {
         //Debug.Log("Received order to attack " + select.name);
-        if (ent.IsAttacker() && ent.attacker.IsValidTarget(select))
+        if (ent.IsAttacker() && ent.attacker.IsValidVisibleTarget(select))
         {
             lastCommand.Value = CommandTypes.Attack;
             if (pf != null) pf.ClearIdleness();

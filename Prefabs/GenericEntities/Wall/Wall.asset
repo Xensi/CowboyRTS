@@ -14,16 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   productionName: Wall
   description: Keeps out the rabble.
+  maxHP: 100
+  deathEffect: {fileID: 1596140512904530975, guid: 67836dd37cc44c24eaf1ccca6de50459, type: 3}
   prefabToSpawn: {fileID: 3798861697192735719, guid: 0469ba43681a07247aef51cf6ccb8ef9, type: 3}
   goldCost: 2
-  maxHP: 100
+  costs: []
   consumePopulationAmount: 0
   raisePopulationLimitBy: 0
   shouldHideInFog: 0
   visionRange: 7
   soundProfile: {fileID: 0}
   teamType: 0
-  deathEffect: {fileID: 1596140512904530975, guid: 67836dd37cc44c24eaf1ccca6de50459, type: 3}
   isHarvester: 0
   harvestCapacity: 5
   depositRange: 1
@@ -35,5 +36,6 @@ MonoBehaviour:
   buildOffset: {x: 0.25, y: 0, z: 0.25}
   extendable: 1
   rotatable: 0
+  coverVal: 0.5
   isSpawner: 0
   isPopAdder: 0
