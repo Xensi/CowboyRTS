@@ -354,6 +354,7 @@ public class StateMachineController : NetworkBehaviour
     }
     private void ConditionalUnclaimOre(EntityStates state)
     {
+        if (!ent.IsHarvester()) return;
         bool directlyRelated = (state == EntityStates.Harvesting || state == EntityStates.Depositing);
         bool indirectlyRelated = (lastMajorState == EntityStates.Harvesting || lastMajorState == EntityStates.Depositing)
             && (state == EntityStates.FindInteractable || state == EntityStates.WalkToInteractable);
@@ -658,6 +659,7 @@ public class StateMachineController : NetworkBehaviour
     {
         CheckIfAttackTrailIsActiveErroneously();
         if (anim != null) anim.StateBasedAnimations();
+        if (ent.IsAttacker()) ent.attacker.GenericUpdate();
         switch (currentState)
         {
             case EntityStates.Spawn: //play the spawn animation  

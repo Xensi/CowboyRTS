@@ -154,7 +154,7 @@ PrefabInstance:
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: factionEntity
       value: 
-      objectReference: {fileID: 11400000, guid: 7e8a3f38a94a42f4083b4eb654a9edc7, type: 2}
+      objectReference: {fileID: 11400000, guid: 5d16213ef8d565e4b9180f643344670f, type: 2}
     - target: {fileID: 1849390451316900970, guid: 4043042f4d780c543a82e3b6c7421fa9, type: 3}
       propertyPath: shouldHideInFog
       value: 0
@@ -309,5 +309,7 @@ MonoBehaviour:
   sm: {fileID: 0}
   anim: {fileID: 0}
   pf: {fileID: 0}
+  at: {fileID: 0}
   resourceType: 4
-  maxHarvesters: 1
+  oreFac: {fileID: 0}
+  harvestersWithClaimsOnThis: []

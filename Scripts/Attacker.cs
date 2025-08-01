@@ -250,6 +250,10 @@ public class Attacker : SwingEntityAddon
         }
         #endregion
     }
+    public void GenericUpdate()
+    {
+        if (IsValidTarget(targetEnemy)) targetObscuredLevel = HowObscuredIsTarget(targetEnemy);
+    }
     public void AttackingState()
     {
         if (!IsValidTarget(targetEnemy))
@@ -469,6 +473,7 @@ public class Attacker : SwingEntityAddon
             }
         }
     }
+
     /// <summary>
     /// Is target nonnull, alive, targetable, etc?
     /// </summary>
@@ -476,7 +481,6 @@ public class Attacker : SwingEntityAddon
     /// <returns></returns>
     public bool IsValidTarget(Entity target)
     {
-
         if (target == null || !target.isAttackable || !target.alive || !target.isTargetable.Value
             || (IsPlayerControlled() && !target.IsVisibleInFog()) 
             || !target.IsEnemyOfTarget(ent) || target.currentHP.Value <= 0)
@@ -489,6 +493,37 @@ public class Attacker : SwingEntityAddon
             return true;
         }
     }
+
+    /// <summary>
+    /// Get how obscured the target is on a scale of 0 to 1.
+    /// 0 is not obscured at all.
+    /// 1 is completely obscured.
+    /// Obscured level is based on how good the cover of an entity in between the shooter and the target is.
+    /// </summary>
+    /// <param name="target"></param>
+    /// <returns></returns>
+    private float HowObscuredIsTarget(Entity target)
+    {
+        Vector3 sightPos = transform.position;
+        Vector3 dir = (target.transform.position - sightPos).normalized;
+        float dist = Vector3.Distance(sightPos, target.transform.position);
+        //for now, just check if there's an enemy structure blocking our shot
+        RaycastHit[] m_Results = new RaycastHit[5];
+        int hits = Physics.RaycastNonAlloc(sightPos, dir, m_Results, dist, Global.instance.enemyLayer);
+        for (int i = 0; i < hits; i++)
+        {
+            Collider col = m_Results[i].collider;
+            Entity ent = col.GetComponent<Entity>();
+            if (ent.IsStructure())
+            {
+                Debug.DrawLine(sightPos, target.transform.position, Color.red);
+                return 1;
+            }
+        }
+        Debug.DrawLine(sightPos, target.transform.position, Color.green);
+        return 0;
+    }
+    [SerializeField] private float targetObscuredLevel = 0;
     private bool IsPlayerControlled()
     {
         return !ent.aiControlled;
