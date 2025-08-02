@@ -22,21 +22,12 @@ public class FactionEntity : ScriptableObject
     public bool shouldHideInFog = true; //have this determined by if it is a building or unit
     public float visionRange = 7;
     public UnitSoundsProfile soundProfile;
-    public Entity.TeamBehavior teamType = Entity.TeamBehavior.OwnerTeam;
+    //public Entity.TeamBehavior teamType = Entity.TeamBehavior.OwnerTeam;
 
     [Header("Optional Behavior")]
 
-    [SerializeField, HideInInspector] public bool isHarvester = false;
-    [SerializeField, HideInInspector] public int harvestCapacity = 5;
-    [SerializeField, HideInInspector] public float depositRange = 1;
-
-    [SerializeField, HideInInspector] public bool expandGarrisonOptions = false;
-    [SerializeField, HideInInspector] public bool passengersAreTargetable = false;
-    [SerializeField, HideInInspector] public bool acceptsHeavy = false;
+    //[SerializeField, HideInInspector] public bool expandGarrisonOptions = false;
+    //[SerializeField, HideInInspector] public bool passengersAreTargetable = false;
+    //[SerializeField, HideInInspector] public bool acceptsHeavy = false;
     public bool hideModelOnDeath = false;
-
-    public bool IsHarvester()
-    {
-        return isHarvester;
-    }  
 }

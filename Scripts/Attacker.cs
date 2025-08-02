@@ -3,9 +3,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
+using static SoundTypes;
 using static StateMachineController;
 using static UnitAnimator;
-using static SoundTypes;
 public class Attacker : SwingEntityAddon
 {
     [SerializeField] private AttackSettings attackSettings;
@@ -358,26 +358,7 @@ public class Attacker : SwingEntityAddon
                 SelfDestructInExplosion(areaOfEffectRadius);
                 break;
             case AttackType.Projectile:
-                Vector3 positionToShoot = targetEnemy.transform.position + new Vector3(0, 0.5f, 0);
-                if (targetEnemy.physicalCollider != null) //get closest point on collider; //this has an issue
-                {
-                    Vector3 centerToMax = targetEnemy.physicalCollider.bounds.center - targetEnemy.physicalCollider.bounds.max;
-                    float boundsFakeRadius = centerToMax.magnitude;
-                    float discrepancyThreshold = boundsFakeRadius + .5f;
-                    Vector3 closest = targetEnemy.physicalCollider.ClosestPoint(transform.position);
-                    float rawDist = Vector3.Distance(transform.position, targetEnemy.transform.position);
-                    float closestDist = Vector3.Distance(transform.position, closest);
-                    if (Mathf.Abs(rawDist - closestDist) <= discrepancyThreshold)
-                    {
-                        positionToShoot = closest + new Vector3(0, 0.5f, 0);
-                    }
-                    if (!hit)
-                    {
-                        Vector2 randomOffset = (UnityEngine.Random.insideUnitCircle * 0.25f).normalized;
-                        positionToShoot = positionToShoot + new Vector3(randomOffset.x, 0, randomOffset.y);
-                    }
-                }
-                ShootProjectileAtPosition(positionToShoot, hit);
+                ShootProjectileAtTarget(targetEnemy, hit);
                 break;
             case AttackType.None:
                 break;
@@ -717,7 +698,16 @@ public class Attacker : SwingEntityAddon
     {
         if (enemy != null)
         { //fire locally
-            ent.SimplePlaySound(HitSound);
+            if (hit)
+            {
+                ent.SimplePlaySound(HitSound);
+            }
+            else
+            {
+                ent.SimplePlaySound(HitSound);
+                ent.SimplePlaySound(MissSound);
+            }
+
             if (ent.attackEffects.Length > 0) //show muzzle flash
             {
                 ent.DisplayAttackEffects();
@@ -733,42 +723,71 @@ public class Attacker : SwingEntityAddon
                 {
                     spawnPos = transform.position;
                 }
-                Vector3 positionToShoot = enemy.transform.position;
-                Vector3 dir = (enemy.transform.position - spawnPos).normalized;
-                Vector2 perp = Vector2.Perpendicular(new Vector2(dir.x, dir.z));
-                float rand = UnityEngine.Random.Range(0.25f, 0.5f);
-                int isNegative = UnityEngine.Random.Range(0, 2);
-                if (isNegative == 1) rand *= -1;
-                perp *= rand;
-                //Debug.DrawRay(enemy.transform.position, perp, Color.red, 1);
-                positionToShoot = positionToShoot + new Vector3(perp.x, 0, perp.y);
+                Vector3 positionToShoot = GetEntityCenter(enemy);
+                if (!hit)
+                {
+                    Vector3 dir = (enemy.transform.position - spawnPos).normalized;
+                    Vector2 perp = Vector2.Perpendicular(new Vector2(dir.x, dir.z));
+                    float rand = UnityEngine.Random.Range(0.5f, 1f);
+                    int isNegative = UnityEngine.Random.Range(0, 2);
+                    if (isNegative == 1) rand *= -1;
+                    perp *= rand;
+                    //Debug.DrawRay(enemy.transform.position, perp, Color.red, 1);
+                    positionToShoot = positionToShoot + new Vector3(perp.x, 0, perp.y);
+                }
                 SimpleTrail(spawnPos, positionToShoot);
             }
             if (hit) Global.instance.localPlayer.DamageEntity(damage, enemy);
             //DamageUmbrella(damage, enemy);
         }
     }
-    private void ShootProjectileAtPosition(Vector3 dest, bool hit = true)
+    private Vector3 GetEntityCenter(Entity ent)
     {
-        Vector3 star;
+        if (ent == null) return Vector3.zero;
+        if (ent.physicalCollider == null) return ent.transform.position;
+        return ent.transform.position + ent.transform.InverseTransformPoint(ent.physicalCollider.bounds.center);
+    }
+    private void ShootProjectileAtTarget(Entity target, bool hit = true)
+    {
+        Vector3 dest = GetEntityCenter(target);
+        if (target.physicalCollider != null) //get closest point on collider; //this has an issue
+        {
+            Vector3 centerToMax = target.physicalCollider.bounds.center - target.physicalCollider.bounds.max;
+            float boundsFakeRadius = centerToMax.magnitude;
+            float discrepancyThreshold = boundsFakeRadius + .5f;
+            Vector3 closest = target.physicalCollider.ClosestPoint(transform.position);
+            float rawDist = Vector3.Distance(transform.position, target.transform.position);
+            float closestDist = Vector3.Distance(transform.position, closest);
+            if (Mathf.Abs(rawDist - closestDist) <= discrepancyThreshold)
+            {
+                dest = closest + new Vector3(0, 0.5f, 0);
+            }
+            if (!hit)
+            {
+                Vector2 randomOffset = (UnityEngine.Random.insideUnitCircle * 0.25f).normalized;
+                dest = dest + new Vector3(randomOffset.x, 0, randomOffset.y);
+            }
+        }
+
+        Vector3 start;
         if (attackEffectSpawnPosition != null)
         {
-            star = attackEffectSpawnPosition.position;
+            start = attackEffectSpawnPosition.position;
         }
         else
         {
-            star = transform.position;
+            start = GetEntityCenter(ent);
         }
         //Spawn locally
-        SpawnProjectile(star, dest, hit);
+        SpawnProjectile(start, dest, hit);
         //spawn for other clients as well
         if (IsServer)
         {
-            ProjectileClientRpc(star, dest, hit);
+            ProjectileClientRpc(start, dest, hit);
         }
         else
         {
-            ProjectileServerRpc(star, dest, hit);
+            ProjectileServerRpc(start, dest, hit);
         }
     }
 

@@ -31,8 +31,4 @@ public class FactionUnit : FactionEntity
         data.Init(name, spawnTime, prefab, goldCost, popCost);
         return data;
     }
-    public bool IsFighter()
-    {
-        return isHarvester == false;
-    }
 }

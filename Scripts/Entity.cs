@@ -349,8 +349,8 @@ public class Entity : NetworkBehaviour
             //in the future, number of interactors will be per addon; different number of allowed harvesters, depositers, etc.
             allowedInteractors = 100;
 
-            passengersAreTargetable = factionEntity.passengersAreTargetable;
-            acceptsHeavy = factionEntity.acceptsHeavy;
+            //passengersAreTargetable = factionEntity.passengersAreTargetable;
+            //acceptsHeavy = factionEntity.acceptsHeavy;
 
             consumePopulationAmount = factionEntity.consumePopulationAmount;
             raisePopulationLimitBy = factionEntity.raisePopulationLimitBy;
@@ -366,7 +366,7 @@ public class Entity : NetworkBehaviour
             }
             else
             {
-                teamType = factionEntity.teamType;
+                teamType = TeamBehavior.OwnerTeam; //factionEntity.teamType;
                 shouldHideInFog = factionEntity.shouldHideInFog;
             }
 
@@ -1848,7 +1848,8 @@ public class Entity : NetworkBehaviour
                 clip = SP.hitSound;
                 break;
             case MissSound:
-                clip = SP.missSound;
+                if (SP.missSound != null) clip = SP.missSound;
+                else clip = SP.hitSound;
                 break;
             case AttackMoveSound:
                 clip = SP.attackMoveSound;
@@ -1856,7 +1857,8 @@ public class Entity : NetworkBehaviour
             default:
                 break;
         }
-        Global.instance.PlayClipAtPoint(clip, transform.position, 0.1f);
+        float pitch = Random.Range(.75f, 1.25f);
+        if (clip != null) Global.instance.PlayClipAtPoint(clip, transform.position, 0.1f, pitch);
     }
     public float GetRadius()
     {

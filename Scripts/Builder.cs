@@ -4,6 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 using static StateMachineController;
 using static UnitAnimator;
+using static SoundTypes;
 
 public class Builder : SwingEntityAddon
 {
@@ -68,7 +69,7 @@ public class Builder : SwingEntityAddon
     public void BuildTarget(Entity target) //since hp is a network variable, changing it on the server will propagate changes to clients as well
     {
         //fire locally
-        ent.SimplePlaySound(1);
+        ent.SimplePlaySound(HitSound);
 
         if (target != null)
         {

@@ -156,7 +156,7 @@ public class AIPlayer : Player
                 if (item.ent.factionEntity is FactionUnit)
                 {
                     FactionUnit facUnit = item.ent.factionEntity as FactionUnit;
-                    if (facUnit != null && facUnit.IsFighter())
+                    if (facUnit != null) // && facUnit.IsFighter()
                     {
                         fighters.Add(item);
                     }

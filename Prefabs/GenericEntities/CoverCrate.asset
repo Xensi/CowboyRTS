@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5040608eb03c21941b0df73233e2ec94, type: 3}
-  m_Name: ThinWall
+  m_Name: CoverCrate
   m_EditorClassIdentifier: 
-  productionName: Wall
-  description: Keeps out the rabble.
+  productionName: Crate
+  description: 
   maxHP: 25
   deathEffect: {fileID: 1596140512904530975, guid: 67836dd37cc44c24eaf1ccca6de50459, type: 3}
   prefabToSpawn: {fileID: 3798861697192735719, guid: 0469ba43681a07247aef51cf6ccb8ef9, type: 3}
@@ -29,6 +29,6 @@ MonoBehaviour:
   buildOffset: {x: 0.25, y: 0, z: 0.25}
   extendable: 1
   rotatable: 0
-  coverVal: 1
+  coverVal: 0.5
   isSpawner: 0
   isPopAdder: 0

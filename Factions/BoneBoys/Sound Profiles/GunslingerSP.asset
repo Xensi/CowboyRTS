@@ -16,3 +16,9 @@ MonoBehaviour:
   - {fileID: 8300000, guid: e12124de62f005543a8b08aff5493439, type: 3}
   - {fileID: 8300000, guid: ece1bbbbedff32a48b397650f27eed3d, type: 3}
   - {fileID: 8300000, guid: f36c995b0cc52224ebecea1e5b408cfa, type: 3}
+  spawnSound: {fileID: 0}
+  selectSound: {fileID: 0}
+  hitSound: {fileID: 8300000, guid: ece1bbbbedff32a48b397650f27eed3d, type: 3}
+  missSound: {fileID: 8300000, guid: 3aefe5571a47a464ca28ed4b533f1ae4, type: 3}
+  attackMoveSound: {fileID: 0}
+  abilitySound: {fileID: 0}
