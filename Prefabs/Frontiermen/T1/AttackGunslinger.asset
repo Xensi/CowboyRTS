@@ -15,7 +15,7 @@ MonoBehaviour:
   attackType: 1
   damage: 1
   range: 3
-  attackDuration: 1
+  attackDuration: 2
   impactTime: 0.5
   areaOfEffectRadius: 0
   attackProjectilePrefab: {fileID: 0}

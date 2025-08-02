@@ -8,7 +8,7 @@ using UnityEngine.Rendering;
 using Pathfinding;
 using System.Linq;
 using UtilityMethods;
-
+using static SoundTypes;
 public class Global : NetworkBehaviour
 {
     public static Global instance { get; private set; }
@@ -178,15 +178,11 @@ public class Global : NetworkBehaviour
 
     public void PlayStructureSelectSound(Entity entity)
     {
-        if (entity.sounds.Length > 1) PlayClipAtPoint(entity.sounds[1], entity.transform.position, .75f);
-    }
-    public void PlayMinionRefreshSound(Entity entity)
-    {
-        if (entity.sounds.Length > 4) PlayClipAtPoint(entity.sounds[4], entity.transform.position, 1f, 1, true);
+        entity.SimplePlaySound(SelectSound);
     }
     public void PlayMinionAbilitySound(Entity entity)
     {
-        if (entity.sounds.Length > 3) PlayClipAtPoint(entity.sounds[3], entity.transform.position, .5f, 1, true);
+        entity.SimplePlaySound(AbilitySound);
     }
     public Entity FindEntityFromObject(GameObject obj)
     {

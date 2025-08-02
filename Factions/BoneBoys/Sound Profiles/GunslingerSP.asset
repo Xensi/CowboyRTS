@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 03adb7ce97633d9459373ee32b03e856, type: 3}
-  m_Name: Gunslinger
+  m_Name: GunslingerSP
   m_EditorClassIdentifier: 
   sounds:
   - {fileID: 8300000, guid: e12124de62f005543a8b08aff5493439, type: 3}

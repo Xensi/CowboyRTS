@@ -4,6 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 using static StateMachineController;
 using static UnitAnimator;
+using static SoundTypes;
 public enum HowToFilterResources
 {
     BanResources,
@@ -385,7 +386,7 @@ public class Harvester : SwingEntityAddon
     public void HarvestTargetOnce(Ore ore)
     {
         //Debug.Log("Harvesting Target Once");
-        ent.SimplePlaySound(1); //play impact sound 
+        ent.SimplePlaySound(HitSound); //play impact sound 
         if (ore != null && ore.IsSpawned)
         {
             int actualHarvested = Mathf.Clamp(swingDelta, 0, ore.ent.currentHP.Value); //max amount we can harvest clamped by hitpoints remaining

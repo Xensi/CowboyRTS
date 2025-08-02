@@ -5,7 +5,7 @@ using Unity.Netcode;
 using UnityEngine;
 using static StateMachineController;
 using static UnitAnimator;
-
+using static SoundTypes;
 public class Attacker : SwingEntityAddon
 {
     [SerializeField] private AttackSettings attackSettings;
@@ -651,7 +651,7 @@ public class Attacker : SwingEntityAddon
             if (!playedAttackMoveSound) //play sound and anim
             {
                 playedAttackMoveSound = true;
-                ent.SimplePlaySound(2);
+                ent.SimplePlaySound(AttackMoveSound);
             }
             ent.anim.Play(BEGIN_ATTACK_WALK);
         }
@@ -717,7 +717,7 @@ public class Attacker : SwingEntityAddon
     {
         if (enemy != null)
         { //fire locally
-            ent.SimplePlaySound(1);
+            ent.SimplePlaySound(HitSound);
             if (ent.attackEffects.Length > 0) //show muzzle flash
             {
                 ent.DisplayAttackEffects();

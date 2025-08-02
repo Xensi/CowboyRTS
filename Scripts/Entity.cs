@@ -9,7 +9,7 @@ using static Effect;
 using static StateMachineController;
 using static UnitAnimator;
 using UnityEngine.UIElements;
-
+using static SoundTypes;
 /// <summary>
 /// Handles core behavior, like selection, HP, destruction, etc.
 /// </summary>
@@ -133,7 +133,6 @@ public class Entity : NetworkBehaviour
 
     [Header("Aesthetic Settings")]
     private Material damagedState;
-    [HideInInspector] public AudioClip[] sounds; //0 spawn, 1 attack, 2 attackMove
     public SelectionCircle selectIndicator;
     [HideInInspector]
     public NetworkVariable<sbyte> teamNumber = new NetworkVariable<sbyte>(default,
@@ -200,7 +199,7 @@ public class Entity : NetworkBehaviour
         Global.instance.AddEntityToMainList(this);
         InitializeBars();
         DetermineLayerBasedOnAllegiance();
-        if (spawnedBySpawner) PlaySpawnSound();
+        if (spawnedBySpawner) SimplePlaySound(SpawnSound);
         CustomNetworkSpawn(GetOwnerClientID());
     }
     /// <summary>
@@ -358,15 +357,6 @@ public class Entity : NetworkBehaviour
             //DIFFERENTIATE BETWEEN BUILDING AND UNIT TYPES 
 
             if (fogUnit != null) fogUnit.circleRadius = factionEntity.visionRange;
-
-            if (factionEntity.soundProfile != null)
-            {
-                sounds = factionEntity.soundProfile.sounds;
-            }
-            else
-            {
-                sounds = new AudioClip[0];
-            }
 
             if (factionEntity is FactionOre)
             {
@@ -744,10 +734,6 @@ public class Entity : NetworkBehaviour
         }
     }
 
-    private void PlaySpawnSound()
-    {
-        if (sounds.Length > 0) Global.instance.PlayClipAtPoint(sounds[0], transform.position, .5f); //play spawning sound
-    }
     [SerializeField] private Vector3 setRallyDest;
     public Vector3 GetRallyDest()
     {
@@ -1819,16 +1805,12 @@ public class Entity : NetworkBehaviour
             attackEffects[i].enabled = false;
         }
     }
-    public void SimplePlaySound(byte id)
+    public void SimplePlaySound(SoundTypes type)
     {
-        //fire locally 
-        if (sounds.Length > 0)
-        {
-            AudioClip clip = sounds[id];
-            Global.instance.PlayClipAtPoint(clip, transform.position, 0.1f);
-            //request server to send to other clients
-            RequestSoundServerRpc(id);
-        }
+        UnitSoundsProfile SP = factionEntity.soundProfile;
+        if (SP == null) return;
+        PlayClipFromEnum(type);
+        RequestSoundServerRpc(GetIDFromSoundType(type)); //request server to send to other clients
     }
     [ServerRpc(RequireOwnership = false)]
     private void RequestSoundServerRpc(byte id)
@@ -1841,9 +1823,40 @@ public class Entity : NetworkBehaviour
     {
         if (!IsOwner)
         {
-            AudioClip clip = sounds[id];
-            Global.instance.PlayClipAtPoint(clip, transform.position, 0.25f);
+            PlayClipFromEnum(GetAudioClipFromID(id));
         }
+    }
+    private byte GetIDFromSoundType(SoundTypes type)
+    {
+        return (byte)type;
+    }
+    private SoundTypes GetAudioClipFromID(byte id)
+    {
+        return (SoundTypes)id;
+    }
+    private void PlayClipFromEnum(SoundTypes type)
+    {
+        AudioClip clip = null;
+        UnitSoundsProfile SP = factionEntity.soundProfile;
+        if (SP == null) return;
+        switch (type)
+        {
+            case SpawnSound:
+                clip = SP.spawnSound;
+                break;
+            case HitSound:
+                clip = SP.hitSound;
+                break;
+            case MissSound:
+                clip = SP.missSound;
+                break;
+            case AttackMoveSound:
+                clip = SP.attackMoveSound;
+                break;
+            default:
+                break;
+        }
+        Global.instance.PlayClipAtPoint(clip, transform.position, 0.1f);
     }
     public float GetRadius()
     {

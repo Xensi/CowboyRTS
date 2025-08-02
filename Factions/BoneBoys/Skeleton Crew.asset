@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Skeleton Crew
   m_EditorClassIdentifier: 
   spawnableEntities:
-  - {fileID: 11400000, guid: f0bbeafc167fb4f42b6a8cb8590d5373, type: 2}
+  - {fileID: 11400000, guid: 7f37b8c9df8bb494988d206836eb2972, type: 2}
   - {fileID: 11400000, guid: 04ae84b5d643fbc498358c09db111adb, type: 2}
   - {fileID: 11400000, guid: 062fe0b231fb3b54289b317e0e999443, type: 2}
   - {fileID: 11400000, guid: 6ac2c4201fde5c94b98a1034aa483861, type: 2}
