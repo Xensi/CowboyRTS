@@ -97,6 +97,10 @@ public class Attacker : SwingEntityAddon
             //Debug.Log("trying to target enemy idle");
         }
     }
+    private bool IsRangedUnitPathingBlocked() //it's only blocked if the path distance exceeds attack range
+    {
+        return pf.PathBlocked() && pf.pathDistanceFromDestination > range;
+    }
     public void WalkToSpecificEnemyState()
     {
         /*if (IsEffectivelyIdle(.1f) && IsMelee()) //!pathReachesDestination && 
@@ -104,7 +108,7 @@ public class Attacker : SwingEntityAddon
         {
             AutomaticAttackMove();
         }*/
-        if (IsValidVisibleTarget(targetEnemy))
+        if (IsValidTarget(targetEnemy))
         {
             if (longTermGoal == Goal.AttackFromIdle && !InChaseRange(targetEnemy))
             {
@@ -115,9 +119,9 @@ public class Attacker : SwingEntityAddon
             //UpdateAttackIndicator();
             pf.ValidatePathStatus();
             pf.PushNearbyOwnedIdlers();
+            Entity enemy = null;
             if (ent.IsMelee()) // melee troops should detect when blocked by walls and attack them
             {
-                Entity enemy = null;
                 if (pf.PathBlocked() && pf.IsEffectivelyIdle(.1f)) //no path to enemy, attack structures in our way
                 {
                     //periodically perform mini physics searches around us and if we get anything attack it 
@@ -131,19 +135,26 @@ public class Attacker : SwingEntityAddon
                     }
                 }
             }
+            else //ranged troops should detect if line of sight and path is blocked and target walls as fallback
+            {
+                if (IsRangedUnitPathingBlocked() && !TargetIsVisible(targetEnemy)) //no path to enemy, attack structures in our way
+                {
+                    enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Structure);
+                    if (enemy != null)
+                    {
+                        targetEnemy = enemy;
+                        SwitchState(EntityStates.Attacking);
+                    }
+                }
+            }
             if (!InRangeOfEntity(targetEnemy, range))
             {
-                /*if (ent.occupiedGarrison != null)
-                {
-                    SwitchState(EntityStates.Idle); 
-                    return;
-                }*/
                 //anim.Play(CONTINUE_ATTACK_WALK);
 
                 //if target is a structure, move the destination closer to us until it no longer hits obstacle
                 SetTargetEnemyAsDestination();
             }
-            else
+            else if (TargetIsVisible(targetEnemy)) //we can only start attacking once they're visible to us
             {
                 SwitchState(EntityStates.Attacking);
                 return;
@@ -168,7 +179,7 @@ public class Attacker : SwingEntityAddon
         #region Mechanics
         //target enemy is provided by enterstate finding an enemy asynchronously
         //reminder: assigned entity searcher updates enemy lists; which are then searched by asyncFindClosestEnemyToAttackMoveTowards
-        if (IsValidVisibleTarget(targetEnemy))
+        if (IsValidTarget(targetEnemy))
         {
             SetTargetEnemyAsDestination();
             //setting destination needs to be called once (or at least not constantly to the same position)
@@ -176,7 +187,7 @@ public class Attacker : SwingEntityAddon
             if (ent.IsMelee())
             {
                 Entity enemy = null;
-                if (targetEnemy.IsMinion()) //target the first minion that enters our range
+                if (targetEnemy.IsMinion()) //then target the first minion that enters our range
                 {
                     enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Minion);
                     //enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Minion, false);
@@ -198,7 +209,6 @@ public class Attacker : SwingEntityAddon
             }
             else //is ranged
             {
-                //set our destination to be the target enemy 
                 if (ent.InRangeOfEntity(targetEnemy, range)) //if enemy is in our attack range, attack them
                 {
                     SwitchState(EntityStates.Attacking);
@@ -348,7 +358,7 @@ public class Attacker : SwingEntityAddon
         float chanceToHit = 1 - targetCoverVal;
         float rand = UnityEngine.Random.Range(0f, 1f);
         bool hit = rand <= chanceToHit;
-        Debug.Log(rand + " " + chanceToHit + " " + hit);
+        //Debug.Log(rand + " " + chanceToHit + " " + hit);
         switch (attackType)
         {
             case AttackType.Instant:
@@ -471,13 +481,10 @@ public class Attacker : SwingEntityAddon
     /// <returns></returns>
     public bool IsValidVisibleTarget(Entity target)
     {
-        if (target == null || !target.isAttackable || !target.alive || !target.isTargetable.Value
-            || (IsPlayerControlled() && !target.IsVisibleInFog()) 
-            || !target.IsEnemyOfTarget(ent) || target.currentHP.Value <= 0
+        if (!IsValidTarget(target)
             || !TargetIsVisible(target)
             )
         {
-            if (targetEnemy == target) targetEnemy = null;
             return false;
         }
         else
@@ -502,6 +509,8 @@ public class Attacker : SwingEntityAddon
     }
     private bool TargetIsVisible(Entity target)
     {
+        if (attackSettings.ShouldIgnoreCover()) return true;
+
         //if (IsValidTarget(targetEnemy)) targetObscuredLevel = HowObscuredIsTarget(targetEnemy);
         float obscuredLevel = HowObscuredIsTarget(target);
         return obscuredLevel < fullObscuredLevel;
@@ -566,7 +575,8 @@ public class Attacker : SwingEntityAddon
         }
         //Debug.DrawLine(sightPos, target.transform.position, Color.red);
         //Debug.DrawLine(sightPos, target.transform.position, Color.green);
-        return greatestCoverVal;
+        return greatestCoverVal - attackSettings.coverToIgnore; //only apply cover reduction to the final result,
+                                                                //and don't apply it if the result is 1
     }
     [SerializeField] private float targetObscuredLevel = 0;
     private bool IsPlayerControlled()
@@ -858,7 +868,7 @@ public class Attacker : SwingEntityAddon
     {
         return Global.instance.spatialHash.GetClosestMinionHashSearch(ent, range);
     }
-    private Entity FindSpecificEnemyInSearchListInRange(float range, Entity enemy)
+    private Entity FindSpecificEnemyInSearchListInRange(float range, Entity enemy) //reformat as bool return
     {
         if (assignedEntitySearcher == null) return null;
         Entity[] searchArray = new Entity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];

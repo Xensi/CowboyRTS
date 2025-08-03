@@ -93,14 +93,14 @@ public class Pathfinder : EntityAddon
     /// <returns></returns>
     private bool EndOfPathReachesPosition(Vector3 position)
     {
-        float dist = SquaredDistanceOfPathEndToPos(position);
+        float squaredDistance = SquaredDistanceOfPathEndToPos(position);
         //Debug.DrawRay(position, Vector3.up, Color.yellow, 4);
         //Debug.DrawRay(buffer.Last(), Vector3.up, Color.blue, 4);
 
         float pathThreshold = 0.1f;
         float leeway = 0;
         if (at != null) leeway = at.range;
-        return dist < pathThreshold * pathThreshold + leeway * leeway;
+        return squaredDistance < pathThreshold * pathThreshold + leeway * leeway;
     }
     /// <summary>
     /// Returns squared length of the path to a position. Compare against a squared threshold.
@@ -113,12 +113,12 @@ public class Pathfinder : EntityAddon
         ai.GetRemainingPath(buffer, out bool stale);
         float dist = (position - buffer.Last()).sqrMagnitude;
 
-        Vector3 prePos = buffer[0];
+        /*Vector3 prePos = buffer[0];
         for (int i = 1; i < buffer.Count; i++)
         {
             Debug.DrawLine(prePos, buffer[i], Color.blue);
             prePos = buffer[i];
-        }
+        }*/
         return dist;
     }
     private void CheckIfPathIsClear(Vector3 position)
@@ -455,7 +455,21 @@ public class Pathfinder : EntityAddon
         {
             pathReachesDestination = PathStatus.Blocked;
         }
+        pathDistanceFromDestination = DistanceOfPathEndToPos(pathfindingTarget.transform.position);
     }
+    /// <summary>
+    /// Returns squared length of the path to a position. Compare against a squared threshold.
+    /// </summary>
+    /// <param name="position"></param>
+    /// <returns></returns>
+    private float DistanceOfPathEndToPos(Vector3 position)
+    {
+        var buffer = new List<Vector3>();
+        ai.GetRemainingPath(buffer, out bool stale);
+        float dist = (position - buffer.Last()).magnitude;
+        return dist;
+    }
+    public float pathDistanceFromDestination = Mathf.Infinity;
     /// <summary>
     /// This is a timer that runs for 100 ms if the path status is invalid. The path status can become invalid by the destination
     /// changing. After the timer elapses, the path status will become valid, meaning that the game has had enough time to do path

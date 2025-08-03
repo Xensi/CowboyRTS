@@ -72,8 +72,8 @@ public class StateMachineController : NetworkBehaviour
     [HideInInspector]
     public NetworkVariable<CommandTypes> lastCommand = new NetworkVariable<CommandTypes>(default,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    public Pathfinder pf;
-    public UnitAnimator anim;
+    [HideInInspector] public Pathfinder pf;
+    [HideInInspector] public UnitAnimator anim;
 
     private bool skipFirstFrame = true;
     private bool attackTrailActive = false;
@@ -610,7 +610,7 @@ public class StateMachineController : NetworkBehaviour
     private void AttackTarget(Entity select)
     {
         //Debug.Log("Received order to attack " + select.name);
-        if (ent.IsAttacker() && ent.attacker.IsValidVisibleTarget(select))
+        if (ent.IsAttacker() && ent.attacker.IsValidTarget(select))
         {
             lastCommand.Value = CommandTypes.Attack;
             if (pf != null) pf.ClearIdleness();

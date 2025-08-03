@@ -6,7 +6,7 @@ public class TrailController : MonoBehaviour
 {
     public Vector3 start;
     public Vector3 destination; 
-    private readonly float speed = 100; 
+    [SerializeField] private float speed = 50f; 
     void Update()
     { 
         var step = speed * Time.deltaTime; // calculate distance to move

@@ -19,3 +19,4 @@ MonoBehaviour:
   impactTime: 0.5
   areaOfEffectRadius: 0
   attackProjectilePrefab: {fileID: 0}
+  coverToIgnore: 1

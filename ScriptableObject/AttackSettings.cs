@@ -15,6 +15,12 @@ public class AttackSettings : ScriptableObject
     public float impactTime = 0.5f; //When does the attack deal damage/shoot a projectile?
     public float areaOfEffectRadius = 0;
     public Projectile attackProjectilePrefab;
+    public float coverToIgnore = 0; //subtract from cover value. Melee should usually fully ignore cover.
+                                    //Certain ranged attacks may ignore some cover.
+    public bool ShouldIgnoreCover()
+    {
+        return coverToIgnore >= 1;
+    }
 }
 
 public enum AttackType

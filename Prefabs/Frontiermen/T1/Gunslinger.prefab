@@ -122,6 +122,10 @@ PrefabInstance:
       propertyPath: attackSettings
       value: 
       objectReference: {fileID: 11400000, guid: be7bd6c9563d2cf4a8259ceaa04b6642, type: 2}
+    - target: {fileID: 2344885485515939443, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
+      propertyPath: attackEffectSpawnPosition
+      value: 
+      objectReference: {fileID: 4122309860877075632}
     - target: {fileID: 2794094538110024962, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Enabled
       value: 1
@@ -132,7 +136,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4126868118260038068, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 3055209113
+      value: 1082460594
       objectReference: {fileID: 0}
     - target: {fileID: 5353858407141398554, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: m_Name
@@ -294,6 +298,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 7932807012793515484}
   m_SourcePrefab: {fileID: 100100000, guid: 11989e8f04d884d48a1579af34473ed2, type: 3}
+--- !u!4 &4122309860877075632 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 456734898623572855, guid: 11989e8f04d884d48a1579af34473ed2, type: 3}
+  m_PrefabInstance: {fileID: 4567713259885457351}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &4783965526585420960 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 9009389819436385127, guid: 11989e8f04d884d48a1579af34473ed2, type: 3}
