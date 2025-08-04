@@ -200,6 +200,34 @@ public class SpatialHash : MonoBehaviour
         minionCount = tempMinionCount;
         structureCount = tempStructureCount;
     }
+    public Entity GetFurthestCoverInRangeHashSearch(Vector3 searchPos, float rangeRadius)
+    {
+        Entity furthest = null;
+        float furthestSqrDist = 0;
+        foreach (int h in GetHashesToCheck(searchPos, rangeRadius)) //check through cells
+        {
+            for (int i = GetDenseStart(h); i <= GetDenseEnd(h); i++)
+            {
+                Entity targetEnt = denseEntityArray[GetIndexClampedByNumEntities(i)];
+                if (targetEnt == null) continue;
+                if (!targetEnt.IsStructure()) continue;
+                if (targetEnt.IsOre()) continue;
+                if (targetEnt.factionEntity == null) continue;
+                //Debug.Log(targetEnt.name);
+                FactionBuilding facBuilding = targetEnt.factionEntity as FactionBuilding;
+                if (!facBuilding.IsPartialCover()) continue;
+                float newSqrDist = Util.GetSqrDist(searchPos, targetEnt.transform.position); //get distance
+                if (!Util.SqrDistCheck(newSqrDist, rangeRadius)) continue; //only accept results in range
+                bool further = !Util.SqrDistCheck(newSqrDist, furthestSqrDist);
+                if (further)
+                {
+                    furthest = targetEnt;
+                    furthestSqrDist = newSqrDist;
+                }
+            }
+        }
+        return furthest;
+    }
     public Entity GetClosestCoverInRangeHashSearch(Vector3 searchPos, float rangeRadius)
     {
         Entity closest = null;
@@ -211,6 +239,9 @@ public class SpatialHash : MonoBehaviour
                 Entity targetEnt = denseEntityArray[GetIndexClampedByNumEntities(i)];
                 if (targetEnt == null) continue;
                 if (!targetEnt.IsStructure()) continue;
+                if (targetEnt.IsOre()) continue;
+                if (targetEnt.factionEntity == null) continue;
+                //Debug.Log(targetEnt.name);
                 FactionBuilding facBuilding = targetEnt.factionEntity as FactionBuilding;
                 if (!facBuilding.IsPartialCover()) continue;
                 float newSqrDist = Util.GetSqrDist(searchPos, targetEnt.transform.position);

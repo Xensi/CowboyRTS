@@ -529,20 +529,21 @@ public class Pathfinder : EntityAddon
     {
         return pathStatusValid && pathReachesDestination == PathStatus.Blocked;
     }
-    public Vector3 nudgedTargetEnemyStructurePosition;
+    //public Vector3 nudgedTargetEnemyStructurePosition;
     /// <summary>
     /// Slight nudge
     /// </summary>
     /// <param name="entity"></param>
-    public void NudgeTargetEnemyStructureDestination(Entity entity)
+    public Vector3 NudgeTargetEnemyStructureDestination(Entity entity)
     {
-        nudgedTargetEnemyStructurePosition = entity.transform.position;
-        float step = 10 * Time.deltaTime;
+        Vector3 nudgedTargetEnemyStructurePosition = entity.transform.position;
+        float step = 0.1f;
         Vector3 newPosition = Vector3.MoveTowards(nudgedTargetEnemyStructurePosition, transform.position, step);
         nudgedTargetEnemyStructurePosition = newPosition;
         //Debug.DrawRay(entity.transform.position, Vector3.up, Color.red, 5);
         Debug.DrawRay(nudgedTargetEnemyStructurePosition, Vector3.up, Color.green, 5);
         //Debug.Log("Nudged to " + nudgedTargetEnemyStructurePosition);
+        return nudgedTargetEnemyStructurePosition;
     }
     public bool PathReaches()
     {

@@ -92,7 +92,7 @@ public class Attacker : SwingEntityAddon
         {
             targetEnemy = found;
             longTermGoal = Goal.AttackFromIdle;
-            SetTargetEnemyAsDestination();
+            SetEntityAsDestination(targetEnemy);
             SwitchState(EntityStates.WalkToSpecificEnemy);
             //Debug.Log("trying to target enemy idle");
         }
@@ -125,44 +125,21 @@ public class Attacker : SwingEntityAddon
             {
                 //periodically perform mini physics searches around us and if we get anything attack it 
                 enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Structure);
-                //enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Structure, false); 
-                if (enemy != null)
-                {
-                    //Debug.Log("Found new enemy while blocked");
-                    targetEnemy = enemy;
-                    SwitchState(EntityStates.Attacking);
-                }
+                BeginAttackingNewTarget(enemy);
             }
         }
         else //ranged troops should detect if line of sight and path is blocked and target walls as fallback
         {
-            //if path is blocked, check if there's any partial cover structures; search originates from target with range of attacker's range + 1
-            //if we find an option we should path to that cover
-            if (pf.PathBlocked())
-            {
-                float coverOffset = 1;
-                Entity closestCoverToTarget = Global.instance.spatialHash.GetClosestCoverInRangeHashSearch(targetEnemy.transform.position,
-                    range + ent.GetRadius() + coverOffset);
-                Debug.Log(closestCoverToTarget);
-            }
-
             if ((IsRangedUnitPathingBlocked() || (pf.EndOfPathReachesPosition(transform.position) && pf.IsEffectivelyIdle(.1f)))
                 && !TargetIsVisible(targetEnemy)) //no path to enemy, attack structures in our way
             {
                 enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Structure);
-                if (enemy != null)
-                {
-                    Debug.Log(enemy.name);
-                    targetEnemy = enemy;
-                    SwitchState(EntityStates.Attacking);
-                }
+                BeginAttackingNewTarget(enemy);
             }
         }
         if (!InRangeOfEntity(targetEnemy, range))
         {
-            //anim.Play(CONTINUE_ATTACK_WALK);
-            //if target is a structure, move the destination closer to us until it no longer hits obstacle
-            SetTargetEnemyAsDestination();
+            SetEntityAsDestination(targetEnemy);
         }
         else if (TargetIsVisible(targetEnemy)) //we can only start attacking once they're visible to us
         {
@@ -170,7 +147,12 @@ public class Attacker : SwingEntityAddon
             return;
         }
     }
-
+    private void BeginAttackingNewTarget(Entity newTarget)
+    {
+        if (newTarget == null) return;
+        targetEnemy = newTarget;
+        SwitchState(EntityStates.Attacking);
+    }
     public async void AttackMovingState()
     {
         //NOTE: On entering this state, hasCalledEnemySearchAsyncTask becomes false.
@@ -186,7 +168,7 @@ public class Attacker : SwingEntityAddon
         //reminder: assigned entity searcher updates enemy lists; which are then searched by asyncFindClosestEnemyToAttackMoveTowards
         if (IsValidTarget(targetEnemy))
         {
-            SetTargetEnemyAsDestination();
+            SetEntityAsDestination(targetEnemy);
             //setting destination needs to be called once (or at least not constantly to the same position)
 
             if (ent.IsMelee())
@@ -243,7 +225,7 @@ public class Attacker : SwingEntityAddon
                 }
                 else
                 {
-                    SetTargetEnemyAsDestination();
+                    SetEntityAsDestination(targetEnemy);
                 }
             }
         }
@@ -652,17 +634,17 @@ public class Attacker : SwingEntityAddon
             ent.anim.Play(BEGIN_ATTACK_WALK);
         }
     }
-    public void SetTargetEnemyAsDestination()
+    public void SetEntityAsDestination(Entity ent)
     {
-        if (targetEnemy == null || pf == null) return;
-        if (targetEnemy.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
+        if (ent == null || pf == null) return;
+        if (ent.IsStructure()) //if target is a structure, first move the destination closer to us until it no longer hits obstacle
         {
-            pf.NudgeTargetEnemyStructureDestination(targetEnemy);
-            pf.SetDestinationIfHighDiff(pf.nudgedTargetEnemyStructurePosition);
+            Vector3 nudged = pf.NudgeTargetEnemyStructureDestination(ent);
+            pf.SetDestinationIfHighDiff(nudged);
         }
         else
         {
-            pf.SetDestinationIfHighDiff(targetEnemy.transform.position);
+            pf.SetDestinationIfHighDiff(ent.transform.position);
         }
     }
     private void HandleLackOfValidTargetEnemy()

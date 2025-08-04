@@ -524,7 +524,7 @@ public class StateMachineController : NetworkBehaviour
     }
     public void ProcessOrder(UnitOrder order)
     {
-        Debug.Log("Processing order " + order.action);
+        //Debug.Log("Processing order " + order.action);
         Vector3 targetPosition = order.targetPosition;
         Entity target = order.target;
         lastOrderType = order.action;
