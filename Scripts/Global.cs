@@ -9,6 +9,8 @@ using Pathfinding;
 using System.Linq;
 using UtilityMethods;
 using static SoundTypes;
+
+
 public class Global : NetworkBehaviour
 {
     public static Global instance { get; private set; }

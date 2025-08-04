@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static GameConstants;
 
 [CreateAssetMenu(fileName = "AttackSettings", menuName = "Faction/Attack Settings", order = 0)]
 
@@ -19,7 +20,7 @@ public class AttackSettings : ScriptableObject
                                     //Certain ranged attacks may ignore some cover.
     public bool ShouldIgnoreCover()
     {
-        return coverToIgnore >= 1;
+        return coverToIgnore >= FullCoverVal;
     }
 }
 

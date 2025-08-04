@@ -6,6 +6,7 @@ using UnityEngine;
 using static SoundTypes;
 using static StateMachineController;
 using static UnitAnimator;
+using static GameConstants;
 public class Attacker : SwingEntityAddon
 {
     [SerializeField] private AttackSettings attackSettings;
@@ -523,11 +524,9 @@ public class Attacker : SwingEntityAddon
 
         //if (IsValidTarget(targetEnemy)) targetObscuredLevel = HowObscuredIsTarget(targetEnemy);
         float obscuredLevel = HowObscuredIsTarget(target);
-        return obscuredLevel < fullObscuredLevel;
+        return obscuredLevel < FullCoverVal;
     }
 
-    private readonly float unobscuredLevel = 0;
-    private readonly float fullObscuredLevel = 1;
 
     /// <summary>
     /// Get how obscured the target is on a scale of 0 to 1.
@@ -542,7 +541,7 @@ public class Attacker : SwingEntityAddon
         Vector3 sightPos = transform.position;
         Vector3 dir = (target.transform.position - sightPos).normalized;
         float dist = Vector3.Distance(sightPos, target.transform.position);
-        float greatestCoverVal = unobscuredLevel;
+        float greatestCoverVal = ClearCoverVal;
         RaycastHit[] m_Results = new RaycastHit[5];
         int hits = Physics.RaycastNonAlloc(sightPos, dir, m_Results, dist, Global.instance.allEntityLayer);
         for (int i = 0; i < hits; i++)
@@ -552,12 +551,12 @@ public class Attacker : SwingEntityAddon
             if (coverEnt == target || !coverEnt.IsStructure()) continue;
             FactionBuilding fac = coverEnt.factionEntity as FactionBuilding;
             float coverVal = fac.coverVal;
-            bool inCover = coverVal >= fullObscuredLevel; //full cover (like walls) does not require the target to be close 
+            bool inCover = coverVal >= FullCoverVal; //full cover (like walls) does not require the target to be close 
 
             //partial cover (like sandbags) should require the target to be close to the cover (because that's the only way they can hide)
-            if (coverVal < fullObscuredLevel) //if less than full cover, then first check the distance to target
+            if (coverVal < FullCoverVal) //if less than full cover, then first check the distance to target
             {
-                float coverThreshold = 0.75f;
+                float coverThreshold = MaxDistToBeInCover;
                 Vector3 coverClosestPointToTarget = coverCol.ClosestPoint(target.transform.position);
                 float coverDist = Vector3.Distance(target.transform.position, coverClosestPointToTarget);
                 if (ent.IsAlliedTo(Global.instance.localPlayer))
@@ -581,7 +580,7 @@ public class Attacker : SwingEntityAddon
             {
                 greatestCoverVal = coverVal;
             }
-            if (greatestCoverVal >= fullObscuredLevel) return greatestCoverVal; //early exit if full cover
+            if (greatestCoverVal >= FullCoverVal) return greatestCoverVal; //early exit if full cover
         }
         //Debug.DrawLine(sightPos, target.transform.position, Color.red);
         //Debug.DrawLine(sightPos, target.transform.position, Color.green);
