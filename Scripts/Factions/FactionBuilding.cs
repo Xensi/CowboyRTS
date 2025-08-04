@@ -14,4 +14,9 @@ public class FactionBuilding : FactionEntity
     [Header("AI Only")]
     public bool isSpawner = false;
     public bool isPopAdder = false;
+
+    public bool IsPartialCover()
+    {
+        return coverVal < 1;
+    }
 }

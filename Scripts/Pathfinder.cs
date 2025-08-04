@@ -91,16 +91,31 @@ public class Pathfinder : EntityAddon
     /// </summary>
     /// <param name="position"></param>
     /// <returns></returns>
-    private bool EndOfPathReachesPosition(Vector3 position)
+    public bool EndOfPathReachesPosition(Vector3 position)
     {
         float squaredDistance = SquaredDistanceOfPathEndToPos(position);
-        //Debug.DrawRay(position, Vector3.up, Color.yellow, 4);
-        //Debug.DrawRay(buffer.Last(), Vector3.up, Color.blue, 4);
+
 
         float pathThreshold = 0.1f;
         float leeway = 0;
         if (at != null) leeway = at.range;
-        return squaredDistance < pathThreshold * pathThreshold + leeway * leeway;
+        bool val = squaredDistance < pathThreshold * pathThreshold + leeway * leeway;
+
+
+        var buffer = new List<Vector3>();
+        ai.GetRemainingPath(buffer, out bool stale);
+        Debug.DrawRay(buffer.Last(), Vector3.up, Color.blue);
+
+        if (val)
+        {
+            Debug.DrawRay(position, Vector3.up*2, Color.green);
+        }
+        else
+        {
+            Debug.DrawRay(position, Vector3.up*2, Color.red);
+        }
+
+        return val;
     }
     /// <summary>
     /// Returns squared length of the path to a position. Compare against a squared threshold.

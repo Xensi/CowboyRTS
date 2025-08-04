@@ -108,61 +108,66 @@ public class Attacker : SwingEntityAddon
         {
             AutomaticAttackMove();
         }*/
-        if (IsValidTarget(targetEnemy))
-        {
-            if (longTermGoal == Goal.AttackFromIdle && !InChaseRange(targetEnemy))
-            {
-                //Debug.Log("Outside chase range"); 
-                HandleLackOfValidTargetEnemy();
-                return;
-            }
-            //UpdateAttackIndicator();
-            pf.ValidatePathStatus();
-            pf.PushNearbyOwnedIdlers();
-            Entity enemy = null;
-            if (ent.IsMelee()) // melee troops should detect when blocked by walls and attack them
-            {
-                if (pf.PathBlocked() && pf.IsEffectivelyIdle(.1f)) //no path to enemy, attack structures in our way
-                {
-                    //periodically perform mini physics searches around us and if we get anything attack it 
-                    enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Structure);
-                    //enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Structure, false); 
-                    if (enemy != null)
-                    {
-                        //Debug.Log("Found new enemy while blocked");
-                        targetEnemy = enemy;
-                        SwitchState(EntityStates.Attacking);
-                    }
-                }
-            }
-            else //ranged troops should detect if line of sight and path is blocked and target walls as fallback
-            {
-                if (IsRangedUnitPathingBlocked() && !TargetIsVisible(targetEnemy)) //no path to enemy, attack structures in our way
-                {
-                    enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Structure);
-                    if (enemy != null)
-                    {
-                        targetEnemy = enemy;
-                        SwitchState(EntityStates.Attacking);
-                    }
-                }
-            }
-            if (!InRangeOfEntity(targetEnemy, range))
-            {
-                //anim.Play(CONTINUE_ATTACK_WALK);
-
-                //if target is a structure, move the destination closer to us until it no longer hits obstacle
-                SetTargetEnemyAsDestination();
-            }
-            else if (TargetIsVisible(targetEnemy)) //we can only start attacking once they're visible to us
-            {
-                SwitchState(EntityStates.Attacking);
-                return;
-            }
-        }
-        else
+        if (!IsValidTarget(targetEnemy)
+            || (longTermGoal == Goal.AttackFromIdle && !InChaseRange(targetEnemy)))
         {
             HandleLackOfValidTargetEnemy();
+            return;
+        }
+
+        //UpdateAttackIndicator();
+        pf.ValidatePathStatus();
+        pf.PushNearbyOwnedIdlers();
+        Entity enemy = null;
+        if (ent.IsMelee()) // melee troops should detect when blocked by walls and attack them
+        {
+            if (pf.PathBlocked() && pf.IsEffectivelyIdle(.1f)) //no path to enemy, attack structures in our way
+            {
+                //periodically perform mini physics searches around us and if we get anything attack it 
+                enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Structure);
+                //enemy = FindEnemyThroughPhysSearch(range, RequiredEnemyType.Structure, false); 
+                if (enemy != null)
+                {
+                    //Debug.Log("Found new enemy while blocked");
+                    targetEnemy = enemy;
+                    SwitchState(EntityStates.Attacking);
+                }
+            }
+        }
+        else //ranged troops should detect if line of sight and path is blocked and target walls as fallback
+        {
+            //if path is blocked, check if there's any partial cover structures; search originates from target with range of attacker's range + 1
+            //if we find an option we should path to that cover
+            if (pf.PathBlocked())
+            {
+                float coverOffset = 1;
+                Entity closestCoverToTarget = Global.instance.spatialHash.GetClosestCoverInRangeHashSearch(targetEnemy.transform.position,
+                    range + ent.GetRadius() + coverOffset);
+                Debug.Log(closestCoverToTarget);
+            }
+
+            if ((IsRangedUnitPathingBlocked() || (pf.EndOfPathReachesPosition(transform.position) && pf.IsEffectivelyIdle(.1f)))
+                && !TargetIsVisible(targetEnemy)) //no path to enemy, attack structures in our way
+            {
+                enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Structure);
+                if (enemy != null)
+                {
+                    Debug.Log(enemy.name);
+                    targetEnemy = enemy;
+                    SwitchState(EntityStates.Attacking);
+                }
+            }
+        }
+        if (!InRangeOfEntity(targetEnemy, range))
+        {
+            //anim.Play(CONTINUE_ATTACK_WALK);
+            //if target is a structure, move the destination closer to us until it no longer hits obstacle
+            SetTargetEnemyAsDestination();
+        }
+        else if (TargetIsVisible(targetEnemy)) //we can only start attacking once they're visible to us
+        {
+            SwitchState(EntityStates.Attacking);
+            return;
         }
     }
 
@@ -861,7 +866,7 @@ public class Attacker : SwingEntityAddon
     }
     private Entity GetFirstEnemyHashSearch(float range, RequiredEnemyType requiredEnemyType)
     {
-        return Global.instance.spatialHash.GetFirstEnemyHashSearch(ent, range, requiredEnemyType);
+        return Global.instance.spatialHash.GetFirstVisibleEnemyHashSearch(ent, range, requiredEnemyType);
         //return Global.instance.spatialHash.GetClosestEnemyHashSearch(ent, range, requiredEnemyType);
     }
     private Entity GetClosestMinionHashSearch(float range)

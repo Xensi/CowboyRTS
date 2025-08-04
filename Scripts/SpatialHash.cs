@@ -200,7 +200,36 @@ public class SpatialHash : MonoBehaviour
         minionCount = tempMinionCount;
         structureCount = tempStructureCount;
     }
-    public Entity GetFirstEnemyHashSearch(Entity queryingEntity, float rangeRadius, RequiredEnemyType requiredEnemyType)
+    public Entity GetClosestCoverInRangeHashSearch(Vector3 searchPos, float rangeRadius)
+    {
+        Entity closest = null;
+        float closestSqrDist = Mathf.Infinity;
+        foreach (int h in GetHashesToCheck(searchPos, rangeRadius)) //check through cells
+        {
+            for (int i = GetDenseStart(h); i <= GetDenseEnd(h); i++)
+            {
+                Entity targetEnt = denseEntityArray[GetIndexClampedByNumEntities(i)];
+                if (targetEnt == null) continue;
+                if (!targetEnt.IsStructure()) continue;
+                FactionBuilding facBuilding = targetEnt.factionEntity as FactionBuilding;
+                if (!facBuilding.IsPartialCover()) continue;
+                float newSqrDist = Util.GetSqrDist(searchPos, targetEnt.transform.position);
+                bool closer = Util.SqrDistCheck(newSqrDist, closestSqrDist);
+                if (closer)
+                {
+                    closest = targetEnt;
+                    closestSqrDist = newSqrDist;
+                }
+            }
+        }
+        if (closest != null)
+        {
+            bool inRange = Util.FastDistanceCheck(searchPos, closest.transform.position, GetCombinedRadii(closest, rangeRadius));
+            return inRange ? closest : null;
+        }
+        return null;
+    }
+    public Entity GetFirstVisibleEnemyHashSearch(Entity queryingEntity, float rangeRadius, RequiredEnemyType requiredEnemyType)
     {
         Vector3 pos = queryingEntity.transform.position;
         Entity valid = null;
@@ -211,7 +240,7 @@ public class SpatialHash : MonoBehaviour
             {
                 Entity targetEnt = denseEntityArray[GetIndexClampedByNumEntities(i)];
                 if (targetEnt == null || targetEnt == queryingEntity) continue;
-                if (queryingEntity.attacker != null && !queryingEntity.attacker.IsValidTarget(targetEnt)) continue;
+                if (queryingEntity.attacker != null && !queryingEntity.attacker.IsValidVisibleTarget(targetEnt)) continue;
                 bool inRange = Util.FastDistanceCheck(pos, targetEnt.transform.position, GetCombinedRadii(targetEnt, rangeRadius));
                 if (!inRange) continue; //we filter out all options that are out of range
                 switch (requiredEnemyType)
