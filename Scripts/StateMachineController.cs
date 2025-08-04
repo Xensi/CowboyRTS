@@ -15,6 +15,27 @@ using TMPro;
 using static UnitAnimator;
 using System.Collections;
 
+public enum EntityStates
+{
+    Idle,
+    PushableIdle,
+    Walk,
+    AttackMoving,
+    WalkToSpecificEnemy,
+    Attacking,
+    FindInteractable,
+    WalkToInteractable,
+    Building,
+    Spawn,
+    Die,
+    Harvesting,
+    AttackCooldown,
+    Depositing,
+    Garrisoning,
+    WalkToRally,
+    WalkToTarget,
+    UsingAbility,
+}
 //used for entities that can attack
 [RequireComponent(typeof(Entity))]
 public class StateMachineController : NetworkBehaviour
@@ -23,27 +44,6 @@ public class StateMachineController : NetworkBehaviour
     public enum CommandTypes
     {
         Move, Attack, Harvest, Build, Deposit
-    }
-    public enum EntityStates
-    {
-        Idle,
-        PushableIdle,
-        Walk,
-        AttackMoving,
-        WalkToSpecificEnemy,
-        Attacking,
-        FindInteractable,
-        WalkToInteractable,
-        Building,
-        Spawn,
-        Die,
-        Harvesting,
-        AttackCooldown,
-        Depositing,
-        Garrisoning,
-        WalkToRally,
-        WalkToTarget,
-        UsingAbility,
     }
     #endregion
 

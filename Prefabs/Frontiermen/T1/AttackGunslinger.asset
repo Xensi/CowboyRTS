@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   attackType: 1
   damage: 1
-  range: 3
+  range: 6
   attackDuration: 2.5
   impactTime: 0.5
   areaOfEffectRadius: 0
   attackProjectilePrefab: {fileID: 0}
+  coverToIgnore: 0

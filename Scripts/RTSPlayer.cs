@@ -9,6 +9,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
 using UtilityMethods;
+using static EntityStates;
 
 public class RTSPlayer : Player
 {
@@ -1520,8 +1521,8 @@ public class RTSPlayer : Player
             {
                 switch (item.sm.GetState())
                 {
-                    case StateMachineController.EntityStates.Idle:
-                    case StateMachineController.EntityStates.FindInteractable:
+                    case Idle:
+                    case FindInteractable:
                         FormalSelectEntity(item, false);
                         break;
                 }
@@ -2080,7 +2081,7 @@ public class RTSPlayer : Player
         return entity != null && ability != null && (entity.fullyBuilt || !ability.usableOnlyWhenBuilt) && entity.net.IsSpawned
             && entity.alive && entity.CanUseAbility(ability)
             && entity.unitAbilities.AbilityOffCooldown(ability)
-            && (entity.IsBuilding() || entity.sm.GetState() != StateMachineController.EntityStates.UsingAbility);
+            && (entity.IsBuilding() || entity.sm.GetState() != UsingAbility);
     }
     #endregion
 

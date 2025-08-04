@@ -14,10 +14,10 @@ using static StateMachineController;
 using static UnitAnimator;
 using UtilityMethods;
 using static Player;
+using static EntityStates;
 
 public class Pathfinder : EntityAddon
 {
-
     public bool pathStatusValid = false; //when this is true, the current path result is valid
     public bool pathfindingValidationTimerActive = false;
     private float pathfindingValidationTimerDuration = 0.5f;

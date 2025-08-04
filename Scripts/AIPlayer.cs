@@ -7,6 +7,7 @@ using System.Linq;
 using Pathfinding.Drawing; 
 using static Player;
 using System.Threading.Tasks;
+using static EntityStates;
 /// <summary>
 /// AI that is governed by the server
 /// </summary>
@@ -622,8 +623,8 @@ public class AIPlayer : Player
             {
                 switch (item.sm.currentState)
                 {
-                    case StateMachineController.EntityStates.Idle:
-                    case StateMachineController.EntityStates.FindInteractable:
+                    case Idle:
+                    case FindInteractable:
                         if (visibleResources.Count > 0)
                         {
                             int rand = Random.Range(0, visibleResources.Count);

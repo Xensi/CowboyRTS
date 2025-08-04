@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using static Effect;
+using static EntityStates;
 
 public class UnitAbilities : EntityAddon
 {
@@ -40,7 +41,7 @@ public class UnitAbilities : EntityAddon
         ActivateAbility(GetQueuedAbility());
         if (sm != null)
         {
-            sm.SwitchState(StateMachineController.EntityStates.UsingAbility);
+            sm.SwitchState(UsingAbility);
         }
     }
     public bool AbilityOffCooldown(FactionAbility ability)

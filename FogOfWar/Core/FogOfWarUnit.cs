@@ -417,7 +417,7 @@ namespace FoW
 
         void OnDrawGizmosSelected()
         {
-            Gizmos.color = Color.red;
+            Gizmos.color = Color.blue;
             Vector3 pos;
             if (absoluteOffset)
                 pos = transform.position + new Vector3(offset.x, offset.y, offset.y);
