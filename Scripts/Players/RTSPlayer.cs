@@ -50,8 +50,6 @@ public class RTSPlayer : Player
     private Entity buildingGhost;
     private MeshRenderer[] meshes;
     private bool oldPlacement = false;
-    public Portal startPortal;
-    public Portal endPortal;
     Vector2 StartMousePosition;
     public bool placingLinkedBuilding = false;
     private bool finishedSelection = false;
