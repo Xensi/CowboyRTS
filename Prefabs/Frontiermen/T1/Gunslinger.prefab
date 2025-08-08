@@ -121,7 +121,7 @@ PrefabInstance:
     - target: {fileID: 2344885485515939443, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: attackSettings
       value: 
-      objectReference: {fileID: 11400000, guid: be7bd6c9563d2cf4a8259ceaa04b6642, type: 2}
+      objectReference: {fileID: 11400000, guid: 4302a68031035c04d903d4ec5dcff339, type: 2}
     - target: {fileID: 2344885485515939443, guid: f64a2c01c851079439b715bc7354cf81, type: 3}
       propertyPath: attackEffectSpawnPosition
       value: 

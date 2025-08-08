@@ -9,8 +9,8 @@ using Pathfinding;
 using System.Linq;
 using UtilityMethods;
 using static SoundTypes;
-
-
+using static GameConstants;
+using static UtilityMethods.Util;
 public class Global : NetworkBehaviour
 {
     public static Global instance { get; private set; }
@@ -199,13 +199,13 @@ public class Global : NetworkBehaviour
         }
         return entity;
     }
-    
+
     private void UpdateReinforcementText()
     {
         if (reinforcementText != null)
         {
             if (unitSpawnerToTrackReinforcements != null)
-            { 
+            {
                 if (unitSpawnerToTrackReinforcements.shouldSpawn && unitSpawnerToTrackReinforcements.spawnWaves > 0)
                 {
                     reinforcementText.transform.parent.gameObject.SetActive(true);
@@ -217,10 +217,10 @@ public class Global : NetworkBehaviour
                 }
             }
             else
-            { 
+            {
                 reinforcementText.transform.parent.gameObject.SetActive(false);
             }
-        } 
+        }
     }
 
     private void InitializePlayers()
@@ -275,12 +275,28 @@ public class Global : NetworkBehaviour
             TargetPlayerWinsTheGame(potentialWinner);
         }
     }
+    public bool CoverDistCheck(Entity hider, Entity cover)
+    {
+        if (cover == null || hider == null) return false;
+        float rawDist = Vector3.Distance(hider.transform.position, cover.transform.position);
+        float adjustedDistance = rawDist - hider.GetRadius() - cover.GetRadius();
+        return adjustedDistance <= MaxDistToBeInCover;
+    }
     private void TargetPlayerWinsTheGame(RTSPlayer player)
     {
         playerHasWon = true;
         Debug.Log("player has won");
     }
-    public AudioSource PlayClipAtPoint(AudioClip clip, Vector3 pos, float volume = 1, float pitch = 1, bool useChorus = true)
+    /// <summary>
+    /// Automatically applies random pitch
+    /// </summary>
+    /// <param name="clip"></param>
+    /// <param name="pos"></param>
+    /// <param name="volume"></param>
+    /// <param name="pitch"></param>
+    /// <param name="useChorus"></param>
+    /// <returns></returns>
+    public AudioSource PlayClipAtPoint(AudioClip clip, Vector3 pos, float volume = 0.1f, float pitch = 1, bool useChorus = true)
     {
         GameObject tempGO = new("TempAudio"); // create the temp object
         tempGO.transform.SetParent(transform);
@@ -292,7 +308,8 @@ public class Global : NetworkBehaviour
         }
         tempASource.clip = clip;
         tempASource.volume = volume;
-        tempASource.pitch = pitch;
+        float offset = 0.25f;
+        tempASource.pitch = Random.Range(1 - offset, 1 + offset);
         tempASource.spatialBlend = 1; //3d   
         tempASource.Play(); // start the sound
         Destroy(tempGO, tempASource.clip.length * pitch); // destroy object after clip duration (this will not account for whether it is set to loop) 

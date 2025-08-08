@@ -35,7 +35,10 @@ namespace UtilityMethods
         {
             if (obj != null && obj.activeInHierarchy != val) obj.SetActive(val);
         }
-
+        public static float GetCombinedRadii(Entity target, float range)
+        {
+            return target.GetRadius() + range;
+        }
         /*public static bool EntityIsValid(Entity ent)
         {
             return ent != null 

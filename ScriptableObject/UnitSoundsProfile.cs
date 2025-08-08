@@ -11,7 +11,7 @@ public class UnitSoundsProfile: ScriptableObject
 
     public AudioClip hitSound;
 
-    public AudioClip missSound;
+    //public AudioClip missSound;
 
     public AudioClip attackMoveSound;
 

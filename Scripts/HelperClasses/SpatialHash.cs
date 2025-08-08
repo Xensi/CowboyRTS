@@ -6,6 +6,8 @@ using UnityEngine.Profiling;
 using static Attacker;
 using FoW;
 using System;
+using static GameConstants;
+using static UtilityMethods.Util;
 public class SpatialHash : MonoBehaviour
 {
     #region Hashing Backend
@@ -113,10 +115,6 @@ public class SpatialHash : MonoBehaviour
     private int GetIndexClampedByNumEntities(int i)
     {
         return Mathf.Clamp(i, 0, global.GetNumEntities() - 1);
-    }
-    private float GetCombinedRadii(Entity target, float range)
-    {
-        return target.GetRadius() + range;
     }
     #endregion
     public Entity[] GetEntitiesInRange(Vector3 pos, Entity queryingEntity, float rangeRadius)
@@ -260,7 +258,37 @@ public class SpatialHash : MonoBehaviour
         }
         return null;
     }
-    public Entity GetFirstVisibleEnemyHashSearch(Entity queryingEntity, float rangeRadius, RequiredEnemyType requiredEnemyType)
+
+    /// <summary>
+    /// Retrieve a list of cover entities that could grant cover at a position.
+    /// </summary>
+    /// <param name="searchPos"></param>
+    /// <returns></returns>
+    public List<Entity> GetNearbyCover(Entity hider)
+    {
+        List<Entity> returnList = new();
+        if (hider == null) return returnList;
+        Vector3 searchPos = hider.transform.position;
+        float rangeRadius = MaxDistToBeInCover;
+        foreach (int h in GetHashesToCheck(searchPos, rangeRadius)) //check through cells
+        {
+            for (int i = GetDenseStart(h); i <= GetDenseEnd(h); i++)
+            {
+                Entity target = denseEntityArray[GetIndexClampedByNumEntities(i)];
+                bool skip = target == null || !target.IsStructure() || target.IsOre()
+                    || target.factionEntity == null || returnList.Contains(target);
+                if (skip) continue;
+                FactionBuilding facBuilding = target.factionEntity as FactionBuilding;
+                if (facBuilding.IsNotCover()) continue;
+                Collider coverCol = target.physicalCollider;
+                if (coverCol == null) continue;
+                bool inCover = Global.instance.CoverDistCheck(hider, target);
+                if (inCover) returnList.Add(target);
+            }
+        }
+        return returnList;
+    }
+    public Entity GetFirstEnemyHashSearch(Entity queryingEntity, float rangeRadius, RequiredEnemyType requiredEnemyType)
     {
         Vector3 pos = queryingEntity.transform.position;
         Entity valid = null;
@@ -271,7 +299,7 @@ public class SpatialHash : MonoBehaviour
             {
                 Entity targetEnt = denseEntityArray[GetIndexClampedByNumEntities(i)];
                 if (targetEnt == null || targetEnt == queryingEntity) continue;
-                if (queryingEntity.attacker != null && !queryingEntity.attacker.IsValidVisibleTarget(targetEnt)) continue;
+                if (queryingEntity.attacker != null && !queryingEntity.attacker.IsValidTarget(targetEnt)) continue;
                 bool inRange = Util.FastDistanceCheck(pos, targetEnt.transform.position, GetCombinedRadii(targetEnt, rangeRadius));
                 if (!inRange) continue; //we filter out all options that are out of range
                 switch (requiredEnemyType)

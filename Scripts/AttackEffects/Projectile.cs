@@ -19,8 +19,16 @@ public class Projectile : MonoBehaviour
     public int damage = 1;
     public bool spinContinously = false;
     public Vector3 spinRotation;
+    public AudioClip onSpawnAudio;
     public AudioClip arrivalAudio;
+    [SerializeField] private AudioClip missAudio;
     public GameObject arrivalParticlesPrefab;
+    [SerializeField] private GameObject deparentOnArrival;
+
+    private bool IsLinear()
+    {
+        return maxArcHeight <= 0;
+    }
     public virtual void Start()
     {
         //EvaluateActualTarget();
@@ -34,6 +42,9 @@ public class Projectile : MonoBehaviour
         _stepScale = speed / distance;
 
         transform.LookAt(groundTarget, transform.forward);
+
+
+        if (onSpawnAudio != null) Global.instance.PlayClipAtPoint(onSpawnAudio, transform.position, 0.1f);
     }
     /*private void EvaluateActualTarget()
     { 
@@ -59,8 +70,12 @@ public class Projectile : MonoBehaviour
         // Travel in a straight line from our start position to the target.        
         Vector3 nextPos = Vector3.Lerp(_startPosition, groundTarget, _progress);
 
-        // Then add a vertical arc in excess of this.
-        nextPos.y += parabola * actualArcHeight;
+        if (!IsLinear())
+        {
+            // Then add a vertical arc in excess of this.
+            nextPos.y += parabola * actualArcHeight;
+        }
+
 
         // Continue as before.
         if (spinContinously)
@@ -90,7 +105,6 @@ public class Projectile : MonoBehaviour
                 Global.instance.localPlayer.DamageEntity((sbyte)damage, entityToHomeOnto);
             }
         }
-        if (arrivalAudio != null) Global.instance.PlayClipAtPoint(arrivalAudio, transform.position, 0.1f);
         /*if (isLocal) //the player who fired the explosion will do this, for everyone else it is purely cosmetic.
         { // if other players did this, the damage would be multiplied erroneously
             Global.Instance.localPlayer.CreateExplosionAtPoint(transform.position, explosionRadius);
@@ -98,7 +112,18 @@ public class Projectile : MonoBehaviour
         Global.Instance.localPlayer.SpawnExplosion(transform.position); //all players play cosmetic explosion locally
         Global.Instance.PlayClipAtPoint(Global.Instance.explosion, transform.position, 0.25f);
         */
-        Instantiate(arrivalParticlesPrefab, transform.position, Quaternion.identity);
+        if (arrivalParticlesPrefab != null) Instantiate(arrivalParticlesPrefab, transform.position, Quaternion.identity);
+
+        if (deparentOnArrival != null) deparentOnArrival.transform.parent = null;
+
+        if (!hit && missAudio != null)
+        {
+            Global.instance.PlayClipAtPoint(missAudio, transform.position);
+        }
+        else if (arrivalAudio != null)
+        {
+            Global.instance.PlayClipAtPoint(arrivalAudio, transform.position);
+        }
         Destroy(gameObject);
     } 
 

@@ -166,6 +166,7 @@ public class Entity : NetworkBehaviour
     [HideInInspector] public Spawner spawner;
     [HideInInspector] public Pathfinder pf;
     [HideInInspector] public Garrison garrison;
+    [HideInInspector] public EntityCoverDisplay coverDisplay;
     private MeshRenderer[] allMeshes;
     private MeshRenderer[] finishedMeshRenderers;
     [HideInInspector] public Collider physicalCollider; 
@@ -320,6 +321,7 @@ public class Entity : NetworkBehaviour
         attacker = GetComponent<Attacker>();
         pf = GetComponent<Pathfinder>();
         garrison = GetComponent<Garrison>();
+        coverDisplay = GetComponent<EntityCoverDisplay>();
         //soft addons
         areaEffectors = GetComponentsInChildren<AreaEffector>();
         if (lootComponent == null) lootComponent = GetComponent<LootOnDestruction>();
@@ -1847,18 +1849,13 @@ public class Entity : NetworkBehaviour
             case HitSound:
                 clip = SP.hitSound;
                 break;
-            case MissSound:
-                if (SP.missSound != null) clip = SP.missSound;
-                else clip = SP.hitSound;
-                break;
             case AttackMoveSound:
                 clip = SP.attackMoveSound;
                 break;
             default:
                 break;
         }
-        float pitch = Random.Range(.75f, 1.25f);
-        if (clip != null) Global.instance.PlayClipAtPoint(clip, transform.position, 0.1f, pitch);
+        if (clip != null) Global.instance.PlayClipAtPoint(clip, transform.position, 0.1f);
     }
     public float GetRadius()
     {

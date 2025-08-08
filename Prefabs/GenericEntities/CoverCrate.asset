@@ -29,6 +29,6 @@ MonoBehaviour:
   buildOffset: {x: 0.25, y: 0, z: 0.25}
   extendable: 1
   rotatable: 0
-  coverVal: 0.5
+  coverVal: 0.75
   isSpawner: 0
   isPopAdder: 0

@@ -122,7 +122,7 @@ public class Attacker : SwingEntityAddon
             if (pf.PathBlocked() && pf.IsEffectivelyIdle(.1f)) //no path to enemy, attack structures in our way
             {
                 //periodically perform mini physics searches around us and if we get anything attack it 
-                enemy = GetFirstVisibleEnemyHashSearch(range, RequiredEnemyType.Structure);
+                enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Structure);
                 if (enemy != null)
                 {
                     BeginAttackingNewTarget(enemy);
@@ -134,7 +134,7 @@ public class Attacker : SwingEntityAddon
         {
             if (RangedUnitCannotShootTarget()) //no path to enemy, attack structures in our way
             {
-                enemy = GetFirstVisibleEnemyHashSearch(range, RequiredEnemyType.Structure);
+                enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Structure);
                 if (enemy != null)
                 {
                     BeginAttackingNewTarget(enemy);
@@ -170,7 +170,7 @@ public class Attacker : SwingEntityAddon
             {
                 if (targetEnemy.IsMinion()) //then target the first minion that enters our range
                 {
-                    enemy = GetFirstVisibleEnemyHashSearch(range, RequiredEnemyType.Minion);
+                    enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Minion);
                 }
                 else //if it's a structure
                 {
@@ -184,7 +184,7 @@ public class Attacker : SwingEntityAddon
 
                 if (pf.PathBlocked() && pf.IsEffectivelyIdle(.1f)) //if we cannot reach the target destination, allow attacking anything
                 {
-                    enemy = GetFirstVisibleEnemyHashSearch(range, RequiredEnemyType.MinionPreferred);
+                    enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.MinionPreferred);
                     if (enemy != null)
                     {
                         BeginAttackingTemporaryTarget(enemy); //allow returning to original target
@@ -202,7 +202,7 @@ public class Attacker : SwingEntityAddon
 
                 if (RangedUnitCannotShootTarget()) //no path to enemy, attack structures in our way
                 {
-                    enemy = GetFirstVisibleEnemyHashSearch(range, RequiredEnemyType.Structure);
+                    enemy = GetFirstEnemyHashSearch(range, RequiredEnemyType.Structure);
                     if (enemy != null)
                     {
                         BeginAttackingTemporaryTarget(enemy); //allow returning to original target
@@ -556,24 +556,31 @@ public class Attacker : SwingEntityAddon
             //partial cover (like sandbags) should require the target to be close to the cover (because that's the only way they can hide)
             if (coverVal < FullCoverVal) //if less than full cover, then first check the distance to target
             {
-                float coverThreshold = MaxDistToBeInCover;
-                Vector3 coverClosestPointToTarget = coverCol.ClosestPoint(target.transform.position);
+                inCover = Global.instance.CoverDistCheck(target, coverEnt); // NOT WORKiNG
+
+                /*float coverThreshold = MaxDistToBeInCover;
+                float rawDist = Vector3.Distance(target.transform.position, coverEnt.transform.position);
+                float coverDist = rawDist - target.GetRadius() - coverEnt.GetRadius();
+                inCover = coverDist <= coverThreshold;*/
+
+
+                /*Vector3 coverClosestPointToTarget = coverCol.ClosestPoint(target.transform.position);
                 float coverDist = Vector3.Distance(target.transform.position, coverClosestPointToTarget);
                 if (ent.IsAlliedTo(Global.instance.localPlayer))
-                    Debug.DrawRay(coverClosestPointToTarget, 
-                        (target.transform.position-coverClosestPointToTarget).normalized * coverThreshold, Color.black);
+                    Debug.DrawRay(coverClosestPointToTarget,
+                        (target.transform.position - coverClosestPointToTarget).normalized * coverThreshold, Color.black);
 
                 if (coverDist <= coverThreshold)
                 {
                     inCover = true;
-                    if (ent.IsAlliedTo(Global.instance.localPlayer)) 
+                    if (ent.IsAlliedTo(Global.instance.localPlayer))
                         Debug.DrawLine(target.transform.position, coverClosestPointToTarget, Color.green);
                 }
                 else
                 {
-                    if (ent.IsAlliedTo(Global.instance.localPlayer)) 
+                    if (ent.IsAlliedTo(Global.instance.localPlayer))
                         Debug.DrawLine(target.transform.position, coverClosestPointToTarget, Color.red);
-                }
+                }*/
             }
 
             if (inCover && coverVal > greatestCoverVal)
@@ -599,7 +606,7 @@ public class Attacker : SwingEntityAddon
         {
             physSearchRange = Global.instance.defaultMeleeSearchRange;
         }
-        Entity eligibleIdleEnemy = GetFirstVisibleEnemyHashSearch(physSearchRange, RequiredEnemyType.Minion);
+        Entity eligibleIdleEnemy = GetFirstEnemyHashSearch(physSearchRange, RequiredEnemyType.Minion);
         //Entity eligibleIdleEnemy = FindEnemyThroughPhysSearch(physSearchRange, RequiredEnemyType.Minion, false, true);
         return eligibleIdleEnemy;
     }
@@ -720,11 +727,6 @@ public class Attacker : SwingEntityAddon
             if (hit)
             {
                 ent.SimplePlaySound(HitSound);
-            }
-            else
-            {
-                ent.SimplePlaySound(HitSound);
-                ent.SimplePlaySound(MissSound);
             }
 
             if (ent.attackEffects.Length > 0) //show muzzle flash
@@ -868,9 +870,9 @@ public class Attacker : SwingEntityAddon
     {
         ProjectileClientRpc(star, dest, hit);
     }
-    private Entity GetFirstVisibleEnemyHashSearch(float range, RequiredEnemyType requiredEnemyType)
+    private Entity GetFirstEnemyHashSearch(float range, RequiredEnemyType requiredEnemyType)
     {
-        return Global.instance.spatialHash.GetFirstVisibleEnemyHashSearch(ent, range, requiredEnemyType);
+        return Global.instance.spatialHash.GetFirstEnemyHashSearch(ent, range, requiredEnemyType);
         //return Global.instance.spatialHash.GetClosestEnemyHashSearch(ent, range, requiredEnemyType);
     }
     private Entity GetClosestMinionHashSearch(float range)
@@ -879,7 +881,7 @@ public class Attacker : SwingEntityAddon
     }
     private Entity FindSpecificEnemyInSearchListInRange(float range, Entity enemy) //reformat as bool return
     {
-        if (assignedEntitySearcher == null) return null;
+        if (assignedEntitySearcher == null || enemy == null) return null;
         Entity[] searchArray = new Entity[Global.instance.attackMoveDestinationEnemyArrayBufferSize];
         int searchCount = 0;
         RequiredEnemyType enemyType = RequiredEnemyType.Any;

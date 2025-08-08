@@ -90,12 +90,41 @@ public class StateMachineController : NetworkBehaviour
 
     #endregion
 
-    #region Core 
+    #region Checkers
+
     private bool CanPathfind()
     {
         return pf != null;
     }
+    private bool IsMelee()
+    {
+        return ent.IsMelee();
+    }
+    private bool IsRanged()
+    {
+        return ent.IsRanged();
+    }
+    public bool IsAlive()
+    {
+        if (ent != null)
+        {
+            return ent.alive;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    public bool IsCurrentlyBuilding()
+    {
+        return currentState == EntityStates.Building || currentState == EntityStates.WalkToInteractable && lastMajorState == EntityStates.Building;
+    }
+    #endregion
+
+    #region Core 
+    
     #region Just Spawned Code
+    
     #region Awake
     private void Awake()
     {
@@ -151,32 +180,9 @@ public class StateMachineController : NetworkBehaviour
     #endregion
     public Entity[] attackMoveDestinationEnemyArray = new Entity[0];
 
-    private bool IsMelee()
-    {
-        return ent.IsMelee();
-    }
-    private bool IsRanged()
-    {
-        return ent.IsRanged();
-    }
-    public bool IsAlive()
-    {
-        if (ent != null)
-        {
-            return ent.alive;
-        }
-        else
-        {
-            return false;
-        }
-    }
     public EntityStates GetState()
     {
         return currentState;
-    }
-    public bool IsCurrentlyBuilding()
-    {
-        return currentState == EntityStates.Building || currentState == EntityStates.WalkToInteractable && lastMajorState == EntityStates.Building;
     }
 
     //private bool finishedInitializingRealLocation = false;
@@ -201,6 +207,7 @@ public class StateMachineController : NetworkBehaviour
                 //UpdateSetterTargetPosition();
                 //FixGarrisonObstacle();
                 ent.attacker.UpdateTargetEnemyLastPosition();
+                if (ent.coverDisplay != null) ent.coverDisplay.CoverDisplayUpdate();
             }
             else // if (finishedInitializingRealLocation) //not owned by us
             {

@@ -19,4 +19,8 @@ public class FactionBuilding : FactionEntity
     {
         return coverVal < 1;
     }
+    public bool IsNotCover()
+    {
+        return coverVal <= 0;
+    }
 }

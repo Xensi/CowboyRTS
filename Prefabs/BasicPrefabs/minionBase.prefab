@@ -181,10 +181,12 @@ GameObject:
   - component: {fileID: 4126868118260038068}
   - component: {fileID: 1420444146532106229}
   - component: {fileID: 1556607826778985850}
+  - component: {fileID: 168264175324395471}
+  - component: {fileID: 2344885485515939443}
   - component: {fileID: 4741331578809617205}
+  - component: {fileID: 4813021014237112576}
   - component: {fileID: 7586105387906439370}
   - component: {fileID: 1965146877331169390}
-  - component: {fileID: 168264175324395471}
   - component: {fileID: 4721624654941951496}
   - component: {fileID: 801487402834003379}
   - component: {fileID: 2350746098491832441}
@@ -192,7 +194,6 @@ GameObject:
   - component: {fileID: 2723142034339036790}
   - component: {fileID: 8759861570742728164}
   - component: {fileID: 3066640240260945393}
-  - component: {fileID: 2344885485515939443}
   m_Layer: 7
   m_Name: minionBase
   m_TagString: Untagged
@@ -232,7 +233,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2641155720
+  GlobalObjectIdHash: 56881033
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -300,10 +301,6 @@ MonoBehaviour:
   buildOffset: {x: 0.5, y: 0, z: 0.5}
   passengersAreTargetable: 0
   acceptsHeavy: 0
-  sounds:
-  - {fileID: 8300000, guid: e12124de62f005543a8b08aff5493439, type: 3}
-  - {fileID: 8300000, guid: f44f3479724a08e4e8c995e2f633bbfe, type: 3}
-  - {fileID: 8300000, guid: f36c995b0cc52224ebecea1e5b408cfa, type: 3}
   selectIndicator: {fileID: 0}
   teamNumber:
     m_InternalValue: 0
@@ -370,6 +367,87 @@ MonoBehaviour:
   col: {fileID: 0}
   attacker: {fileID: 0}
   attackMoveDestinationEnemyArray: []
+--- !u!114 &168264175324395471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5353858407141398554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8232ad39a7fec8a44a9cb1da3a70c864, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ent: {fileID: 0}
+  sm: {fileID: 0}
+  anim: {fileID: 0}
+  pf: {fileID: 0}
+  at: {fileID: 0}
+  pathStatusValid: 0
+  pathfindingValidationTimerActive: 0
+  pathReachesDestination: 0
+  pathDistFromTarget: 0
+  orderedDestination: {x: 0, y: 0, z: 0}
+  destination: {x: 0, y: 0, z: 0}
+  ai: {fileID: 0}
+  seeker: {fileID: 0}
+  RVOAvoidance: {fileID: 0}
+  defaultMoveSpeed: 0
+  realLocation:
+    m_InternalValue: {x: 0, y: 0}
+  oldRealLocation: {x: 0, y: 0, z: 0}
+  nonOwnerRealLocationList: []
+  lastPathPosition: {x: 0, y: 0, z: 0}
+  pathfindingTarget: {fileID: 0}
+  pathDistanceFromDestination: Infinity
+  walkStartTimer: 0
+  oldPosition: {x: 0, y: 0, z: 0}
+  sqrDistChange: 0
+  effectivelyIdleInstances: 0
+--- !u!114 &2344885485515939443
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5353858407141398554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aca534e2af2827745a662480aca7edcd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ent: {fileID: 0}
+  sm: {fileID: 0}
+  anim: {fileID: 0}
+  pf: {fileID: 0}
+  at: {fileID: 0}
+  ready: 1
+  readyTimer: 0
+  range: 1
+  impactTime: 1
+  swingDelta: 1
+  duration: 1
+  attackSettings: {fileID: 11400000, guid: 0c64ee6e364419b43ad7da2e25115b9d, type: 2}
+  areaOfEffectRadius: 1
+  attackType: 1
+  attackProjectile: {fileID: 0}
+  defaultAttackDuration: 0
+  defaultImpactTime: 0
+  attackEffectSpawnPosition: {fileID: 0}
+  attackMoving: 0
+  targetEnemy: {fileID: 0}
+  preferredAttackTarget: {fileID: 0}
+  alternateAttackTarget: {fileID: 0}
+  longTermGoal: 0
+  lastIdlePosition: {x: 0, y: 0, z: 0}
+  assignedEntitySearcher: {fileID: 0}
+  hasCalledEnemySearchAsyncTask: 0
+  attackMoveDestination: {x: 0, y: 0, z: 0}
+  sqrDistToTargetEnemy: Infinity
+  attackMoveDestinationEnemyCount: 0
+  maximumChaseRange: 5
+  targetObscuredLevel: 0
 --- !u!114 &4741331578809617205
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -387,6 +465,18 @@ MonoBehaviour:
   anim: {fileID: 0}
   pf: {fileID: 0}
   at: {fileID: 0}
+--- !u!114 &4813021014237112576
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5353858407141398554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba171df0fb5c4554c951e036c3224610, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!54 &7586105387906439370
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -449,44 +539,6 @@ MonoBehaviour:
   multithreading: 1
   cellBased: 0
   snapToPixelCenter: 0
---- !u!114 &168264175324395471
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5353858407141398554}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8232ad39a7fec8a44a9cb1da3a70c864, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ent: {fileID: 0}
-  sm: {fileID: 0}
-  anim: {fileID: 0}
-  pf: {fileID: 0}
-  at: {fileID: 0}
-  pathStatusValid: 0
-  pathfindingValidationTimerActive: 0
-  pathReachesDestination: 0
-  pathDistFromTarget: 0
-  orderedDestination: {x: 0, y: 0, z: 0}
-  destination: {x: 0, y: 0, z: 0}
-  ai: {fileID: 0}
-  seeker: {fileID: 0}
-  RVOAvoidance: {fileID: 0}
-  defaultMoveSpeed: 0
-  realLocation:
-    m_InternalValue: {x: 0, y: 0}
-  oldRealLocation: {x: 0, y: 0, z: 0}
-  nonOwnerRealLocationList: []
-  lastPathPosition: {x: 0, y: 0, z: 0}
-  pathfindingTarget: {fileID: 0}
-  nudgedTargetEnemyStructurePosition: {x: 0, y: 0, z: 0}
-  walkStartTimer: 0
-  oldPosition: {x: 0, y: 0, z: 0}
-  sqrDistChange: 0
-  effectivelyIdleInstances: 0
 --- !u!114 &4721624654941951496
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -658,48 +710,6 @@ MonoBehaviour:
   version: 1073741824
   radius: 0.1
   detail: 10
---- !u!114 &2344885485515939443
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5353858407141398554}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aca534e2af2827745a662480aca7edcd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ent: {fileID: 0}
-  sm: {fileID: 0}
-  anim: {fileID: 0}
-  pf: {fileID: 0}
-  at: {fileID: 0}
-  ready: 1
-  readyTimer: 0
-  range: 1
-  impactTime: 1
-  swingDelta: 1
-  duration: 1
-  attackSettings: {fileID: 11400000, guid: 0c64ee6e364419b43ad7da2e25115b9d, type: 2}
-  areaOfEffectRadius: 1
-  attackType: 1
-  attackProjectile: {fileID: 0}
-  defaultAttackDuration: 0
-  defaultImpactTime: 0
-  attackEffectSpawnPosition: {fileID: 0}
-  attackMoving: 0
-  targetEnemy: {fileID: 0}
-  preferredAttackTarget: {fileID: 0}
-  alternateAttackTarget: {fileID: 0}
-  longTermGoal: 0
-  lastIdlePosition: {x: 0, y: 0, z: 0}
-  assignedEntitySearcher: {fileID: 0}
-  hasCalledEnemySearchAsyncTask: 0
-  attackMoveDestination: {x: 0, y: 0, z: 0}
-  sqrDistToTargetEnemy: Infinity
-  attackMoveDestinationEnemyCount: 0
-  maximumChaseRange: 5
 --- !u!1 &6176451757024125140
 GameObject:
   m_ObjectHideFlags: 0
