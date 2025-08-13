@@ -207,7 +207,7 @@ public class StateMachineController : NetworkBehaviour
                 //UpdateSetterTargetPosition();
                 //FixGarrisonObstacle();
                 ent.attacker.UpdateTargetEnemyLastPosition();
-                if (ent.coverDisplay != null) ent.coverDisplay.CoverDisplayUpdate();
+                //sif (ent.coverDisplay != null) ent.coverDisplay.CoverDisplayUpdate();
             }
             else // if (finishedInitializingRealLocation) //not owned by us
             {
