@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 
+#if UNITY_EDITOR
 [CustomEditor(typeof(FactionOre), true)]
 [CanEditMultipleObjects]
 public class FactionOreEditor : Editor
@@ -26,3 +27,4 @@ public class FactionOreEditor : Editor
         ore.maxHarvesters = EditorGUILayout.IntField(ore.maxHarvesters);
     }
 }
+#endif

@@ -915,7 +915,8 @@ public class Attacker : SwingEntityAddon
         for (int i = 0; i < searchCount; i++)
         {
             Entity check = searchArray[i];
-            if (ent.IsEnemyOfTarget(check) && check.alive && check.isTargetable.Value && check == enemy) //only check on enemies that are alive, targetable, visible
+            if (ent.IsEnemyOfTarget(check) && check.alive && check.isTargetable.Value && check == enemy)
+                //only check on enemies that are alive, targetable, visible
             {
                 Vector3 offset = check.transform.position - transform.position;
                 if (offset.sqrMagnitude < range * range) //return first enemy that's in range
@@ -1003,7 +1004,8 @@ public class Attacker : SwingEntityAddon
         for (int i = 0; i < searchCount; i++) //run for each search result
         {
             Entity checkedEnt = searchArray[i];
-            if (ent.IsEnemyOfTarget(checkedEnt) && checkedEnt.alive && checkedEnt.isTargetable.Value) //only check on enemies that are alive, targetable, visible
+            if (ent.IsEnemyOfTarget(checkedEnt) && checkedEnt.alive && checkedEnt.isTargetable.Value)
+                //only check on enemies that are alive, targetable, visible
             {
                 //disallow targets that are too far from the attack move destination
                 if (ent.aiControlled || 
@@ -1068,7 +1070,8 @@ public class Attacker : SwingEntityAddon
         for (int i = 0; i < searchCount; i++) //run for each search result
         {
             Entity checkedEnt = searchArray[i];
-            if (ent.IsEnemyOfTarget(checkedEnt) && checkedEnt.alive && checkedEnt.isTargetable.Value) //only check on enemies that are alive, targetable, visible
+            if (ent.IsEnemyOfTarget(checkedEnt) && checkedEnt.alive && checkedEnt.isTargetable.Value)
+                //only check on enemies that are alive, targetable, visible
             {
                 //float viabilityRange = minAttackMoveDestinationViabilityRange;
                 //if (attackMoveDetectRange > minAttackMoveDestinationViabilityRange) viabilityRange = attackMoveDetectRange;

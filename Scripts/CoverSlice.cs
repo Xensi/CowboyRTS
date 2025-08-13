@@ -18,7 +18,6 @@ public class CoverSlice : MonoBehaviour
     }
     private void Update()
     {
-        return;
         UpdateLR();
         if (followTarget != null)
         {   //special code to look at something with an initial offset angle on the x rotation
