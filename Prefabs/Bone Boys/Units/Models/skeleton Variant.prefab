@@ -204,6 +204,34 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 12
       objectReference: {fileID: 0}
+    - target: {fileID: 1997371324124627957, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1997371324124627957, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.075
+      objectReference: {fileID: 0}
+    - target: {fileID: 1997371324124627957, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1997371324124627957, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1997371324124627957, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1997371324124627957, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1997371324124627957, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3017012381539479380, guid: cabc20c5194d51542a69c3b906bc7c35, type: 3}
       propertyPath: m_CastShadows
       value: 0
