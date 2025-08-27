@@ -41,7 +41,7 @@ public class UnitAnimator : EntityAddon
             {
                 //animator.CrossFadeInFixedTime(str, fadeLength);
                 //animator.Play(str);
-                animator.CrossFade(str, 0.25f);
+                animator.CrossFade(str, 0.15f);
                 currentAnim = str;
             }
         }
