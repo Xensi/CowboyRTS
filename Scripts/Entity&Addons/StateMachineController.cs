@@ -48,7 +48,6 @@ public class StateMachineController : NetworkBehaviour
     #endregion
 
     #region Variables
-
     public EntityStates lastMajorState = EntityStates.Idle;
     LayerMask enemyMask;
     private Camera cam;
@@ -207,7 +206,7 @@ public class StateMachineController : NetworkBehaviour
                 //UpdateSetterTargetPosition();
                 //FixGarrisonObstacle();
                 ent.attacker.UpdateTargetEnemyLastPosition();
-                if (ent.coverDisplay != null) ent.coverDisplay.CoverDisplayUpdate();
+                CheckCover();
             }
             else // if (finishedInitializingRealLocation) //not owned by us
             {
@@ -220,7 +219,11 @@ public class StateMachineController : NetworkBehaviour
             frames++;
         }
     }
-
+    private void CheckCover()
+    {
+        bool cover = Global.instance.spatialHash.IsNearCover(ent);
+        anim.UpdateCoverVal(cover);
+    }
     private Entity clientSideTargetInRange = null;
     private void UpdateRealLocation()
     {

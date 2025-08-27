@@ -260,6 +260,34 @@ public class SpatialHash : MonoBehaviour
     }
 
     /// <summary>
+    /// Check if we're near cover at all.
+    /// </summary>
+    /// <param name="searchPos"></param>
+    /// <returns></returns>
+    public bool IsNearCover(Entity hider)
+    {
+        if (hider == null) return false;
+        Vector3 searchPos = hider.transform.position;
+        float rangeRadius = MaxDistToBeInCover;
+        foreach (int h in GetHashesToCheck(searchPos, rangeRadius)) //check through cells
+        {
+            for (int i = GetDenseStart(h); i <= GetDenseEnd(h); i++)
+            {
+                Entity target = denseEntityArray[GetIndexClampedByNumEntities(i)];
+                bool skip = target == null || !target.IsStructure() || target.IsOre()
+                    || target.factionEntity == null;
+                if (skip) continue;
+                FactionBuilding facBuilding = target.factionEntity as FactionBuilding;
+                if (facBuilding.IsNotCover()) continue;
+                Collider coverCol = target.physicalCollider;
+                if (coverCol == null) continue;
+                bool inCover = Global.instance.CoverDistCheck(hider, target);
+                if (inCover) return true;
+            }
+        }
+        return false;
+    }
+    /// <summary>
     /// Retrieve a list of cover entities that could grant cover at a position.
     /// </summary>
     /// <param name="searchPos"></param>
