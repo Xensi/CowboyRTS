@@ -53,7 +53,7 @@ public class StateMachineController : NetworkBehaviour
     LayerMask enemyMask;
     private Camera cam;
     private RaycastModifier rayMod;
-    private readonly float spawnDuration = .5f;
+    private readonly float spawnDuration = .95f;
     private readonly sbyte buildDelta = 5;
     public float stateTimer = 0;
     private float rotationSpeed = 10f;

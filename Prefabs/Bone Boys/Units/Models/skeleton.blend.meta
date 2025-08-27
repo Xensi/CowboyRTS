@@ -119,8 +119,8 @@ ModelImporter:
       name: attack
       takeName: Scene
       internalID: 723096430288179899
-      firstFrame: 20
-      lastFrame: 45
+      firstFrame: 0
+      lastFrame: 0
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -177,8 +177,8 @@ ModelImporter:
       name: attackWalkStart
       takeName: Scene
       internalID: -626948583029366203
-      firstFrame: 71
-      lastFrame: 91
+      firstFrame: 0
+      lastFrame: 0
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -206,8 +206,8 @@ ModelImporter:
       name: attackWalk
       takeName: Scene
       internalID: -8206857311389296499
-      firstFrame: 91
-      lastFrame: 101
+      firstFrame: 0
+      lastFrame: 0
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -235,8 +235,8 @@ ModelImporter:
       name: rangedAttack
       takeName: Scene
       internalID: -4885119122951247324
-      firstFrame: 102
-      lastFrame: 150
+      firstFrame: 0
+      lastFrame: 0
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -264,8 +264,8 @@ ModelImporter:
       name: die
       takeName: Scene
       internalID: -4807389317913785953
-      firstFrame: 151
-      lastFrame: 165
+      firstFrame: 0
+      lastFrame: 0
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -293,8 +293,8 @@ ModelImporter:
       name: drink
       takeName: Scene
       internalID: -3206263651483497662
-      firstFrame: 166
-      lastFrame: 220
+      firstFrame: 0
+      lastFrame: 0
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -361,6 +361,64 @@ ModelImporter:
       hasAdditiveReferencePose: 0
       loopTime: 1
       loopBlend: 1
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: sCoverSwing
+      takeName: Scene
+      internalID: -7653847362332097697
+      firstFrame: 190
+      lastFrame: 213
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: sCoverShoot
+      takeName: Scene
+      internalID: 8195394017938382407
+      firstFrame: 140
+      lastFrame: 188
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
       loopBlendOrientation: 0
       loopBlendPositionY: 0
       loopBlendPositionXZ: 0
