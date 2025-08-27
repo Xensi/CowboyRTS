@@ -4,13 +4,14 @@ using UnityEngine;
 
 public class CoverSlice : MonoBehaviour
 {
-    [SerializeField] int divideBy = 6;
+    //[SerializeField] int divideBy = 6;
 
     [SerializeField] float lrWidth = 0.05f;
     [SerializeField] private int subDivs = 64; //how detailed the circle should be
     public float radius = 1;
     private LineRenderer lr;
-    [SerializeField] Entity followTarget;
+    //[SerializeField] Entity followTarget;
+    [SerializeField] Entity ent;
     void Start()
     {
         lr = GetComponent<LineRenderer>();
@@ -18,23 +19,25 @@ public class CoverSlice : MonoBehaviour
     }
     private void Update()
     {
-        UpdateLR();
-        if (followTarget != null)
+        //bool covered = Global.instance.spatialHash.IsNearCover(ent);
+        //SetLREnable(covered);
+        //UpdateLR();
+        /*if (followTarget != null)
         {   //special code to look at something with an initial offset angle on the x rotation
             Vector3 targetDir = followTarget.transform.position - transform.position;
             float angle = Vector3.SignedAngle(targetDir, transform.up, Vector3.down);
             transform.eulerAngles += new Vector3(0, angle, 0);
-        }
+        }*/
     }
-    public void UpdateCoverToFollow(Entity newCover)
+    /*public void UpdateCoverToFollow(Entity newCover)
     {
         followTarget = newCover;
         bool enable = newCover != null;
         SetLREnable(enable);
-    }
+    }*/
     public void SetLREnable(bool val)
     {
-        lr.enabled = val;
+        if (lr.enabled != val) lr.enabled = val;
     }
     public void UpdateLR()
     {
@@ -43,12 +46,14 @@ public class CoverSlice : MonoBehaviour
             lr.startWidth = lrWidth;
 
             Vector3 point = transform.localPosition + new Vector3(0, 0, -0.01f);
-            int iterations = (subDivs / divideBy) + 1;
+            //int iterations = (subDivs / divideBy) + 1;
+            int iterations = subDivs + 1;
             Vector3[] positions = new Vector3[iterations];
             for (int i = 0; i < iterations; i++)
             {
                 /* Distance around the circle */
-                var radians = 2 * Mathf.PI / subDivs * i + Mathf.PI/3;//Mathf.PI/4;
+                //var radians = 2 * Mathf.PI / subDivs * i + Mathf.PI/3;//Mathf.PI/4;
+                var radians = 2 * Mathf.PI / subDivs * i;
 
                 /* Get the vector direction */
                 var vertical = Mathf.Sin(radians);

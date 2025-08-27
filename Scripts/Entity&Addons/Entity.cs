@@ -166,7 +166,6 @@ public class Entity : NetworkBehaviour
     [HideInInspector] public Spawner spawner;
     [HideInInspector] public Pathfinder pf;
     [HideInInspector] public Garrison garrison;
-    [HideInInspector] public EntityCoverDisplay coverDisplay;
     private MeshRenderer[] allMeshes;
     private MeshRenderer[] finishedMeshRenderers;
     [HideInInspector] public Collider physicalCollider; 
@@ -321,7 +320,6 @@ public class Entity : NetworkBehaviour
         attacker = GetComponent<Attacker>();
         pf = GetComponent<Pathfinder>();
         garrison = GetComponent<Garrison>();
-        coverDisplay = GetComponent<EntityCoverDisplay>();
         //soft addons
         areaEffectors = GetComponentsInChildren<AreaEffector>();
         if (lootComponent == null) lootComponent = GetComponent<LootOnDestruction>();

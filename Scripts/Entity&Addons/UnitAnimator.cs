@@ -20,6 +20,7 @@ public class UnitAnimator : EntityAddon
 
     public static string ATTACK_SPEED = "attackSpeedMultiplier";
     public static string MOVE_SPEED = "moveSpeedMultiplier";
+    public static string COVER = "cover";
     private Animator animator;
     string currentAnim = "";
     public void ResetMultiplier(string str)
@@ -107,5 +108,23 @@ public class UnitAnimator : EntityAddon
             default:
                 break;
         }
+    }
+    private float coverVal = 0;
+    private bool currentCoverBool = false;
+    private float t = 0;
+    private float transitionToCoverSpeed = 1.25f;
+    public void UpdateCoverVal(bool inCover)
+    {
+        if (inCover != currentCoverBool)
+        {
+            currentCoverBool = inCover;
+            t = 0;
+        }
+        if (t < 1) t += Time.deltaTime * transitionToCoverSpeed;
+        float newVal = inCover ? 1 : 0;
+
+        coverVal = Mathf.Lerp(coverVal, newVal, t);
+
+        animator.SetFloat(COVER, coverVal);
     }
 }
